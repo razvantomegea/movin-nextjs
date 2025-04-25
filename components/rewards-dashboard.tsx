@@ -17,10 +17,16 @@ export function RewardsDashboard() {
         <Tabs defaultValue="activity" onValueChange={setActiveTab} className="w-full">
           <div className="flex items-center justify-between mb-6">
             <h1 className="text-2xl font-bold">Rewards</h1>
-            <TabsList className="grid grid-cols-3 h-9">
-              <TabsTrigger value="activity">Activity</TabsTrigger>
-              <TabsTrigger value="staking">Staking</TabsTrigger>
-              <TabsTrigger value="referrals">Referrals</TabsTrigger>
+            <TabsList className="grid grid-cols-3 h-10 p-0.5">
+              <TabsTrigger value="activity" className="px-4">
+                Activity
+              </TabsTrigger>
+              <TabsTrigger value="staking" className="px-4">
+                Staking
+              </TabsTrigger>
+              <TabsTrigger value="referrals" className="px-4">
+                Referrals
+              </TabsTrigger>
             </TabsList>
           </div>
 

@@ -4,10 +4,10 @@ import type React from "react"
 
 import { useState } from "react"
 import { usePathname, useRouter } from "next/navigation"
-import { Activity, Award, Flame, Gift, Menu, Settings, User, X } from "lucide-react"
+import { Activity, Award, Flame, Gift, Menu, Settings, Target, User } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet"
 import Image from "next/image"
 import Link from "next/link"
 import { ThemeToggle } from "@/components/theme-toggle"
@@ -28,6 +28,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const tabs = [
     { name: "Movin", path: "/dashboard", icon: <Activity className="h-5 w-5" /> },
     { name: "Rewards", path: "/dashboard/rewards", icon: <Gift className="h-5 w-5" /> },
+    { name: "Goals", path: "/dashboard/goals", icon: <Target className="h-5 w-5" /> },
     { name: "More", path: "#", icon: <Menu className="h-5 w-5" /> },
   ]
 
@@ -64,19 +65,20 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 <SheetTrigger asChild>
                   <Button
                     variant="ghost"
-                    className={`flex flex-col items-center py-3 px-5 rounded-none ${isActive(tab.path) ? "text-blue-400" : "text-gray-400"}`}
+                    className={`flex flex-col items-center py-4 px-5 rounded-none h-16 hover:bg-transparent focus:bg-transparent ${
+                      isActive(tab.path) ? "text-blue-400" : "text-gray-400"
+                    }`}
+                    style={{ backgroundColor: "transparent" }}
                   >
-                    {tab.icon}
-                    <span className="text-xs mt-1">{tab.name}</span>
+                    <span className="mb-0.5">{tab.icon}</span>
+                    <span className="text-xs">{tab.name}</span>
                   </Button>
                 </SheetTrigger>
                 <SheetContent side="right" className="p-0 w-[280px] bg-gray-900 border-l border-gray-800">
                   <div className="flex flex-col h-full">
                     <div className="p-4 border-b border-gray-800 flex items-center justify-between">
                       <h2 className="font-semibold">Menu</h2>
-                      <Button variant="ghost" size="icon" className="rounded-full">
-                        <X className="h-4 w-4" />
-                      </Button>
+                      <SheetClose asChild />
                     </div>
 
                     <div className="flex-1 overflow-auto">
@@ -100,6 +102,15 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                               >
                                 <Settings className="h-5 w-5 mr-3 text-blue-400" />
                                 <span>Settings</span>
+                              </Link>
+                            </li>
+                            <li>
+                              <Link
+                                href="/dashboard/goals"
+                                className="flex items-center p-2 rounded-lg hover:bg-gray-800"
+                              >
+                                <Target className="h-5 w-5 mr-3 text-blue-400" />
+                                <span>Goals</span>
                               </Link>
                             </li>
                           </ul>
@@ -152,12 +163,15 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               <Button
                 key={index}
                 variant="ghost"
-                className={`flex flex-col items-center py-3 px-5 rounded-none ${isActive(tab.path) ? "text-blue-400" : "text-gray-400"}`}
+                className={`flex flex-col items-center py-4 px-5 rounded-none h-16 hover:bg-transparent focus:bg-transparent ${
+                  isActive(tab.path) ? "text-blue-400" : "text-gray-400"
+                }`}
+                style={{ backgroundColor: "transparent" }}
                 onClick={() => router.push(tab.path)}
               >
-                {tab.icon}
-                <span className="text-xs mt-1">{tab.name}</span>
-                {isActive(tab.path) && <div className="absolute bottom-0 w-12 h-0.5 bg-blue-500"></div>}
+                <span className="mb-0.5">{tab.icon}</span>
+                <span className="text-xs">{tab.name}</span>
+                {isActive(tab.path) && <div className="absolute bottom-0 w-1 h-1 rounded-full bg-blue-500 mt-1"></div>}
               </Button>
             ),
           )}

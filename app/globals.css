@@ -109,3 +109,53 @@
 .light .gradient-dark {
   background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
 }
+
+/* Bottom navigation styling */
+.bottom-nav-button {
+  padding: 0.75rem 1.25rem;
+  margin: 0.25rem 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+
+.bottom-nav-button .icon {
+  margin-bottom: 0.375rem;
+}
+
+.bottom-nav-button .label {
+  font-size: 0.75rem;
+  line-height: 1rem;
+}
+
+/* Bottom navigation styling overrides */
+.glass-effect button.hover\:bg-transparent:hover {
+  background-color: transparent !important;
+}
+
+.glass-effect button.focus\:bg-transparent:focus {
+  background-color: transparent !important;
+}
+
+/* Adjust the active indicator to be more subtle */
+.glass-effect button .absolute.bg-blue-500 {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  bottom: 6px;
+}
+
+/* Tab styling improvements */
+.tabs-list {
+  display: grid;
+  align-items: center;
+  justify-content: center;
+}
+
+[role="tab"] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}

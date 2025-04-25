@@ -1,3 +1,7 @@
+"use client"
+
+import { motion } from "framer-motion"
+
 interface CircularProgressProps {
   value: number
   size: number
@@ -24,11 +28,13 @@ export function CircularProgress({ value, size, strokeWidth, className = "" }: C
           cy={size / 2}
         />
         {/* Progress circle */}
-        <circle
+        <motion.circle
+          initial={{ strokeDashoffset: circumference }}
+          animate={{ strokeDashoffset: offset }}
+          transition={{ duration: 1, ease: "easeInOut" }}
           className="text-blue-500 progress-ring-circle"
           strokeWidth={strokeWidth}
           strokeDasharray={circumference}
-          strokeDashoffset={offset}
           strokeLinecap="round"
           stroke="currentColor"
           fill="transparent"
@@ -37,7 +43,14 @@ export function CircularProgress({ value, size, strokeWidth, className = "" }: C
           cy={size / 2}
         />
       </svg>
-      <div className="absolute inset-0 flex items-center justify-center text-lg font-bold">{value}%</div>
+      <motion.div
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ delay: 0.5, duration: 0.3 }}
+        className="absolute inset-0 flex items-center justify-center text-lg font-bold"
+      >
+        {value}%
+      </motion.div>
     </div>
   )
 }

@@ -1,14 +1,20 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Wallet } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { motion } from "framer-motion"
 
 export function ConnectPage() {
   const router = useRouter()
   const [connecting, setConnecting] = useState(false)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const handleConnect = () => {
     setConnecting(true)
@@ -18,42 +24,141 @@ export function ConnectPage() {
     }, 1500)
   }
 
+  if (!mounted) return null
+
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-blue-500 to-blue-700 dark:from-blue-500 dark:to-blue-700 from-blue-400 to-blue-600 p-4 text-white">
-      <div className="w-full max-w-md flex flex-col items-center">
-        <div className="mb-12 animate-pulse">
-          <div className="relative w-32 h-32 mb-4">
-            <Image src="/images/logo.png" alt="Movin Logo" fill className="object-contain" priority />
-          </div>
-        </div>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-gray-950 to-gray-900 p-4 text-white">
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.15)_0%,rgba(0,0,0,0)_60%)]"></div>
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_60%,rgba(59,130,246,0.1)_0%,rgba(0,0,0,0)_60%)]"></div>
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-500/30 to-transparent"></div>
+      </div>
 
-        <h1 className="text-5xl font-bold mb-4 text-center">Movin</h1>
-        <p className="text-xl mb-12 text-center text-blue-100 dark:text-blue-100 text-blue-50">
-          It all starts with one step
-        </p>
-
-        <Button
-          onClick={handleConnect}
-          disabled={connecting}
-          className="w-full py-6 text-lg rounded-xl bg-white text-blue-600 hover:bg-blue-50 transition-all shadow-lg"
+      <div className="w-full max-w-md flex flex-col items-center relative z-10">
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{
+            type: "spring",
+            stiffness: 260,
+            damping: 20,
+            delay: 0.1,
+          }}
+          className="mb-12 relative"
         >
-          {connecting ? (
-            <div className="flex items-center">
-              <div className="animate-spin mr-2 h-5 w-5 border-2 border-blue-600 border-t-transparent rounded-full"></div>
-              Connecting...
-            </div>
-          ) : (
-            <div className="flex items-center">
-              <Wallet className="mr-2 h-5 w-5" />
-              Connect Wallet
-            </div>
-          )}
-        </Button>
+          <div className="absolute -inset-8 rounded-full bg-blue-500/10 blur-xl"></div>
+          <div className="relative w-40 h-40 mb-4 bg-black/30 rounded-full p-6 backdrop-blur-sm border border-white/10 flex items-center justify-center">
+            <motion.div
+              animate={{
+                scale: [1, 1.05, 1],
+                filter: [
+                  "drop-shadow(0 0 0px rgba(255,255,255,0.7))",
+                  "drop-shadow(0 0 15px rgba(255,255,255,0.7))",
+                  "drop-shadow(0 0 0px rgba(255,255,255,0.7))",
+                ],
+              }}
+              transition={{
+                repeat: Number.POSITIVE_INFINITY,
+                duration: 3,
+                ease: "easeInOut",
+              }}
+            >
+              <Image
+                src="/images/logo.png"
+                alt="Movin Logo"
+                width={120}
+                height={120}
+                className="object-contain"
+                priority
+              />
+            </motion.div>
+          </div>
+        </motion.div>
 
-        <div className="mt-8 text-center text-blue-100 dark:text-blue-100 text-blue-50 text-sm">
-          <p>Track your fitness. Earn rewards.</p>
-          <p className="mt-1">Powered by MVN</p>
-        </div>
+        <motion.h1
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.3, duration: 0.5 }}
+          className="text-5xl font-bold mb-4 text-center bg-clip-text text-transparent bg-gradient-to-r from-blue-300 to-blue-500"
+        >
+          Movin
+        </motion.h1>
+
+        <motion.p
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.4, duration: 0.5 }}
+          className="text-xl mb-12 text-center text-blue-100"
+        >
+          It all starts with one step
+        </motion.p>
+
+        <motion.div
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.5, duration: 0.5 }}
+          className="w-full"
+        >
+          <Button
+            onClick={handleConnect}
+            disabled={connecting}
+            className="w-full py-6 text-lg rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white transition-all shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 border-0"
+          >
+            {connecting ? (
+              <motion.div className="flex items-center" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                <div className="animate-spin mr-2 h-5 w-5 border-2 border-white border-t-transparent rounded-full"></div>
+                Connecting...
+              </motion.div>
+            ) : (
+              <motion.div
+                className="flex items-center"
+                whileHover={{ x: 5 }}
+                transition={{ type: "spring", stiffness: 400, damping: 10 }}
+              >
+                <Wallet className="mr-2 h-5 w-5" />
+                Connect Wallet
+              </motion.div>
+            )}
+          </Button>
+        </motion.div>
+
+        <motion.div
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.7, duration: 0.5 }}
+          className="mt-8 text-center text-blue-200/70 text-sm"
+        >
+          <p>Earn while you burn</p>
+        </motion.div>
+      </div>
+
+      {/* Animated particles */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {[...Array(20)].map((_, i) => (
+          <motion.div
+            key={i}
+            className="absolute w-1 h-1 bg-blue-400/30 rounded-full"
+            initial={{
+              x: Math.random() * 100 + "%",
+              y: Math.random() * 100 + "%",
+              scale: Math.random() * 0.5 + 0.5,
+            }}
+            animate={{
+              y: [null, Math.random() * -30 - 10, null],
+              opacity: [0.3, 0.8, 0.3],
+            }}
+            transition={{
+              repeat: Number.POSITIVE_INFINITY,
+              duration: Math.random() * 3 + 2,
+              ease: "easeInOut",
+              delay: Math.random() * 2,
+            }}
+            style={{
+              width: `${Math.random() * 4 + 1}px`,
+              height: `${Math.random() * 4 + 1}px`,
+            }}
+          />
+        ))}
       </div>
     </div>
   )
