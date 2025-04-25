@@ -4,13 +4,13 @@ import { useState } from "react"
 import { DashboardLayout } from "@/components/dashboard-layout"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent } from "@/components/ui/card"
-import { Activity, Calendar, Clock, Flame, Heart, TrendingUp, Trophy, Watch, Dumbbell } from "lucide-react"
+import { Activity, Calendar, Clock, Flame, Heart, TrendingUp, Trophy, Watch, Dumbbell, Star } from "lucide-react"
 import { Progress } from "@/components/ui/progress"
 import { CircularProgress } from "@/components/circular-progress"
 import { motion } from "framer-motion"
 import { CelebrationAnimation } from "@/components/celebration-animation"
 import { Button } from "@/components/ui/button"
-import { Star } from "lucide-react"
+import { useTheme } from "next-themes"
 
 const container = {
   hidden: { opacity: 0 },
@@ -34,6 +34,8 @@ export function MovinDashboard() {
   const [achievementValue, setAchievementValue] = useState("")
   const [achievementTitle, setAchievementTitle] = useState("")
   const [achievementDescription, setAchievementDescription] = useState("")
+  const { resolvedTheme } = useTheme()
+  const isDark = resolvedTheme === "dark"
 
   // Demo function to trigger different celebrations
   const triggerCelebration = (type: "steps" | "workout" | "streak" | "level") => {
@@ -84,16 +86,18 @@ export function MovinDashboard() {
           <TabsContent value="steps" className="mt-0">
             <motion.div className="space-y-6" variants={container} initial="hidden" animate="show">
               <motion.div variants={item}>
-                <Card className="bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900 border-gray-300 dark:border-gray-700">
+                <Card
+                  className={`${isDark ? "bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700" : "bg-gradient-to-br from-white to-gray-100 border-gray-200"}`}
+                >
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center">
                         <div className="bg-blue-500/20 p-2 rounded-full mr-3">
-                          <Activity className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                          <Activity className="h-5 w-5 text-blue-500" />
                         </div>
                         <span className="text-sm font-medium">Today</span>
                       </div>
-                      <span className="text-sm text-gray-500 dark:text-gray-400">April 25, 2025</span>
+                      <span className={`text-sm ${isDark ? "text-gray-400" : "text-gray-500"}`}>April 25, 2025</span>
                     </div>
 
                     <div className="flex items-center justify-between">
@@ -107,7 +111,9 @@ export function MovinDashboard() {
                           >
                             7,842
                           </motion.span>
-                          <span className="text-sm text-gray-400 ml-2">/ 10,000 steps</span>
+                          <span className={`text-sm ${isDark ? "text-gray-400" : "text-gray-500"} ml-2`}>
+                            / 10,000 steps
+                          </span>
                         </div>
                         <motion.div
                           initial={{ width: 0 }}
@@ -124,10 +130,10 @@ export function MovinDashboard() {
                             transition={{ type: "spring", stiffness: 400, damping: 10 }}
                           >
                             <div className="bg-blue-500/10 p-2 rounded-full mb-2">
-                              <Flame className="h-4 w-4 text-blue-400" />
+                              <Flame className="h-4 w-4 text-blue-500" />
                             </div>
                             <span className="text-sm font-medium">428</span>
-                            <span className="text-xs text-gray-400">kcal</span>
+                            <span className={`text-xs ${isDark ? "text-gray-400" : "text-gray-500"}`}>kcal</span>
                           </motion.div>
 
                           <motion.div
@@ -136,10 +142,10 @@ export function MovinDashboard() {
                             transition={{ type: "spring", stiffness: 400, damping: 10 }}
                           >
                             <div className="bg-blue-500/10 p-2 rounded-full mb-2">
-                              <TrendingUp className="h-4 w-4 text-blue-400" />
+                              <TrendingUp className="h-4 w-4 text-blue-500" />
                             </div>
                             <span className="text-sm font-medium">5.2</span>
-                            <span className="text-xs text-gray-400">km</span>
+                            <span className={`text-xs ${isDark ? "text-gray-400" : "text-gray-500"}`}>km</span>
                           </motion.div>
 
                           <motion.div
@@ -148,10 +154,10 @@ export function MovinDashboard() {
                             transition={{ type: "spring", stiffness: 400, damping: 10 }}
                           >
                             <div className="bg-blue-500/10 p-2 rounded-full mb-2">
-                              <Clock className="h-4 w-4 text-blue-400" />
+                              <Clock className="h-4 w-4 text-blue-500" />
                             </div>
                             <span className="text-sm font-medium">1h 12m</span>
-                            <span className="text-xs text-gray-400">active</span>
+                            <span className={`text-xs ${isDark ? "text-gray-400" : "text-gray-500"}`}>active</span>
                           </motion.div>
                         </div>
                       </div>
@@ -167,16 +173,16 @@ export function MovinDashboard() {
               {/* Weekly Overview */}
               <motion.div className="space-y-4" variants={item}>
                 <h2 className="text-lg font-medium">Weekly Overview</h2>
-                <Card className="bg-gray-100 dark:bg-gray-900 border-gray-300 dark:border-gray-800">
+                <Card className={isDark ? "bg-gray-900 border-gray-800" : "bg-white border-gray-200"}>
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between mb-6">
                       <div className="flex items-center">
                         <div className="bg-blue-500/20 p-2 rounded-full mr-3">
-                          <Calendar className="h-4 w-4 text-blue-400" />
+                          <Calendar className="h-4 w-4 text-blue-500" />
                         </div>
                         <span className="text-sm font-medium">This Week</span>
                       </div>
-                      <div className="flex items-center text-sm text-blue-400">
+                      <div className="flex items-center text-sm text-blue-500">
                         <Trophy className="h-4 w-4 mr-1" />
                         <span>78% of goal</span>
                       </div>
@@ -200,7 +206,9 @@ export function MovinDashboard() {
                               transition={{ duration: 0.5, delay: 0.2 + 0.1 * i }}
                             ></motion.div>
                           </div>
-                          <span className={`text-xs mt-2 ${i === 3 ? "text-blue-400 font-medium" : "text-gray-400"}`}>
+                          <span
+                            className={`text-xs mt-2 ${i === 3 ? "text-blue-500 font-medium" : isDark ? "text-gray-400" : "text-gray-500"}`}
+                          >
                             {day}
                           </span>
                         </motion.div>
@@ -215,36 +223,36 @@ export function MovinDashboard() {
                 <h2 className="text-lg font-medium">Health Metrics</h2>
                 <div className="grid grid-cols-2 gap-4">
                   <motion.div whileHover={{ scale: 1.03 }} transition={{ type: "spring", stiffness: 400, damping: 10 }}>
-                    <Card className="bg-gray-100 dark:bg-gray-900 border-gray-300 dark:border-gray-800">
+                    <Card className={isDark ? "bg-gray-900 border-gray-800" : "bg-white border-gray-200"}>
                       <CardContent className="p-4">
                         <div className="flex items-center mb-3">
                           <div className="bg-blue-500/20 p-1.5 rounded-full mr-2">
-                            <Heart className="h-4 w-4 text-blue-400" />
+                            <Heart className="h-4 w-4 text-blue-500" />
                           </div>
                           <span className="text-sm font-medium">Heart Rate</span>
                         </div>
                         <div className="flex items-baseline">
                           <span className="text-2xl font-bold">72</span>
-                          <span className="text-xs text-gray-400 ml-1">bpm</span>
+                          <span className={`text-xs ${isDark ? "text-gray-400" : "text-gray-500"} ml-1`}>bpm</span>
                         </div>
-                        <span className="text-xs text-gray-400">Resting</span>
+                        <span className={`text-xs ${isDark ? "text-gray-400" : "text-gray-500"}`}>Resting</span>
                       </CardContent>
                     </Card>
                   </motion.div>
 
                   <motion.div whileHover={{ scale: 1.03 }} transition={{ type: "spring", stiffness: 400, damping: 10 }}>
-                    <Card className="bg-gray-100 dark:bg-gray-900 border-gray-300 dark:border-gray-800">
+                    <Card className={isDark ? "bg-gray-900 border-gray-800" : "bg-white border-gray-200"}>
                       <CardContent className="p-4">
                         <div className="flex items-center mb-3">
                           <div className="bg-blue-500/20 p-1.5 rounded-full mr-2">
-                            <Watch className="h-4 w-4 text-blue-400" />
+                            <Watch className="h-4 w-4 text-blue-500" />
                           </div>
                           <span className="text-sm font-medium">Sleep</span>
                         </div>
                         <div className="flex items-baseline">
                           <span className="text-2xl font-bold">7h 20m</span>
                         </div>
-                        <span className="text-xs text-gray-400">Last night</span>
+                        <span className={`text-xs ${isDark ? "text-gray-400" : "text-gray-500"}`}>Last night</span>
                       </CardContent>
                     </Card>
                   </motion.div>
@@ -276,12 +284,14 @@ export function MovinDashboard() {
           <TabsContent value="workouts" className="mt-0">
             <motion.div className="space-y-6" variants={container} initial="hidden" animate="show">
               <motion.div variants={item}>
-                <Card className="bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900 border-gray-300 dark:border-gray-700">
+                <Card
+                  className={`${isDark ? "bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700" : "bg-gradient-to-br from-white to-gray-100 border-gray-200"}`}
+                >
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between mb-6">
                       <div className="flex items-center">
                         <div className="bg-blue-500/20 p-2 rounded-full mr-3">
-                          <Dumbbell className="h-5 w-5 text-blue-400" />
+                          <Dumbbell className="h-5 w-5 text-blue-500" />
                         </div>
                         <span className="text-sm font-medium">Recent Workouts</span>
                       </div>
@@ -295,20 +305,22 @@ export function MovinDashboard() {
                       ].map((workout, i) => (
                         <motion.div
                           key={i}
-                          className="flex items-center p-3 bg-gray-800/50 rounded-lg"
+                          className={`flex items-center p-3 ${isDark ? "bg-gray-800/50" : "bg-gray-200/70"} rounded-lg`}
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: 0.1 * i }}
                         >
                           <div className="bg-blue-500/20 p-2 rounded-full mr-3">
-                            <Activity className="h-5 w-5 text-blue-400" />
+                            <Activity className="h-5 w-5 text-blue-500" />
                           </div>
                           <div className="flex-1">
                             <div className="flex justify-between">
                               <span className="font-medium">{workout.type}</span>
-                              <span className="text-sm text-gray-400">{workout.date}</span>
+                              <span className={`text-sm ${isDark ? "text-gray-400" : "text-gray-500"}`}>
+                                {workout.date}
+                              </span>
                             </div>
-                            <div className="flex text-sm text-gray-400 mt-1">
+                            <div className={`flex text-sm ${isDark ? "text-gray-400" : "text-gray-500"} mt-1`}>
                               <span className="mr-3">{workout.duration}</span>
                               {workout.distance && <span className="mr-3">{workout.distance}</span>}
                               <span>{workout.calories} kcal</span>
@@ -323,16 +335,16 @@ export function MovinDashboard() {
 
               <motion.div className="space-y-4" variants={item}>
                 <h2 className="text-lg font-medium">Weekly Activity</h2>
-                <Card className="bg-gray-100 dark:bg-gray-900 border-gray-300 dark:border-gray-800">
+                <Card className={isDark ? "bg-gray-900 border-gray-800" : "bg-white border-gray-200"}>
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between mb-6">
                       <div className="flex items-center">
                         <div className="bg-blue-500/20 p-2 rounded-full mr-3">
-                          <Flame className="h-4 w-4 text-blue-400" />
+                          <Flame className="h-4 w-4 text-blue-500" />
                         </div>
                         <span className="text-sm font-medium">Activity Summary</span>
                       </div>
-                      <div className="flex items-center text-sm text-blue-400">
+                      <div className="flex items-center text-sm text-blue-500">
                         <span>This Week</span>
                       </div>
                     </div>

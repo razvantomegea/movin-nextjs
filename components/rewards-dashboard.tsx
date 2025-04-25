@@ -94,7 +94,7 @@ export function RewardsDashboard() {
                 <Card className="bg-gray-100 dark:bg-gray-900 border-gray-300 dark:border-gray-800">
                   <CardContent className="p-4">
                     <div className="space-y-4">
-                      <div className="flex items-center p-2 bg-gray-800/50 rounded-lg">
+                      <div className="flex items-center p-2 bg-gray-200/70 dark:bg-gray-800/50 rounded-lg">
                         <div className="bg-blue-500/20 p-2 rounded-full mr-3">
                           <Award className="h-4 w-4 text-blue-400" />
                         </div>
@@ -108,7 +108,7 @@ export function RewardsDashboard() {
                         </div>
                       </div>
 
-                      <div className="flex items-center p-2 bg-gray-800/50 rounded-lg">
+                      <div className="flex items-center p-2 bg-gray-200/70 dark:bg-gray-800/50 rounded-lg">
                         <div className="bg-blue-500/20 p-2 rounded-full mr-3">
                           <Award className="h-4 w-4 text-blue-400" />
                         </div>

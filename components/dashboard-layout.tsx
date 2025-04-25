@@ -4,13 +4,14 @@ import type React from "react"
 
 import { useState } from "react"
 import { usePathname, useRouter } from "next/navigation"
-import { Activity, Award, Flame, Gift, Menu, Settings, Target, User } from "lucide-react"
+import { Activity, Award, Flame, Gift, Menu, Settings, Target, User, X } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
-import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import Image from "next/image"
 import Link from "next/link"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { PWAComponentsWrapper } from "@/components/pwa-components-wrapper"
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -19,7 +20,7 @@ interface DashboardLayoutProps {
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const pathname = usePathname()
   const router = useRouter()
-  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [isSheetOpen, setIsSheetOpen] = useState(false)
 
   const isActive = (path: string) => {
     return pathname === path
@@ -43,12 +44,14 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
         <div className="flex items-center gap-2">
           <ThemeToggle />
-          <Avatar className="h-8 w-8 border border-blue-500">
-            <AvatarImage src="/placeholder.svg?height=32&width=32" alt="User" />
-            <AvatarFallback className="bg-blue-900 text-blue-100 dark:bg-blue-900 dark:text-blue-100 bg-blue-100 text-blue-900">
-              UN
-            </AvatarFallback>
-          </Avatar>
+          <Link href="/dashboard/profile">
+            <Avatar className="h-8 w-8 border border-blue-500 cursor-pointer">
+              <AvatarImage src="/placeholder.svg?height=32&width=32" alt="User" />
+              <AvatarFallback className="bg-blue-900 text-blue-100 dark:bg-blue-900 dark:text-blue-100 bg-blue-100 text-blue-900">
+                UN
+              </AvatarFallback>
+            </Avatar>
+          </Link>
           <span className="text-blue-400 text-sm font-medium">username</span>
         </div>
       </header>
@@ -56,94 +59,114 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       {/* Main content */}
       <main className="flex-1 pb-20">{children}</main>
 
+      {/* PWA Components */}
+      <PWAComponentsWrapper />
+
       {/* Bottom navigation */}
       <nav className="glass-effect fixed bottom-0 w-full border-t border-gray-800">
         <div className="flex items-center justify-around">
           {tabs.map((tab, index) =>
             tab.path === "#" ? (
-              <Sheet key={index}>
+              <Sheet key={index} open={isSheetOpen} onOpenChange={setIsSheetOpen}>
                 <SheetTrigger asChild>
                   <Button
                     variant="ghost"
                     className={`flex flex-col items-center py-4 px-5 rounded-none h-16 hover:bg-transparent focus:bg-transparent ${
-                      isActive(tab.path) ? "text-blue-400" : "text-gray-400"
+                      isActive(tab.path) ? "text-blue-400 font-medium" : "text-gray-400"
                     }`}
                     style={{ backgroundColor: "transparent" }}
+                    onClick={() => setIsSheetOpen(true)}
                   >
                     <span className="mb-0.5">{tab.icon}</span>
                     <span className="text-xs">{tab.name}</span>
                   </Button>
                 </SheetTrigger>
-                <SheetContent side="right" className="p-0 w-[280px] bg-gray-900 border-l border-gray-800">
+                <SheetContent
+                  side="right"
+                  className="z-50 w-full sm:w-[350px] md:w-[400px] bg-gray-900 border-l border-gray-800 p-0"
+                >
                   <div className="flex flex-col h-full">
                     <div className="p-4 border-b border-gray-800 flex items-center justify-between">
-                      <h2 className="font-semibold">Menu</h2>
-                      <SheetClose asChild />
+                      <h2 className="text-xl font-semibold">Menu</h2>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="rounded-full"
+                        onClick={() => setIsSheetOpen(false)}
+                      >
+                        <X className="h-5 w-5" />
+                      </Button>
                     </div>
 
                     <div className="flex-1 overflow-auto">
-                      <div className="p-4">
-                        <div className="mb-6">
-                          <h3 className="text-sm font-medium text-gray-400 mb-3">Account</h3>
-                          <ul className="space-y-2">
+                      <div className="p-4 sm:p-6">
+                        <div className="mb-8">
+                          <h3 className="text-sm font-medium text-gray-400 mb-4">Account</h3>
+                          <ul className="space-y-3">
                             <li>
                               <Link
                                 href="/dashboard/profile"
-                                className="flex items-center p-2 rounded-lg hover:bg-gray-800"
+                                className="flex items-center p-3 rounded-lg hover:bg-gray-800"
+                                onClick={() => setIsSheetOpen(false)}
                               >
-                                <User className="h-5 w-5 mr-3 text-blue-400" />
-                                <span>Profile</span>
+                                <User className="h-6 w-6 mr-4 text-blue-400" />
+                                <span className="text-base">Profile</span>
                               </Link>
                             </li>
                             <li>
                               <Link
                                 href="/dashboard/settings"
-                                className="flex items-center p-2 rounded-lg hover:bg-gray-800"
+                                className="flex items-center p-3 rounded-lg hover:bg-gray-800"
+                                onClick={() => setIsSheetOpen(false)}
                               >
-                                <Settings className="h-5 w-5 mr-3 text-blue-400" />
-                                <span>Settings</span>
+                                <Settings className="h-6 w-6 mr-4 text-blue-400" />
+                                <span className="text-base">Settings</span>
                               </Link>
                             </li>
                             <li>
                               <Link
                                 href="/dashboard/goals"
-                                className="flex items-center p-2 rounded-lg hover:bg-gray-800"
+                                className="flex items-center p-3 rounded-lg hover:bg-gray-800"
+                                onClick={() => setIsSheetOpen(false)}
                               >
-                                <Target className="h-5 w-5 mr-3 text-blue-400" />
-                                <span>Goals</span>
+                                <Target className="h-6 w-6 mr-4 text-blue-400" />
+                                <span className="text-base">Goals</span>
                               </Link>
                             </li>
                           </ul>
                         </div>
 
-                        <div>
-                          <h3 className="text-sm font-medium text-gray-400 mb-3">Rewards</h3>
-                          <ul className="space-y-2">
+                        <div className="mb-8">
+                          <h3 className="text-sm font-medium text-gray-400 mb-4">Rewards</h3>
+                          <ul className="space-y-3">
                             <li>
                               <Link
                                 href="/dashboard/rewards/activity"
-                                className="flex items-center p-2 rounded-lg hover:bg-gray-800"
+                                className="flex items-center p-3 rounded-lg hover:bg-gray-800"
+                                onClick={() => setIsSheetOpen(false)}
                               >
-                                <Activity className="h-5 w-5 mr-3 text-blue-400" />
-                                <span>Activity Rewards</span>
+                                <Activity className="h-6 w-6 mr-4 text-blue-400" />
+                                <span className="text-base">Activity Rewards</span>
                               </Link>
                             </li>
                             <li>
                               <Link
                                 href="/dashboard/rewards/staking"
-                                className="flex items-center p-2 rounded-lg hover:bg-gray-800"
+                                className="flex items-center p-3 rounded-lg hover:bg-gray-800"
+                                onClick={() => setIsSheetOpen(false)}
                               >
-                                <Flame className="h-5 w-5 mr-3 text-blue-400" />
-                                <span>Staking</span>
+                                <Flame className="h-6 w-6 mr-4 text-blue-400" />
+                                <span className="text-base">Staking</span>
                               </Link>
                             </li>
                             <li>
                               <Link
                                 href="/dashboard/rewards/referrals"
-                                className="flex items-center p-2 rounded-lg hover:bg-gray-800"
+                                className="flex items-center p-3 rounded-lg hover:bg-gray-800"
+                                onClick={() => setIsSheetOpen(false)}
                               >
-                                <Award className="h-5 w-5 mr-3 text-blue-400" />
-                                <span>Referrals</span>
+                                <Award className="h-6 w-6 mr-4 text-blue-400" />
+                                <span className="text-base">Referrals</span>
                               </Link>
                             </li>
                           </ul>
@@ -151,8 +174,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                       </div>
                     </div>
 
-                    <div className="p-4 border-t border-gray-800">
-                      <Button variant="outline" className="w-full">
+                    <div className="p-6 border-t border-gray-800 mt-auto">
+                      <Button variant="outline" className="w-full py-6 text-base" onClick={() => setIsSheetOpen(false)}>
                         Log Out
                       </Button>
                     </div>
@@ -164,14 +187,13 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 key={index}
                 variant="ghost"
                 className={`flex flex-col items-center py-4 px-5 rounded-none h-16 hover:bg-transparent focus:bg-transparent ${
-                  isActive(tab.path) ? "text-blue-400" : "text-gray-400"
+                  isActive(tab.path) ? "text-blue-400 font-medium" : "text-gray-400"
                 }`}
                 style={{ backgroundColor: "transparent" }}
                 onClick={() => router.push(tab.path)}
               >
                 <span className="mb-0.5">{tab.icon}</span>
                 <span className="text-xs">{tab.name}</span>
-                {isActive(tab.path) && <div className="absolute bottom-0 w-1 h-1 rounded-full bg-blue-500 mt-1"></div>}
               </Button>
             ),
           )}

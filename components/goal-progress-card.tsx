@@ -6,6 +6,7 @@ import { Progress } from "@/components/ui/progress"
 import { motion, AnimatePresence } from "framer-motion"
 import { Trophy, Award, Flame, Star } from "lucide-react"
 import { CelebrationAnimation } from "@/components/celebration-animation"
+import { useTheme } from "next-themes"
 
 interface GoalProgressCardProps {
   title: string
@@ -27,6 +28,8 @@ export function GoalProgressCard({
   const [progress, setProgress] = useState(0)
   const [showCelebration, setShowCelebration] = useState(false)
   const [hasTriggered, setHasTriggered] = useState(false)
+  const { resolvedTheme } = useTheme()
+  const isDark = resolvedTheme === "dark"
 
   // Calculate progress percentage
   const progressPercentage = Math.min(Math.round((currentValue / targetValue) * 100), 100)
@@ -53,13 +56,13 @@ export function GoalProgressCard({
   const getIcon = () => {
     switch (icon) {
       case "steps":
-        return <Trophy className="h-5 w-5 text-blue-400" />
+        return <Trophy className="h-5 w-5 text-blue-500" />
       case "workout":
-        return <Award className="h-5 w-5 text-purple-400" />
+        return <Award className="h-5 w-5 text-purple-500" />
       case "streak":
-        return <Flame className="h-5 w-5 text-orange-400" />
+        return <Flame className="h-5 w-5 text-orange-500" />
       case "level":
-        return <Star className="h-5 w-5 text-green-400" />
+        return <Star className="h-5 w-5 text-green-500" />
     }
   }
 
@@ -84,7 +87,9 @@ export function GoalProgressCard({
         onClick={() => progressPercentage >= 100 && setShowCelebration(true)}
       >
         <Card
-          className={`bg-gray-100 dark:bg-gray-900 border-gray-300 dark:border-gray-800 ${progressPercentage >= 100 ? "cursor-pointer" : ""}`}
+          className={`${
+            isDark ? "bg-gray-900 border-gray-800" : "bg-white border-gray-200"
+          } ${progressPercentage >= 100 ? "cursor-pointer" : ""}`}
         >
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-3">
@@ -108,9 +113,10 @@ export function GoalProgressCard({
 
             <div className="flex items-baseline justify-between mb-2">
               <span className="text-xl font-bold">
-                {currentValue.toLocaleString()} <span className="text-sm text-gray-400">{unit}</span>
+                {currentValue.toLocaleString()}{" "}
+                <span className={`text-sm ${isDark ? "text-gray-400" : "text-gray-500"}`}>{unit}</span>
               </span>
-              <span className="text-sm text-gray-400">
+              <span className={`text-sm ${isDark ? "text-gray-400" : "text-gray-500"}`}>
                 Goal: {targetValue.toLocaleString()} {unit}
               </span>
             </div>

@@ -54,7 +54,7 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground transition-colors duration-300;
   }
 }
 
@@ -73,9 +73,7 @@
 }
 
 .glass-effect {
-  background: rgba(15, 23, 42, 0.7);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  @apply bg-white/80 dark:bg-gray-900/80 backdrop-blur-md transition-colors duration-300;
 }
 
 .progress-ring-circle {
@@ -100,10 +98,11 @@
 
 /* Light theme overrides */
 .light .glass-effect {
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border-color: rgba(229, 231, 235, 1);
+  @apply bg-white/80 backdrop-blur-md border-gray-200;
+}
+
+.dark .glass-effect {
+  @apply bg-gray-900/80 backdrop-blur-md border-gray-800;
 }
 
 .light .gradient-dark {
@@ -158,4 +157,11 @@
   align-items: center;
   justify-content: center;
   transition: all 0.2s ease;
+}
+
+/* Mobile fullscreen drawer styles */
+@layer utilities {
+  .mobile-drawer {
+    @apply w-full sm:w-[350px] md:w-[400px] p-0 z-50;
+  }
 }

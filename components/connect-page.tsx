@@ -6,9 +6,13 @@ import { Button } from "@/components/ui/button"
 import { Wallet } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
+import { useTheme } from "next-themes"
+import { ThemeToggle } from "./theme-toggle"
+import { PWAComponentsWrapper } from "./pwa-components-wrapper"
 
 export function ConnectPage() {
   const router = useRouter()
+  const { resolvedTheme } = useTheme()
   const [connecting, setConnecting] = useState(false)
   const [mounted, setMounted] = useState(false)
 
@@ -26,8 +30,14 @@ export function ConnectPage() {
 
   if (!mounted) return null
 
+  const isDark = resolvedTheme === "dark"
+
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-gray-950 to-gray-900 p-4 text-white">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-gray-950 dark:to-gray-900 p-4 text-gray-900 dark:text-white transition-colors duration-300">
+      <div className="absolute top-4 right-4 z-10">
+        <ThemeToggle />
+      </div>
+
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.15)_0%,rgba(0,0,0,0)_60%)]"></div>
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_60%,rgba(59,130,246,0.1)_0%,rgba(0,0,0,0)_60%)]"></div>
@@ -47,14 +57,20 @@ export function ConnectPage() {
           className="mb-12 relative"
         >
           <div className="absolute -inset-8 rounded-full bg-blue-500/10 blur-xl"></div>
-          <div className="relative w-40 h-40 mb-4 bg-black/30 rounded-full p-6 backdrop-blur-sm border border-white/10 flex items-center justify-center">
+          <div
+            className={`relative w-40 h-40 mb-4 ${
+              isDark ? "bg-gray-900" : "bg-white"
+            } rounded-full p-6 shadow-lg border ${
+              isDark ? "border-blue-500/30" : "border-blue-500/20"
+            } flex items-center justify-center transition-colors duration-300`}
+          >
             <motion.div
               animate={{
                 scale: [1, 1.05, 1],
                 filter: [
-                  "drop-shadow(0 0 0px rgba(255,255,255,0.7))",
-                  "drop-shadow(0 0 15px rgba(255,255,255,0.7))",
-                  "drop-shadow(0 0 0px rgba(255,255,255,0.7))",
+                  "drop-shadow(0 0 0px rgba(59,130,246,0.7))",
+                  "drop-shadow(0 0 15px rgba(59,130,246,0.7))",
+                  "drop-shadow(0 0 0px rgba(59,130,246,0.7))",
                 ],
               }}
               transition={{
@@ -79,7 +95,7 @@ export function ConnectPage() {
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.3, duration: 0.5 }}
-          className="text-5xl font-bold mb-4 text-center bg-clip-text text-transparent bg-gradient-to-r from-blue-300 to-blue-500"
+          className="text-5xl font-bold mb-4 text-center bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-blue-700 dark:from-blue-300 dark:to-blue-500"
         >
           Movin
         </motion.h1>
@@ -88,7 +104,7 @@ export function ConnectPage() {
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.4, duration: 0.5 }}
-          className="text-xl mb-12 text-center text-blue-100"
+          className="text-xl mb-12 text-center text-gray-700 dark:text-blue-100"
         >
           It all starts with one step
         </motion.p>
@@ -126,7 +142,7 @@ export function ConnectPage() {
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.7, duration: 0.5 }}
-          className="mt-8 text-center text-blue-200/70 text-sm"
+          className="mt-8 text-center text-gray-600 dark:text-blue-200/70 text-sm"
         >
           <p>Earn while you burn</p>
         </motion.div>
@@ -160,6 +176,9 @@ export function ConnectPage() {
           />
         ))}
       </div>
+
+      {/* PWA Components */}
+      <PWAComponentsWrapper />
     </div>
   )
 }

@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import confetti from "canvas-confetti"
-import { Trophy, Award, Star, Check } from "lucide-react"
+import { Trophy, Award, Star, Check, Flame } from "lucide-react"
+import { useTheme } from "next-themes"
 
 interface CelebrationAnimationProps {
   isOpen: boolean
@@ -23,6 +24,8 @@ export function CelebrationAnimation({
   description,
 }: CelebrationAnimationProps) {
   const [confettiTriggered, setConfettiTriggered] = useState(false)
+  const { resolvedTheme } = useTheme()
+  const isDark = resolvedTheme === "dark"
 
   useEffect(() => {
     if (isOpen && !confettiTriggered) {
@@ -116,7 +119,11 @@ export function CelebrationAnimation({
           />
 
           <motion.div
-            className="relative bg-gradient-to-b from-gray-900 to-gray-800 dark:from-gray-900 dark:to-gray-800 rounded-2xl p-6 shadow-xl max-w-md w-full overflow-hidden border border-blue-500/20"
+            className={`relative rounded-2xl p-6 shadow-xl max-w-md w-full overflow-hidden ${
+              isDark
+                ? "bg-gradient-to-b from-gray-900 to-gray-800 border border-blue-500/20"
+                : "bg-gradient-to-b from-white to-gray-100 border border-blue-500/20"
+            }`}
             initial={{ scale: 0.8, opacity: 0, y: 20 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.8, opacity: 0, y: 20 }}
@@ -145,10 +152,16 @@ export function CelebrationAnimation({
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3 }}
                 >
-                  <h3 className="text-xl font-bold text-white mb-1">Goal Achieved!</h3>
-                  <div className="text-3xl font-bold text-blue-400 mb-2">{achievementValue}</div>
-                  <h2 className="text-xl font-bold text-white mb-3">{achievementTitle}</h2>
-                  {description && <p className="text-gray-300 text-sm">{description}</p>}
+                  <h3 className={`text-xl font-bold ${isDark ? "text-white" : "text-gray-900"} mb-1`}>
+                    Goal Achieved!
+                  </h3>
+                  <div className="text-3xl font-bold text-blue-500 mb-2">{achievementValue}</div>
+                  <h2 className={`text-xl font-bold ${isDark ? "text-white" : "text-gray-900"} mb-3`}>
+                    {achievementTitle}
+                  </h2>
+                  {description && (
+                    <p className={`${isDark ? "text-gray-300" : "text-gray-600"} text-sm`}>{description}</p>
+                  )}
                 </motion.div>
 
                 <motion.div
@@ -159,10 +172,10 @@ export function CelebrationAnimation({
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center">
-                      <Flame className="h-5 w-5 text-blue-400 mr-2" />
-                      <span className="text-sm font-medium text-blue-300">+0.5 MVN</span>
+                      <Flame className="h-5 w-5 text-blue-500 mr-2" />
+                      <span className="text-sm font-medium text-blue-500">+0.5 MVN</span>
                     </div>
-                    <span className="text-xs text-gray-400">Reward Added</span>
+                    <span className={`text-xs ${isDark ? "text-gray-400" : "text-gray-500"}`}>Reward Added</span>
                   </div>
                 </motion.div>
 
@@ -212,5 +225,3 @@ export function CelebrationAnimation({
     </AnimatePresence>
   )
 }
-
-import { Flame } from "lucide-react"
