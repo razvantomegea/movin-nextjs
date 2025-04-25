@@ -65,7 +65,6 @@
     "child_process": "latest",
     "fs": "latest",
     "@capacitor/share": "latest",
-    "next-pwa": "latest",
     "@capacitor/cli": "latest",
     "@capacitor/app": "latest",
     "@capacitor/status-bar": "latest",

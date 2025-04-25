@@ -5,7 +5,12 @@ import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import Script from "next/script"
 
-const inter = Inter({ subsets: ["latin"] })
+// Configure the Inter font with proper subsets and display settings
+const inter = Inter({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-inter",
+})
 
 export const metadata: Metadata = {
   title: "Movin App",
@@ -40,7 +45,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning className={inter.className}>
       <head>
         <link rel="icon" href="/images/logo.png" />
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
