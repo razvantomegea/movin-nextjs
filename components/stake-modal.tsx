@@ -10,11 +10,11 @@ import { Label } from "@/components/ui/label"
 import { X, Info, Clock, TrendingUp, AlertCircle } from "lucide-react"
 import { useTheme } from "next-themes"
 import { Slider } from "@/components/ui/slider"
-import { useToast } from "@/hooks/use-toast"
 import { ErrorAlert } from "@/components/ui/error-alert"
 import { LoadingButton } from "@/components/ui/loading-button"
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks"
 import { stakeMVN, resetStakingError } from "@/lib/redux/slices/stakingSlice"
+import { showSuccessToast, showErrorToast } from "@/lib/redux/slices/toastSlice"
 
 interface StakeModalProps {
   isOpen: boolean
@@ -23,7 +23,6 @@ interface StakeModalProps {
 
 export function StakeModal({ isOpen, onClose }: StakeModalProps) {
   const { resolvedTheme } = useTheme()
-  const { error: showError, success: showSuccess } = useToast()
   const isDark = resolvedTheme === "dark"
   const [amount, setAmount] = useState<string>("")
   const [period, setPeriod] = useState<number>(1) // Default to 1 month
@@ -99,10 +98,12 @@ export function StakeModal({ isOpen, onClose }: StakeModalProps) {
       ).unwrap()
 
       // Success
-      showSuccess({
-        title: "Staking Successful",
-        description: `You have successfully staked ${amount} MVN for ${period} ${period === 1 ? "month" : "months"}.`,
-      })
+      dispatch(
+        showSuccessToast({
+          title: "Staking Successful",
+          description: `You have successfully staked ${amount} MVN for ${period} ${period === 1 ? "month" : "months"}.`,
+        }),
+      )
 
       // Reset form and close modal
       setAmount("")
@@ -110,10 +111,12 @@ export function StakeModal({ isOpen, onClose }: StakeModalProps) {
       onClose()
     } catch (err) {
       // Error is handled in the component via the stakingError state
-      showError({
-        title: "Staking Failed",
-        description: err instanceof Error ? err.message : "An unknown error occurred",
-      })
+      dispatch(
+        showErrorToast({
+          title: "Staking Failed",
+          description: err instanceof Error ? err.message : "An unknown error occurred",
+        }),
+      )
     }
   }
 

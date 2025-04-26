@@ -1,9 +1,17 @@
 import { configureStore } from "@reduxjs/toolkit"
 import stakingReducer from "./slices/stakingSlice"
+import activityRewardsReducer from "./slices/activityRewardsSlice"
+import toastReducer from "./slices/toastSlice"
+import referralRewardsReducer from "./slices/referralRewardsSlice"
+import activityDataReducer from "./slices/activityDataSlice"
 
 export const store = configureStore({
   reducer: {
     staking: stakingReducer,
+    activityRewards: activityRewardsReducer,
+    toast: toastReducer,
+    referralRewards: referralRewardsReducer,
+    activityData: activityDataReducer,
   },
   // Add middleware to handle serialization issues with dates
   middleware: (getDefaultMiddleware) =>
