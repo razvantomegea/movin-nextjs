@@ -9,8 +9,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import Image from "next/image"
+import Link from "next/link"
 import { ThemeToggle } from "@/components/theme-toggle"
-import { PWAComponentsWrapper } from "@/components/pwa-components-wrapper"
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -32,14 +32,6 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     { name: "More", path: "#", icon: <Menu className="h-5 w-5" /> },
   ]
 
-  // Use a client-side navigation function that works with static exports
-  const handleNavigation = (path: string) => {
-    if (path === "#") return
-
-    // Use window.location for navigation in static exports
-    window.location.href = path
-  }
-
   return (
     <div className="flex flex-col min-h-screen">
       {/* Header */}
@@ -51,23 +43,20 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
         <div className="flex items-center gap-2">
           <ThemeToggle />
-          <a href="/dashboard/profile">
+          <Link href="/dashboard/profile">
             <Avatar className="h-8 w-8 border border-blue-500 cursor-pointer">
               <AvatarImage src="/placeholder.svg?height=32&width=32" alt="User" />
               <AvatarFallback className="bg-blue-900 text-blue-100 dark:bg-blue-900 dark:text-blue-100 bg-blue-100 text-blue-900">
                 UN
               </AvatarFallback>
             </Avatar>
-          </a>
+          </Link>
           <span className="text-blue-400 text-sm font-medium">username</span>
         </div>
       </header>
 
       {/* Main content */}
       <main className="flex-1 pb-20">{children}</main>
-
-      {/* PWA Components */}
-      <PWAComponentsWrapper />
 
       {/* Bottom navigation */}
       <nav className="glass-effect fixed bottom-0 w-full border-t border-gray-800">
@@ -111,34 +100,34 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                           <h3 className="text-sm font-medium text-gray-400 mb-4">Account</h3>
                           <ul className="space-y-3">
                             <li>
-                              <a
+                              <Link
                                 href="/dashboard/profile"
                                 className="flex items-center p-3 rounded-lg hover:bg-gray-800"
                                 onClick={() => setIsSheetOpen(false)}
                               >
                                 <User className="h-6 w-6 mr-4 text-blue-400" />
                                 <span className="text-base">Profile</span>
-                              </a>
+                              </Link>
                             </li>
                             <li>
-                              <a
+                              <Link
                                 href="/dashboard/settings"
                                 className="flex items-center p-3 rounded-lg hover:bg-gray-800"
                                 onClick={() => setIsSheetOpen(false)}
                               >
                                 <Settings className="h-6 w-6 mr-4 text-blue-400" />
                                 <span className="text-base">Settings</span>
-                              </a>
+                              </Link>
                             </li>
                             <li>
-                              <a
+                              <Link
                                 href="/dashboard/goals"
                                 className="flex items-center p-3 rounded-lg hover:bg-gray-800"
                                 onClick={() => setIsSheetOpen(false)}
                               >
                                 <Target className="h-6 w-6 mr-4 text-blue-400" />
                                 <span className="text-base">Goals</span>
-                              </a>
+                              </Link>
                             </li>
                           </ul>
                         </div>
@@ -147,34 +136,34 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                           <h3 className="text-sm font-medium text-gray-400 mb-4">Rewards</h3>
                           <ul className="space-y-3">
                             <li>
-                              <a
+                              <Link
                                 href="/dashboard/rewards"
                                 className="flex items-center p-3 rounded-lg hover:bg-gray-800"
                                 onClick={() => setIsSheetOpen(false)}
                               >
                                 <Activity className="h-6 w-6 mr-4 text-blue-400" />
                                 <span className="text-base">Activity Rewards</span>
-                              </a>
+                              </Link>
                             </li>
                             <li>
-                              <a
+                              <Link
                                 href="/dashboard/rewards"
                                 className="flex items-center p-3 rounded-lg hover:bg-gray-800"
                                 onClick={() => setIsSheetOpen(false)}
                               >
                                 <Flame className="h-6 w-6 mr-4 text-blue-400" />
                                 <span className="text-base">Staking</span>
-                              </a>
+                              </Link>
                             </li>
                             <li>
-                              <a
+                              <Link
                                 href="/dashboard/rewards"
                                 className="flex items-center p-3 rounded-lg hover:bg-gray-800"
                                 onClick={() => setIsSheetOpen(false)}
                               >
                                 <Award className="h-6 w-6 mr-4 text-blue-400" />
                                 <span className="text-base">Referrals</span>
-                              </a>
+                              </Link>
                             </li>
                           </ul>
                         </div>
@@ -197,7 +186,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                   isActive(tab.path) ? "text-blue-400 font-medium" : "text-gray-400"
                 }`}
                 style={{ backgroundColor: "transparent" }}
-                onClick={() => handleNavigation(tab.path)}
+                onClick={() => router.push(tab.path)}
               >
                 <span className="mb-0.5">{tab.icon}</span>
                 <span className="text-xs">{tab.name}</span>

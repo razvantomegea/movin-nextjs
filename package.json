@@ -59,19 +59,9 @@
     "vaul": "^0.9.6",
     "zod": "^3.24.1",
     "@emotion/is-prop-valid": "latest",
-    "@capacitor/core": "latest",
     "framer-motion": "latest",
     "canvas-confetti": "latest",
-    "child_process": "latest",
-    "fs": "latest",
-    "@capacitor/share": "latest",
-    "@capacitor/cli": "latest",
-    "@capacitor/app": "latest",
-    "@capacitor/status-bar": "latest",
-    "@capacitor/splash-screen": "latest",
-    "@capacitor/keyboard": "latest",
-    "path": "latest",
-    "workbox-window": "latest"
+    "@capacitor/core": "latest"
   },
   "devDependencies": {
     "@types/node": "^22",

@@ -8,7 +8,6 @@ import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
 import { useTheme } from "next-themes"
 import { ThemeToggle } from "./theme-toggle"
-import { PWAComponentsWrapper } from "./pwa-components-wrapper"
 
 export function ConnectPage() {
   const router = useRouter()
@@ -176,9 +175,6 @@ export function ConnectPage() {
           />
         ))}
       </div>
-
-      {/* PWA Components */}
-      <PWAComponentsWrapper />
     </div>
   )
 }
