@@ -63,7 +63,6 @@
     "react-redux": "latest",
     "framer-motion": "latest",
     "canvas-confetti": "latest",
-    "@capacitor/core": "latest",
     "@reduxjs/toolkit": "latest"
   },
   "devDependencies": {
