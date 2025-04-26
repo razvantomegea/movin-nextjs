@@ -14,10 +14,10 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  // Use trailing slashes for compatibility
-  trailingSlash: true,
-  // Ensure assets are properly referenced
-  assetPrefix: './',
+  // Don't use trailing slashes for better compatibility with static hosting
+  trailingSlash: false,
+  // Don't use assetPrefix for better path resolution
+  assetPrefix: '',
   // Disable basePath for Capacitor compatibility
   basePath: '',
 };
