@@ -79,10 +79,10 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 </SheetTrigger>
                 <SheetContent
                   side="right"
-                  className="z-50 w-full sm:w-[350px] md:w-[400px] bg-gray-900 border-l border-gray-800 p-0"
+                  className="z-50 w-full sm:w-[350px] md:w-[400px] bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 p-0 text-gray-900 dark:text-white"
                 >
                   <div className="flex flex-col h-full">
-                    <div className="p-4 border-b border-gray-800 flex items-center justify-between">
+                    <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
                       <h2 className="text-xl font-semibold">Menu</h2>
                       <Button
                         variant="ghost"
@@ -97,12 +97,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                     <div className="flex-1 overflow-auto">
                       <div className="p-4 sm:p-6">
                         <div className="mb-8">
-                          <h3 className="text-sm font-medium text-gray-400 mb-4">Account</h3>
+                          <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-4">Account</h3>
                           <ul className="space-y-3">
                             <li>
                               <Link
                                 href="/dashboard/profile"
-                                className="flex items-center p-3 rounded-lg hover:bg-gray-800"
+                                className="flex items-center p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
                                 onClick={() => setIsSheetOpen(false)}
                               >
                                 <User className="h-6 w-6 mr-4 text-blue-400" />
@@ -112,7 +112,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                             <li>
                               <Link
                                 href="/dashboard/settings"
-                                className="flex items-center p-3 rounded-lg hover:bg-gray-800"
+                                className="flex items-center p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
                                 onClick={() => setIsSheetOpen(false)}
                               >
                                 <Settings className="h-6 w-6 mr-4 text-blue-400" />
@@ -122,7 +122,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                             <li>
                               <Link
                                 href="/dashboard/goals"
-                                className="flex items-center p-3 rounded-lg hover:bg-gray-800"
+                                className="flex items-center p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
                                 onClick={() => setIsSheetOpen(false)}
                               >
                                 <Target className="h-6 w-6 mr-4 text-blue-400" />
@@ -133,12 +133,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                         </div>
 
                         <div className="mb-8">
-                          <h3 className="text-sm font-medium text-gray-400 mb-4">Rewards</h3>
+                          <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-4">Rewards</h3>
                           <ul className="space-y-3">
                             <li>
                               <Link
                                 href="/dashboard/rewards"
-                                className="flex items-center p-3 rounded-lg hover:bg-gray-800"
+                                className="flex items-center p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
                                 onClick={() => setIsSheetOpen(false)}
                               >
                                 <Activity className="h-6 w-6 mr-4 text-blue-400" />
@@ -148,7 +148,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                             <li>
                               <Link
                                 href="/dashboard/rewards"
-                                className="flex items-center p-3 rounded-lg hover:bg-gray-800"
+                                className="flex items-center p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
                                 onClick={() => setIsSheetOpen(false)}
                               >
                                 <Flame className="h-6 w-6 mr-4 text-blue-400" />
@@ -158,7 +158,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                             <li>
                               <Link
                                 href="/dashboard/rewards"
-                                className="flex items-center p-3 rounded-lg hover:bg-gray-800"
+                                className="flex items-center p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
                                 onClick={() => setIsSheetOpen(false)}
                               >
                                 <Award className="h-6 w-6 mr-4 text-blue-400" />
@@ -170,7 +170,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                       </div>
                     </div>
 
-                    <div className="p-6 border-t border-gray-800 mt-auto">
+                    <div className="p-6 border-t border-gray-200 dark:border-gray-800 mt-auto">
                       <Button variant="outline" className="w-full py-6 text-base" onClick={() => setIsSheetOpen(false)}>
                         Log Out
                       </Button>
