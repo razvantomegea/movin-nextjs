@@ -19,9 +19,10 @@ export function ConnectPage() {
     setMounted(true)
   }, [])
 
-  const handleConnect = () => {
+  const handleConnect = async () => {
     setConnecting(true)
-    // Simulate connection process
+
+    // Simple timeout to simulate connection
     setTimeout(() => {
       router.push("/dashboard")
     }, 1500)

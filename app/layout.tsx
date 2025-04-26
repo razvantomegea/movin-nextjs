@@ -1,45 +1,33 @@
 import type React from "react"
-import type { Metadata } from "next"
 import "./globals.css"
+import type { Metadata } from "next"
+import { Inter } from "next/font/google"
 import { ThemeProvider } from "@/components/theme-provider"
+import { Toaster } from "@/components/ui/toaster"
+import { ReduxProvider } from "@/lib/redux/provider"
+
+const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
   title: "Movin App",
-  description: "Track your fitness and earn rewards",
-  themeColor: "#3b82f6",
-  formatDetection: {
-    telephone: false,
-  },
-  openGraph: {
-    type: "website",
-    siteName: "Movin App",
-    title: "Movin App",
-    description: "Track your fitness and earn rewards",
-  },
-  twitter: {
-    card: "summary",
-    title: "Movin App",
-    description: "Track your fitness and earn rewards",
-  },
+  description: "Move to earn app",
     generator: 'v0.dev'
 }
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode
-}>) {
+}) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        <link rel="icon" href="/images/logo.png" />
-      </head>
-      <body className="font-sans">
-        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange={false}>
-          <main className="min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-black text-gray-900 dark:text-white transition-colors duration-300">
+      <body className={inter.className}>
+        <ReduxProvider>
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
             {children}
-          </main>
-        </ThemeProvider>
+            <Toaster />
+          </ThemeProvider>
+        </ReduxProvider>
       </body>
     </html>
   )
