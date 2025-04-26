@@ -5,7 +5,7 @@ import { ThemeProvider } from "@/components/theme-provider"
 
 export const metadata: Metadata = {
   title: "Movin App",
-  description: "Track your fitness and earn rewards",
+  description: "Earn while you burn",
   themeColor: "#3b82f6",
   formatDetection: {
     telephone: false,
@@ -14,12 +14,12 @@ export const metadata: Metadata = {
     type: "website",
     siteName: "Movin App",
     title: "Movin App",
-    description: "Track your fitness and earn rewards",
+    description: "Earn while you burn",
   },
   twitter: {
     card: "summary",
     title: "Movin App",
-    description: "Track your fitness and earn rewards",
+    description: "Earn while you burn",
   },
     generator: 'v0.dev'
 }
