@@ -11,15 +11,21 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import Image from "next/image"
 import Link from "next/link"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { PullToRefresh } from "@/components/pull-to-refresh"
+import { RefreshButton } from "@/components/refresh-button"
+import { useMediaQuery } from "@/hooks/use-media-query"
 
 interface DashboardLayoutProps {
   children: React.ReactNode
+  onRefresh?: () => Promise<void>
+  isLoading?: boolean
 }
 
-export function DashboardLayout({ children }: DashboardLayoutProps) {
+export function DashboardLayout({ children, onRefresh, isLoading = false }: DashboardLayoutProps) {
   const pathname = usePathname()
   const router = useRouter()
   const [isSheetOpen, setIsSheetOpen] = useState(false)
+  const isDesktop = useMediaQuery("(min-width: 768px)")
 
   const isActive = (path: string) => {
     return pathname === path
@@ -32,7 +38,13 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     { name: "More", path: "#", icon: <Menu className="h-5 w-5" /> },
   ]
 
-  return (
+  const handleRefresh = async () => {
+    if (onRefresh) {
+      await onRefresh()
+    }
+  }
+
+  const content = (
     <div className="flex flex-col min-h-screen">
       {/* Header */}
       <header className="glass-effect sticky top-0 z-10 p-4 flex items-center justify-between border-b border-gray-800 dark:border-gray-800 border-gray-200">
@@ -42,6 +54,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         </div>
 
         <div className="flex items-center gap-2">
+          {onRefresh && isDesktop && <RefreshButton onRefresh={handleRefresh} isLoading={isLoading} />}
           <ThemeToggle />
           <Link href="/dashboard/profile">
             <Avatar className="h-8 w-8 border border-blue-500 cursor-pointer">
@@ -197,4 +210,15 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       </nav>
     </div>
   )
+
+  // Only wrap with PullToRefresh if onRefresh is provided and not on desktop
+  if (onRefresh && !isDesktop) {
+    return (
+      <PullToRefresh onRefresh={handleRefresh} isLoading={isLoading}>
+        {content}
+      </PullToRefresh>
+    )
+  }
+
+  return content
 }

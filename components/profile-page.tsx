@@ -11,6 +11,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Edit, Camera, Award, Trophy, Star, Flame, Activity, Save } from "lucide-react"
 import { motion } from "framer-motion"
+import { showSuccessToast, showInfoToast } from "@/lib/redux/slices/toastSlice"
+import { useAppDispatch } from "@/lib/redux/hooks"
 
 const container = {
   hidden: { opacity: 0 },
@@ -32,6 +34,32 @@ export function ProfilePage() {
   const [saving, setSaving] = useState(false)
   const [username, setUsername] = useState("username")
   const [email, setEmail] = useState("user@example.com")
+  const [isLoading, setIsLoading] = useState(false)
+  const dispatch = useAppDispatch()
+
+  const handleRefresh = async () => {
+    setIsLoading(true)
+    try {
+      // Simulate API call with delay
+      await new Promise((resolve) => setTimeout(resolve, 1500))
+
+      dispatch(
+        showSuccessToast({
+          title: "Profile Refreshed",
+          description: "Your profile data has been updated",
+        }),
+      )
+    } catch (error) {
+      dispatch(
+        showInfoToast({
+          title: "Refresh Failed",
+          description: "Please try again later",
+        }),
+      )
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   const handleSave = () => {
     setSaving(true)
@@ -39,11 +67,17 @@ export function ProfilePage() {
     setTimeout(() => {
       setSaving(false)
       setEditing(false)
+      dispatch(
+        showSuccessToast({
+          title: "Profile Updated",
+          description: "Your profile has been successfully updated",
+        }),
+      )
     }, 1000)
   }
 
   return (
-    <DashboardLayout>
+    <DashboardLayout onRefresh={handleRefresh} isLoading={isLoading}>
       <motion.div className="p-4" initial="hidden" animate="show" variants={container}>
         <motion.div className="mb-6" variants={item}>
           <h1 className="text-2xl font-bold">Profile</h1>

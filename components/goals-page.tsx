@@ -1,8 +1,11 @@
 "use client"
 
+import { useState } from "react"
 import { DashboardLayout } from "@/components/dashboard-layout"
 import { motion } from "framer-motion"
 import { GoalProgressCard } from "@/components/goal-progress-card"
+import { showSuccessToast, showInfoToast } from "@/lib/redux/slices/toastSlice"
+import { useAppDispatch } from "@/lib/redux/hooks"
 
 const container = {
   hidden: { opacity: 0 },
@@ -20,8 +23,35 @@ const item = {
 }
 
 export function GoalsPage() {
+  const [isLoading, setIsLoading] = useState(false)
+  const dispatch = useAppDispatch()
+
+  const handleRefresh = async () => {
+    setIsLoading(true)
+    try {
+      // Simulate API call with delay
+      await new Promise((resolve) => setTimeout(resolve, 1500))
+
+      dispatch(
+        showSuccessToast({
+          title: "Goals Refreshed",
+          description: "Your goals data has been updated",
+        }),
+      )
+    } catch (error) {
+      dispatch(
+        showInfoToast({
+          title: "Refresh Failed",
+          description: "Please try again later",
+        }),
+      )
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   return (
-    <DashboardLayout>
+    <DashboardLayout onRefresh={handleRefresh} isLoading={isLoading}>
       <motion.div className="p-4" initial="hidden" animate="show" variants={container}>
         <motion.div className="mb-6" variants={item}>
           <h1 className="text-2xl font-bold">Your Goals</h1>

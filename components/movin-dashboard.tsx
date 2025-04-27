@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { DashboardLayout } from "@/components/dashboard-layout"
 import { Card, CardContent } from "@/components/ui/card"
 import { Activity, Clock, Flame, TrendingUp, RefreshCw, Dumbbell } from "lucide-react"
@@ -15,6 +15,7 @@ import { ActivityDashboardSkeleton } from "@/components/skeletons/activity-dashb
 import { ErrorAlert } from "@/components/ui/error-alert"
 import ErrorBoundary from "@/components/error-boundary"
 import { ActivityColumnChart } from "@/components/activity-column-chart"
+import { showSuccessToast, showInfoToast } from "@/lib/redux/slices/toastSlice"
 
 const container = {
   hidden: { opacity: 0 },
@@ -34,6 +35,7 @@ const item = {
 export function MovinDashboard() {
   const { resolvedTheme } = useTheme()
   const isDark = resolvedTheme === "dark"
+  const [refreshing, setRefreshing] = useState(false)
 
   const dispatch = useAppDispatch()
 
@@ -47,6 +49,28 @@ export function MovinDashboard() {
     dispatch(fetchActivityData())
   }, [dispatch])
 
+  const handleRefresh = async () => {
+    setRefreshing(true)
+    try {
+      await dispatch(fetchActivityData()).unwrap()
+      dispatch(
+        showSuccessToast({
+          title: "Data Refreshed",
+          description: "Your activity data has been updated",
+        }),
+      )
+    } catch (error) {
+      dispatch(
+        showInfoToast({
+          title: "Refresh Failed",
+          description: "Please try again later",
+        }),
+      )
+    } finally {
+      setRefreshing(false)
+    }
+  }
+
   const handleRetryLoadActivity = () => {
     dispatch(resetActivityError())
     dispatch(fetchActivityData())
@@ -54,7 +78,7 @@ export function MovinDashboard() {
 
   // Render the dashboard content
   const renderDashboardContent = () => {
-    if (isLoading) {
+    if (isLoading && !refreshing) {
       return <ActivityDashboardSkeleton />
     }
 
@@ -212,7 +236,7 @@ export function MovinDashboard() {
   }
 
   return (
-    <DashboardLayout>
+    <DashboardLayout onRefresh={handleRefresh} isLoading={isLoading || refreshing}>
       <motion.div className="p-4" initial="hidden" animate="show" variants={container}>
         <motion.div className="flex items-center justify-between mb-6" variants={item}>
           <h1 className="text-2xl font-bold">Activity</h1>
