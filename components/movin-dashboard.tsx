@@ -16,6 +16,7 @@ import { ErrorAlert } from "@/components/ui/error-alert"
 import ErrorBoundary from "@/components/error-boundary"
 import { ActivityColumnChart } from "@/components/activity-column-chart"
 import { showSuccessToast, showInfoToast } from "@/lib/redux/slices/toastSlice"
+import { RefreshButton } from "./refresh-button"
 
 const container = {
   hidden: { opacity: 0 },
@@ -240,6 +241,8 @@ export function MovinDashboard() {
       <motion.div className="p-4" initial="hidden" animate="show" variants={container}>
         <motion.div className="flex items-center justify-between mb-6" variants={item}>
           <h1 className="text-2xl font-bold">Activity</h1>
+          {/* Conditionally render the refresh button */}
+          {<RefreshButton onRefresh={handleRefresh} isLoading={isLoading || refreshing} />}
         </motion.div>
 
         <ErrorBoundary>{renderDashboardContent()}</ErrorBoundary>

@@ -32,6 +32,7 @@ import {
 } from "@/lib/redux/slices/referralRewardsSlice"
 import { showSuccessToast, showErrorToast, showInfoToast } from "@/lib/redux/slices/toastSlice"
 import { Input } from "@/components/ui/input"
+import { RefreshButton } from "@/components/ui/refresh-button"
 
 export function RewardsDashboard() {
   const [activeTab, setActiveTab] = useState("activity")
@@ -653,7 +654,18 @@ export function RewardsDashboard() {
       <div className="p-4">
         <Tabs defaultValue="activity" onValueChange={setActiveTab} className="w-full">
           <div className="flex items-center justify-between mb-6">
-            <h1 className="text-2xl font-bold">Rewards</h1>
+            <div className="flex items-center">
+              <h1 className="text-2xl font-bold mr-2">Rewards</h1>
+              <RefreshButton
+                onRefresh={handleRefresh}
+                isLoading={
+                  (activeTab === "staking" && stakingLoading) ||
+                  (activeTab === "activity" && activityLoading) ||
+                  (activeTab === "referrals" && referralLoading) ||
+                  refreshing
+                }
+              />
+            </div>
             <TabsList className="grid grid-cols-3 h-10 p-0.5">
               <TabsTrigger value="activity" className="px-4">
                 Activity

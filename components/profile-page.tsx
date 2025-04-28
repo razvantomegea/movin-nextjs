@@ -13,6 +13,7 @@ import { Edit, Camera, Award, Trophy, Star, Flame, Activity, Save } from "lucide
 import { motion } from "framer-motion"
 import { showSuccessToast, showInfoToast } from "@/lib/redux/slices/toastSlice"
 import { useAppDispatch } from "@/lib/redux/hooks"
+import { RefreshButton } from "@/components/refresh-button"
 
 const container = {
   hidden: { opacity: 0 },
@@ -80,7 +81,10 @@ export function ProfilePage() {
     <DashboardLayout onRefresh={handleRefresh} isLoading={isLoading}>
       <motion.div className="p-4" initial="hidden" animate="show" variants={container}>
         <motion.div className="mb-6" variants={item}>
-          <h1 className="text-2xl font-bold">Profile</h1>
+          <div className="flex items-center">
+            <h1 className="text-2xl font-bold mr-2">Profile</h1>
+            <RefreshButton onRefresh={handleRefresh} isLoading={isLoading} />
+          </div>
           <p className="text-gray-500 dark:text-gray-400 mt-1">Manage your account and view achievements</p>
         </motion.div>
 

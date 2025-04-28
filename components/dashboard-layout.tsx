@@ -11,7 +11,6 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import Image from "next/image"
 import Link from "next/link"
 import { ThemeToggle } from "@/components/theme-toggle"
-import { PullToRefresh } from "@/components/pull-to-refresh"
 import { RefreshButton } from "@/components/refresh-button"
 import { useMediaQuery } from "@/hooks/use-media-query"
 
@@ -222,14 +221,6 @@ export function DashboardLayout({ children, onRefresh, isLoading = false }: Dash
     </div>
   )
 
-  // Only wrap with PullToRefresh if onRefresh is provided and not on desktop
-  if (onRefresh && !isDesktop) {
-    return (
-      <PullToRefresh onRefresh={handleRefresh} isLoading={isLoading}>
-        {content}
-      </PullToRefresh>
-    )
-  }
-
+  // Always return content directly without PullToRefresh
   return content
 }

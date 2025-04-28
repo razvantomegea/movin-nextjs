@@ -6,6 +6,7 @@ import { motion } from "framer-motion"
 import { GoalProgressCard } from "@/components/goal-progress-card"
 import { showSuccessToast, showInfoToast } from "@/lib/redux/slices/toastSlice"
 import { useAppDispatch } from "@/lib/redux/hooks"
+import { RefreshButton } from "@/components/refresh-button"
 
 const container = {
   hidden: { opacity: 0 },
@@ -54,7 +55,10 @@ export function GoalsPage() {
     <DashboardLayout onRefresh={handleRefresh} isLoading={isLoading}>
       <motion.div className="p-4" initial="hidden" animate="show" variants={container}>
         <motion.div className="mb-6" variants={item}>
-          <h1 className="text-2xl font-bold">Your Goals</h1>
+          <div className="flex items-center">
+            <h1 className="text-2xl font-bold mr-2">Your Goals</h1>
+            <RefreshButton onRefresh={handleRefresh} isLoading={isLoading} />
+          </div>
           <p className="text-gray-500 dark:text-gray-400 mt-1">Track your progress and earn rewards</p>
         </motion.div>
 

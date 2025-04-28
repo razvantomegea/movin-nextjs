@@ -17,6 +17,7 @@ import { fetchEnergyData, resetEnergyError, analyzeMealImage } from "@/lib/redux
 import { EnergyPageSkeleton } from "@/components/skeletons/energy-page-skeleton"
 import { ErrorAlert } from "@/components/ui/error-alert"
 import ErrorBoundary from "@/components/error-boundary"
+import { RefreshButton } from "@/components/refresh-button"
 
 const container = {
   hidden: { opacity: 0 },
@@ -328,7 +329,10 @@ export function EnergyPage() {
     <DashboardLayout onRefresh={handleRefresh} isLoading={isLoading || refreshing}>
       <motion.div className="p-4" initial="hidden" animate="show" variants={container}>
         <motion.div className="flex items-center justify-between mb-6" variants={item}>
-          <h1 className="text-2xl font-bold">Energy</h1>
+          <div className="flex items-center">
+            <h1 className="text-2xl font-bold mr-2">Energy</h1>
+            <RefreshButton onRefresh={handleRefresh} isLoading={isLoading || refreshing} />
+          </div>
           <Button onClick={() => setIsCameraModalOpen(true)} className="bg-blue-500 hover:bg-blue-600">
             <Camera className="h-4 w-4 mr-2" />
             Scan Meal
