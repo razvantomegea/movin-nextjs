@@ -46,7 +46,13 @@ export function CircularProgress({ value, size, strokeWidth, className = "" }: C
       <motion.div
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 0.5, duration: 0.3 }}
+        transition={{
+          delay: 0.5,
+          duration: 0.5,
+          type: "spring",
+          stiffness: 260,
+          damping: 20,
+        }}
         className="absolute inset-0 flex items-center justify-center text-lg font-bold"
       >
         {value}%

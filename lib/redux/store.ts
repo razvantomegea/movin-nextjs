@@ -4,6 +4,7 @@ import activityRewardsReducer from "./slices/activityRewardsSlice"
 import toastReducer from "./slices/toastSlice"
 import referralRewardsReducer from "./slices/referralRewardsSlice"
 import activityDataReducer from "./slices/activityDataSlice"
+import energyDataReducer from "./slices/energyDataSlice"
 
 export const store = configureStore({
   reducer: {
@@ -12,6 +13,7 @@ export const store = configureStore({
     toast: toastReducer,
     referralRewards: referralRewardsReducer,
     activityData: activityDataReducer,
+    energyData: energyDataReducer,
   },
   // Add middleware to handle serialization issues with dates
   middleware: (getDefaultMiddleware) =>

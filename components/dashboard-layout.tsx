@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useState } from "react"
 import { usePathname, useRouter } from "next/navigation"
-import { Activity, Award, Flame, Gift, Menu, Settings, Target, User, X } from "lucide-react"
+import { Activity, Award, Bolt, Flame, Gift, Menu, Settings, Target, User, X } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
@@ -33,6 +33,7 @@ export function DashboardLayout({ children, onRefresh, isLoading = false }: Dash
 
   const tabs = [
     { name: "Movin", path: "/dashboard", icon: <Activity className="h-5 w-5" /> },
+    { name: "Energy", path: "/dashboard/energy", icon: <Bolt className="h-5 w-5" /> },
     { name: "Rewards", path: "/dashboard/rewards", icon: <Gift className="h-5 w-5" /> },
     { name: "Goals", path: "/dashboard/goals", icon: <Target className="h-5 w-5" /> },
     { name: "More", path: "#", icon: <Menu className="h-5 w-5" /> },
@@ -148,6 +149,16 @@ export function DashboardLayout({ children, onRefresh, isLoading = false }: Dash
                         <div className="mb-8">
                           <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-4">Rewards</h3>
                           <ul className="space-y-3">
+                            <li>
+                              <Link
+                                href="/dashboard/energy"
+                                className="flex items-center p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+                                onClick={() => setIsSheetOpen(false)}
+                              >
+                                <Bolt className="h-6 w-6 mr-4 text-blue-400" />
+                                <span className="text-base">Energy</span>
+                              </Link>
+                            </li>
                             <li>
                               <Link
                                 href="/dashboard/rewards"
