@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useState } from "react"
 import { usePathname, useRouter } from "next/navigation"
-import { Activity, Award, Bolt, Flame, Gift, Menu, Settings, Target, User, X } from "lucide-react"
+import { Activity, Award, Bolt, Flame, Gift, Menu, Settings, Target, User, X, Users } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
@@ -31,10 +31,10 @@ export function DashboardLayout({ children, onRefresh, isLoading = false }: Dash
   }
 
   const tabs = [
+    { name: "Social", path: "/dashboard/social", icon: <Users className="h-5 w-5" /> },
     { name: "Movin", path: "/dashboard", icon: <Activity className="h-5 w-5" /> },
     { name: "Energy", path: "/dashboard/energy", icon: <Bolt className="h-5 w-5" /> },
     { name: "Rewards", path: "/dashboard/rewards", icon: <Gift className="h-5 w-5" /> },
-    { name: "Goals", path: "/dashboard/goals", icon: <Target className="h-5 w-5" /> },
     { name: "More", path: "#", icon: <Menu className="h-5 w-5" /> },
   ]
 
