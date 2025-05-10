@@ -1,12 +1,16 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect } from "react"
 import { DashboardLayout } from "@/components/dashboard-layout"
 import { motion } from "framer-motion"
 import { GoalProgressCard } from "@/components/goal-progress-card"
-import { showSuccessToast, showInfoToast } from "@/lib/redux/slices/toastSlice"
-import { useAppDispatch } from "@/lib/redux/hooks"
+import { showSuccessToast, showInfoToast, showErrorToast } from "@/lib/redux/slices/toastSlice"
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks"
 import { RefreshButton } from "@/components/refresh-button"
+import { fetchGoals } from "@/lib/redux/slices/goalsSlice"
+import { GoalsPageSkeleton } from "@/components/skeletons/goals-page-skeleton"
+import { AlertCircle } from "lucide-react"
+import { Button } from "@/components/ui/button"
 
 const container = {
   hidden: { opacity: 0 },
@@ -24,15 +28,29 @@ const item = {
 }
 
 export function GoalsPage() {
-  const [isLoading, setIsLoading] = useState(false)
   const dispatch = useAppDispatch()
+  const { goals, loading, error, lastUpdated } = useAppSelector((state) => state.goals)
+
+  useEffect(() => {
+    // Fetch goals on component mount
+    dispatch(fetchGoals())
+  }, [dispatch])
+
+  useEffect(() => {
+    // Show error toast if there's an error
+    if (error) {
+      dispatch(
+        showErrorToast({
+          title: "Error",
+          description: error,
+        }),
+      )
+    }
+  }, [error, dispatch])
 
   const handleRefresh = async () => {
-    setIsLoading(true)
     try {
-      // Simulate API call with delay
-      await new Promise((resolve) => setTimeout(resolve, 1500))
-
+      await dispatch(fetchGoals()).unwrap()
       dispatch(
         showSuccessToast({
           title: "Goals Refreshed",
@@ -46,88 +64,113 @@ export function GoalsPage() {
           description: "Please try again later",
         }),
       )
-    } finally {
-      setIsLoading(false)
     }
   }
 
+  // Group goals by category
+  const dailyGoals = goals.filter((goal) => goal.category === "daily")
+  const weeklyGoals = goals.filter((goal) => goal.category === "weekly")
+  const achievementGoals = goals.filter((goal) => goal.category === "achievement")
+
+  if (loading && !lastUpdated) {
+    return (
+      <DashboardLayout>
+        <GoalsPageSkeleton />
+      </DashboardLayout>
+    )
+  }
+
+  if (error && !lastUpdated) {
+    return (
+      <DashboardLayout>
+        <div className="p-4 flex flex-col items-center justify-center h-full">
+          <div className="flex flex-col items-center text-center max-w-md">
+            <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
+            <h2 className="text-2xl font-bold mb-2">Failed to load goals</h2>
+            <p className="text-gray-500 dark:text-gray-400 mb-6">{error}</p>
+            <Button onClick={() => dispatch(fetchGoals())}>Try Again</Button>
+          </div>
+        </div>
+      </DashboardLayout>
+    )
+  }
+
   return (
-    <DashboardLayout onRefresh={handleRefresh} isLoading={isLoading}>
+    <DashboardLayout onRefresh={handleRefresh} isLoading={loading}>
       <motion.div className="p-4" initial="hidden" animate="show" variants={container}>
         <motion.div className="mb-6" variants={item}>
           <div className="flex items-center">
             <h1 className="text-2xl font-bold mr-2">Your Goals</h1>
-            <RefreshButton onRefresh={handleRefresh} isLoading={isLoading} />
+            <RefreshButton onRefresh={handleRefresh} isLoading={loading} />
           </div>
           <p className="text-gray-500 dark:text-gray-400 mt-1">Track your progress and earn rewards</p>
         </motion.div>
 
         <div className="space-y-6">
-          <motion.div variants={item}>
-            <h2 className="text-lg font-medium mb-3">Daily Goals</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <GoalProgressCard
-                title="Step Goal"
-                currentValue={7842}
-                targetValue={10000}
-                unit="steps"
-                icon="steps"
-                autoTrigger={false}
-              />
-              <GoalProgressCard
-                title="Active Minutes"
-                currentValue={45}
-                targetValue={30}
-                unit="min"
-                icon="workout"
-                autoTrigger={true}
-              />
-            </div>
-          </motion.div>
+          {dailyGoals.length > 0 && (
+            <motion.div variants={item}>
+              <h2 className="text-lg font-medium mb-3">Daily Goals</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {dailyGoals.map((goal) => (
+                  <GoalProgressCard
+                    key={goal.id}
+                    title={goal.title}
+                    currentValue={goal.currentValue}
+                    targetValue={goal.targetValue}
+                    unit={goal.unit}
+                    icon={goal.icon}
+                    autoTrigger={goal.autoTrigger}
+                  />
+                ))}
+              </div>
+            </motion.div>
+          )}
 
-          <motion.div variants={item}>
-            <h2 className="text-lg font-medium mb-3">Weekly Goals</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <GoalProgressCard
-                title="Workout Goal"
-                currentValue={5}
-                targetValue={5}
-                unit="workouts"
-                icon="workout"
-                autoTrigger={true}
-              />
-              <GoalProgressCard
-                title="Distance Goal"
-                currentValue={18.5}
-                targetValue={20}
-                unit="km"
-                icon="steps"
-                autoTrigger={false}
-              />
-            </div>
-          </motion.div>
+          {weeklyGoals.length > 0 && (
+            <motion.div variants={item}>
+              <h2 className="text-lg font-medium mb-3">Weekly Goals</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {weeklyGoals.map((goal) => (
+                  <GoalProgressCard
+                    key={goal.id}
+                    title={goal.title}
+                    currentValue={goal.currentValue}
+                    targetValue={goal.targetValue}
+                    unit={goal.unit}
+                    icon={goal.icon}
+                    autoTrigger={goal.autoTrigger}
+                  />
+                ))}
+              </div>
+            </motion.div>
+          )}
 
-          <motion.div variants={item}>
-            <h2 className="text-lg font-medium mb-3">Achievements</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <GoalProgressCard
-                title="Activity Streak"
-                currentValue={7}
-                targetValue={7}
-                unit="days"
-                icon="streak"
-                autoTrigger={true}
-              />
-              <GoalProgressCard
-                title="Level Progress"
-                currentValue={850}
-                targetValue={1000}
-                unit="points"
-                icon="level"
-                autoTrigger={false}
-              />
-            </div>
-          </motion.div>
+          {achievementGoals.length > 0 && (
+            <motion.div variants={item}>
+              <h2 className="text-lg font-medium mb-3">Achievements</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {achievementGoals.map((goal) => (
+                  <GoalProgressCard
+                    key={goal.id}
+                    title={goal.title}
+                    currentValue={goal.currentValue}
+                    targetValue={goal.targetValue}
+                    unit={goal.unit}
+                    icon={goal.icon}
+                    autoTrigger={goal.autoTrigger}
+                  />
+                ))}
+              </div>
+            </motion.div>
+          )}
+
+          {goals.length === 0 && !loading && !error && (
+            <motion.div variants={item} className="text-center py-10">
+              <h3 className="text-lg font-medium mb-2">No goals found</h3>
+              <p className="text-gray-500 dark:text-gray-400 mb-4">You don't have any goals set up yet.</p>
+              <Button onClick={handleRefresh}>Refresh</Button>
+            </motion.div>
+          )}
         </div>
       </motion.div>
     </DashboardLayout>

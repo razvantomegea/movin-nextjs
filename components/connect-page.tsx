@@ -24,7 +24,7 @@ export function ConnectPage() {
 
     // Simple timeout to simulate connection
     setTimeout(() => {
-      router.push("/dashboard")
+      router.push("/dashboard/social")
     }, 1500)
   }
 

@@ -1,6 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import type React from "react"
+
+import { useEffect, useState, useRef } from "react"
 import { DashboardLayout } from "@/components/dashboard-layout"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -9,11 +11,14 @@ import { Label } from "@/components/ui/label"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
-import { Edit, Camera, Award, Trophy, Star, Flame, Activity, Save } from "lucide-react"
+import { Edit, Camera, Award, Trophy, Star, Flame, Activity, Save, AlertCircle } from "lucide-react"
 import { motion } from "framer-motion"
-import { showSuccessToast, showInfoToast } from "@/lib/redux/slices/toastSlice"
-import { useAppDispatch } from "@/lib/redux/hooks"
+import { showSuccessToast, showErrorToast } from "@/lib/redux/slices/toastSlice"
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks"
 import { RefreshButton } from "@/components/refresh-button"
+import { ProfilePageSkeleton } from "@/components/skeletons/profile-page-skeleton"
+import { fetchProfile, updateProfile, clearProfileError } from "@/lib/redux/slices/profileSlice"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 const container = {
   hidden: { opacity: 0 },
@@ -31,19 +36,53 @@ const item = {
 }
 
 export function ProfilePage() {
-  const [editing, setEditing] = useState(false)
-  const [saving, setSaving] = useState(false)
-  const [username, setUsername] = useState("username")
-  const [email, setEmail] = useState("user@example.com")
-  const [isLoading, setIsLoading] = useState(false)
   const dispatch = useAppDispatch()
+  const { profile, isLoading, isUpdating, error } = useAppSelector((state) => state.profile)
+
+  const [editing, setEditing] = useState(false)
+  const [username, setUsername] = useState("")
+  const [email, setEmail] = useState("")
+  const [avatarFile, setAvatarFile] = useState<File | null>(null)
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
+
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    dispatch(fetchProfile())
+  }, [dispatch])
+
+  useEffect(() => {
+    if (profile) {
+      setUsername(profile.username)
+      setEmail(profile.email)
+    }
+  }, [profile])
+
+  const handleAvatarClick = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click()
+    }
+  }
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0]
+      setAvatarFile(file)
+
+      // Create a preview URL for the selected image
+      const previewUrl = URL.createObjectURL(file)
+      setAvatarPreview(previewUrl)
+
+      // Automatically start editing mode if not already editing
+      if (!editing) {
+        setEditing(true)
+      }
+    }
+  }
 
   const handleRefresh = async () => {
-    setIsLoading(true)
     try {
-      // Simulate API call with delay
-      await new Promise((resolve) => setTimeout(resolve, 1500))
-
+      await dispatch(fetchProfile()).unwrap()
       dispatch(
         showSuccessToast({
           title: "Profile Refreshed",
@@ -52,33 +91,121 @@ export function ProfilePage() {
       )
     } catch (error) {
       dispatch(
-        showInfoToast({
+        showErrorToast({
           title: "Refresh Failed",
-          description: "Please try again later",
+          description: (error as string) || "Please try again later",
         }),
       )
-    } finally {
-      setIsLoading(false)
     }
   }
 
-  const handleSave = () => {
-    setSaving(true)
-    // Simulate saving
-    setTimeout(() => {
-      setSaving(false)
+  const handleSave = async () => {
+    if (!profile) return
+
+    try {
+      // In a real app, you would upload the avatar file to a server
+      // and get back a URL. For now, we'll simulate this.
+      let avatarUrl = profile.avatar_url
+
+      if (avatarFile) {
+        // Simulate uploading and getting a URL
+        // In a real app, you would use FormData and fetch to upload the file
+        avatarUrl = avatarPreview
+      }
+
+      await dispatch(
+        updateProfile({
+          username,
+          email,
+          avatar_url: avatarUrl,
+        }),
+      ).unwrap()
+
       setEditing(false)
+      setAvatarFile(null) // Clear the file after saving
+
       dispatch(
         showSuccessToast({
           title: "Profile Updated",
           description: "Your profile has been successfully updated",
         }),
       )
-    }, 1000)
+    } catch (error) {
+      dispatch(
+        showErrorToast({
+          title: "Update Failed",
+          description: (error as string) || "Please try again later",
+        }),
+      )
+    }
+  }
+
+  useEffect(() => {
+    // Cleanup function for the avatar preview URL
+    return () => {
+      if (avatarPreview) {
+        URL.revokeObjectURL(avatarPreview)
+      }
+    }
+  }, [avatarPreview])
+
+  const handleDismissError = () => {
+    dispatch(clearProfileError())
+  }
+
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <ProfilePageSkeleton />
+      </DashboardLayout>
+    )
+  }
+
+  if (!profile && error) {
+    return (
+      <DashboardLayout>
+        <div className="p-4">
+          <Alert variant="destructive" className="mb-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Error loading profile</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+          <Button onClick={handleRefresh}>Try Again</Button>
+        </div>
+      </DashboardLayout>
+    )
+  }
+
+  if (!profile) {
+    return (
+      <DashboardLayout>
+        <div className="p-4">
+          <Alert className="mb-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>No profile found</AlertTitle>
+            <AlertDescription>We couldn't find your profile information.</AlertDescription>
+          </Alert>
+          <Button onClick={handleRefresh}>Refresh</Button>
+        </div>
+      </DashboardLayout>
+    )
   }
 
   return (
     <DashboardLayout onRefresh={handleRefresh} isLoading={isLoading}>
+      {error && (
+        <Alert variant="destructive" className="mb-4 mx-4 mt-4">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription className="flex justify-between items-center">
+            <span>{error}</span>
+            <Button variant="outline" size="sm" onClick={handleDismissError}>
+              Dismiss
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
+
       <motion.div className="p-4" initial="hidden" animate="show" variants={container}>
         <motion.div className="mb-6" variants={item}>
           <div className="flex items-center">
@@ -95,23 +222,45 @@ export function ProfilePage() {
                 <div className="flex flex-col items-center sm:flex-row sm:items-start">
                   <div className="relative mb-4 sm:mb-0 sm:mr-6">
                     <Avatar className="h-24 w-24 border-4 border-blue-500">
-                      <AvatarImage src="/placeholder.svg?height=96&width=96" alt="User" />
+                      <AvatarImage
+                        src={avatarPreview || profile.avatar_url || "/placeholder.svg?height=96&width=96"}
+                        alt="User"
+                      />
                       <AvatarFallback className="text-2xl bg-blue-900 text-blue-100 dark:bg-blue-900 dark:text-blue-100 bg-blue-100 text-blue-900">
-                        {username.charAt(0).toUpperCase()}
+                        {profile.username.charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
-                    <Button size="icon" variant="secondary" className="absolute bottom-0 right-0 h-8 w-8 rounded-full">
+                    <Button
+                      size="icon"
+                      variant="secondary"
+                      className="absolute bottom-0 right-0 h-8 w-8 rounded-full"
+                      onClick={handleAvatarClick}
+                    >
                       <Camera className="h-4 w-4" />
                     </Button>
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleAvatarChange}
+                      accept="image/*"
+                      className="hidden"
+                      aria-label="Upload avatar"
+                    />
                   </div>
 
                   <div className="flex-1 text-center sm:text-left">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
                       <div>
-                        <h2 className="text-2xl font-bold">{username}</h2>
-                        <p className="text-gray-500 dark:text-gray-400">{email}</p>
+                        <h2 className="text-2xl font-bold">{profile.username}</h2>
+                        <p className="text-gray-500 dark:text-gray-400">{profile.email}</p>
                       </div>
-                      <Button variant="outline" size="sm" className="mt-2 sm:mt-0" onClick={() => setEditing(!editing)}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="mt-2 sm:mt-0"
+                        onClick={() => setEditing(!editing)}
+                        disabled={isUpdating}
+                      >
                         {editing ? (
                           "Cancel"
                         ) : (
@@ -125,14 +274,15 @@ export function ProfilePage() {
                     <div className="flex flex-wrap justify-center sm:justify-start gap-2 mt-4">
                       <Badge variant="secondary" className="flex items-center">
                         <Trophy className="h-3 w-3 mr-1 text-yellow-500" />
-                        Level 5
+                        Level {profile.level}
                       </Badge>
                       <Badge variant="secondary" className="flex items-center">
-                        <Flame className="h-3 w-3 mr-1 text-orange-500" />7 Day Streak
+                        <Flame className="h-3 w-3 mr-1 text-orange-500" />
+                        {profile.streak_days} Day Streak
                       </Badge>
                       <Badge variant="secondary" className="flex items-center">
                         <Activity className="h-3 w-3 mr-1 text-blue-500" />
-                        15.2 MVN
+                        {profile.mvn_tokens} MVN
                       </Badge>
                     </div>
                   </div>
@@ -153,6 +303,7 @@ export function ProfilePage() {
                           value={username}
                           onChange={(e) => setUsername(e.target.value)}
                           placeholder="Username"
+                          disabled={isUpdating}
                         />
                       </div>
                       <div className="grid gap-2">
@@ -163,10 +314,15 @@ export function ProfilePage() {
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
                           placeholder="Email"
+                          disabled={isUpdating}
                         />
                       </div>
-                      <Button onClick={handleSave} disabled={saving} className="w-full">
-                        {saving ? (
+                      <Button
+                        onClick={handleSave}
+                        disabled={isUpdating || (username === profile.username && email === profile.email)}
+                        className="w-full"
+                      >
+                        {isUpdating ? (
                           <>
                             <Save className="h-4 w-4 mr-2 animate-spin" />
                             Saving...
@@ -268,7 +424,7 @@ export function ProfilePage() {
 
                       <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg">
                         <div className="text-sm text-gray-500 dark:text-gray-400">Best Streak</div>
-                        <div className="text-2xl font-bold">14 days</div>
+                        <div className="text-2xl font-bold">{profile.streak_days} days</div>
                       </div>
                     </div>
                   </CardContent>

@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useState } from "react"
 import { usePathname, useRouter } from "next/navigation"
-import { Activity, Award, Bolt, Flame, Gift, Menu, Settings, Target, User, X, Users } from "lucide-react"
+import { Activity, Bolt, Gift, Menu, Settings, Target, User, X, Users, Crown } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
@@ -13,6 +13,7 @@ import Link from "next/link"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { RefreshButton } from "@/components/refresh-button"
 import { useMediaQuery } from "@/hooks/use-media-query"
+import { PremiumBadge } from "@/components/premium-badge"
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -55,6 +56,7 @@ export function DashboardLayout({ children, onRefresh, isLoading = false }: Dash
 
         <div className="flex items-center gap-2">
           {onRefresh && isDesktop && <RefreshButton onRefresh={handleRefresh} isLoading={isLoading} />}
+          <PremiumBadge />
           <ThemeToggle />
           <Link href="/dashboard/profile">
             <Avatar className="h-8 w-8 border border-blue-500 cursor-pointer">
@@ -142,61 +144,29 @@ export function DashboardLayout({ children, onRefresh, isLoading = false }: Dash
                                 <span className="text-base">Goals</span>
                               </Link>
                             </li>
+                            <li>
+                              <Link
+                                href="/dashboard/subscription"
+                                className="flex items-center p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+                                onClick={() => setIsSheetOpen(false)}
+                              >
+                                <Crown className="h-6 w-6 mr-4 text-blue-400" />
+                                <span className="text-base">Subscription</span>
+                              </Link>
+                            </li>
                           </ul>
                         </div>
 
-                        <div className="mb-8">
-                          <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-4">Rewards</h3>
-                          <ul className="space-y-3">
-                            <li>
-                              <Link
-                                href="/dashboard/energy"
-                                className="flex items-center p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
-                                onClick={() => setIsSheetOpen(false)}
-                              >
-                                <Bolt className="h-6 w-6 mr-4 text-blue-400" />
-                                <span className="text-base">Energy</span>
-                              </Link>
-                            </li>
-                            <li>
-                              <Link
-                                href="/dashboard/rewards"
-                                className="flex items-center p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
-                                onClick={() => setIsSheetOpen(false)}
-                              >
-                                <Activity className="h-6 w-6 mr-4 text-blue-400" />
-                                <span className="text-base">Activity Rewards</span>
-                              </Link>
-                            </li>
-                            <li>
-                              <Link
-                                href="/dashboard/rewards"
-                                className="flex items-center p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
-                                onClick={() => setIsSheetOpen(false)}
-                              >
-                                <Flame className="h-6 w-6 mr-4 text-blue-400" />
-                                <span className="text-base">Staking</span>
-                              </Link>
-                            </li>
-                            <li>
-                              <Link
-                                href="/dashboard/rewards"
-                                className="flex items-center p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
-                                onClick={() => setIsSheetOpen(false)}
-                              >
-                                <Award className="h-6 w-6 mr-4 text-blue-400" />
-                                <span className="text-base">Referrals</span>
-                              </Link>
-                            </li>
-                          </ul>
+                        <div className="p-6 border-t border-gray-200 dark:border-gray-800 mt-auto">
+                          <Button
+                            variant="outline"
+                            className="w-full py-6 text-base"
+                            onClick={() => setIsSheetOpen(false)}
+                          >
+                            Log Out
+                          </Button>
                         </div>
                       </div>
-                    </div>
-
-                    <div className="p-6 border-t border-gray-200 dark:border-gray-800 mt-auto">
-                      <Button variant="outline" className="w-full py-6 text-base" onClick={() => setIsSheetOpen(false)}>
-                        Log Out
-                      </Button>
                     </div>
                   </div>
                 </SheetContent>

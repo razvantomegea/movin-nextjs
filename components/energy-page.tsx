@@ -11,9 +11,9 @@ import { motion } from "framer-motion"
 import { useTheme } from "next-themes"
 import { EnergyOverviewChart } from "@/components/energy-overview-chart"
 import { CameraModal } from "@/components/camera-modal"
-import { showSuccessToast, showErrorToast, showInfoToast } from "@/lib/redux/slices/toastSlice"
+import { showSuccessToast, showInfoToast } from "@/lib/redux/slices/toastSlice"
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks"
-import { fetchEnergyData, resetEnergyError, analyzeMealImage } from "@/lib/redux/slices/energyDataSlice"
+import { fetchEnergyData, resetEnergyError } from "@/lib/redux/slices/energyDataSlice"
 import { EnergyPageSkeleton } from "@/components/skeletons/energy-page-skeleton"
 import { ErrorAlert } from "@/components/ui/error-alert"
 import ErrorBoundary from "@/components/error-boundary"
@@ -73,23 +73,9 @@ export function EnergyPage() {
   }
 
   const handleCameraCapture = async (imageData: string) => {
-    try {
-      await dispatch(analyzeMealImage(imageData)).unwrap()
-      dispatch(
-        showSuccessToast({
-          title: "Meal Detected",
-          description: "Your meal has been analyzed and added to your log",
-        }),
-      )
-      setIsCameraModalOpen(false)
-    } catch (error) {
-      dispatch(
-        showErrorToast({
-          title: "Analysis Failed",
-          description: error instanceof Error ? error.message : "Failed to analyze meal image",
-        }),
-      )
-    }
+    // This function is still needed for backward compatibility
+    // but the actual meal saving is now handled in the MealDetectionResultsModal
+    console.log("Image captured, analysis will be handled in the results modal")
   }
 
   const handleRetryLoadEnergy = () => {

@@ -9,9 +9,11 @@ import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ThemeToggle } from "@/components/theme-toggle"
-import { Bell, Trash2, Download, Upload, RefreshCw, Shield, Smartphone } from "lucide-react"
+import { Bell, Trash2, Download, Upload, RefreshCw, Shield, Smartphone, Crown } from "lucide-react"
 import { motion } from "framer-motion"
 import { useTheme } from "next-themes"
+import { useRouter } from "next/navigation"
+import { useAppSelector } from "@/lib/redux/hooks"
 
 const container = {
   hidden: { opacity: 0 },
@@ -29,7 +31,9 @@ const item = {
 }
 
 export function SettingsPage() {
+  const router = useRouter()
   const { theme, setTheme } = useTheme()
+  const { isPremium } = useAppSelector((state) => state.subscription)
   const [notificationsEnabled, setNotificationsEnabled] = useState(true)
   const [backgroundSync, setBackgroundSync] = useState(true)
   const [dataCollection, setDataCollection] = useState(true)
@@ -67,6 +71,29 @@ export function SettingsPage() {
                     <p className="text-sm text-gray-500 dark:text-gray-400">Choose between light and dark mode</p>
                   </div>
                   <ThemeToggle />
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          <motion.div variants={item}>
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Crown className="h-5 w-5 text-yellow-400 mr-2" />
+                  Subscription
+                </CardTitle>
+                <CardDescription>Manage your subscription plan</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Current Plan</Label>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{isPremium ? "Premium" : "Free"} plan</p>
+                  </div>
+                  <Button onClick={() => router.push("/dashboard/subscription")}>
+                    {isPremium ? "Manage" : "Upgrade"}
+                  </Button>
                 </div>
               </CardContent>
             </Card>

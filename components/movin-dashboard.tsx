@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { DashboardLayout } from "@/components/dashboard-layout"
 import { Card, CardContent } from "@/components/ui/card"
-import { Activity, Clock, Flame, TrendingUp, RefreshCw, Dumbbell } from "lucide-react"
+import { Activity, Clock, Flame, TrendingUp, RefreshCw, Dumbbell, MapPin } from "lucide-react"
 import { Progress } from "@/components/ui/progress"
 import { CircularProgress } from "@/components/circular-progress"
 import { motion } from "framer-motion"
@@ -17,6 +17,11 @@ import ErrorBoundary from "@/components/error-boundary"
 import { ActivityColumnChart } from "@/components/activity-column-chart"
 import { showSuccessToast, showInfoToast } from "@/lib/redux/slices/toastSlice"
 import { RefreshButton } from "./refresh-button"
+import { RouteTrackingModal, type RouteData } from "./route-tracking-modal"
+import { saveRouteData } from "@/lib/redux/slices/routeDataSlice"
+import { formatDistance, formatDuration } from "@/lib/utils"
+import { RouteTypeModal } from "./route-type-modal"
+import { resetJointTracking } from "@/lib/redux/slices/jointTrackingSlice"
 
 const container = {
   hidden: { opacity: 0 },
@@ -37,6 +42,8 @@ export function MovinDashboard() {
   const { resolvedTheme } = useTheme()
   const isDark = resolvedTheme === "dark"
   const [refreshing, setRefreshing] = useState(false)
+  const [isRouteTypeModalOpen, setIsRouteTypeModalOpen] = useState(false)
+  const [isRouteModalOpen, setIsRouteModalOpen] = useState(false)
 
   const dispatch = useAppDispatch()
 
@@ -45,9 +52,22 @@ export function MovinDashboard() {
     (state) => state.activityData,
   )
 
+  // Get route data from Redux store
+  const { routes } = useAppSelector((state) => state.routeData)
+
+  // Get joint tracking state
+  const { isJointTracking, joinedUsers } = useAppSelector((state) => state.jointTracking)
+
   // Fetch data when component mounts
   useEffect(() => {
     dispatch(fetchActivityData())
+  }, [dispatch])
+
+  // Clean up joint tracking when component unmounts
+  useEffect(() => {
+    return () => {
+      dispatch(resetJointTracking())
+    }
   }, [dispatch])
 
   const handleRefresh = async () => {
@@ -75,6 +95,59 @@ export function MovinDashboard() {
   const handleRetryLoadActivity = () => {
     dispatch(resetActivityError())
     dispatch(fetchActivityData())
+  }
+
+  const handleSaveRoute = (routeData: RouteData) => {
+    dispatch(saveRouteData(routeData))
+
+    // Add the route as a workout
+    const newWorkout = {
+      id: Number.parseInt(routeData.id),
+      type: routeData.isJoint ? "Joint Run" : "Running",
+      duration: formatDuration(routeData.duration),
+      distance: formatDistance(routeData.distance),
+      calories: Math.round(routeData.distance / 15), // Rough estimate: 1km ≈ 65 calories
+      time: new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "numeric", hour12: true }),
+    }
+
+    // In a real app, you would dispatch an action to add this workout
+    // For now, we'll just show a toast
+    dispatch(
+      showSuccessToast({
+        title: routeData.isJoint ? "Joint Route Saved" : "Route Saved",
+        description: `${formatDistance(routeData.distance)} in ${formatDuration(routeData.duration)}${
+          routeData.isJoint ? ` with ${routeData.participants?.length || 0} participants` : ""
+        }`,
+      }),
+    )
+
+    // Reset joint tracking state
+    if (routeData.isJoint) {
+      dispatch(resetJointTracking())
+    }
+  }
+
+  // Handle opening the route type modal
+  const handleOpenRouteTracking = () => {
+    setIsRouteTypeModalOpen(true)
+  }
+
+  // Handle selecting single route tracking
+  const handleSelectSingleTracking = () => {
+    setIsRouteTypeModalOpen(false)
+    setIsRouteModalOpen(true)
+  }
+
+  // Handle selecting joint route tracking
+  const handleSelectJointTracking = () => {
+    setIsRouteTypeModalOpen(false)
+    setIsRouteModalOpen(true)
+  }
+
+  // Handle closing the route modal
+  const handleCloseRouteModal = () => {
+    setIsRouteModalOpen(false)
+    dispatch(resetJointTracking())
   }
 
   // Render the dashboard content
@@ -191,7 +264,13 @@ export function MovinDashboard() {
 
         {/* Today's Workouts */}
         <motion.div className="space-y-4" variants={item}>
-          <h2 className="text-lg font-medium">Today's Workouts</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-medium">Today's Workouts</h2>
+            <Button onClick={handleOpenRouteTracking} size="sm" className="bg-blue-500 hover:bg-blue-600">
+              <MapPin className="h-4 w-4 mr-2" />
+              Track Route
+            </Button>
+          </div>
           <Card className={isDark ? "bg-gray-900 border-gray-800" : "bg-white border-gray-200"}>
             <CardContent className="p-6">
               {todaysWorkouts.length === 0 ? (
@@ -247,6 +326,17 @@ export function MovinDashboard() {
 
         <ErrorBoundary>{renderDashboardContent()}</ErrorBoundary>
       </motion.div>
+
+      {/* Route Type Selection Modal */}
+      <RouteTypeModal
+        isOpen={isRouteTypeModalOpen}
+        onClose={() => setIsRouteTypeModalOpen(false)}
+        onSelectSingle={handleSelectSingleTracking}
+        onSelectJoint={handleSelectJointTracking}
+      />
+
+      {/* Route Tracking Modal */}
+      <RouteTrackingModal isOpen={isRouteModalOpen} onClose={handleCloseRouteModal} onSaveRoute={handleSaveRoute} />
     </DashboardLayout>
   )
 }

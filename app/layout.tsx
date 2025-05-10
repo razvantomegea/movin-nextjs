@@ -4,6 +4,7 @@ import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import { ThemeProvider } from "@/components/theme-provider"
 import { ReduxProvider } from "@/lib/redux/provider"
+import { GoogleMapsProvider } from "@/lib/google-maps-provider"
 import { ReduxToaster } from "@/components/ui/redux-toaster"
 
 const inter = Inter({ subsets: ["latin"] })
@@ -24,8 +25,10 @@ export default function RootLayout({
       <body className={inter.className}>
         <ReduxProvider>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-            {children}
-            <ReduxToaster />
+            <GoogleMapsProvider>
+              {children}
+              <ReduxToaster />
+            </GoogleMapsProvider>
           </ThemeProvider>
         </ReduxProvider>
       </body>
