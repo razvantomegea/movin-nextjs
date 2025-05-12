@@ -1,23 +1,22 @@
-"use client"
+'use client';
 
-import { useState, useEffect } from "react"
-import { DashboardLayout } from "@/components/dashboard-layout"
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Bolt, Flame, Clock, Utensils, Camera, Plus, RefreshCw } from "lucide-react"
-import { Progress } from "@/components/ui/progress"
-import { CircularProgress } from "@/components/circular-progress"
-import { motion } from "framer-motion"
-import { useTheme } from "next-themes"
-import { EnergyOverviewChart } from "@/components/energy-overview-chart"
-import { CameraModal } from "@/components/camera-modal"
-import { showSuccessToast, showInfoToast } from "@/lib/redux/slices/toastSlice"
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks"
-import { fetchEnergyData, resetEnergyError } from "@/lib/redux/slices/energyDataSlice"
-import { EnergyPageSkeleton } from "@/components/skeletons/energy-page-skeleton"
-import { ErrorAlert } from "@/components/ui/error-alert"
-import ErrorBoundary from "@/components/error-boundary"
-import { RefreshButton } from "@/components/refresh-button"
+import { useState, useEffect } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Bolt, Flame, Clock, Utensils, Camera, Plus, RefreshCw } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { CircularProgress } from '@/components/circular-progress';
+import { motion } from 'framer-motion';
+import { useTheme } from 'next-themes';
+import { EnergyOverviewChart } from '@/components/energy-overview-chart';
+import { CameraModal } from '@/components/camera-modal';
+import { showSuccessToast, showInfoToast } from '@/lib/redux/slices/toastSlice';
+import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
+import { fetchEnergyData, resetEnergyError } from '@/lib/redux/slices/energyDataSlice';
+import { EnergyPageSkeleton } from '@/components/skeletons/energy-page-skeleton';
+import { ErrorAlert } from '@/components/ui/error-alert';
+import ErrorBoundary from '@/components/error-boundary';
+import { RefreshButton } from '@/components/refresh-button';
 
 const container = {
   hidden: { opacity: 0 },
@@ -27,66 +26,73 @@ const container = {
       staggerChildren: 0.1,
     },
   },
-}
+};
 
 const item = {
   hidden: { opacity: 0, y: 20 },
   show: { opacity: 1, y: 0 },
-}
+};
 
 export function EnergyPage() {
-  const { resolvedTheme } = useTheme()
-  const isDark = resolvedTheme === "dark"
-  const [refreshing, setRefreshing] = useState(false)
-  const [isCameraModalOpen, setIsCameraModalOpen] = useState(false)
-  const dispatch = useAppDispatch()
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === 'dark';
+  const [refreshing, setRefreshing] = useState(false);
+  const [isCameraModalOpen, setIsCameraModalOpen] = useState(false);
+  const dispatch = useAppDispatch();
 
   // Get energy data from Redux store
-  const { dailyCalories, weeklyEnergyData, monthlyEnergyData, yearlyEnergyData, todaysMeals, isLoading, error } =
-    useAppSelector((state) => state.energyData)
+  const {
+    dailyCalories,
+    weeklyEnergyData,
+    monthlyEnergyData,
+    yearlyEnergyData,
+    todaysMeals,
+    isLoading,
+    error,
+  } = useAppSelector((state) => state.energyData);
 
   // Fetch data when component mounts
   useEffect(() => {
-    dispatch(fetchEnergyData())
-  }, [dispatch])
+    dispatch(fetchEnergyData());
+  }, [dispatch]);
 
   const handleRefresh = async () => {
-    setRefreshing(true)
+    setRefreshing(true);
     try {
-      await dispatch(fetchEnergyData()).unwrap()
+      await dispatch(fetchEnergyData()).unwrap();
       dispatch(
         showSuccessToast({
-          title: "Energy Data Refreshed",
-          description: "Your energy and nutrition data has been updated",
+          title: 'Energy Data Refreshed',
+          description: 'Your energy and nutrition data has been updated',
         }),
-      )
+      );
     } catch (error) {
       dispatch(
         showInfoToast({
-          title: "Refresh Failed",
-          description: "Please try again later",
+          title: 'Refresh Failed',
+          description: 'Please try again later',
         }),
-      )
+      );
     } finally {
-      setRefreshing(false)
+      setRefreshing(false);
     }
-  }
+  };
 
   const handleCameraCapture = async (imageData: string) => {
     // This function is still needed for backward compatibility
     // but the actual meal saving is now handled in the MealDetectionResultsModal
-    console.log("Image captured, analysis will be handled in the results modal")
-  }
+    console.log('Image captured, analysis will be handled in the results modal');
+  };
 
   const handleRetryLoadEnergy = () => {
-    dispatch(resetEnergyError())
-    dispatch(fetchEnergyData())
-  }
+    dispatch(resetEnergyError());
+    dispatch(fetchEnergyData());
+  };
 
   // Render the energy content
   const renderEnergyContent = () => {
     if (isLoading && !refreshing) {
-      return <EnergyPageSkeleton />
+      return <EnergyPageSkeleton />;
     }
 
     if (error) {
@@ -98,7 +104,7 @@ export function EnergyPage() {
             Retry
           </Button>
         </div>
-      )
+      );
     }
 
     return (
@@ -108,8 +114,8 @@ export function EnergyPage() {
           <Card
             className={`${
               isDark
-                ? "bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700"
-                : "bg-gradient-to-br from-white to-gray-100 border-gray-200"
+                ? 'bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700'
+                : 'bg-gradient-to-br from-white to-gray-100 border-gray-200'
             }`}
           >
             <CardContent className="p-6">
@@ -133,65 +139,76 @@ export function EnergyPage() {
                     >
                       {dailyCalories.consumed.toLocaleString()}
                     </motion.span>
-                    <span className={`text-sm ${isDark ? "text-gray-400" : "text-gray-500"} ml-2`}>
+                    <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'} ml-2`}>
                       / {dailyCalories.goal.toLocaleString()} kcal
                     </span>
                   </div>
                   <motion.div
                     initial={{ width: 0 }}
-                    animate={{ width: "100%" }}
+                    animate={{ width: '100%' }}
                     transition={{ duration: 0.5, delay: 0.3 }}
                   >
-                    <Progress value={(dailyCalories.consumed / dailyCalories.goal) * 100} className="h-2 mt-3" />
+                    <Progress
+                      value={(dailyCalories.consumed / dailyCalories.goal) * 100}
+                      className="h-2 mt-3"
+                    />
                   </motion.div>
 
                   <div className="grid grid-cols-4 gap-4 mt-6">
                     <motion.div
                       className="flex flex-col items-center"
                       whileHover={{ scale: 1.05 }}
-                      transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                      transition={{ type: 'spring', stiffness: 400, damping: 10 }}
                     >
                       <div className="bg-blue-500/10 p-2 rounded-full mb-2">
                         <Bolt className="h-4 w-4 text-blue-500" />
                       </div>
                       <span className="text-sm font-medium">{dailyCalories.remaining}</span>
-                      <span className={`text-xs ${isDark ? "text-gray-400" : "text-gray-500"}`}>remaining</span>
+                      <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                        remaining
+                      </span>
                     </motion.div>
 
                     <motion.div
                       className="flex flex-col items-center"
                       whileHover={{ scale: 1.05 }}
-                      transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                      transition={{ type: 'spring', stiffness: 400, damping: 10 }}
                     >
                       <div className="bg-green-500/10 p-2 rounded-full mb-2">
                         <Utensils className="h-4 w-4 text-green-500" />
                       </div>
                       <span className="text-sm font-medium">{dailyCalories.breakfast}</span>
-                      <span className={`text-xs ${isDark ? "text-gray-400" : "text-gray-500"}`}>breakfast</span>
+                      <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                        breakfast
+                      </span>
                     </motion.div>
 
                     <motion.div
                       className="flex flex-col items-center"
                       whileHover={{ scale: 1.05 }}
-                      transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                      transition={{ type: 'spring', stiffness: 400, damping: 10 }}
                     >
                       <div className="bg-orange-500/10 p-2 rounded-full mb-2">
                         <Utensils className="h-4 w-4 text-orange-500" />
                       </div>
                       <span className="text-sm font-medium">{dailyCalories.lunch}</span>
-                      <span className={`text-xs ${isDark ? "text-gray-400" : "text-gray-500"}`}>lunch</span>
+                      <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                        lunch
+                      </span>
                     </motion.div>
 
                     <motion.div
                       className="flex flex-col items-center"
                       whileHover={{ scale: 1.05 }}
-                      transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                      transition={{ type: 'spring', stiffness: 400, damping: 10 }}
                     >
                       <div className="bg-purple-500/10 p-2 rounded-full mb-2">
                         <Utensils className="h-4 w-4 text-purple-500" />
                       </div>
                       <span className="text-sm font-medium">{dailyCalories.dinner}</span>
-                      <span className={`text-xs ${isDark ? "text-gray-400" : "text-gray-500"}`}>dinner</span>
+                      <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                        dinner
+                      </span>
                     </motion.div>
                   </div>
                 </div>
@@ -227,13 +244,17 @@ export function EnergyPage() {
               Add Meal
             </Button>
           </div>
-          <Card className={isDark ? "bg-gray-900 border-gray-800" : "bg-white border-gray-200"}>
+          <Card className={isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}>
             <CardContent className="p-6">
               {todaysMeals.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
                   <Utensils className="h-12 w-12 mx-auto mb-4 text-gray-400" />
                   <p>No meals recorded today</p>
-                  <Button variant="outline" className="mt-4" onClick={() => setIsCameraModalOpen(true)}>
+                  <Button
+                    variant="outline"
+                    className="mt-4"
+                    onClick={() => setIsCameraModalOpen(true)}
+                  >
                     <Camera className="h-4 w-4 mr-2" />
                     Scan a Meal
                   </Button>
@@ -243,7 +264,7 @@ export function EnergyPage() {
                   {todaysMeals.map((meal, i) => (
                     <motion.div
                       key={meal.id}
-                      className={`p-4 ${isDark ? "bg-gray-800/50" : "bg-gray-100/70"} rounded-lg`}
+                      className={`p-4 ${isDark ? 'bg-gray-800/50' : 'bg-gray-100/70'} rounded-lg`}
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.1 * i }}
@@ -283,8 +304,8 @@ export function EnergyPage() {
         {/* Meal Detection Info Card */}
         <motion.div variants={item}>
           <Card
-            className={`${isDark ? "bg-blue-900/20" : "bg-blue-50"} border ${
-              isDark ? "border-blue-800" : "border-blue-100"
+            className={`${isDark ? 'bg-blue-900/20' : 'bg-blue-50'} border ${
+              isDark ? 'border-blue-800' : 'border-blue-100'
             }`}
           >
             <CardContent className="p-4">
@@ -295,10 +316,13 @@ export function EnergyPage() {
                 <div>
                   <h3 className="font-medium text-blue-600 dark:text-blue-400">Meal Detection</h3>
                   <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
-                    Take a photo of your meal and our AI will automatically detect ingredients, calories, and macros.
-                    Just tap the "Scan Meal" button to get started.
+                    Take a photo of your meal and our AI will automatically detect ingredients,
+                    calories, and macros. Just tap the "Scan Meal" button to get started.
                   </p>
-                  <Button className="mt-3 bg-blue-500 hover:bg-blue-600" onClick={() => setIsCameraModalOpen(true)}>
+                  <Button
+                    className="mt-3 bg-blue-500 hover:bg-blue-600"
+                    onClick={() => setIsCameraModalOpen(true)}
+                  >
                     <Camera className="h-4 w-4 mr-2" />
                     Scan Meal
                   </Button>
@@ -308,18 +332,21 @@ export function EnergyPage() {
           </Card>
         </motion.div>
       </div>
-    )
-  }
+    );
+  };
 
   return (
-    <DashboardLayout onRefresh={handleRefresh} isLoading={isLoading || refreshing}>
+    <>
       <motion.div className="p-4" initial="hidden" animate="show" variants={container}>
         <motion.div className="flex items-center justify-between mb-6" variants={item}>
           <div className="flex items-center">
             <h1 className="text-2xl font-bold mr-2">Energy</h1>
             <RefreshButton onRefresh={handleRefresh} isLoading={isLoading || refreshing} />
           </div>
-          <Button onClick={() => setIsCameraModalOpen(true)} className="bg-blue-500 hover:bg-blue-600">
+          <Button
+            onClick={() => setIsCameraModalOpen(true)}
+            className="bg-blue-500 hover:bg-blue-600"
+          >
             <Camera className="h-4 w-4 mr-2" />
             Scan Meal
           </Button>
@@ -334,6 +361,6 @@ export function EnergyPage() {
         onClose={() => setIsCameraModalOpen(false)}
         onCapture={handleCameraCapture}
       />
-    </DashboardLayout>
-  )
+    </>
+  );
 }

@@ -1,53 +1,70 @@
-"use client"
+'use client';
 
-import { useState, useEffect } from "react"
-import { DashboardLayout } from "@/components/dashboard-layout"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Award, Flame, History, Users, TrendingUp, Lock, Plus, RefreshCw, Copy, Send } from "lucide-react"
-import { Progress } from "@/components/ui/progress"
-import { useTheme } from "next-themes"
-import { StakeModal } from "@/components/stake-modal"
-import { TransactionConfirmationModal } from "@/components/transaction-confirmation-modal"
-import { CountdownTimer } from "@/components/countdown-timer"
-import { LoadingButton } from "@/components/ui/loading-button"
-import { ErrorAlert } from "@/components/ui/error-alert"
-import ErrorBoundary from "@/components/error-boundary"
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks"
-import { fetchStakingData, claimStakingRewards, resetStakingError } from "@/lib/redux/slices/stakingSlice"
-import { StakingSkeleton } from "@/components/skeletons/staking-skeleton"
-import { ActivityRewardsSkeleton } from "@/components/skeletons/activity-rewards-skeleton"
-import { ReferralRewardsSkeleton } from "@/components/skeletons/referral-rewards-skeleton"
+import { useState, useEffect } from 'react';
+
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import {
+  Award,
+  Flame,
+  History,
+  Users,
+  TrendingUp,
+  Lock,
+  Plus,
+  RefreshCw,
+  Copy,
+  Send,
+} from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { useTheme } from 'next-themes';
+import { StakeModal } from '@/components/stake-modal';
+import { TransactionConfirmationModal } from '@/components/transaction-confirmation-modal';
+import { CountdownTimer } from '@/components/countdown-timer';
+import { LoadingButton } from '@/components/ui/loading-button';
+import { ErrorAlert } from '@/components/ui/error-alert';
+import ErrorBoundary from '@/components/error-boundary';
+import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
+import {
+  fetchStakingData,
+  claimStakingRewards,
+  resetStakingError,
+} from '@/lib/redux/slices/stakingSlice';
+import { StakingSkeleton } from '@/components/skeletons/staking-skeleton';
+import { ActivityRewardsSkeleton } from '@/components/skeletons/activity-rewards-skeleton';
+import { ReferralRewardsSkeleton } from '@/components/skeletons/referral-rewards-skeleton';
 import {
   fetchActivityRewards,
   claimActivityRewards,
   resetActivityRewardsError,
-} from "@/lib/redux/slices/activityRewardsSlice"
+} from '@/lib/redux/slices/activityRewardsSlice';
 import {
   fetchReferralRewards,
   claimReferralRewards,
   resetReferralRewardsError,
   inviteFriend,
-} from "@/lib/redux/slices/referralRewardsSlice"
-import { showSuccessToast, showErrorToast, showInfoToast } from "@/lib/redux/slices/toastSlice"
-import { Input } from "@/components/ui/input"
-import { RefreshButton } from "@/components/ui/refresh-button"
+} from '@/lib/redux/slices/referralRewardsSlice';
+import { showSuccessToast, showErrorToast, showInfoToast } from '@/lib/redux/slices/toastSlice';
+import { Input } from '@/components/ui/input';
+import { RefreshButton } from '@/components/ui/refresh-button';
 
 export function RewardsDashboard() {
-  const [activeTab, setActiveTab] = useState("activity")
-  const { resolvedTheme } = useTheme()
-  const isDark = resolvedTheme === "dark"
-  const [isStakeModalOpen, setIsStakeModalOpen] = useState(false)
-  const [inviteEmail, setInviteEmail] = useState("")
-  const [refreshing, setRefreshing] = useState(false)
+  const [activeTab, setActiveTab] = useState('activity');
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === 'dark';
+  const [isStakeModalOpen, setIsStakeModalOpen] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
 
   // Transaction confirmation modal state
-  const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false)
-  const [pendingTransactionType, setPendingTransactionType] = useState<"staking" | "activity" | "referral" | null>(null)
-  const [pendingRewardAmount, setPendingRewardAmount] = useState(0)
+  const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
+  const [pendingTransactionType, setPendingTransactionType] = useState<
+    'staking' | 'activity' | 'referral' | null
+  >(null);
+  const [pendingRewardAmount, setPendingRewardAmount] = useState(0);
 
-  const dispatch = useAppDispatch()
+  const dispatch = useAppDispatch();
 
   // Staking state
   const {
@@ -59,7 +76,7 @@ export function RewardsDashboard() {
     isLoading: stakingLoading,
     isClaiming: stakingClaiming,
     error: stakingError,
-  } = useAppSelector((state) => state.staking)
+  } = useAppSelector((state) => state.staking);
 
   // Activity rewards state
   const {
@@ -70,7 +87,7 @@ export function RewardsDashboard() {
     isLoading: activityLoading,
     isClaiming: activityClaiming,
     error: activityError,
-  } = useAppSelector((state) => state.activityRewards)
+  } = useAppSelector((state) => state.activityRewards);
 
   // Referral rewards state
   const {
@@ -82,170 +99,170 @@ export function RewardsDashboard() {
     isClaiming: referralClaiming,
     isInviting,
     error: referralError,
-  } = useAppSelector((state) => state.referralRewards)
+  } = useAppSelector((state) => state.referralRewards);
 
   // Fetch data when tab changes
   useEffect(() => {
-    if (activeTab === "staking") {
-      dispatch(fetchStakingData())
-    } else if (activeTab === "activity") {
-      dispatch(fetchActivityRewards())
-    } else if (activeTab === "referrals") {
-      dispatch(fetchReferralRewards())
+    if (activeTab === 'staking') {
+      dispatch(fetchStakingData());
+    } else if (activeTab === 'activity') {
+      dispatch(fetchActivityRewards());
+    } else if (activeTab === 'referrals') {
+      dispatch(fetchReferralRewards());
     }
-  }, [dispatch, activeTab])
+  }, [dispatch, activeTab]);
 
   const handleRefresh = async () => {
-    setRefreshing(true)
+    setRefreshing(true);
     try {
-      if (activeTab === "staking") {
-        await dispatch(fetchStakingData()).unwrap()
-      } else if (activeTab === "activity") {
-        await dispatch(fetchActivityRewards()).unwrap()
-      } else if (activeTab === "referrals") {
-        await dispatch(fetchReferralRewards()).unwrap()
+      if (activeTab === 'staking') {
+        await dispatch(fetchStakingData()).unwrap();
+      } else if (activeTab === 'activity') {
+        await dispatch(fetchActivityRewards()).unwrap();
+      } else if (activeTab === 'referrals') {
+        await dispatch(fetchReferralRewards()).unwrap();
       }
 
       dispatch(
         showSuccessToast({
-          title: "Data Refreshed",
-          description: "Your rewards data has been updated",
+          title: 'Data Refreshed',
+          description: 'Your rewards data has been updated',
         }),
-      )
+      );
     } catch (error) {
       dispatch(
         showInfoToast({
-          title: "Refresh Failed",
-          description: "Please try again later",
+          title: 'Refresh Failed',
+          description: 'Please try again later',
         }),
-      )
+      );
     } finally {
-      setRefreshing(false)
+      setRefreshing(false);
     }
-  }
+  };
 
   // Handle initiating claim process - shows the transaction modal
-  const initiateClaimProcess = (type: "staking" | "activity" | "referral", amount: number) => {
-    setPendingTransactionType(type)
-    setPendingRewardAmount(amount)
-    setIsTransactionModalOpen(true)
-  }
+  const initiateClaimProcess = (type: 'staking' | 'activity' | 'referral', amount: number) => {
+    setPendingTransactionType(type);
+    setPendingRewardAmount(amount);
+    setIsTransactionModalOpen(true);
+  };
 
   // Handle successful transaction confirmation
   const handleTransactionSuccess = async () => {
     try {
-      if (pendingTransactionType === "staking") {
-        await dispatch(claimStakingRewards()).unwrap()
-      } else if (pendingTransactionType === "activity") {
-        await dispatch(claimActivityRewards()).unwrap()
-      } else if (pendingTransactionType === "referral") {
-        await dispatch(claimReferralRewards()).unwrap()
+      if (pendingTransactionType === 'staking') {
+        await dispatch(claimStakingRewards()).unwrap();
+      } else if (pendingTransactionType === 'activity') {
+        await dispatch(claimActivityRewards()).unwrap();
+      } else if (pendingTransactionType === 'referral') {
+        await dispatch(claimReferralRewards()).unwrap();
       }
 
       // Refresh data after successful claim
-      handleRefresh()
+      handleRefresh();
     } catch (err) {
       dispatch(
         showErrorToast({
-          title: "Claim Failed",
-          description: err instanceof Error ? err.message : "An unknown error occurred",
+          title: 'Claim Failed',
+          description: err instanceof Error ? err.message : 'An unknown error occurred',
         }),
-      )
+      );
     } finally {
-      setPendingTransactionType(null)
+      setPendingTransactionType(null);
     }
-  }
+  };
 
   // Handle failed transaction confirmation
   const handleTransactionFail = () => {
-    setPendingTransactionType(null)
-  }
+    setPendingTransactionType(null);
+  };
 
   const handleClaimStakingRewards = () => {
-    initiateClaimProcess("staking", stakingTotalRewards)
-  }
+    initiateClaimProcess('staking', stakingTotalRewards);
+  };
 
   const handleClaimActivityRewards = () => {
-    initiateClaimProcess("activity", activityTotalRewards)
-  }
+    initiateClaimProcess('activity', activityTotalRewards);
+  };
 
   const handleClaimReferralRewards = () => {
-    initiateClaimProcess("referral", referralTotalRewards)
-  }
+    initiateClaimProcess('referral', referralTotalRewards);
+  };
 
   const handleCopyReferralCode = () => {
     navigator.clipboard.writeText(referralCode).then(
       () => {
         dispatch(
           showSuccessToast({
-            title: "Copied to Clipboard",
-            description: "Referral code copied to clipboard",
+            title: 'Copied to Clipboard',
+            description: 'Referral code copied to clipboard',
           }),
-        )
+        );
       },
       () => {
         dispatch(
           showErrorToast({
-            title: "Copy Failed",
-            description: "Failed to copy referral code",
+            title: 'Copy Failed',
+            description: 'Failed to copy referral code',
           }),
-        )
+        );
       },
-    )
-  }
+    );
+  };
 
   const handleInviteFriend = async () => {
-    if (!inviteEmail || !inviteEmail.includes("@")) {
+    if (!inviteEmail || !inviteEmail.includes('@')) {
       dispatch(
         showErrorToast({
-          title: "Invalid Email",
-          description: "Please enter a valid email address",
+          title: 'Invalid Email',
+          description: 'Please enter a valid email address',
         }),
-      )
-      return
+      );
+      return;
     }
 
     try {
-      await dispatch(inviteFriend(inviteEmail)).unwrap()
+      await dispatch(inviteFriend(inviteEmail)).unwrap();
 
       dispatch(
         showSuccessToast({
-          title: "Invitation Sent",
+          title: 'Invitation Sent',
           description: `Invitation sent to ${inviteEmail}`,
         }),
-      )
+      );
 
       // Clear the input
-      setInviteEmail("")
+      setInviteEmail('');
     } catch (err) {
       dispatch(
         showErrorToast({
-          title: "Invitation Failed",
-          description: err instanceof Error ? err.message : "An unknown error occurred",
+          title: 'Invitation Failed',
+          description: err instanceof Error ? err.message : 'An unknown error occurred',
         }),
-      )
+      );
     }
-  }
+  };
 
   const handleRetryLoadStaking = () => {
-    dispatch(resetStakingError())
-    dispatch(fetchStakingData())
-  }
+    dispatch(resetStakingError());
+    dispatch(fetchStakingData());
+  };
 
   const handleRetryLoadActivity = () => {
-    dispatch(resetActivityRewardsError())
-    dispatch(fetchActivityRewards())
-  }
+    dispatch(resetActivityRewardsError());
+    dispatch(fetchActivityRewards());
+  };
 
   const handleRetryLoadReferrals = () => {
-    dispatch(resetReferralRewardsError())
-    dispatch(fetchReferralRewards())
-  }
+    dispatch(resetReferralRewardsError());
+    dispatch(fetchReferralRewards());
+  };
 
   // Render the activity rewards content safely
   const renderActivityContent = () => {
     if (activityLoading && !refreshing) {
-      return <ActivityRewardsSkeleton />
+      return <ActivityRewardsSkeleton />;
     }
 
     if (activityError) {
@@ -257,7 +274,7 @@ export function RewardsDashboard() {
             Retry
           </Button>
         </div>
-      )
+      );
     }
 
     return (
@@ -274,7 +291,9 @@ export function RewardsDashboard() {
                 </span>
                 <span className="text-xl ml-2 text-gray-500 dark:text-gray-400">MVN</span>
               </div>
-              <span className="text-sm text-gray-500 dark:text-gray-400">Total earned this week</span>
+              <span className="text-sm text-gray-500 dark:text-gray-400">
+                Total earned this week
+              </span>
             </div>
 
             <LoadingButton
@@ -331,10 +350,15 @@ export function RewardsDashboard() {
                     <div className="flex-1">
                       <div className="flex justify-between">
                         <span className="font-medium">{challenge.title}</span>
-                        <span className="text-blue-400 font-medium">+{challenge.reward.toFixed(2)} MVN</span>
+                        <span className="text-blue-400 font-medium">
+                          +{challenge.reward.toFixed(2)} MVN
+                        </span>
                       </div>
                       <div className="text-sm text-gray-400 mt-1">{challenge.description}</div>
-                      <Progress value={(challenge.progress / challenge.total) * 100} className="h-1.5 mt-2" />
+                      <Progress
+                        value={(challenge.progress / challenge.total) * 100}
+                        className="h-1.5 mt-2"
+                      />
                     </div>
                   </div>
                 ))}
@@ -343,13 +367,13 @@ export function RewardsDashboard() {
           </Card>
         </div>
       </div>
-    )
-  }
+    );
+  };
 
   // Render the staking content safely
   const renderStakingContent = () => {
     if (stakingLoading && !refreshing) {
-      return <StakingSkeleton />
+      return <StakingSkeleton />;
     }
 
     if (stakingError) {
@@ -361,7 +385,7 @@ export function RewardsDashboard() {
             Retry
           </Button>
         </div>
-      )
+      );
     }
 
     return (
@@ -373,7 +397,9 @@ export function RewardsDashboard() {
             <div className="flex flex-col items-center mb-8">
               <div className="flex items-center mb-2">
                 <Flame className="h-6 w-6 text-blue-400 mr-2" />
-                <span className="text-4xl font-bold text-blue-400">{stakingTotalRewards.toFixed(2)}</span>
+                <span className="text-4xl font-bold text-blue-400">
+                  {stakingTotalRewards.toFixed(2)}
+                </span>
                 <span className="text-xl ml-2 text-gray-400">MVN</span>
               </div>
               <span className="text-sm text-gray-400">Total staking rewards</span>
@@ -427,7 +453,11 @@ export function RewardsDashboard() {
                   <div className="text-center py-8 text-gray-500">
                     <Lock className="h-12 w-12 mx-auto mb-4 text-gray-400" />
                     <p className="mb-2">You don't have any active stakes</p>
-                    <Button variant="outline" className="mt-2" onClick={() => setIsStakeModalOpen(true)}>
+                    <Button
+                      variant="outline"
+                      className="mt-2"
+                      onClick={() => setIsStakeModalOpen(true)}
+                    >
                       <Plus className="h-4 w-4 mr-2" />
                       Stake Now
                     </Button>
@@ -436,8 +466,8 @@ export function RewardsDashboard() {
                   stakes.map((stake) => (
                     <div
                       key={stake.id}
-                      className={`p-4 rounded-lg ${isDark ? "bg-gray-800" : "bg-white"} border ${
-                        isDark ? "border-gray-700" : "border-gray-200"
+                      className={`p-4 rounded-lg ${isDark ? 'bg-gray-800' : 'bg-white'} border ${
+                        isDark ? 'border-gray-700' : 'border-gray-200'
                       }`}
                     >
                       <div className="flex items-center justify-between mb-3">
@@ -454,7 +484,7 @@ export function RewardsDashboard() {
                       <div className="flex items-center justify-between mb-3">
                         <span className="text-sm text-gray-500">Lock Period</span>
                         <span>
-                          {stake.period} {stake.period === 1 ? "month" : "months"}
+                          {stake.period} {stake.period === 1 ? 'month' : 'months'}
                         </span>
                       </div>
 
@@ -471,10 +501,10 @@ export function RewardsDashboard() {
                           onComplete={() => {
                             dispatch(
                               showSuccessToast({
-                                title: "Stake Unlocked",
+                                title: 'Stake Unlocked',
                                 description: `Your stake of ${stake.amount} MVN is now available to withdraw.`,
                               }),
-                            )
+                            );
                           }}
                         />
                       </div>
@@ -492,12 +522,19 @@ export function RewardsDashboard() {
             <CardContent className="p-4">
               <div className="space-y-3">
                 {history.map((item, i) => (
-                  <div key={i} className="flex items-center justify-between p-2 border-b border-gray-800 last:border-0">
+                  <div
+                    key={i}
+                    className="flex items-center justify-between p-2 border-b border-gray-800 last:border-0"
+                  >
                     <div>
                       <div className="font-medium">{item.type}</div>
                       <div className="text-xs text-gray-400">{item.date}</div>
                     </div>
-                    <div className={`font-medium ${item.type === "Reward" ? "text-green-500" : "text-blue-400"}`}>
+                    <div
+                      className={`font-medium ${
+                        item.type === 'Reward' ? 'text-green-500' : 'text-blue-400'
+                      }`}
+                    >
                       {item.amount}
                     </div>
                   </div>
@@ -507,13 +544,13 @@ export function RewardsDashboard() {
           </Card>
         </div>
       </div>
-    )
-  }
+    );
+  };
 
   // Render the referral rewards content safely
   const renderReferralContent = () => {
     if (referralLoading && !refreshing) {
-      return <ReferralRewardsSkeleton />
+      return <ReferralRewardsSkeleton />;
     }
 
     if (referralError) {
@@ -525,7 +562,7 @@ export function RewardsDashboard() {
             Retry
           </Button>
         </div>
-      )
+      );
     }
 
     return (
@@ -542,7 +579,9 @@ export function RewardsDashboard() {
               <span className="text-sm text-gray-400">Total referrals</span>
 
               <div className="flex items-center mt-4">
-                <span className="text-2xl font-bold text-blue-400">{referralTotalRewards.toFixed(1)}</span>
+                <span className="text-2xl font-bold text-blue-400">
+                  {referralTotalRewards.toFixed(1)}
+                </span>
                 <span className="text-sm ml-1 text-gray-400">MVN earned</span>
               </div>
             </div>
@@ -617,7 +656,10 @@ export function RewardsDashboard() {
             <CardContent className="p-4">
               <div className="space-y-3">
                 {referrals.map((item, i) => (
-                  <div key={i} className="flex items-center justify-between p-2 border-b border-gray-800 last:border-0">
+                  <div
+                    key={i}
+                    className="flex items-center justify-between p-2 border-b border-gray-800 last:border-0"
+                  >
                     <div className="flex items-center">
                       <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center mr-3">
                         <span className="text-blue-400 font-medium">{item.name.charAt(0)}</span>
@@ -628,7 +670,9 @@ export function RewardsDashboard() {
                       </div>
                     </div>
                     <div>
-                      <div className="text-green-500 text-right font-medium">+{item.reward.toFixed(1)} MVN</div>
+                      <div className="text-green-500 text-right font-medium">
+                        +{item.reward.toFixed(1)} MVN
+                      </div>
                       <div className="text-xs text-gray-400">{item.status}</div>
                     </div>
                   </div>
@@ -638,19 +682,12 @@ export function RewardsDashboard() {
           </Card>
         </div>
       </div>
-    )
-  }
+    );
+  };
 
   return (
-    <DashboardLayout
-      onRefresh={handleRefresh}
-      isLoading={
-        (activeTab === "staking" && stakingLoading) ||
-        (activeTab === "activity" && activityLoading) ||
-        (activeTab === "referrals" && referralLoading) ||
-        refreshing
-      }
-    >
+    <>
+      {' '}
       <div className="p-4">
         <Tabs defaultValue="activity" onValueChange={setActiveTab} className="w-full">
           <div className="flex items-center justify-between mb-6">
@@ -659,9 +696,9 @@ export function RewardsDashboard() {
               <RefreshButton
                 onRefresh={handleRefresh}
                 isLoading={
-                  (activeTab === "staking" && stakingLoading) ||
-                  (activeTab === "activity" && activityLoading) ||
-                  (activeTab === "referrals" && referralLoading) ||
+                  (activeTab === 'staking' && stakingLoading) ||
+                  (activeTab === 'activity' && activityLoading) ||
+                  (activeTab === 'referrals' && referralLoading) ||
                   refreshing
                 }
               />
@@ -692,10 +729,8 @@ export function RewardsDashboard() {
           </TabsContent>
         </Tabs>
       </div>
-
       {/* Stake Modal */}
       <StakeModal isOpen={isStakeModalOpen} onClose={() => setIsStakeModalOpen(false)} />
-
       {/* Transaction Confirmation Modal */}
       <TransactionConfirmationModal
         isOpen={isTransactionModalOpen}
@@ -704,6 +739,6 @@ export function RewardsDashboard() {
         onFail={handleTransactionFail}
         rewardAmount={pendingRewardAmount}
       />
-    </DashboardLayout>
-  )
+    </>
+  );
 }

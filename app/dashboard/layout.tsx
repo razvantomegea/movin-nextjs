@@ -1,67 +1,60 @@
-"use client"
+'use client';
 
-import type React from "react"
+import type React from 'react';
 
-import { useState } from "react"
-import { usePathname, useRouter } from "next/navigation"
-import { Activity, Bolt, Gift, Menu, Settings, Target, User, X, Users, Crown } from "lucide-react"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import Image from "next/image"
-import Link from "next/link"
-import { ThemeToggle } from "@/components/theme-toggle"
-import { RefreshButton } from "@/components/refresh-button"
-import { useMediaQuery } from "@/hooks/use-media-query"
-import { PremiumBadge } from "@/components/premium-badge"
+import { useState } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import { Activity, Bolt, Gift, Menu, Settings, Target, User, X, Users, Crown } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import Image from 'next/image';
+import Link from 'next/link';
+import { ThemeToggle } from '@/components/theme-toggle';
+import { RefreshButton } from '@/components/refresh-button';
+import { useMediaQuery } from '@/hooks/use-media-query';
+import { PremiumBadge } from '@/components/premium-badge';
 
 interface DashboardLayoutProps {
-  children: React.ReactNode
-  onRefresh?: () => Promise<void>
-  isLoading?: boolean
+  children: React.ReactNode;
+  onRefresh?: () => Promise<void>;
+  isLoading?: boolean;
 }
 
-export function DashboardLayout({ children, onRefresh, isLoading = false }: DashboardLayoutProps) {
-  const pathname = usePathname()
-  const router = useRouter()
-  const [isSheetOpen, setIsSheetOpen] = useState(false)
-  const isDesktop = useMediaQuery("(min-width: 768px)")
+export default function DashboardLayout({ children }: DashboardLayoutProps) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const isDesktop = useMediaQuery('(min-width: 768px)');
 
   const isActive = (path: string) => {
-    return pathname === path
-  }
+    return pathname === path;
+  };
 
   const tabs = [
-    { name: "Social", path: "/dashboard/social", icon: <Users className="h-5 w-5" /> },
-    { name: "Movin", path: "/dashboard", icon: <Activity className="h-5 w-5" /> },
-    { name: "Energy", path: "/dashboard/energy", icon: <Bolt className="h-5 w-5" /> },
-    { name: "Rewards", path: "/dashboard/rewards", icon: <Gift className="h-5 w-5" /> },
-    { name: "More", path: "#", icon: <Menu className="h-5 w-5" /> },
-  ]
-
-  const handleRefresh = async () => {
-    if (onRefresh) {
-      await onRefresh()
-    }
-  }
+    { name: 'Social', path: '/dashboard/social', icon: <Users className="h-5 w-5" /> },
+    { name: 'Movin', path: '/dashboard', icon: <Activity className="h-5 w-5" /> },
+    { name: 'Energy', path: '/dashboard/energy', icon: <Bolt className="h-5 w-5" /> },
+    { name: 'Rewards', path: '/dashboard/rewards', icon: <Gift className="h-5 w-5" /> },
+    { name: 'More', path: '#', icon: <Menu className="h-5 w-5" /> },
+  ];
 
   const content = (
     <div className="flex flex-col min-h-screen">
       {/* Header */}
-      <header className="glass-effect sticky top-0 z-10 p-4 flex items-center justify-between border-b border-gray-800 dark:border-gray-800 border-gray-200">
+      <header className="glass-effect sticky top-0 z-10 p-4 flex items-center justify-between border-b dark:border-gray-800 border-gray-200">
         <div className="flex items-center">
           <Image src="/images/logo.png" alt="Movin Logo" width={28} height={28} className="mr-2" />
           <span className="font-bold text-lg">Movin</span>
         </div>
 
         <div className="flex items-center gap-2">
-          {onRefresh && isDesktop && <RefreshButton onRefresh={handleRefresh} isLoading={isLoading} />}
           <PremiumBadge />
           <ThemeToggle />
           <Link href="/dashboard/profile">
             <Avatar className="h-8 w-8 border border-blue-500 cursor-pointer">
               <AvatarImage src="/placeholder.svg?height=32&width=32" alt="User" />
-              <AvatarFallback className="bg-blue-900 text-blue-100 dark:bg-blue-900 dark:text-blue-100 bg-blue-100 text-blue-900">
+              <AvatarFallback className=" dark:bg-blue-900 dark:text-blue-100 bg-blue-100 text-blue-900">
                 UN
               </AvatarFallback>
             </Avatar>
@@ -77,15 +70,15 @@ export function DashboardLayout({ children, onRefresh, isLoading = false }: Dash
       <nav className="glass-effect fixed bottom-0 w-full border-t border-gray-800">
         <div className="flex items-center justify-around">
           {tabs.map((tab, index) =>
-            tab.path === "#" ? (
+            tab.path === '#' ? (
               <Sheet key={index} open={isSheetOpen} onOpenChange={setIsSheetOpen}>
                 <SheetTrigger asChild>
                   <Button
                     variant="ghost"
                     className={`flex flex-col items-center py-4 px-5 rounded-none h-16 hover:bg-transparent focus:bg-transparent ${
-                      isActive(tab.path) ? "text-blue-400 font-medium" : "text-gray-400"
+                      isActive(tab.path) ? 'text-blue-400 font-medium' : 'text-gray-400'
                     }`}
-                    style={{ backgroundColor: "transparent" }}
+                    style={{ backgroundColor: 'transparent' }}
                     onClick={() => setIsSheetOpen(true)}
                   >
                     <span className="mb-0.5">{tab.icon}</span>
@@ -112,7 +105,9 @@ export function DashboardLayout({ children, onRefresh, isLoading = false }: Dash
                     <div className="flex-1 overflow-auto">
                       <div className="p-4 sm:p-6">
                         <div className="mb-8">
-                          <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-4">Account</h3>
+                          <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-4">
+                            Account
+                          </h3>
                           <ul className="space-y-3">
                             <li>
                               <Link
@@ -176,9 +171,9 @@ export function DashboardLayout({ children, onRefresh, isLoading = false }: Dash
                 key={index}
                 variant="ghost"
                 className={`flex flex-col items-center py-4 px-5 rounded-none h-16 hover:bg-transparent focus:bg-transparent ${
-                  isActive(tab.path) ? "text-blue-400 font-medium" : "text-gray-400"
+                  isActive(tab.path) ? 'text-blue-400 font-medium' : 'text-gray-400'
                 }`}
-                style={{ backgroundColor: "transparent" }}
+                style={{ backgroundColor: 'transparent' }}
                 onClick={() => router.push(tab.path)}
               >
                 <span className="mb-0.5">{tab.icon}</span>
@@ -189,8 +184,8 @@ export function DashboardLayout({ children, onRefresh, isLoading = false }: Dash
         </div>
       </nav>
     </div>
-  )
+  );
 
   // Always return content directly without PullToRefresh
-  return content
+  return content;
 }
