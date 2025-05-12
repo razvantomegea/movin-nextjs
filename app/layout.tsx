@@ -1,37 +1,37 @@
-import type React from "react"
-import "./globals.css"
-import type { Metadata } from "next"
-import { Inter } from "next/font/google"
-import { ThemeProvider } from "@/components/theme-provider"
-import { ReduxProvider } from "@/lib/redux/provider"
-import { GoogleMapsProvider } from "@/lib/google-maps-provider"
-import { ReduxToaster } from "@/components/ui/redux-toaster"
-
-const inter = Inter({ subsets: ["latin"] })
+import type React from 'react';
+import './globals.css';
+import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
+import { ThemeProvider } from '@/app/contexts/theme-provider';
+import { ReduxProvider } from '@/lib/redux/provider';
+import { GoogleMapsProvider } from '@/app/contexts/google-maps-provider';
+import { ReduxToaster } from '@/components/ui/redux-toaster';
+import { headers } from 'next/headers';
+import AppkitProvider from '@/app/contexts/appkit-provider';
+const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: "Movin App",
-  description: "Move to earn app",
-    generator: 'v0.dev'
-}
+  title: 'Movin App',
+  description: 'Move to earn app',
+  generator: 'v0.dev',
+};
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const headersObj = await headers();
+  const cookies = headersObj.get('cookie');
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
         <ReduxProvider>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
             <GoogleMapsProvider>
-              {children}
+              <AppkitProvider cookies={cookies}>{children}</AppkitProvider>
               <ReduxToaster />
             </GoogleMapsProvider>
           </ThemeProvider>
         </ReduxProvider>
       </body>
     </html>
-  )
+  );
 }

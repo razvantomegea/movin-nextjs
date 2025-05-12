@@ -1,36 +1,42 @@
-"use client"
+'use client';
 
-import { useState, useEffect } from "react"
-import Image from "next/image"
-import { Button } from "@/components/ui/button"
-import { Wallet } from "lucide-react"
-import { useRouter } from "next/navigation"
-import { motion } from "framer-motion"
-import { useTheme } from "next-themes"
-import { ThemeToggle } from "./theme-toggle"
+import { useState, useEffect } from 'react';
+import Image from 'next/image';
+import { Button } from '@/components/ui/button';
+import { Wallet } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { motion } from 'framer-motion';
+import { useTheme } from 'next-themes';
+import { ThemeToggle } from './theme-toggle';
+import { useAppKit, useAppKitAccount, useAppKitState } from '@reown/appkit/react';
 
 export function ConnectPage() {
-  const router = useRouter()
-  const { resolvedTheme } = useTheme()
-  const [connecting, setConnecting] = useState(false)
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
+  const router = useRouter();
+  const { resolvedTheme } = useTheme();
+  const { open } = useAppKit();
+  const { isConnected } = useAppKitAccount();
+  const { open: isOpen } = useAppKitState();
+  const [connecting, setConnecting] = useState(isConnected);
 
   const handleConnect = async () => {
-    setConnecting(true)
+    open();
 
-    // Simple timeout to simulate connection
-    setTimeout(() => {
-      router.push("/dashboard/social")
-    }, 1500)
-  }
+    setConnecting(true);
+  };
 
-  if (!mounted) return null
+  useEffect(() => {
+    if (isConnected) {
+      router.push('/dashboard/social');
+    }
+  }, [isConnected, router]);
 
-  const isDark = resolvedTheme === "dark"
+  useEffect(() => {
+    if (isOpen) {
+      setConnecting(false);
+    }
+  }, [isOpen]);
+
+  const isDark = resolvedTheme === 'dark';
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-gray-950 dark:to-gray-900 p-4 text-gray-900 dark:text-white transition-colors duration-300">
@@ -49,7 +55,7 @@ export function ConnectPage() {
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{
-            type: "spring",
+            type: 'spring',
             stiffness: 260,
             damping: 20,
             delay: 0.1,
@@ -59,24 +65,24 @@ export function ConnectPage() {
           <div className="absolute -inset-8 rounded-full bg-blue-500/10 blur-xl"></div>
           <div
             className={`relative w-40 h-40 mb-4 ${
-              isDark ? "bg-gray-900" : "bg-white"
+              isDark ? 'bg-gray-900' : 'bg-white'
             } rounded-full p-6 shadow-lg border ${
-              isDark ? "border-blue-500/30" : "border-blue-500/20"
+              isDark ? 'border-blue-500/30' : 'border-blue-500/20'
             } flex items-center justify-center transition-colors duration-300`}
           >
             <motion.div
               animate={{
                 scale: [1, 1.05, 1],
                 filter: [
-                  "drop-shadow(0 0 0px rgba(59,130,246,0.7))",
-                  "drop-shadow(0 0 15px rgba(59,130,246,0.7))",
-                  "drop-shadow(0 0 0px rgba(59,130,246,0.7))",
+                  'drop-shadow(0 0 0px rgba(59,130,246,0.7))',
+                  'drop-shadow(0 0 15px rgba(59,130,246,0.7))',
+                  'drop-shadow(0 0 0px rgba(59,130,246,0.7))',
                 ],
               }}
               transition={{
                 repeat: Number.POSITIVE_INFINITY,
                 duration: 3,
-                ease: "easeInOut",
+                ease: 'easeInOut',
               }}
             >
               <Image
@@ -121,7 +127,11 @@ export function ConnectPage() {
             className="w-full py-6 text-lg rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white transition-all shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 border-0"
           >
             {connecting ? (
-              <motion.div className="flex items-center" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+              <motion.div
+                className="flex items-center"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+              >
                 <div className="animate-spin mr-2 h-5 w-5 border-2 border-white border-t-transparent rounded-full"></div>
                 Connecting...
               </motion.div>
@@ -129,7 +139,7 @@ export function ConnectPage() {
               <motion.div
                 className="flex items-center"
                 whileHover={{ x: 5 }}
-                transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 10 }}
               >
                 <Wallet className="mr-2 h-5 w-5" />
                 Connect Wallet
@@ -155,18 +165,18 @@ export function ConnectPage() {
             key={i}
             className="absolute w-1 h-1 bg-blue-400/30 rounded-full"
             initial={{
-              x: Math.random() * 100 + "%",
-              y: Math.random() * 100 + "%",
+              x: Math.random() * 100 + '%',
+              y: Math.random() * 100 + '%',
               scale: Math.random() * 0.5 + 0.5,
             }}
             animate={{
-              y: [null, Math.random() * -30 - 10, null],
+              y: [null, Math.random() * -30 - 10, undefined],
               opacity: [0.3, 0.8, 0.3],
             }}
             transition={{
               repeat: Number.POSITIVE_INFINITY,
               duration: Math.random() * 3 + 2,
-              ease: "easeInOut",
+              ease: 'easeInOut',
               delay: Math.random() * 2,
             }}
             style={{
@@ -177,5 +187,5 @@ export function ConnectPage() {
         ))}
       </div>
     </div>
-  )
+  );
 }
