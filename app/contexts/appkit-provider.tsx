@@ -36,7 +36,9 @@ if (!projectId) {
     defaultNetwork: base,
     metadata: metadata,
     features: {
-      analytics: true, // Optional - defaults to your Cloud configuration
+      analytics: true,
+      socials: ['apple', 'google'],
+      email: true,
     },
   });
 }

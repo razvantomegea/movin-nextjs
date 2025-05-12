@@ -2,7 +2,7 @@
 
 import type React from 'react';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { Activity, Bolt, Gift, Menu, Settings, Target, User, X, Users, Crown } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -14,6 +14,7 @@ import { ThemeToggle } from '@/components/theme-toggle';
 import { RefreshButton } from '@/components/refresh-button';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { PremiumBadge } from '@/components/premium-badge';
+import { useAppKitAccount } from '@reown/appkit/react';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -25,7 +26,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const isDesktop = useMediaQuery('(min-width: 768px)');
+  const { isConnected } = useAppKitAccount();
 
   const isActive = (path: string) => {
     return pathname === path;
@@ -38,6 +39,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     { name: 'Rewards', path: '/dashboard/rewards', icon: <Gift className="h-5 w-5" /> },
     { name: 'More', path: '#', icon: <Menu className="h-5 w-5" /> },
   ];
+
+  useEffect(() => {
+    if (!isConnected) {
+      router.push('/');
+    }
+  }, [isConnected, router]);
 
   const content = (
     <div className="flex flex-col min-h-screen">
@@ -59,7 +66,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               </AvatarFallback>
             </Avatar>
           </Link>
-          <span className="text-blue-400 text-sm font-medium">username</span>
+          <appkit-button />
         </div>
       </header>
 
