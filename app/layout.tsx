@@ -8,6 +8,8 @@ import { GoogleMapsProvider } from '@/app/contexts/google-maps-provider';
 import { ReduxToaster } from '@/components/ui/redux-toaster';
 import { headers } from 'next/headers';
 import AppkitProvider from '@/app/contexts/appkit-provider';
+import { Analytics } from '@vercel/analytics/next';
+
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
@@ -28,6 +30,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <GoogleMapsProvider>
               <AppkitProvider cookies={cookies}>{children}</AppkitProvider>
               <ReduxToaster />
+              <Analytics />
             </GoogleMapsProvider>
           </ThemeProvider>
         </ReduxProvider>
