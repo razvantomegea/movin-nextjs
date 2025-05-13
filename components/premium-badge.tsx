@@ -1,25 +1,25 @@
-"use client"
+'use client';
 
-import { useEffect } from "react"
-import { Crown } from "lucide-react"
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks"
-import { fetchSubscriptionStatus } from "@/lib/redux/slices/subscriptionSlice"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { useEffect } from 'react';
+import { Crown } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
+import { fetchSubscriptionStatus } from '@/lib/redux/slices/subscriptionSlice';
 
 export function PremiumBadge() {
-  const dispatch = useAppDispatch()
-  const { isPremium, isLoading } = useAppSelector((state) => state.subscription)
+  const dispatch = useAppDispatch();
+  const { isPremium, isLoading } = useAppSelector((state) => state.subscription);
 
   useEffect(() => {
-    dispatch(fetchSubscriptionStatus())
-  }, [dispatch])
+    dispatch(fetchSubscriptionStatus());
+  }, [dispatch]);
 
   if (isLoading) {
-    return <div className="h-5 w-5 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse"></div>
+    return <div className="h-5 w-5 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse"></div>;
   }
 
   if (!isPremium) {
-    return null
+    return null;
   }
 
   return (
@@ -35,5 +35,5 @@ export function PremiumBadge() {
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
-  )
+  );
 }

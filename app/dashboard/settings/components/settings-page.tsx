@@ -2,11 +2,13 @@
 
 import { useState } from 'react';
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
+import { motion } from 'framer-motion';
+import { Bell, Trash2, Download, Upload, RefreshCw, Shield, Smartphone, Crown } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
-import { Slider } from '@/components/ui/slider';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -14,11 +16,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ThemeToggle } from '@/components/theme-toggle';
-import { Bell, Trash2, Download, Upload, RefreshCw, Shield, Smartphone, Crown } from 'lucide-react';
-import { motion } from 'framer-motion';
-import { useTheme } from 'next-themes';
-import { useRouter } from 'next/navigation';
+import { Slider } from '@/components/ui/slider';
+import { Switch } from '@/components/ui/switch';
 import { useAppSelector } from '@/lib/redux/hooks';
 
 const container = {
@@ -38,7 +37,6 @@ const item = {
 
 export function SettingsPage() {
   const router = useRouter();
-  const { theme, setTheme } = useTheme();
   const { isPremium } = useAppSelector((state) => state.subscription);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [backgroundSync, setBackgroundSync] = useState(true);

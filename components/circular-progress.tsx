@@ -1,18 +1,23 @@
-"use client"
+'use client';
 
-import { motion } from "framer-motion"
+import { motion } from 'framer-motion';
 
 interface CircularProgressProps {
-  value: number
-  size: number
-  strokeWidth: number
-  className?: string
+  value: number;
+  size: number;
+  strokeWidth: number;
+  className?: string;
 }
 
-export function CircularProgress({ value, size, strokeWidth, className = "" }: CircularProgressProps) {
-  const radius = (size - strokeWidth) / 2
-  const circumference = radius * 2 * Math.PI
-  const offset = circumference - (value / 100) * circumference
+export function CircularProgress({
+  value,
+  size,
+  strokeWidth,
+  className = '',
+}: CircularProgressProps) {
+  const radius = (size - strokeWidth) / 2;
+  const circumference = radius * 2 * Math.PI;
+  const offset = circumference - (value / 100) * circumference;
 
   return (
     <div className={`relative ${className}`} style={{ width: size, height: size }}>
@@ -31,7 +36,7 @@ export function CircularProgress({ value, size, strokeWidth, className = "" }: C
         <motion.circle
           initial={{ strokeDashoffset: circumference }}
           animate={{ strokeDashoffset: offset }}
-          transition={{ duration: 1, ease: "easeInOut" }}
+          transition={{ duration: 1, ease: 'easeInOut' }}
           className="text-blue-500 progress-ring-circle"
           strokeWidth={strokeWidth}
           strokeDasharray={circumference}
@@ -49,7 +54,7 @@ export function CircularProgress({ value, size, strokeWidth, className = "" }: C
         transition={{
           delay: 0.5,
           duration: 0.5,
-          type: "spring",
+          type: 'spring',
           stiffness: 260,
           damping: 20,
         }}
@@ -58,5 +63,5 @@ export function CircularProgress({ value, size, strokeWidth, className = "" }: C
         {value}%
       </motion.div>
     </div>
-  )
+  );
 }

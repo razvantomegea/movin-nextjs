@@ -1,26 +1,26 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Activity, Clock, Flame, TrendingUp, RefreshCw, Dumbbell, MapPin } from 'lucide-react';
-import { Progress } from '@/components/ui/progress';
-import { CircularProgress } from '@/components/circular-progress';
 import { motion } from 'framer-motion';
-import { Button } from '@/components/ui/button';
+import { Activity, Clock, Flame, TrendingUp, RefreshCw, Dumbbell, MapPin } from 'lucide-react';
 import { useTheme } from 'next-themes';
+import { ActivityColumnChart } from '@/components/activity-column-chart';
+import { CircularProgress } from '@/components/circular-progress';
+import ErrorBoundary from '@/components/error-boundary';
+import { RefreshButton } from '@/components/refresh-button';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { ErrorAlert } from '@/components/ui/error-alert';
+import { Progress } from '@/components/ui/progress';
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
 import { fetchActivityData, resetActivityError } from '@/lib/redux/slices/activityDataSlice';
-import { ActivityDashboardSkeleton } from './activity-dashboard-skeleton';
-import { ErrorAlert } from '@/components/ui/error-alert';
-import ErrorBoundary from '@/components/error-boundary';
-import { ActivityColumnChart } from '@/components/activity-column-chart';
-import { showSuccessToast, showInfoToast } from '@/lib/redux/slices/toastSlice';
-import { RefreshButton } from '@/components/refresh-button';
-import { RouteTrackingModal, type RouteData } from './route-tracking-modal';
-import { saveRouteData } from '@/lib/redux/slices/routeDataSlice';
-import { formatDistance, formatDuration } from '@/lib/utils';
-import { RouteTypeModal } from './route-type-modal';
 import { resetJointTracking } from '@/lib/redux/slices/jointTrackingSlice';
+import { saveRouteData } from '@/lib/redux/slices/routeDataSlice';
+import { showSuccessToast, showInfoToast } from '@/lib/redux/slices/toastSlice';
+import { formatDistance, formatDuration } from '@/utils';
+import { ActivityDashboardSkeleton } from './activity-dashboard-skeleton';
+import { RouteTrackingModal, type RouteData } from './route-tracking-modal';
+import { RouteTypeModal } from './route-type-modal';
 
 const container = {
   hidden: { opacity: 0 },

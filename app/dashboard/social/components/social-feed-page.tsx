@@ -1,6 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { AlertCircle, Plus } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { RefreshButton } from '@/components/ui/refresh-button';
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
 import {
   fetchSocialFeed,
@@ -9,13 +13,9 @@ import {
   addPost,
   clearError,
 } from '@/lib/redux/slices/socialFeedSlice';
+import { ShareAchievementModal } from './share-achievement-modal';
 import { SocialFeedCard } from './social-feed-card';
 import { SocialFeedSkeleton } from './social-feed-skeleton';
-import { ShareAchievementModal } from './share-achievement-modal';
-import { Button } from '@/components/ui/button';
-import { RefreshButton } from '@/components/ui/refresh-button';
-import { AlertCircle, Plus } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export function SocialFeedPage() {
   const dispatch = useAppDispatch();

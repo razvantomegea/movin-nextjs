@@ -1,14 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Image from 'next/image';
-import { Button } from '@/components/ui/button';
-import { Wallet } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
-import { useTheme } from 'next-themes';
-import { ThemeToggle } from './theme-toggle';
 import { useAppKit, useAppKitAccount, useAppKitState } from '@reown/appkit/react';
+import { motion } from 'framer-motion';
+import { Wallet } from 'lucide-react';
+import Image from 'next/image';
+import { useRouter } from 'next/navigation';
+import { useTheme } from 'next-themes';
+import { Button } from '@/components/ui/button';
+import { ThemeToggle } from './theme-toggle';
 
 export function ConnectPage() {
   const router = useRouter();

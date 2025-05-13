@@ -1,110 +1,111 @@
-"use client"
+'use client';
 
-import { useState, useRef, useEffect } from "react"
-import { motion, AnimatePresence } from "framer-motion"
-import { Button } from "@/components/ui/button"
-import { X, Camera, RefreshCw, Check } from "lucide-react"
-import { useTheme } from "next-themes"
-import { MealDetectionResultsModal } from "../app/dashboard/energy/components/meal-detection-results-modal"
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { X, Camera, RefreshCw, Check } from 'lucide-react';
+import Image from 'next/image';
+import { useTheme } from 'next-themes';
+import { Button } from '@/components/ui/button';
+import { MealDetectionResultsModal } from '../app/dashboard/energy/components/meal-detection-results-modal';
 
 interface CameraModalProps {
-  isOpen: boolean
-  onClose: () => void
-  onCapture: (imageData: string) => void
+  isOpen: boolean;
+  onClose: () => void;
+  onCapture: (imageData: string) => void;
 }
 
 export function CameraModal({ isOpen, onClose, onCapture }: CameraModalProps) {
-  const { resolvedTheme } = useTheme()
-  const isDark = resolvedTheme === "dark"
-  const videoRef = useRef<HTMLVideoElement>(null)
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-  const [stream, setStream] = useState<MediaStream | null>(null)
-  const [capturedImage, setCapturedImage] = useState<string | null>(null)
-  const [isCameraReady, setIsCameraReady] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [showResults, setShowResults] = useState(false)
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === 'dark';
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [stream, setStream] = useState<MediaStream | null>(null);
+  const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [isCameraReady, setIsCameraReady] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [showResults, setShowResults] = useState(false);
+
+  const stopCamera = useCallback(() => {
+    if (stream) {
+      stream.getTracks().forEach((track) => track.stop());
+      setStream(null);
+    }
+    setIsCameraReady(false);
+  }, [stream]);
+
+  const initializeCamera = useCallback(async () => {
+    try {
+      // Reset states
+      setError(null);
+      setCapturedImage(null);
+
+      // Request camera access with rear camera preference
+      const mediaStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment' }, // Use rear camera if available
+        audio: false,
+      });
+
+      setStream(mediaStream);
+
+      if (videoRef.current) {
+        videoRef.current.srcObject = mediaStream;
+        videoRef.current.onloadedmetadata = () => {
+          setIsCameraReady(true);
+        };
+      }
+    } catch (err) {
+      console.error('Error accessing camera:', err);
+      setError('Could not access camera. Please check permissions and try again.');
+    }
+  }, [videoRef, setError, setCapturedImage, setStream, setIsCameraReady]);
 
   // Initialize camera when modal opens
   useEffect(() => {
     if (isOpen) {
-      initializeCamera()
+      initializeCamera();
     } else {
       // Clean up when modal closes
-      stopCamera()
-      setCapturedImage(null)
-      setShowResults(false)
+      stopCamera();
+      setCapturedImage(null);
+      setShowResults(false);
     }
-  }, [isOpen])
-
-  const initializeCamera = async () => {
-    try {
-      // Reset states
-      setError(null)
-      setCapturedImage(null)
-
-      // Request camera access with rear camera preference
-      const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment" }, // Use rear camera if available
-        audio: false,
-      })
-
-      setStream(mediaStream)
-
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream
-        videoRef.current.onloadedmetadata = () => {
-          setIsCameraReady(true)
-        }
-      }
-    } catch (err) {
-      console.error("Error accessing camera:", err)
-      setError("Could not access camera. Please check permissions and try again.")
-    }
-  }
-
-  const stopCamera = () => {
-    if (stream) {
-      stream.getTracks().forEach((track) => track.stop())
-      setStream(null)
-    }
-    setIsCameraReady(false)
-  }
+  }, [isOpen, initializeCamera, stopCamera]);
 
   const handleCapture = () => {
     if (videoRef.current && canvasRef.current && isCameraReady) {
-      const video = videoRef.current
-      const canvas = canvasRef.current
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
 
       // Set canvas dimensions to match video
-      canvas.width = video.videoWidth
-      canvas.height = video.videoHeight
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
 
       // Draw current video frame to canvas
-      const ctx = canvas.getContext("2d")
+      const ctx = canvas.getContext('2d');
       if (ctx) {
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
         // Convert canvas to data URL
-        const imageData = canvas.toDataURL("image/jpeg")
-        setCapturedImage(imageData)
+        const imageData = canvas.toDataURL('image/jpeg');
+        setCapturedImage(imageData);
       }
     }
-  }
+  };
 
   const handleRetake = () => {
-    setCapturedImage(null)
-  }
+    setCapturedImage(null);
+  };
 
   const handleConfirm = () => {
     if (capturedImage) {
       // Instead of calling onCapture directly, show the results modal
-      setShowResults(true)
-      stopCamera() // Stop the camera when showing results
+      setShowResults(true);
+      stopCamera(); // Stop the camera when showing results
 
       // We'll still call onCapture for backward compatibility
-      onCapture(capturedImage)
+      onCapture(capturedImage);
     }
-  }
+  };
 
   return (
     <>
@@ -125,17 +126,17 @@ export function CameraModal({ isOpen, onClose, onCapture }: CameraModalProps) {
 
             <motion.div
               className={`relative w-full h-full sm:max-w-lg sm:h-auto sm:max-h-[90vh] sm:rounded-xl overflow-hidden ${
-                isDark ? "bg-gray-900" : "bg-white"
+                isDark ? 'bg-gray-900' : 'bg-white'
               } shadow-xl`}
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
             >
               {/* Header */}
               <div
                 className={`sticky top-0 z-10 flex items-center justify-between p-4 border-b ${
-                  isDark ? "border-gray-800 bg-gray-900" : "border-gray-200 bg-white"
+                  isDark ? 'border-gray-800 bg-gray-900' : 'border-gray-200 bg-white'
                 }`}
               >
                 <h2 className="text-xl font-bold">Scan Meal</h2>
@@ -153,7 +154,9 @@ export function CameraModal({ isOpen, onClose, onCapture }: CameraModalProps) {
                       autoPlay
                       playsInline
                       muted
-                      className={`absolute inset-0 h-full w-full object-cover ${isCameraReady ? "block" : "hidden"}`}
+                      className={`absolute inset-0 h-full w-full object-cover ${
+                        isCameraReady ? 'block' : 'hidden'
+                      }`}
                     />
                     {!isCameraReady && !error && (
                       <div className="absolute inset-0 flex items-center justify-center">
@@ -162,11 +165,15 @@ export function CameraModal({ isOpen, onClose, onCapture }: CameraModalProps) {
                     )}
                   </>
                 ) : (
-                  <img
-                    src={capturedImage || "/placeholder.svg"}
-                    alt="Captured meal"
-                    className="absolute inset-0 h-full w-full object-cover"
-                  />
+                  <div className="absolute inset-0 h-full w-full">
+                    <Image
+                      src={capturedImage || '/placeholder.svg'}
+                      alt="Captured meal"
+                      fill
+                      className="object-cover"
+                      unoptimized={!!capturedImage} // Skip optimization for data URLs
+                    />
+                  </div>
                 )}
 
                 {/* Hidden canvas for capturing images */}
@@ -191,13 +198,14 @@ export function CameraModal({ isOpen, onClose, onCapture }: CameraModalProps) {
                   </p>
                 ) : (
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Is this image clear? Our AI will analyze it to detect ingredients and nutrition info
+                    Is this image clear? Our AI will analyze it to detect ingredients and nutrition
+                    info
                   </p>
                 )}
               </div>
 
               {/* Action Buttons */}
-              <div className={`p-4 border-t ${isDark ? "border-gray-800" : "border-gray-200"}`}>
+              <div className={`p-4 border-t ${isDark ? 'border-gray-800' : 'border-gray-200'}`}>
                 {!capturedImage ? (
                   <div className="flex justify-center">
                     <Button
@@ -234,11 +242,11 @@ export function CameraModal({ isOpen, onClose, onCapture }: CameraModalProps) {
       <MealDetectionResultsModal
         isOpen={showResults}
         onClose={() => {
-          setShowResults(false)
-          onClose()
+          setShowResults(false);
+          onClose();
         }}
         imageData={capturedImage}
       />
     </>
-  )
+  );
 }

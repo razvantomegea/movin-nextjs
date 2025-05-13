@@ -1,12 +1,12 @@
-import { AlertCircle } from "lucide-react"
+import { AlertCircle } from 'lucide-react';
 
 interface ErrorAlertProps {
-  message: string
-  className?: string
+  message: string;
+  className?: string;
 }
 
-export function ErrorAlert({ message, className = "" }: ErrorAlertProps) {
-  if (!message) return null
+export function ErrorAlert({ message, className = '' }: ErrorAlertProps) {
+  if (!message) return null;
 
   return (
     <div
@@ -15,5 +15,5 @@ export function ErrorAlert({ message, className = "" }: ErrorAlertProps) {
       <AlertCircle className="h-4 w-4 mr-2 flex-shrink-0" />
       <span>{message}</span>
     </div>
-  )
+  );
 }

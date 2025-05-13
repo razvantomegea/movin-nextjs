@@ -3,13 +3,7 @@
 import type React from 'react';
 
 import { useEffect, useState, useRef } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
+import { motion } from 'framer-motion';
 import {
   Edit,
   Camera,
@@ -21,13 +15,20 @@ import {
   Save,
   AlertCircle,
 } from 'lucide-react';
-import { motion } from 'framer-motion';
-import { showSuccessToast, showErrorToast } from '@/lib/redux/slices/toastSlice';
-import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
 import { RefreshButton } from '@/components/refresh-button';
-import { ProfilePageSkeleton } from './profile-page-skeleton';
-import { fetchProfile, updateProfile, clearProfileError } from '@/lib/redux/slices/profileSlice';
+import TokenBalanceExample from '@/components/TokenBalanceExample';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
+import { fetchProfile, updateProfile, clearProfileError } from '@/lib/redux/slices/profileSlice';
+import { showSuccessToast, showErrorToast } from '@/lib/redux/slices/toastSlice';
+import { ProfilePageSkeleton } from './profile-page-skeleton';
 
 const container = {
   hidden: { opacity: 0 },
@@ -233,7 +234,7 @@ export function ProfilePage() {
                         }
                         alt="User"
                       />
-                      <AvatarFallback className="text-2xl bg-blue-900 text-blue-100 dark:bg-blue-900 dark:text-blue-100 bg-blue-100 text-blue-900">
+                      <AvatarFallback className="text-2xl  dark:bg-blue-900 dark:text-blue-100 bg-blue-100 text-blue-900">
                         {profile.username.charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
@@ -452,6 +453,10 @@ export function ProfilePage() {
                 </Card>
               </TabsContent>
             </Tabs>
+          </motion.div>
+
+          <motion.div variants={item}>
+            <TokenBalanceExample />
           </motion.div>
         </div>
       </motion.div>

@@ -1,106 +1,110 @@
-"use client"
+'use client';
 
-import { useState } from "react"
-import { Card, CardContent } from "@/components/ui/card"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { useTheme } from "next-themes"
-import { Loader2 } from "lucide-react"
-import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid } from "recharts"
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
-import { motion, AnimatePresence } from "framer-motion"
-import type { EnergyData } from "@/lib/redux/slices/energyDataSlice"
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Loader2 } from 'lucide-react';
+import { useTheme } from 'next-themes';
+import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { Card, CardContent } from '@/components/ui/card';
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import type { EnergyData } from '@/lib/redux/slices/energyDataSlice';
 
 interface EnergyOverviewChartProps {
-  weeklyData: EnergyData[]
-  monthlyData: EnergyData[]
-  yearlyData: EnergyData[]
+  weeklyData: EnergyData[];
+  monthlyData: EnergyData[];
+  yearlyData: EnergyData[];
 }
 
-type MetricType = "calories" | "carbs" | "fats" | "protein"
+type MetricType = 'calories' | 'carbs' | 'fats' | 'protein';
 
-export function EnergyOverviewChart({ weeklyData, monthlyData, yearlyData }: EnergyOverviewChartProps) {
-  const [timeRange, setTimeRange] = useState<"week" | "month" | "year">("week")
-  const [metric, setMetric] = useState<MetricType>("calories")
-  const { resolvedTheme } = useTheme()
-  const isDark = resolvedTheme === "dark"
+export function EnergyOverviewChart({
+  weeklyData,
+  monthlyData,
+  yearlyData,
+}: EnergyOverviewChartProps) {
+  const [timeRange, setTimeRange] = useState<'week' | 'month' | 'year'>('week');
+  const [metric, setMetric] = useState<MetricType>('calories');
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === 'dark';
 
   // Get the appropriate data based on the selected time range
   const getData = () => {
     switch (timeRange) {
-      case "week":
-        return weeklyData || []
-      case "month":
-        return monthlyData || []
-      case "year":
-        return yearlyData || []
+      case 'week':
+        return weeklyData || [];
+      case 'month':
+        return monthlyData || [];
+      case 'year':
+        return yearlyData || [];
       default:
-        return weeklyData || []
+        return weeklyData || [];
     }
-  }
+  };
 
   // Get the unit for the selected metric
   const getUnit = () => {
     switch (metric) {
-      case "calories":
-        return "kcal"
-      case "carbs":
-      case "fats":
-      case "protein":
-        return "g"
+      case 'calories':
+        return 'kcal';
+      case 'carbs':
+      case 'fats':
+      case 'protein':
+        return 'g';
       default:
-        return ""
+        return '';
     }
-  }
+  };
 
   // Format the value based on the metric
   const formatValue = (value: number) => {
     switch (metric) {
-      case "calories":
-        return value.toLocaleString()
-      case "carbs":
-      case "fats":
-      case "protein":
-        return value.toLocaleString()
+      case 'calories':
+        return value.toLocaleString();
+      case 'carbs':
+      case 'fats':
+      case 'protein':
+        return value.toLocaleString();
       default:
-        return value.toString()
+        return value.toString();
     }
-  }
+  };
 
-  const data = getData()
-  const hasData = data.length > 0
-  const totalValue = hasData ? data.reduce((sum, item) => sum + item[metric], 0) : 0
+  const data = getData();
+  const hasData = data.length > 0;
+  const totalValue = hasData ? data.reduce((sum, item) => sum + item[metric], 0) : 0;
 
   // Get the color for the chart based on the metric and theme
   const getChartColor = () => {
     switch (metric) {
-      case "calories":
-        return isDark ? "#3b82f6" : "#2563eb" // blue
-      case "carbs":
-        return isDark ? "#60a5fa" : "#3b82f6" // lighter blue
-      case "fats":
-        return isDark ? "#facc15" : "#eab308" // yellow
-      case "protein":
-        return isDark ? "#4ade80" : "#22c55e" // green
+      case 'calories':
+        return isDark ? '#3b82f6' : '#2563eb'; // blue
+      case 'carbs':
+        return isDark ? '#60a5fa' : '#3b82f6'; // lighter blue
+      case 'fats':
+        return isDark ? '#facc15' : '#eab308'; // yellow
+      case 'protein':
+        return isDark ? '#4ade80' : '#22c55e'; // green
       default:
-        return isDark ? "#3b82f6" : "#2563eb"
+        return isDark ? '#3b82f6' : '#2563eb';
     }
-  }
+  };
 
   // Get the label for the selected metric
   const getMetricLabel = () => {
     switch (metric) {
-      case "calories":
-        return "Calories (kcal)"
-      case "carbs":
-        return "Carbohydrates (g)"
-      case "fats":
-        return "Fats (g)"
-      case "protein":
-        return "Protein (g)"
+      case 'calories':
+        return 'Calories (kcal)';
+      case 'carbs':
+        return 'Carbohydrates (g)';
+      case 'fats':
+        return 'Fats (g)';
+      case 'protein':
+        return 'Protein (g)';
       default:
-        return ""
+        return '';
     }
-  }
+  };
 
   // Animation variants for chart transitions
   const chartVariants = {
@@ -110,7 +114,7 @@ export function EnergyOverviewChart({ weeklyData, monthlyData, yearlyData }: Ene
       y: 0,
       transition: {
         duration: 0.5,
-        ease: "easeOut",
+        ease: 'easeOut',
       },
     },
     exit: {
@@ -118,13 +122,13 @@ export function EnergyOverviewChart({ weeklyData, monthlyData, yearlyData }: Ene
       y: -20,
       transition: {
         duration: 0.3,
-        ease: "easeIn",
+        ease: 'easeIn',
       },
     },
-  }
+  };
 
   return (
-    <Card className={isDark ? "bg-gray-900 border-gray-800" : "bg-white border-gray-200"}>
+    <Card className={isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}>
       <CardContent className="p-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
           <Tabs
@@ -144,7 +148,7 @@ export function EnergyOverviewChart({ weeklyData, monthlyData, yearlyData }: Ene
           <Tabs
             defaultValue="week"
             value={timeRange}
-            onValueChange={(value) => setTimeRange(value as "week" | "month" | "year")}
+            onValueChange={(value) => setTimeRange(value as 'week' | 'month' | 'year')}
             className="w-full sm:w-auto"
           >
             <TabsList className="grid grid-cols-3 w-full sm:w-auto">
@@ -197,12 +201,12 @@ export function EnergyOverviewChart({ weeklyData, monthlyData, yearlyData }: Ene
                         <linearGradient id="bgGradient" x1="0" y1="0" x2="0" y2="1">
                           <stop
                             offset="0%"
-                            stopColor={isDark ? getChartColor() : "#f3f4f6"}
+                            stopColor={isDark ? getChartColor() : '#f3f4f6'}
                             stopOpacity={isDark ? 0.1 : 0.8}
                           />
                           <stop
                             offset="100%"
-                            stopColor={isDark ? getChartColor() : "#f9fafb"}
+                            stopColor={isDark ? getChartColor() : '#f9fafb'}
                             stopOpacity={isDark ? 0.02 : 0.3}
                           />
                         </linearGradient>
@@ -211,18 +215,18 @@ export function EnergyOverviewChart({ weeklyData, monthlyData, yearlyData }: Ene
                       <CartesianGrid
                         strokeDasharray="3 3"
                         vertical={false}
-                        stroke={isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.06)"}
+                        stroke={isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)'}
                       />
                       <XAxis
                         dataKey="label"
                         tick={{ fontSize: 12 }}
                         tickLine={false}
-                        axisLine={{ stroke: isDark ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.2)" }}
+                        axisLine={{ stroke: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)' }}
                       />
                       <YAxis
                         tick={{ fontSize: 12 }}
                         tickLine={false}
-                        axisLine={{ stroke: isDark ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.2)" }}
+                        axisLine={{ stroke: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)' }}
                         tickFormatter={(value) => formatValue(value)}
                       />
                       <ChartTooltip content={<ChartTooltipContent />} />
@@ -231,7 +235,7 @@ export function EnergyOverviewChart({ weeklyData, monthlyData, yearlyData }: Ene
                         dataKey={metric}
                         stroke={getChartColor()}
                         fillOpacity={0.8}
-                        fill={isDark ? "rgb(31 41 55 / 0.5)" : "rgb(229 231 235 / 0.7)"}
+                        fill={isDark ? 'rgb(31 41 55 / 0.5)' : 'rgb(229 231 235 / 0.7)'}
                         strokeWidth={2.5}
                         activeDot={{ r: 6, strokeWidth: 0, fill: getChartColor() }}
                         animationDuration={1000}
@@ -247,16 +251,16 @@ export function EnergyOverviewChart({ weeklyData, monthlyData, yearlyData }: Ene
 
         <div className="mt-6 text-center">
           <div className="text-sm text-gray-500">
-            {metric === "calories" && "Total Calories"}
-            {metric === "carbs" && "Total Carbohydrates"}
-            {metric === "fats" && "Total Fats"}
-            {metric === "protein" && "Total Protein"}
+            {metric === 'calories' && 'Total Calories'}
+            {metric === 'carbs' && 'Total Carbohydrates'}
+            {metric === 'fats' && 'Total Fats'}
+            {metric === 'protein' && 'Total Protein'}
           </div>
           <div className="text-xl font-bold">
-            {hasData ? formatValue(totalValue) : "0"} {getUnit()}
+            {hasData ? formatValue(totalValue) : '0'} {getUnit()}
           </div>
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

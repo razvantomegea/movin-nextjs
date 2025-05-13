@@ -3,14 +3,14 @@
 import { useEffect } from 'react';
 
 import { motion } from 'framer-motion';
-import { GoalProgressCard } from './goal-progress-card';
-import { showSuccessToast, showInfoToast, showErrorToast } from '@/lib/redux/slices/toastSlice';
-import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
-import { RefreshButton } from '@/components/refresh-button';
-import { fetchGoals } from '@/lib/redux/slices/goalsSlice';
-import { GoalsPageSkeleton } from './goals-page-skeleton';
 import { AlertCircle } from 'lucide-react';
+import { RefreshButton } from '@/components/refresh-button';
 import { Button } from '@/components/ui/button';
+import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
+import { fetchGoals } from '@/lib/redux/slices/goalsSlice';
+import { showSuccessToast, showInfoToast, showErrorToast } from '@/lib/redux/slices/toastSlice';
+import { GoalProgressCard } from './goal-progress-card';
+import { GoalsPageSkeleton } from './goals-page-skeleton';
 
 const container = {
   hidden: { opacity: 0 },
@@ -172,7 +172,7 @@ export function GoalsPage() {
           <motion.div variants={item} className="text-center py-10">
             <h3 className="text-lg font-medium mb-2">No goals found</h3>
             <p className="text-gray-500 dark:text-gray-400 mb-4">
-              You don't have any goals set up yet.
+              You don&apos;t have any goals set up yet.
             </p>
             <Button onClick={handleRefresh}>Refresh</Button>
           </motion.div>

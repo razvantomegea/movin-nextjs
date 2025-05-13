@@ -1,5 +1,5 @@
-import { Skeleton } from "@/components/ui/skeleton"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export function StakingSkeleton() {
   return (
@@ -85,7 +85,10 @@ export function StakingSkeleton() {
           <CardContent className="p-4">
             <div className="space-y-3">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="flex items-center justify-between p-2 border-b border-gray-800 last:border-0">
+                <div
+                  key={i}
+                  className="flex items-center justify-between p-2 border-b border-gray-800 last:border-0"
+                >
                   <div>
                     <Skeleton className="h-5 w-16 mb-1" />
                     <Skeleton className="h-3 w-20" />
@@ -98,5 +101,5 @@ export function StakingSkeleton() {
         </Card>
       </div>
     </div>
-  )
+  );
 }

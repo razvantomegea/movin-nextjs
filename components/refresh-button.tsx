@@ -1,21 +1,25 @@
-"use client"
+'use client';
 
-import { RefreshCw } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { motion } from "framer-motion"
+import { motion } from 'framer-motion';
+import { RefreshCw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface RefreshButtonProps {
-  onRefresh: () => Promise<void>
-  isLoading?: boolean
-  className?: string
+  onRefresh: () => Promise<void>;
+  isLoading?: boolean;
+  className?: string;
 }
 
-export function RefreshButton({ onRefresh, isLoading = false, className = "" }: RefreshButtonProps) {
+export function RefreshButton({
+  onRefresh,
+  isLoading = false,
+  className = '',
+}: RefreshButtonProps) {
   const handleRefresh = async () => {
     if (!isLoading) {
-      await onRefresh()
+      await onRefresh();
     }
-  }
+  };
 
   return (
     <Button
@@ -28,10 +32,14 @@ export function RefreshButton({ onRefresh, isLoading = false, className = "" }: 
     >
       <motion.div
         animate={{ rotate: isLoading ? 360 : 0 }}
-        transition={{ duration: 1, repeat: isLoading ? Number.POSITIVE_INFINITY : 0, ease: "linear" }}
+        transition={{
+          duration: 1,
+          repeat: isLoading ? Number.POSITIVE_INFINITY : 0,
+          ease: 'linear',
+        }}
       >
         <RefreshCw className="h-4 w-4" />
       </motion.div>
     </Button>
-  )
+  );
 }

@@ -1,16 +1,16 @@
-import { configureStore } from "@reduxjs/toolkit"
-import stakingReducer from "./slices/stakingSlice"
-import activityRewardsReducer from "./slices/activityRewardsSlice"
-import toastReducer from "./slices/toastSlice"
-import referralRewardsReducer from "./slices/referralRewardsSlice"
-import activityDataReducer from "./slices/activityDataSlice"
-import energyDataReducer from "./slices/energyDataSlice"
-import socialFeedReducer from "./slices/socialFeedSlice"
-import routeDataReducer from "./slices/routeDataSlice"
-import jointTrackingReducer from "./slices/jointTrackingSlice"
-import goalsReducer from "./slices/goalsSlice"
-import profileReducer from "./slices/profileSlice"
-import subscriptionReducer from "./slices/subscriptionSlice"
+import { configureStore } from '@reduxjs/toolkit';
+import activityDataReducer from './slices/activityDataSlice';
+import activityRewardsReducer from './slices/activityRewardsSlice';
+import energyDataReducer from './slices/energyDataSlice';
+import goalsReducer from './slices/goalsSlice';
+import jointTrackingReducer from './slices/jointTrackingSlice';
+import profileReducer from './slices/profileSlice';
+import referralRewardsReducer from './slices/referralRewardsSlice';
+import routeDataReducer from './slices/routeDataSlice';
+import socialFeedReducer from './slices/socialFeedSlice';
+import stakingReducer from './slices/stakingSlice';
+import subscriptionReducer from './slices/subscriptionSlice';
+import toastReducer from './slices/toastSlice';
 
 export const store = configureStore({
   reducer: {
@@ -27,7 +27,7 @@ export const store = configureStore({
     profile: profileReducer,
     subscription: subscriptionReducer,
   },
-})
+});
 
-export type RootState = ReturnType<typeof store.getState>
-export type AppDispatch = typeof store.dispatch
+export type RootState = ReturnType<typeof store.getState>;
+export type AppDispatch = typeof store.dispatch;

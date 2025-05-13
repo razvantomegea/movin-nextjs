@@ -1,7 +1,7 @@
 'use client';
 
-import { Loader } from '@googlemaps/js-api-loader';
 import { type ReactNode, createContext, useContext, useState, useEffect } from 'react';
+import { Loader } from '@googlemaps/js-api-loader';
 
 // Create a context to store the loading state and error
 interface GoogleMapsContextType {

@@ -1,13 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { useReduxToast } from '@/lib/hooks/use-redux-toast';
 import { AlertCircle, AlertTriangle, CheckCircle, Info } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useReduxToast } from '@/lib/hooks/use-redux-toast';
 
 export function ErrorDemo() {
-  const { toast, error, success, warning, info } = useReduxToast();
+  const { error, success, warning, info } = useReduxToast();
   const [throwError, setThrowError] = useState(false);
 
   if (throwError) {

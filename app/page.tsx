@@ -1,5 +1,5 @@
-import { ConnectPage } from "@/components/connect-page"
+import { ConnectPage } from '@/components/connect-page';
 
 export default function Home() {
-  return <ConnectPage />
+  return <ConnectPage />;
 }

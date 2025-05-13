@@ -1,14 +1,14 @@
 import type React from 'react';
 import './globals.css';
+import { Analytics } from '@vercel/analytics/next';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
-import { ThemeProvider } from '@/app/contexts/theme-provider';
-import { ReduxProvider } from '@/lib/redux/provider';
-import { GoogleMapsProvider } from '@/app/contexts/google-maps-provider';
-import { ReduxToaster } from '@/components/ui/redux-toaster';
 import { headers } from 'next/headers';
 import AppkitProvider from '@/app/contexts/appkit-provider';
-import { Analytics } from '@vercel/analytics/next';
+import { GoogleMapsProvider } from '@/app/contexts/google-maps-provider';
+import { ThemeProvider } from '@/app/contexts/theme-provider';
+import { ReduxToaster } from '@/components/ui/redux-toaster';
+import { ReduxProvider } from '@/lib/redux/provider';
 
 const inter = Inter({ subsets: ['latin'] });
 

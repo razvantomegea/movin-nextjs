@@ -1,18 +1,19 @@
-"use client"
+'use client';
 
-import { useState, useEffect } from "react"
-import { motion, AnimatePresence } from "framer-motion"
-import confetti from "canvas-confetti"
-import { Trophy, Award, Star, Check, Flame } from "lucide-react"
-import { useTheme } from "next-themes"
+import { useState, useEffect } from 'react';
+import confetti from 'canvas-confetti';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Trophy, Award, Star, Check, Flame } from 'lucide-react';
+import { useTheme } from 'next-themes';
+import { randomInRange } from '@/utils/randomInRange';
 
 interface CelebrationAnimationProps {
-  isOpen: boolean
-  onClose: () => void
-  achievementType: "steps" | "workout" | "streak" | "level"
-  achievementValue: string
-  achievementTitle: string
-  description?: string
+  isOpen: boolean;
+  onClose: () => void;
+  achievementType: 'steps' | 'workout' | 'streak' | 'level';
+  achievementValue: string;
+  achievementTitle: string;
+  description?: string;
 }
 
 export function CelebrationAnimation({
@@ -23,83 +24,79 @@ export function CelebrationAnimation({
   achievementTitle,
   description,
 }: CelebrationAnimationProps) {
-  const [confettiTriggered, setConfettiTriggered] = useState(false)
-  const { resolvedTheme } = useTheme()
-  const isDark = resolvedTheme === "dark"
+  const [confettiTriggered, setConfettiTriggered] = useState(false);
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === 'dark';
 
   useEffect(() => {
     if (isOpen && !confettiTriggered) {
       // Trigger confetti
-      const duration = 3 * 1000
-      const animationEnd = Date.now() + duration
-      const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 }
+      const duration = 3 * 1000;
+      const animationEnd = Date.now() + duration;
+      const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
 
-      function randomInRange(min: number, max: number) {
-        return Math.random() * (max - min) + min
-      }
-
-      const interval: any = setInterval(() => {
-        const timeLeft = animationEnd - Date.now()
+      const interval: NodeJS.Timeout = setInterval(() => {
+        const timeLeft = animationEnd - Date.now();
 
         if (timeLeft <= 0) {
-          return clearInterval(interval)
+          return clearInterval(interval);
         }
 
-        const particleCount = 50 * (timeLeft / duration)
+        const particleCount = 50 * (timeLeft / duration);
         // since particles fall down, start a bit higher than random
         confetti({
           ...defaults,
           particleCount,
           origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 },
-          colors: ["#3b82f6", "#60a5fa", "#93c5fd"],
-        })
+          colors: ['#3b82f6', '#60a5fa', '#93c5fd'],
+        });
         confetti({
           ...defaults,
           particleCount,
           origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 },
-          colors: ["#3b82f6", "#60a5fa", "#93c5fd"],
-        })
-      }, 250)
+          colors: ['#3b82f6', '#60a5fa', '#93c5fd'],
+        });
+      }, 250);
 
-      setConfettiTriggered(true)
+      setConfettiTriggered(true);
 
       return () => {
-        clearInterval(interval)
-      }
+        clearInterval(interval);
+      };
     }
-  }, [isOpen, confettiTriggered])
+  }, [isOpen, confettiTriggered]);
 
   // Reset confetti triggered state when modal closes
   useEffect(() => {
     if (!isOpen) {
-      setConfettiTriggered(false)
+      setConfettiTriggered(false);
     }
-  }, [isOpen])
+  }, [isOpen]);
 
   // Auto close after 5 seconds
   useEffect(() => {
     if (isOpen) {
       const timer = setTimeout(() => {
-        onClose()
-      }, 5000)
-      return () => clearTimeout(timer)
+        onClose();
+      }, 5000);
+      return () => clearTimeout(timer);
     }
-  }, [isOpen, onClose])
+  }, [isOpen, onClose]);
 
   const getIcon = () => {
     switch (achievementType) {
-      case "steps":
-        return <Trophy className="h-10 w-10 text-yellow-400" />
-      case "workout":
-        return <Award className="h-10 w-10 text-purple-400" />
-      case "streak":
-        return <Flame className="h-10 w-10 text-orange-400" />
-      case "level":
-        return <Star className="h-10 w-10 text-blue-400" />
+      case 'steps':
+        return <Trophy className="h-10 w-10 text-yellow-400" />;
+      case 'workout':
+        return <Award className="h-10 w-10 text-purple-400" />;
+      case 'streak':
+        return <Flame className="h-10 w-10 text-orange-400" />;
+      case 'level':
+        return <Star className="h-10 w-10 text-blue-400" />;
       default:
-        return <Check className="h-10 w-10 text-green-400" />
+        return <Check className="h-10 w-10 text-green-400" />;
     }
-  }
+  };
 
   return (
     <AnimatePresence>
@@ -121,13 +118,13 @@ export function CelebrationAnimation({
           <motion.div
             className={`relative rounded-2xl p-6 shadow-xl max-w-md w-full overflow-hidden ${
               isDark
-                ? "bg-gradient-to-b from-gray-900 to-gray-800 border border-blue-500/20"
-                : "bg-gradient-to-b from-white to-gray-100 border border-blue-500/20"
+                ? 'bg-gradient-to-b from-gray-900 to-gray-800 border border-blue-500/20'
+                : 'bg-gradient-to-b from-white to-gray-100 border border-blue-500/20'
             }`}
             initial={{ scale: 0.8, opacity: 0, y: 20 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.8, opacity: 0, y: 20 }}
-            transition={{ type: "spring", damping: 20, stiffness: 300 }}
+            transition={{ type: 'spring', damping: 20, stiffness: 300 }}
           >
             {/* Glowing background effects */}
             <div className="absolute inset-0 overflow-hidden">
@@ -141,7 +138,7 @@ export function CelebrationAnimation({
                   className="mb-4 bg-blue-500/10 p-4 rounded-full"
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
-                  transition={{ type: "spring", damping: 15, stiffness: 300, delay: 0.2 }}
+                  transition={{ type: 'spring', damping: 15, stiffness: 300, delay: 0.2 }}
                 >
                   {getIcon()}
                 </motion.div>
@@ -152,15 +149,21 @@ export function CelebrationAnimation({
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3 }}
                 >
-                  <h3 className={`text-xl font-bold ${isDark ? "text-white" : "text-gray-900"} mb-1`}>
+                  <h3
+                    className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'} mb-1`}
+                  >
                     Goal Achieved!
                   </h3>
                   <div className="text-3xl font-bold text-blue-500 mb-2">{achievementValue}</div>
-                  <h2 className={`text-xl font-bold ${isDark ? "text-white" : "text-gray-900"} mb-3`}>
+                  <h2
+                    className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'} mb-3`}
+                  >
                     {achievementTitle}
                   </h2>
                   {description && (
-                    <p className={`${isDark ? "text-gray-300" : "text-gray-600"} text-sm`}>{description}</p>
+                    <p className={`${isDark ? 'text-gray-300' : 'text-gray-600'} text-sm`}>
+                      {description}
+                    </p>
                   )}
                 </motion.div>
 
@@ -175,7 +178,9 @@ export function CelebrationAnimation({
                       <Flame className="h-5 w-5 text-blue-500 mr-2" />
                       <span className="text-sm font-medium text-blue-500">+0.5 MVN</span>
                     </div>
-                    <span className={`text-xs ${isDark ? "text-gray-400" : "text-gray-500"}`}>Reward Added</span>
+                    <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                      Reward Added
+                    </span>
                   </div>
                 </motion.div>
 
@@ -200,8 +205,8 @@ export function CelebrationAnimation({
                   key={i}
                   className="absolute"
                   initial={{
-                    x: Math.random() * 100 + "%",
-                    y: Math.random() * 100 + "%",
+                    x: Math.random() * 100 + '%',
+                    y: Math.random() * 100 + '%',
                     scale: Math.random() * 0.5 + 0.5,
                     opacity: 0,
                   }}
@@ -223,5 +228,5 @@ export function CelebrationAnimation({
         </motion.div>
       )}
     </AnimatePresence>
-  )
+  );
 }

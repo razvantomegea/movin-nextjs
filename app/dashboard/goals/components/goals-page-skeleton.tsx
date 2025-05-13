@@ -1,7 +1,7 @@
-"use client"
+'use client';
 
-import { motion } from "framer-motion"
-import { Skeleton } from "@/components/ui/skeleton"
+import { motion } from 'framer-motion';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const container = {
   hidden: { opacity: 0 },
@@ -11,12 +11,12 @@ const container = {
       staggerChildren: 0.1,
     },
   },
-}
+};
 
 const item = {
   hidden: { opacity: 0, y: 20 },
   show: { opacity: 1, y: 0 },
-}
+};
 
 export function GoalsPageSkeleton() {
   return (
@@ -55,7 +55,7 @@ export function GoalsPageSkeleton() {
         </motion.div>
       </div>
     </motion.div>
-  )
+  );
 }
 
 function GoalCardSkeleton() {
@@ -75,5 +75,5 @@ function GoalCardSkeleton() {
         <Skeleton className="h-6 w-24 rounded-md" />
       </div>
     </div>
-  )
+  );
 }

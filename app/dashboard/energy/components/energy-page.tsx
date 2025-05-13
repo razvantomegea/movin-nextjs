@@ -1,22 +1,22 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Bolt, Flame, Clock, Utensils, Camera, Plus, RefreshCw } from 'lucide-react';
-import { Progress } from '@/components/ui/progress';
-import { CircularProgress } from '@/components/circular-progress';
 import { motion } from 'framer-motion';
+import { Bolt, Flame, Clock, Utensils, Camera, Plus, RefreshCw } from 'lucide-react';
 import { useTheme } from 'next-themes';
-import { EnergyOverviewChart } from './energy-overview-chart';
 import { CameraModal } from '@/components/camera-modal';
-import { showSuccessToast, showInfoToast } from '@/lib/redux/slices/toastSlice';
-import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
-import { fetchEnergyData, resetEnergyError } from '@/lib/redux/slices/energyDataSlice';
-import { EnergyPageSkeleton } from './energy-page-skeleton';
-import { ErrorAlert } from '@/components/ui/error-alert';
+import { CircularProgress } from '@/components/circular-progress';
 import ErrorBoundary from '@/components/error-boundary';
 import { RefreshButton } from '@/components/refresh-button';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { ErrorAlert } from '@/components/ui/error-alert';
+import { Progress } from '@/components/ui/progress';
+import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
+import { fetchEnergyData, resetEnergyError } from '@/lib/redux/slices/energyDataSlice';
+import { showSuccessToast, showInfoToast } from '@/lib/redux/slices/toastSlice';
+import { EnergyOverviewChart } from './energy-overview-chart';
+import { EnergyPageSkeleton } from './energy-page-skeleton';
 
 const container = {
   hidden: { opacity: 0 },
@@ -78,7 +78,7 @@ export function EnergyPage() {
     }
   };
 
-  const handleCameraCapture = async (imageData: string) => {
+  const handleCameraCapture = async () => {
     // This function is still needed for backward compatibility
     // but the actual meal saving is now handled in the MealDetectionResultsModal
     console.log('Image captured, analysis will be handled in the results modal');
@@ -124,7 +124,7 @@ export function EnergyPage() {
                   <div className="bg-blue-500/20 p-2 rounded-full mr-3">
                     <Flame className="h-5 w-5 text-blue-500" />
                   </div>
-                  <span className="text-sm font-medium">Today's Calories</span>
+                  <span className="text-sm font-medium">Today&apos;s Calories</span>
                 </div>
               </div>
 
@@ -238,7 +238,7 @@ export function EnergyPage() {
         {/* Today's Meals */}
         <motion.div className="space-y-4" variants={item}>
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-medium">Today's Meals</h2>
+            <h2 className="text-lg font-medium">Today&apos;s Meals</h2>
             <Button variant="outline" size="sm" className="text-blue-500 border-blue-500">
               <Plus className="h-4 w-4 mr-2" />
               Add Meal
@@ -317,7 +317,7 @@ export function EnergyPage() {
                   <h3 className="font-medium text-blue-600 dark:text-blue-400">Meal Detection</h3>
                   <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
                     Take a photo of your meal and our AI will automatically detect ingredients,
-                    calories, and macros. Just tap the "Scan Meal" button to get started.
+                    calories, and macros. Just tap the &quot;Scan Meal&quot; button to get started.
                   </p>
                   <Button
                     className="mt-3 bg-blue-500 hover:bg-blue-600"

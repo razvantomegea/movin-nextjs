@@ -1,6 +1,6 @@
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export function ProfilePageSkeleton() {
   return (
@@ -58,7 +58,10 @@ export function ProfilePageSkeleton() {
                   {Array(5)
                     .fill(0)
                     .map((_, i) => (
-                      <div key={i} className="flex flex-col items-center p-3 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                      <div
+                        key={i}
+                        className="flex flex-col items-center p-3 bg-gray-100 dark:bg-gray-800 rounded-lg"
+                      >
                         <Skeleton className="h-12 w-12 rounded-full mb-2" />
                         <Skeleton className="h-4 w-16 mb-1" />
                         <Skeleton className="h-3 w-12" />
@@ -109,5 +112,5 @@ export function ProfilePageSkeleton() {
         </Tabs>
       </div>
     </div>
-  )
+  );
 }

@@ -3,18 +3,16 @@
 import type React from 'react';
 
 import { useEffect, useState } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { useAppKitAccount } from '@reown/appkit/react';
 import { Activity, Bolt, Gift, Menu, Settings, Target, User, X, Users, Crown } from 'lucide-react';
+import Image from 'next/image';
+import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
+import { PremiumBadge } from '@/components/premium-badge';
+import { ThemeToggle } from '@/components/theme-toggle';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import Image from 'next/image';
-import Link from 'next/link';
-import { ThemeToggle } from '@/components/theme-toggle';
-import { RefreshButton } from '@/components/refresh-button';
-import { useMediaQuery } from '@/lib/hooks/use-media-query';
-import { PremiumBadge } from '@/components/premium-badge';
-import { useAppKitAccount } from '@reown/appkit/react';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;

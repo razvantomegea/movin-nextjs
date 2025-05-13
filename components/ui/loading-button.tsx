@@ -1,8 +1,8 @@
 import type React from 'react';
-import { Button } from '@/components/ui/button';
-import { Loader2 } from 'lucide-react';
-import type { ButtonProps } from '@radix-ui/react-dropdown-menu';
 import { forwardRef } from 'react';
+import type { ButtonProps } from '@radix-ui/react-dropdown-menu';
+import { Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface LoadingButtonProps extends ButtonProps {
   loading?: boolean;

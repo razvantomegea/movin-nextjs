@@ -1,5 +1,5 @@
-import { Skeleton } from "@/components/ui/skeleton"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export function ReferralRewardsSkeleton() {
   return (
@@ -52,7 +52,10 @@ export function ReferralRewardsSkeleton() {
           <CardContent className="p-4">
             <div className="space-y-4">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="flex items-center justify-between p-2 border-b last:border-0">
+                <div
+                  key={i}
+                  className="flex items-center justify-between p-2 border-b last:border-0"
+                >
                   <div className="flex items-center">
                     <Skeleton className="h-8 w-8 rounded-full mr-3" />
                     <div>
@@ -71,5 +74,5 @@ export function ReferralRewardsSkeleton() {
         </Card>
       </div>
     </div>
-  )
+  );
 }

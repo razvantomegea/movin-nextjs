@@ -2,9 +2,6 @@
 
 import { useState, useEffect } from 'react';
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import {
   Award,
   Flame,
@@ -17,23 +14,20 @@ import {
   Copy,
   Send,
 } from 'lucide-react';
-import { Progress } from '@/components/ui/progress';
 import { useTheme } from 'next-themes';
 import { StakeModal } from '@/app/dashboard/rewards/components/stake-modal';
-import { TransactionConfirmationModal } from '@/components/transaction-confirmation-modal';
 import { CountdownTimer } from '@/components/countdown-timer';
-import { LoadingButton } from '@/components/ui/loading-button';
-import { ErrorAlert } from '@/components/ui/error-alert';
 import ErrorBoundary from '@/components/error-boundary';
+import { TransactionConfirmationModal } from '@/components/transaction-confirmation-modal';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { ErrorAlert } from '@/components/ui/error-alert';
+import { Input } from '@/components/ui/input';
+import { LoadingButton } from '@/components/ui/loading-button';
+import { Progress } from '@/components/ui/progress';
+import { RefreshButton } from '@/components/ui/refresh-button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
-import {
-  fetchStakingData,
-  claimStakingRewards,
-  resetStakingError,
-} from '@/lib/redux/slices/stakingSlice';
-import { StakingSkeleton } from './staking-skeleton';
-import { ActivityRewardsSkeleton } from './activity-rewards-skeleton';
-import { ReferralRewardsSkeleton } from './referral-rewards-skeleton';
 import {
   fetchActivityRewards,
   claimActivityRewards,
@@ -45,9 +39,15 @@ import {
   resetReferralRewardsError,
   inviteFriend,
 } from '@/lib/redux/slices/referralRewardsSlice';
+import {
+  fetchStakingData,
+  claimStakingRewards,
+  resetStakingError,
+} from '@/lib/redux/slices/stakingSlice';
 import { showSuccessToast, showErrorToast, showInfoToast } from '@/lib/redux/slices/toastSlice';
-import { Input } from '@/components/ui/input';
-import { RefreshButton } from '@/components/ui/refresh-button';
+import { ActivityRewardsSkeleton } from './activity-rewards-skeleton';
+import { ReferralRewardsSkeleton } from './referral-rewards-skeleton';
+import { StakingSkeleton } from './staking-skeleton';
 
 export function RewardsDashboard() {
   const [activeTab, setActiveTab] = useState('activity');
@@ -81,7 +81,6 @@ export function RewardsDashboard() {
   // Activity rewards state
   const {
     totalRewards: activityTotalRewards,
-    weeklyRewards,
     activityRewards,
     challenges,
     isLoading: activityLoading,
@@ -452,7 +451,7 @@ export function RewardsDashboard() {
                 {stakes.length === 0 ? (
                   <div className="text-center py-8 text-gray-500">
                     <Lock className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                    <p className="mb-2">You don't have any active stakes</p>
+                    <p className="mb-2">You don&apos;t have any active stakes</p>
                     <Button
                       variant="outline"
                       className="mt-2"

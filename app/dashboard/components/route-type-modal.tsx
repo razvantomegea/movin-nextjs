@@ -1,69 +1,76 @@
-"use client"
+'use client';
 
-import { useState } from "react"
-import { motion, AnimatePresence } from "framer-motion"
-import { Button } from "@/components/ui/button"
-import { X, User, Users, MapPin, Search, UserPlus, Check, Clock } from "lucide-react"
-import { useTheme } from "next-themes"
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks"
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { X, User, Users, MapPin, Search, UserPlus, Check, Clock } from 'lucide-react';
+import { useTheme } from 'next-themes';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
 import {
   findNearbyUsers,
   inviteUser,
   setJointTracking,
   simulateAcceptInvitation,
-} from "@/lib/redux/slices/jointTrackingSlice"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { showInfoToast } from "@/lib/redux/slices/toastSlice"
+} from '@/lib/redux/slices/jointTrackingSlice';
+import { showInfoToast } from '@/lib/redux/slices/toastSlice';
 
 interface RouteTypeModalProps {
-  isOpen: boolean
-  onClose: () => void
-  onSelectSingle: () => void
-  onSelectJoint: () => void
+  isOpen: boolean;
+  onClose: () => void;
+  onSelectSingle: () => void;
+  onSelectJoint: () => void;
 }
 
-export function RouteTypeModal({ isOpen, onClose, onSelectSingle, onSelectJoint }: RouteTypeModalProps) {
-  const { resolvedTheme } = useTheme()
-  const isDark = resolvedTheme === "dark"
-  const dispatch = useAppDispatch()
+export function RouteTypeModal({
+  isOpen,
+  onClose,
+  onSelectSingle,
+  onSelectJoint,
+}: RouteTypeModalProps) {
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === 'dark';
+  const dispatch = useAppDispatch();
 
-  const [step, setStep] = useState<"select" | "search" | "invite">("select")
+  const [step, setStep] = useState<'select' | 'search' | 'invite'>('select');
 
-  const { nearbyUsers, invitedUsers, joinedUsers, isSearching, error } = useAppSelector((state) => state.jointTracking)
+  const { nearbyUsers, invitedUsers, joinedUsers, isSearching, error } = useAppSelector(
+    (state) => state.jointTracking,
+  );
 
   // Handle searching for nearby users
   const handleSearchNearby = () => {
-    setStep("search")
+    setStep('search');
     // In a real app, we would get the user's current location
     // For now, we'll use a hardcoded location
-    const userLocation = { lat: 37.7749, lng: -122.4194 }
-    dispatch(findNearbyUsers(userLocation))
-  }
+    const userLocation = { lat: 37.7749, lng: -122.4194 };
+    dispatch(findNearbyUsers(userLocation));
+  };
 
   // Handle inviting a user
   const handleInviteUser = (userId: string) => {
-    dispatch(inviteUser(userId))
+    dispatch(inviteUser(userId));
 
     // Simulate the user accepting after a delay (for demo purposes)
     setTimeout(
       () => {
-        dispatch(simulateAcceptInvitation(userId))
+        dispatch(simulateAcceptInvitation(userId));
         dispatch(
           showInfoToast({
-            title: "Invitation Accepted",
-            description: "A user has accepted your invitation to join the route tracking.",
+            title: 'Invitation Accepted',
+            description: 'A user has accepted your invitation to join the route tracking.',
           }),
-        )
+        );
       },
       2000 + Math.random() * 2000,
-    ) // Random delay between 2-4 seconds
-  }
+    ); // Random delay between 2-4 seconds
+  };
 
   // Handle starting joint tracking
   const handleStartJointTracking = () => {
-    dispatch(setJointTracking(true))
-    onSelectJoint()
-  }
+    dispatch(setJointTracking(true));
+    onSelectJoint();
+  };
 
   // Render the selection step
   const renderSelectionStep = () => (
@@ -75,7 +82,7 @@ export function RouteTypeModal({ isOpen, onClose, onSelectSingle, onSelectJoint 
           onClick={onSelectSingle}
           variant="outline"
           className={`h-auto py-6 flex flex-col items-center justify-center space-y-3 ${
-            isDark ? "hover:bg-gray-800" : "hover:bg-gray-100"
+            isDark ? 'hover:bg-gray-800' : 'hover:bg-gray-100'
           }`}
         >
           <User className="h-10 w-10 text-blue-500" />
@@ -89,7 +96,7 @@ export function RouteTypeModal({ isOpen, onClose, onSelectSingle, onSelectJoint 
           onClick={handleSearchNearby}
           variant="outline"
           className={`h-auto py-6 flex flex-col items-center justify-center space-y-3 ${
-            isDark ? "hover:bg-gray-800" : "hover:bg-gray-100"
+            isDark ? 'hover:bg-gray-800' : 'hover:bg-gray-100'
           }`}
         >
           <Users className="h-10 w-10 text-green-500" />
@@ -100,7 +107,7 @@ export function RouteTypeModal({ isOpen, onClose, onSelectSingle, onSelectJoint 
         </Button>
       </div>
     </div>
-  )
+  );
 
   // Render the search step
   const renderSearchStep = () => (
@@ -133,11 +140,11 @@ export function RouteTypeModal({ isOpen, onClose, onSelectSingle, onSelectJoint 
             {nearbyUsers.map((user) => (
               <div
                 key={user.id}
-                className={`flex items-center justify-between p-3 rounded-lg ${isDark ? "bg-gray-800" : "bg-gray-100"}`}
+                className={`flex items-center justify-between p-3 rounded-lg ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}
               >
                 <div className="flex items-center space-x-3">
                   <Avatar>
-                    <AvatarImage src={user.avatar || "/placeholder.svg"} alt={user.username} />
+                    <AvatarImage src={user.avatar || '/placeholder.svg'} alt={user.username} />
                     <AvatarFallback>{user.username.charAt(0)}</AvatarFallback>
                   </Avatar>
                   <div>
@@ -157,7 +164,11 @@ export function RouteTypeModal({ isOpen, onClose, onSelectSingle, onSelectJoint 
                     Invited
                   </Button>
                 ) : (
-                  <Button size="sm" onClick={() => handleInviteUser(user.id)} className="bg-blue-500 hover:bg-blue-600">
+                  <Button
+                    size="sm"
+                    onClick={() => handleInviteUser(user.id)}
+                    className="bg-blue-500 hover:bg-blue-600"
+                  >
                     <UserPlus className="h-4 w-4 mr-1" />
                     Invite
                   </Button>
@@ -167,7 +178,7 @@ export function RouteTypeModal({ isOpen, onClose, onSelectSingle, onSelectJoint 
           </div>
 
           <div className="pt-4 flex justify-between">
-            <Button variant="outline" onClick={() => setStep("select")}>
+            <Button variant="outline" onClick={() => setStep('select')}>
               Back
             </Button>
             <Button
@@ -182,7 +193,7 @@ export function RouteTypeModal({ isOpen, onClose, onSelectSingle, onSelectJoint 
         </>
       )}
     </div>
-  )
+  );
 
   return (
     <AnimatePresence>
@@ -203,17 +214,17 @@ export function RouteTypeModal({ isOpen, onClose, onSelectSingle, onSelectJoint 
 
           <motion.div
             className={`relative w-full max-w-md rounded-xl overflow-hidden ${
-              isDark ? "bg-gray-900" : "bg-white"
+              isDark ? 'bg-gray-900' : 'bg-white'
             } shadow-xl`}
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.95, opacity: 0 }}
-            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
           >
             {/* Header */}
             <div
               className={`flex items-center justify-between p-4 border-b ${
-                isDark ? "border-gray-800" : "border-gray-200"
+                isDark ? 'border-gray-800' : 'border-gray-200'
               }`}
             >
               <h2 className="text-xl font-bold">Route Tracking</h2>
@@ -223,10 +234,10 @@ export function RouteTypeModal({ isOpen, onClose, onSelectSingle, onSelectJoint 
             </div>
 
             {/* Content */}
-            {step === "select" ? renderSelectionStep() : renderSearchStep()}
+            {step === 'select' ? renderSelectionStep() : renderSearchStep()}
           </motion.div>
         </motion.div>
       )}
     </AnimatePresence>
-  )
+  );
 }

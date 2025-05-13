@@ -1,132 +1,134 @@
-"use client"
+'use client';
 
-import type React from "react"
+import type React from 'react';
 
-import { useState, useEffect } from "react"
-import { motion, AnimatePresence } from "framer-motion"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { X, Info, Clock, TrendingUp, AlertCircle } from "lucide-react"
-import { useTheme } from "next-themes"
-import { Slider } from "@/components/ui/slider"
-import { ErrorAlert } from "@/components/ui/error-alert"
-import { LoadingButton } from "@/components/ui/loading-button"
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks"
-import { stakeMVN, resetStakingError } from "@/lib/redux/slices/stakingSlice"
-import { showSuccessToast, showErrorToast } from "@/lib/redux/slices/toastSlice"
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { X, Info, Clock, TrendingUp, AlertCircle } from 'lucide-react';
+import { useTheme } from 'next-themes';
+import { Button } from '@/components/ui/button';
+import { ErrorAlert } from '@/components/ui/error-alert';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { LoadingButton } from '@/components/ui/loading-button';
+import { Slider } from '@/components/ui/slider';
+import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
+import { stakeMVN, resetStakingError } from '@/lib/redux/slices/stakingSlice';
+import { showSuccessToast, showErrorToast } from '@/lib/redux/slices/toastSlice';
 
 interface StakeModalProps {
-  isOpen: boolean
-  onClose: () => void
+  isOpen: boolean;
+  onClose: () => void;
 }
 
 export function StakeModal({ isOpen, onClose }: StakeModalProps) {
-  const { resolvedTheme } = useTheme()
-  const isDark = resolvedTheme === "dark"
-  const [amount, setAmount] = useState<string>("")
-  const [period, setPeriod] = useState<number>(1) // Default to 1 month
-  const [baseAPR, setBaseAPR] = useState<number>(5) // Base APR percentage
-  const [totalAPR, setTotalAPR] = useState<number>(6) // Base + period bonus
-  const [formError, setFormError] = useState<string>("")
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === 'dark';
+  const [amount, setAmount] = useState<string>('');
+  const [period, setPeriod] = useState<number>(1); // Default to 1 month
+  const [baseAPR] = useState<number>(5); // Base APR percentage
+  const [totalAPR, setTotalAPR] = useState<number>(6); // Base + period bonus
+  const [formError, setFormError] = useState<string>('');
 
-  const dispatch = useAppDispatch()
-  const { availableMVN, error: stakingError, isStaking } = useAppSelector((state) => state.staking)
+  const dispatch = useAppDispatch();
+  const { availableMVN, error: stakingError, isStaking } = useAppSelector((state) => state.staking);
 
   // Calculate total APR based on period
   useEffect(() => {
-    setTotalAPR(baseAPR + period)
-  }, [period, baseAPR])
+    setTotalAPR(baseAPR + period);
+  }, [period, baseAPR]);
 
   // Reset form when modal is opened
   useEffect(() => {
     if (isOpen) {
-      setAmount("")
-      setPeriod(1)
-      setFormError("")
-      dispatch(resetStakingError())
+      setAmount('');
+      setPeriod(1);
+      setFormError('');
+      dispatch(resetStakingError());
     }
-  }, [isOpen, dispatch])
+  }, [isOpen, dispatch]);
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value
+    const value = e.target.value;
     // Only allow numbers and decimals
     if (/^\d*\.?\d*$/.test(value)) {
-      setAmount(value)
-      setFormError("")
+      setAmount(value);
+      setFormError('');
     }
-  }
+  };
 
   const handleMaxClick = () => {
-    setAmount(availableMVN.toString())
-    setFormError("")
-  }
+    setAmount(availableMVN.toString());
+    setFormError('');
+  };
 
   const handlePeriodChange = (value: number[]) => {
-    setPeriod(value[0])
-  }
+    setPeriod(value[0]);
+  };
 
   const validateForm = (): boolean => {
     if (!amount || Number.parseFloat(amount) <= 0) {
-      setFormError("Please enter a valid amount")
-      return false
+      setFormError('Please enter a valid amount');
+      return false;
     }
 
     if (Number.parseFloat(amount) > availableMVN) {
-      setFormError("Amount exceeds available balance")
-      return false
+      setFormError('Amount exceeds available balance');
+      return false;
     }
 
-    return true
-  }
+    return true;
+  };
 
   const handleStake = async () => {
     // Clear previous errors
-    setFormError("")
-    dispatch(resetStakingError())
+    setFormError('');
+    dispatch(resetStakingError());
 
     // Validate form
-    if (!validateForm()) return
+    if (!validateForm()) return;
 
     try {
       // Dispatch stake action
-      const resultAction = await dispatch(
+      await dispatch(
         stakeMVN({
           amount: Number.parseFloat(amount),
           period,
         }),
-      ).unwrap()
+      ).unwrap();
 
       // Success
       dispatch(
         showSuccessToast({
-          title: "Staking Successful",
-          description: `You have successfully staked ${amount} MVN for ${period} ${period === 1 ? "month" : "months"}.`,
+          title: 'Staking Successful',
+          description: `You have successfully staked ${amount} MVN for ${period} ${
+            period === 1 ? 'month' : 'months'
+          }.`,
         }),
-      )
+      );
 
       // Reset form and close modal
-      setAmount("")
-      setPeriod(1)
-      onClose()
+      setAmount('');
+      setPeriod(1);
+      onClose();
     } catch (err) {
       // Error is handled in the component via the stakingError state
       dispatch(
         showErrorToast({
-          title: "Staking Failed",
-          description: err instanceof Error ? err.message : "An unknown error occurred",
+          title: 'Staking Failed',
+          description: err instanceof Error ? err.message : 'An unknown error occurred',
         }),
-      )
+      );
     }
-  }
+  };
 
   // Get period label
   const getPeriodLabel = (months: number) => {
-    return months === 1 ? "1 month" : `${months} months`
-  }
+    return months === 1 ? '1 month' : `${months} months`;
+  };
 
   // Get period options
-  const periodOptions = [1, 3, 6, 12, 24]
+  const periodOptions = [1, 3, 6, 12, 24];
 
   return (
     <AnimatePresence>
@@ -147,17 +149,17 @@ export function StakeModal({ isOpen, onClose }: StakeModalProps) {
 
           <motion.div
             className={`relative w-full sm:max-w-lg max-h-[90vh] overflow-auto rounded-xl ${
-              isDark ? "bg-gray-900" : "bg-white"
+              isDark ? 'bg-gray-900' : 'bg-white'
             } shadow-xl`}
             initial={{ scale: 0.9, opacity: 0, y: 20 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.9, opacity: 0, y: 20 }}
-            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
           >
             {/* Header */}
             <div
               className={`sticky top-0 z-10 flex items-center justify-between p-4 border-b ${
-                isDark ? "border-gray-800 bg-gray-900" : "border-gray-200 bg-white"
+                isDark ? 'border-gray-800 bg-gray-900' : 'border-gray-200 bg-white'
               }`}
             >
               <h2 className="text-xl font-bold">Stake MVN</h2>
@@ -172,7 +174,7 @@ export function StakeModal({ isOpen, onClose }: StakeModalProps) {
               {stakingError && <ErrorAlert message={stakingError} />}
 
               {/* Available Balance */}
-              <div className={`p-4 rounded-lg ${isDark ? "bg-gray-800" : "bg-gray-100"}`}>
+              <div className={`p-4 rounded-lg ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-500">Available MVN</span>
                   <span className="font-bold">{availableMVN.toLocaleString()} MVN</span>
@@ -190,7 +192,9 @@ export function StakeModal({ isOpen, onClose }: StakeModalProps) {
                     type="text"
                     value={amount}
                     onChange={handleAmountChange}
-                    className={`pr-16 ${formError ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+                    className={`pr-16 ${
+                      formError ? 'border-red-500 focus-visible:ring-red-500' : ''
+                    }`}
                     placeholder="0.00"
                   />
                   <Button
@@ -213,7 +217,9 @@ export function StakeModal({ isOpen, onClose }: StakeModalProps) {
 
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-gray-500">
-                    {Number.parseFloat(amount) > 0 ? `≈ $${(Number.parseFloat(amount) * 1.25).toFixed(2)}` : ""}
+                    {Number.parseFloat(amount) > 0
+                      ? `≈ $${(Number.parseFloat(amount) * 1.25).toFixed(2)}`
+                      : ''}
                   </span>
                 </div>
               </div>
@@ -230,9 +236,9 @@ export function StakeModal({ isOpen, onClose }: StakeModalProps) {
                     {periodOptions.map((months) => (
                       <Button
                         key={months}
-                        variant={period === months ? "default" : "outline"}
+                        variant={period === months ? 'default' : 'outline'}
                         size="sm"
-                        className={period === months ? "bg-blue-500 hover:bg-blue-600" : ""}
+                        className={period === months ? 'bg-blue-500 hover:bg-blue-600' : ''}
                         onClick={() => setPeriod(months)}
                       >
                         {getPeriodLabel(months)}
@@ -257,7 +263,7 @@ export function StakeModal({ isOpen, onClose }: StakeModalProps) {
               </div>
 
               {/* APR Information */}
-              <div className={`p-4 rounded-lg ${isDark ? "bg-gray-800" : "bg-gray-100"}`}>
+              <div className={`p-4 rounded-lg ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
                 <div className="flex items-center mb-2">
                   <TrendingUp className="h-5 w-5 mr-2 text-green-500" />
                   <span className="font-medium">Estimated APR</span>
@@ -284,8 +290,8 @@ export function StakeModal({ isOpen, onClose }: StakeModalProps) {
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className={`p-4 rounded-lg ${isDark ? "bg-blue-900/20" : "bg-blue-50"} border ${
-                    isDark ? "border-blue-800" : "border-blue-100"
+                  className={`p-4 rounded-lg ${isDark ? 'bg-blue-900/20' : 'bg-blue-50'} border ${
+                    isDark ? 'border-blue-800' : 'border-blue-100'
                   }`}
                 >
                   <div className="flex items-center mb-2">
@@ -296,7 +302,9 @@ export function StakeModal({ isOpen, onClose }: StakeModalProps) {
                   <div className="space-y-2 mt-3">
                     <div className="flex items-center justify-between">
                       <span className="text-sm">Amount</span>
-                      <span className="font-medium">{Number.parseFloat(amount).toLocaleString()} MVN</span>
+                      <span className="font-medium">
+                        {Number.parseFloat(amount).toLocaleString()} MVN
+                      </span>
                     </div>
 
                     <div className="flex items-center justify-between">
@@ -307,14 +315,17 @@ export function StakeModal({ isOpen, onClose }: StakeModalProps) {
                     <div className="flex items-center justify-between">
                       <span className="text-sm">Unlock Date</span>
                       <span className="font-medium">
-                        {new Date(Date.now() + period * 30 * 24 * 60 * 60 * 1000).toLocaleDateString()}
+                        {new Date(
+                          Date.now() + period * 30 * 24 * 60 * 60 * 1000,
+                        ).toLocaleDateString()}
                       </span>
                     </div>
 
                     <div className="flex items-center justify-between pt-2 border-t border-blue-800/30">
                       <span className="font-medium">Estimated Rewards</span>
                       <span className="font-bold text-blue-500">
-                        +{((Number.parseFloat(amount) * totalAPR * period) / (12 * 100)).toFixed(2)} MVN
+                        +{((Number.parseFloat(amount) * totalAPR * period) / (12 * 100)).toFixed(2)}{' '}
+                        MVN
                       </span>
                     </div>
                   </div>
@@ -324,8 +335,8 @@ export function StakeModal({ isOpen, onClose }: StakeModalProps) {
               {/* Disclaimer */}
               <div className="text-xs text-gray-500">
                 <p>
-                  By staking your MVN tokens, you agree to lock them for the selected period. Early unstaking may result
-                  in penalties. Rewards are distributed monthly.
+                  By staking your MVN tokens, you agree to lock them for the selected period. Early
+                  unstaking may result in penalties. Rewards are distributed monthly.
                 </p>
               </div>
             </div>
@@ -333,13 +344,16 @@ export function StakeModal({ isOpen, onClose }: StakeModalProps) {
             {/* Footer */}
             <div
               className={`sticky bottom-0 z-10 p-4 border-t ${
-                isDark ? "border-gray-800 bg-gray-900" : "border-gray-200 bg-white"
+                isDark ? 'border-gray-800 bg-gray-900' : 'border-gray-200 bg-white'
               }`}
             >
               <LoadingButton
                 className="w-full py-6 text-lg bg-blue-500 hover:bg-blue-600"
                 disabled={
-                  !amount || Number.parseFloat(amount) <= 0 || Number.parseFloat(amount) > availableMVN || isStaking
+                  !amount ||
+                  Number.parseFloat(amount) <= 0 ||
+                  Number.parseFloat(amount) > availableMVN ||
+                  isStaking
                 }
                 onClick={handleStake}
                 loading={isStaking}
@@ -352,5 +366,5 @@ export function StakeModal({ isOpen, onClose }: StakeModalProps) {
         </motion.div>
       )}
     </AnimatePresence>
-  )
+  );
 }

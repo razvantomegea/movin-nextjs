@@ -1,6 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { Check, AlertCircle, Crown, Sparkles } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
@@ -9,12 +14,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Check, AlertCircle, Crown, Sparkles } from 'lucide-react';
-import { motion } from 'framer-motion';
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
 import { fetchSubscriptionStatus, upgradeToPremium } from '@/lib/redux/slices/subscriptionSlice';
 import { showSuccessToast, showErrorToast } from '@/lib/redux/slices/toastSlice';
@@ -241,8 +241,8 @@ export function SubscriptionPage() {
             <CardContent>
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 Yes, you can switch between monthly and yearly billing at any time. If you switch
-                from monthly to yearly, you'll be charged the yearly rate and your subscription will
-                be extended accordingly.
+                from monthly to yearly, you&apos;ll be charged the yearly rate and your subscription
+                will be extended accordingly.
               </p>
             </CardContent>
           </Card>

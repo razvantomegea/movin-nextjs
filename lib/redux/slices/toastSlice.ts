@@ -1,5 +1,5 @@
-import { createSlice, nanoid, type PayloadAction } from '@reduxjs/toolkit';
 import React from 'react';
+import { createSlice, nanoid, type PayloadAction } from '@reduxjs/toolkit';
 
 export type ToastVariant = 'default' | 'destructive' | 'success' | 'warning' | 'info';
 

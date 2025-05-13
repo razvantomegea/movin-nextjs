@@ -1,20 +1,20 @@
-"use client"
+'use client';
 
-import { useState, useEffect } from "react"
-import { Card, CardContent } from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
-import { motion, AnimatePresence } from "framer-motion"
-import { Trophy, Award, Flame, Star } from "lucide-react"
-import { CelebrationAnimation } from "@/components/celebration-animation"
-import { useTheme } from "next-themes"
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Trophy, Award, Flame, Star } from 'lucide-react';
+import { useTheme } from 'next-themes';
+import { CelebrationAnimation } from '@/components/celebration-animation';
+import { Card, CardContent } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
 
 interface GoalProgressCardProps {
-  title: string
-  currentValue: number
-  targetValue: number
-  unit: string
-  icon: "steps" | "workout" | "streak" | "level"
-  autoTrigger?: boolean
+  title: string;
+  currentValue: number;
+  targetValue: number;
+  unit: string;
+  icon: 'steps' | 'workout' | 'streak' | 'level';
+  autoTrigger?: boolean;
 }
 
 export function GoalProgressCard({
@@ -25,71 +25,71 @@ export function GoalProgressCard({
   icon,
   autoTrigger = false,
 }: GoalProgressCardProps) {
-  const [progress, setProgress] = useState(0)
-  const [showCelebration, setShowCelebration] = useState(false)
-  const [hasTriggered, setHasTriggered] = useState(false)
-  const { resolvedTheme } = useTheme()
-  const isDark = resolvedTheme === "dark"
+  const [progress, setProgress] = useState(0);
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [hasTriggered, setHasTriggered] = useState(false);
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === 'dark';
 
   // Calculate progress percentage
-  const progressPercentage = Math.min(Math.round((currentValue / targetValue) * 100), 100)
+  const progressPercentage = Math.min(Math.round((currentValue / targetValue) * 100), 100);
 
   // Animate progress bar
   useEffect(() => {
     const timer = setTimeout(() => {
-      setProgress(progressPercentage)
-    }, 500)
-    return () => clearTimeout(timer)
-  }, [progressPercentage])
+      setProgress(progressPercentage);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [progressPercentage]);
 
   // Auto trigger celebration if goal is reached and autoTrigger is true
   useEffect(() => {
     if (autoTrigger && progressPercentage >= 100 && !hasTriggered) {
       const timer = setTimeout(() => {
-        setShowCelebration(true)
-        setHasTriggered(true)
-      }, 1000)
-      return () => clearTimeout(timer)
+        setShowCelebration(true);
+        setHasTriggered(true);
+      }, 1000);
+      return () => clearTimeout(timer);
     }
-  }, [progressPercentage, autoTrigger, hasTriggered])
+  }, [progressPercentage, autoTrigger, hasTriggered]);
 
   const getIcon = () => {
     switch (icon) {
-      case "steps":
-        return <Trophy className="h-5 w-5 text-blue-500" />
-      case "workout":
-        return <Award className="h-5 w-5 text-purple-500" />
-      case "streak":
-        return <Flame className="h-5 w-5 text-orange-500" />
-      case "level":
-        return <Star className="h-5 w-5 text-green-500" />
+      case 'steps':
+        return <Trophy className="h-5 w-5 text-blue-500" />;
+      case 'workout':
+        return <Award className="h-5 w-5 text-purple-500" />;
+      case 'streak':
+        return <Flame className="h-5 w-5 text-orange-500" />;
+      case 'level':
+        return <Star className="h-5 w-5 text-green-500" />;
     }
-  }
+  };
 
   const getAchievementTitle = () => {
     switch (icon) {
-      case "steps":
-        return "Daily Step Goal"
-      case "workout":
-        return "Workout Goal"
-      case "streak":
-        return "Activity Streak"
-      case "level":
-        return "Level Up"
+      case 'steps':
+        return 'Daily Step Goal';
+      case 'workout':
+        return 'Workout Goal';
+      case 'streak':
+        return 'Activity Streak';
+      case 'level':
+        return 'Level Up';
     }
-  }
+  };
 
   return (
     <>
       <motion.div
         whileHover={{ scale: 1.02 }}
-        transition={{ type: "spring", stiffness: 400, damping: 10 }}
+        transition={{ type: 'spring', stiffness: 400, damping: 10 }}
         onClick={() => progressPercentage >= 100 && setShowCelebration(true)}
       >
         <Card
           className={`${
-            isDark ? "bg-gray-900 border-gray-800" : "bg-white border-gray-200"
-          } ${progressPercentage >= 100 ? "cursor-pointer" : ""}`}
+            isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'
+          } ${progressPercentage >= 100 ? 'cursor-pointer' : ''}`}
         >
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-3">
@@ -113,10 +113,12 @@ export function GoalProgressCard({
 
             <div className="flex items-baseline justify-between mb-2">
               <span className="text-xl font-bold">
-                {currentValue.toLocaleString()}{" "}
-                <span className={`text-sm ${isDark ? "text-gray-400" : "text-gray-500"}`}>{unit}</span>
+                {currentValue.toLocaleString()}{' '}
+                <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                  {unit}
+                </span>
               </span>
-              <span className={`text-sm ${isDark ? "text-gray-400" : "text-gray-500"}`}>
+              <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                 Goal: {targetValue.toLocaleString()} {unit}
               </span>
             </div>
@@ -149,5 +151,5 @@ export function GoalProgressCard({
         description={`Congratulations! You've reached your ${title.toLowerCase()} goal.`}
       />
     </>
-  )
+  );
 }
