@@ -26,7 +26,7 @@ export function ConnectPage() {
 
   useEffect(() => {
     if (isConnected) {
-      router.push('/dashboard/social');
+      router.push('/dashboard');
     }
   }, [isConnected, router]);
 

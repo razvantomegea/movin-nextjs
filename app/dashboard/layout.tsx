@@ -31,10 +31,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   };
 
   const tabs = [
-    { name: 'Social', path: '/dashboard/social', icon: <Users className="h-5 w-5" /> },
     { name: 'Movin', path: '/dashboard', icon: <Activity className="h-5 w-5" /> },
     { name: 'Energy', path: '/dashboard/energy', icon: <Bolt className="h-5 w-5" /> },
     { name: 'Rewards', path: '/dashboard/rewards', icon: <Gift className="h-5 w-5" /> },
+    { name: 'Social', path: '/dashboard/social', icon: <Users className="h-5 w-5" /> },
     { name: 'More', path: '#', icon: <Menu className="h-5 w-5" /> },
   ];
 

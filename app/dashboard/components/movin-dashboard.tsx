@@ -275,10 +275,10 @@ export function MovinDashboard() {
           />
         </motion.div>
 
-        {/* Today's Workouts */}
+        {/* Today&apos;s Workouts */}
         <motion.div className="space-y-4" variants={item}>
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-medium">Today's Workouts</h2>
+            <h2 className="text-lg font-medium">Today&apos;s Workouts</h2>
             <Button
               onClick={handleOpenRouteTracking}
               size="sm"
