@@ -50,12 +50,6 @@ export function MovinDashboard() {
   const { dailyActivity, weeklyData, monthlyData, yearlyData, todaysWorkouts, isLoading, error } =
     useAppSelector((state) => state.activityData);
 
-  // Get route data from Redux store
-  const { routes } = useAppSelector((state) => state.routeData);
-
-  // Get joint tracking state
-  const { isJointTracking, joinedUsers } = useAppSelector((state) => state.jointTracking);
-
   // Fetch data when component mounts
   useEffect(() => {
     dispatch(fetchActivityData());
@@ -105,20 +99,6 @@ export function MovinDashboard() {
     };
 
     dispatch(saveRouteData(enhancedRouteData));
-
-    // Add the route as a workout
-    const newWorkout = {
-      id: Number.parseInt(routeData.id),
-      type: routeData.isJoint ? 'Joint Run' : 'Running',
-      duration: formatDuration(routeData.duration),
-      distance: formatDistance(routeData.distance),
-      calories: Math.round(routeData.distance / 15), // Rough estimate: 1km ≈ 65 calories
-      time: new Date().toLocaleTimeString('en-US', {
-        hour: 'numeric',
-        minute: 'numeric',
-        hour12: true,
-      }),
-    };
 
     // In a real app, you would dispatch an action to add this workout
     // For now, we'll just show a toast

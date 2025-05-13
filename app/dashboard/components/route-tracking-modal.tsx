@@ -33,13 +33,6 @@ const mapContainerStyle = {
   height: '100%',
 };
 
-// Declare google variable
-declare global {
-  interface Window {
-    google: any;
-  }
-}
-
 // Simulated user data for Sarrah
 const sarrahUser = {
   id: 'sarrah-123',
@@ -52,7 +45,6 @@ export function RouteTrackingModal({ isOpen, onClose, onSaveRoute }: RouteTracki
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
   const mapRef = useRef<google.maps.Map | null>(null);
-  const polylineRef = useRef<google.maps.Polyline | null>(null);
   const watchIdRef = useRef<number | null>(null);
   const { isLoaded: mapsLoaded, loadError: mapsError } = useGoogleMapsStatus();
 
@@ -69,12 +61,62 @@ export function RouteTrackingModal({ isOpen, onClose, onSaveRoute }: RouteTracki
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
 
   // Simulated joint tracking state
-  const [isJointTracking, setIsJointTracking] = useState(true);
+  const [isJointTracking] = useState(true);
   const [sarrahPosition, setSarrahPosition] = useState<google.maps.LatLngLiteral | null>(null);
 
   // Initialize permission check
   useEffect(() => {
     if (!isOpen) return;
+
+    // Handle permission using the Permissions API
+    const handlePermission = () => {
+      // Check if geolocation is available
+      if (!navigator.geolocation) {
+        setError('Geolocation is not supported by your browser');
+        return;
+      }
+
+      // Check if Permissions API is available
+      if (navigator.permissions && navigator.permissions.query) {
+        navigator.permissions
+          .query({ name: 'geolocation' as PermissionName })
+          .then((result) => {
+            setPermissionState(result.state as 'prompt' | 'granted' | 'denied');
+
+            // Handle initial state
+            if (result.state === 'granted') {
+              // Permission already granted, get position
+              getCurrentPosition();
+            } else if (result.state === 'prompt') {
+              // Will prompt when we request position
+              setPermissionState('prompt');
+            } else if (result.state === 'denied') {
+              // Permission denied, show UI to help user enable it
+              setPermissionState('denied');
+            }
+
+            // Listen for changes to permission state
+            result.addEventListener('change', () => {
+              console.log('Permission state changed to:', result.state);
+              setPermissionState(result.state as 'prompt' | 'granted' | 'denied');
+
+              if (result.state === 'granted') {
+                getCurrentPosition();
+              }
+            });
+          })
+          .catch((error) => {
+            console.error('Error checking permission:', error);
+            // If we can't check permissions, assume we need to prompt
+            setPermissionState('prompt');
+          });
+      } else {
+        // Permissions API not available, assume we need to prompt
+        setPermissionState('prompt');
+        console.log('Permissions API not available, assuming prompt state');
+      }
+    };
+
     handlePermission();
 
     return () => {
@@ -102,55 +144,6 @@ export function RouteTrackingModal({ isOpen, onClose, onSaveRoute }: RouteTracki
       };
     }
   }, [currentPosition]);
-
-  // Handle permission using the Permissions API
-  const handlePermission = () => {
-    // Check if geolocation is available
-    if (!navigator.geolocation) {
-      setError('Geolocation is not supported by your browser');
-      return;
-    }
-
-    // Check if Permissions API is available
-    if (navigator.permissions && navigator.permissions.query) {
-      navigator.permissions
-        .query({ name: 'geolocation' as PermissionName })
-        .then((result) => {
-          setPermissionState(result.state as 'prompt' | 'granted' | 'denied');
-
-          // Handle initial state
-          if (result.state === 'granted') {
-            // Permission already granted, get position
-            getCurrentPosition();
-          } else if (result.state === 'prompt') {
-            // Will prompt when we request position
-            setPermissionState('prompt');
-          } else if (result.state === 'denied') {
-            // Permission denied, show UI to help user enable it
-            setPermissionState('denied');
-          }
-
-          // Listen for changes to permission state
-          result.addEventListener('change', () => {
-            console.log('Permission state changed to:', result.state);
-            setPermissionState(result.state as 'prompt' | 'granted' | 'denied');
-
-            if (result.state === 'granted') {
-              getCurrentPosition();
-            }
-          });
-        })
-        .catch((error) => {
-          console.error('Error checking permission:', error);
-          // If we can't check permissions, assume we need to prompt
-          setPermissionState('prompt');
-        });
-    } else {
-      // Permissions API not available, assume we need to prompt
-      setPermissionState('prompt');
-      console.log('Permissions API not available, assuming prompt state');
-    }
-  };
 
   // Request permission and get position
   const requestLocationPermission = () => {
@@ -386,7 +379,7 @@ export function RouteTrackingModal({ isOpen, onClose, onSaveRoute }: RouteTracki
         <AlertTriangle className="h-16 w-16 text-amber-500 mb-4" />
         <h3 className="text-xl font-bold mb-2">Location Access Denied</h3>
         <p className="text-gray-500 dark:text-gray-400 mb-6">
-          You've denied access to your location. To track your route, please enable location
+          You&apos;ve denied access to your location. To track your route, please enable location
           permissions in your browser settings and try again.
         </p>
         <div className="space-y-4">

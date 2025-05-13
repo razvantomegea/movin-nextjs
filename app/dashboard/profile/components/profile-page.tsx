@@ -186,7 +186,7 @@ export function ProfilePage() {
         <Alert className="mb-6">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>No profile found</AlertTitle>
-          <AlertDescription>We couldn't find your profile information.</AlertDescription>
+          <AlertDescription>We couldn&apos;t find your profile information.</AlertDescription>
         </Alert>
         <Button onClick={handleRefresh}>Refresh</Button>
       </div>
@@ -361,7 +361,7 @@ export function ProfilePage() {
                 <Card>
                   <CardHeader>
                     <CardTitle>Your Achievements</CardTitle>
-                    <CardDescription>Badges and rewards you've earned</CardDescription>
+                    <CardDescription>Badges and rewards you&apos;ve earned</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">

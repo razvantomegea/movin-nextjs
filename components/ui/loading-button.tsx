@@ -1,13 +1,11 @@
-import type React from 'react';
-import { forwardRef } from 'react';
-import type { ButtonProps } from '@radix-ui/react-dropdown-menu';
+import { forwardRef, ReactNode, ButtonHTMLAttributes } from 'react';
 import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-interface LoadingButtonProps extends ButtonProps {
+interface LoadingButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   loading?: boolean;
   loadingText?: string;
-  children: React.ReactNode;
+  children: ReactNode;
   className?: string;
   variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
   size?: 'default' | 'sm' | 'lg' | 'icon';
