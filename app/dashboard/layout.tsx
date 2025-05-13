@@ -12,7 +12,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { RefreshButton } from '@/components/refresh-button';
-import { useMediaQuery } from '@/hooks/use-media-query';
+import { useMediaQuery } from '@/lib/hooks/use-media-query';
 import { PremiumBadge } from '@/components/premium-badge';
 import { useAppKitAccount } from '@reown/appkit/react';
 

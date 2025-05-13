@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { X, Camera, RefreshCw, Check } from "lucide-react"
 import { useTheme } from "next-themes"
-import { MealDetectionResultsModal } from "./meal-detection-results-modal"
+import { MealDetectionResultsModal } from "../app/dashboard/energy/components/meal-detection-results-modal"
 
 interface CameraModalProps {
   isOpen: boolean

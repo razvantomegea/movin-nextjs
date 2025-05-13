@@ -10,12 +10,12 @@ import { Button } from '@/components/ui/button';
 import { useTheme } from 'next-themes';
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
 import { fetchActivityData, resetActivityError } from '@/lib/redux/slices/activityDataSlice';
-import { ActivityDashboardSkeleton } from '@/components/skeletons/activity-dashboard-skeleton';
+import { ActivityDashboardSkeleton } from './activity-dashboard-skeleton';
 import { ErrorAlert } from '@/components/ui/error-alert';
 import ErrorBoundary from '@/components/error-boundary';
 import { ActivityColumnChart } from '@/components/activity-column-chart';
 import { showSuccessToast, showInfoToast } from '@/lib/redux/slices/toastSlice';
-import { RefreshButton } from './refresh-button';
+import { RefreshButton } from '@/components/refresh-button';
 import { RouteTrackingModal, type RouteData } from './route-tracking-modal';
 import { saveRouteData } from '@/lib/redux/slices/routeDataSlice';
 import { formatDistance, formatDuration } from '@/lib/utils';
@@ -96,7 +96,15 @@ export function MovinDashboard() {
   };
 
   const handleSaveRoute = (routeData: RouteData) => {
-    dispatch(saveRouteData(routeData));
+    // Add the missing properties required by the Redux store
+    const enhancedRouteData = {
+      ...routeData,
+      type: routeData.isJoint ? 'Joint Run' : 'Running',
+      date: new Date().toISOString(),
+      calories: Math.round(routeData.distance / 15), // Rough estimate: 1km ≈ 65 calories
+    };
+
+    dispatch(saveRouteData(enhancedRouteData));
 
     // Add the route as a workout
     const newWorkout = {

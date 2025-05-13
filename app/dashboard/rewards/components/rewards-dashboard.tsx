@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { useTheme } from 'next-themes';
-import { StakeModal } from '@/components/stake-modal';
+import { StakeModal } from '@/app/dashboard/rewards/components/stake-modal';
 import { TransactionConfirmationModal } from '@/components/transaction-confirmation-modal';
 import { CountdownTimer } from '@/components/countdown-timer';
 import { LoadingButton } from '@/components/ui/loading-button';
@@ -31,9 +31,9 @@ import {
   claimStakingRewards,
   resetStakingError,
 } from '@/lib/redux/slices/stakingSlice';
-import { StakingSkeleton } from '@/components/skeletons/staking-skeleton';
-import { ActivityRewardsSkeleton } from '@/components/skeletons/activity-rewards-skeleton';
-import { ReferralRewardsSkeleton } from '@/components/skeletons/referral-rewards-skeleton';
+import { StakingSkeleton } from './staking-skeleton';
+import { ActivityRewardsSkeleton } from './activity-rewards-skeleton';
+import { ReferralRewardsSkeleton } from './referral-rewards-skeleton';
 import {
   fetchActivityRewards,
   claimActivityRewards,

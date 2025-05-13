@@ -1,47 +1,53 @@
-"use client"
+'use client';
 
-import { useEffect, useState } from "react"
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks"
-import { fetchSocialFeed, refreshSocialFeed, toggleLike, addPost, clearError } from "@/lib/redux/slices/socialFeedSlice"
-import { SocialFeedCard } from "./social-feed-card"
-import { SocialFeedSkeleton } from "./skeletons/social-feed-skeleton"
-import { ShareAchievementModal } from "./share-achievement-modal"
-import { Button } from "@/components/ui/button"
-import { RefreshButton } from "@/components/ui/refresh-button"
-import { AlertCircle, Plus } from "lucide-react"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { useEffect, useState } from 'react';
+import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
+import {
+  fetchSocialFeed,
+  refreshSocialFeed,
+  toggleLike,
+  addPost,
+  clearError,
+} from '@/lib/redux/slices/socialFeedSlice';
+import { SocialFeedCard } from './social-feed-card';
+import { SocialFeedSkeleton } from './social-feed-skeleton';
+import { ShareAchievementModal } from './share-achievement-modal';
+import { Button } from '@/components/ui/button';
+import { RefreshButton } from '@/components/ui/refresh-button';
+import { AlertCircle, Plus } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export function SocialFeedPage() {
-  const dispatch = useAppDispatch()
-  const { posts, isLoading, error, isRefreshing } = useAppSelector((state) => state.socialFeed)
-  const [isShareModalOpen, setIsShareModalOpen] = useState(false)
+  const dispatch = useAppDispatch();
+  const { posts, isLoading, error, isRefreshing } = useAppSelector((state) => state.socialFeed);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
   useEffect(() => {
-    dispatch(fetchSocialFeed())
-  }, [dispatch])
+    dispatch(fetchSocialFeed());
+  }, [dispatch]);
 
   const handleRefresh = async () => {
-    await dispatch(refreshSocialFeed()).unwrap()
-  }
+    await dispatch(refreshSocialFeed()).unwrap();
+  };
 
   const handleLike = (postId: string) => {
-    dispatch(toggleLike(postId))
-  }
+    dispatch(toggleLike(postId));
+  };
 
   const handleShare = (content: string, image?: string) => {
     dispatch(
       addPost({
         user: {
-          name: "You",
-          username: "username",
-          avatar: "/vibrant-street-market.png",
+          name: 'You',
+          username: 'username',
+          avatar: '/vibrant-street-market.png',
         },
         content,
         image,
       }),
-    )
-    setIsShareModalOpen(false)
-  }
+    );
+    setIsShareModalOpen(false);
+  };
 
   return (
     <div className="p-4 max-w-2xl mx-auto">
@@ -89,5 +95,5 @@ export function SocialFeedPage() {
         onShare={handleShare}
       />
     </div>
-  )
+  );
 }

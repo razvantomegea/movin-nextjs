@@ -1,4 +1,4 @@
-import { SocialFeedPage } from '@/components/social-feed-page';
+import { SocialFeedPage } from './components';
 
 export default function SocialPage() {
   return <SocialFeedPage />;

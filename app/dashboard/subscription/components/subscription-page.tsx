@@ -18,7 +18,7 @@ import { motion } from 'framer-motion';
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
 import { fetchSubscriptionStatus, upgradeToPremium } from '@/lib/redux/slices/subscriptionSlice';
 import { showSuccessToast, showErrorToast } from '@/lib/redux/slices/toastSlice';
-import { SubscriptionPageSkeleton } from '@/components/skeletons/subscription-page-skeleton';
+import { SubscriptionPageSkeleton } from './subscription-page-skeleton';
 
 const container = {
   hidden: { opacity: 0 },

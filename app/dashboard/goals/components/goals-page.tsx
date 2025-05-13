@@ -3,12 +3,12 @@
 import { useEffect } from 'react';
 
 import { motion } from 'framer-motion';
-import { GoalProgressCard } from '@/components/goal-progress-card';
+import { GoalProgressCard } from './goal-progress-card';
 import { showSuccessToast, showInfoToast, showErrorToast } from '@/lib/redux/slices/toastSlice';
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
 import { RefreshButton } from '@/components/refresh-button';
 import { fetchGoals } from '@/lib/redux/slices/goalsSlice';
-import { GoalsPageSkeleton } from '@/components/skeletons/goals-page-skeleton';
+import { GoalsPageSkeleton } from './goals-page-skeleton';
 import { AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -67,6 +67,15 @@ export function GoalsPage() {
     }
   };
 
+  // Function to validate/transform icon string to valid type
+  const getValidIcon = (icon: string): 'steps' | 'workout' | 'streak' | 'level' => {
+    return (['steps', 'workout', 'streak', 'level'].includes(icon) ? icon : 'steps') as
+      | 'steps'
+      | 'workout'
+      | 'streak'
+      | 'level';
+  };
+
   // Group goals by category
   const dailyGoals = goals.filter((goal) => goal.category === 'daily');
   const weeklyGoals = goals.filter((goal) => goal.category === 'weekly');
@@ -113,7 +122,7 @@ export function GoalsPage() {
                   currentValue={goal.currentValue}
                   targetValue={goal.targetValue}
                   unit={goal.unit}
-                  icon={goal.icon}
+                  icon={getValidIcon(goal.icon)}
                   autoTrigger={goal.autoTrigger}
                 />
               ))}
@@ -132,7 +141,7 @@ export function GoalsPage() {
                   currentValue={goal.currentValue}
                   targetValue={goal.targetValue}
                   unit={goal.unit}
-                  icon={goal.icon}
+                  icon={getValidIcon(goal.icon)}
                   autoTrigger={goal.autoTrigger}
                 />
               ))}
@@ -151,7 +160,7 @@ export function GoalsPage() {
                   currentValue={goal.currentValue}
                   targetValue={goal.targetValue}
                   unit={goal.unit}
-                  icon={goal.icon}
+                  icon={getValidIcon(goal.icon)}
                   autoTrigger={goal.autoTrigger}
                 />
               ))}

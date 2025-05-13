@@ -1,5 +1,5 @@
-import { SubscriptionPage } from "@/components/subscription-page"
+import { SubscriptionPage } from './components';
 
 export default function Subscription() {
-  return <SubscriptionPage />
+  return <SubscriptionPage />;
 }

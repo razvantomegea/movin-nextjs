@@ -1,5 +1,5 @@
-import { EnergyPage } from "@/components/energy-page"
+import { EnergyPage } from './components';
 
 export default function Energy() {
-  return <EnergyPage />
+  return <EnergyPage />;
 }

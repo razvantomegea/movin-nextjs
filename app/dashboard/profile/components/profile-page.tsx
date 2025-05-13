@@ -25,7 +25,7 @@ import { motion } from 'framer-motion';
 import { showSuccessToast, showErrorToast } from '@/lib/redux/slices/toastSlice';
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
 import { RefreshButton } from '@/components/refresh-button';
-import { ProfilePageSkeleton } from '@/components/skeletons/profile-page-skeleton';
+import { ProfilePageSkeleton } from './profile-page-skeleton';
 import { fetchProfile, updateProfile, clearProfileError } from '@/lib/redux/slices/profileSlice';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 

@@ -1,5 +1,5 @@
-import { RewardsDashboard } from "@/components/rewards-dashboard"
+import { RewardsDashboard } from './components';
 
 export default function RewardsPage() {
-  return <RewardsDashboard />
+  return <RewardsDashboard />;
 }

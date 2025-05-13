@@ -1,17 +1,17 @@
-"use client"
+'use client';
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { useToast } from "@/hooks/use-toast"
-import { AlertCircle, AlertTriangle, CheckCircle, Info } from "lucide-react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { useReduxToast } from '@/lib/hooks/use-redux-toast';
+import { AlertCircle, AlertTriangle, CheckCircle, Info } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 export function ErrorDemo() {
-  const { toast, error, success, warning, info } = useToast()
-  const [throwError, setThrowError] = useState(false)
+  const { toast, error, success, warning, info } = useReduxToast();
+  const [throwError, setThrowError] = useState(false);
 
   if (throwError) {
-    throw new Error("This is a test error from the Error Boundary component")
+    throw new Error('This is a test error from the Error Boundary component');
   }
 
   return (
@@ -25,8 +25,8 @@ export function ErrorDemo() {
           <Button
             onClick={() =>
               error({
-                title: "Error Toast",
-                description: "This is an error toast notification",
+                title: 'Error Toast',
+                description: 'This is an error toast notification',
               })
             }
             variant="destructive"
@@ -38,8 +38,8 @@ export function ErrorDemo() {
           <Button
             onClick={() =>
               success({
-                title: "Success Toast",
-                description: "This is a success toast notification",
+                title: 'Success Toast',
+                description: 'This is a success toast notification',
               })
             }
             variant="outline"
@@ -52,8 +52,8 @@ export function ErrorDemo() {
           <Button
             onClick={() =>
               warning({
-                title: "Warning Toast",
-                description: "This is a warning toast notification",
+                title: 'Warning Toast',
+                description: 'This is a warning toast notification',
               })
             }
             variant="outline"
@@ -66,8 +66,8 @@ export function ErrorDemo() {
           <Button
             onClick={() =>
               info({
-                title: "Info Toast",
-                description: "This is an info toast notification",
+                title: 'Info Toast',
+                description: 'This is an info toast notification',
               })
             }
             variant="outline"
@@ -86,5 +86,5 @@ export function ErrorDemo() {
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }
