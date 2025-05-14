@@ -1,20 +1,8 @@
 import { createSlice, createAsyncThunk, type PayloadAction } from '@reduxjs/toolkit';
-
-// Define types for profile data
-export interface ProfileData {
-  id: string;
-  username: string;
-  email: string;
-  avatar_url: string | null;
-  level: number;
-  streak_days: number;
-  mvn_tokens: number;
-  created_at: string;
-  updated_at: string;
-}
+import { getProfile, IProfile, updateProfile as updateProfileDB } from '@/lib/supabase/profile';
 
 interface ProfileState {
-  profile: ProfileData | null;
+  profile: IProfile | null;
   isLoading: boolean;
   isUpdating: boolean;
   error: string | null;
@@ -30,29 +18,13 @@ const initialState: ProfileState = {
   lastUpdated: null,
 };
 
-// Mock data for development
-const mockProfile: ProfileData = {
-  id: 'user-123',
-  username: 'JohnRunner',
-  email: 'john@example.com',
-  avatar_url: null,
-  level: 5,
-  streak_days: 7,
-  mvn_tokens: 15.2,
-  created_at: new Date().toISOString(),
-  updated_at: new Date().toISOString(),
-};
-
 // Async thunks
 export const fetchProfile = createAsyncThunk(
   'profile/fetchProfile',
-  async (_, { rejectWithValue }) => {
+  async (address: string, { rejectWithValue }) => {
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
-      // In a real app, this would be an API call to fetch profile data
-      return mockProfile;
+      const profile = await getProfile({ address });
+      return profile;
     } catch (error) {
       return rejectWithValue('Failed to fetch profile data. Please try again.');
     }
@@ -61,13 +33,14 @@ export const fetchProfile = createAsyncThunk(
 
 export const updateProfile = createAsyncThunk(
   'profile/updateProfile',
-  async (profileData: Partial<ProfileData>, { rejectWithValue }) => {
+  async (
+    { address, profileData }: { address: string; profileData: Partial<IProfile> },
+    { rejectWithValue },
+  ) => {
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // In a real app, this would be an API call to update profile data
-      return profileData;
+      // Update the profile in the database
+      const profile = await updateProfileDB({ address, profileData });
+      return profile;
     } catch (error) {
       return rejectWithValue('Failed to update profile. Please try again.');
     }
@@ -90,9 +63,9 @@ const profileSlice = createSlice({
         state.isLoading = true;
         state.error = null;
       })
-      .addCase(fetchProfile.fulfilled, (state, action: PayloadAction<ProfileData>) => {
+      .addCase(fetchProfile.fulfilled, (state, action: PayloadAction<IProfile | null>) => {
         state.isLoading = false;
-        state.profile = action.payload;
+        state.profile = action.payload || null;
         state.lastUpdated = Date.now();
       })
       .addCase(fetchProfile.rejected, (state, action) => {
@@ -105,7 +78,7 @@ const profileSlice = createSlice({
         state.isUpdating = true;
         state.error = null;
       })
-      .addCase(updateProfile.fulfilled, (state, action: PayloadAction<Partial<ProfileData>>) => {
+      .addCase(updateProfile.fulfilled, (state, action: PayloadAction<IProfile>) => {
         state.isUpdating = false;
         if (state.profile) {
           state.profile = {
