@@ -1,33 +1,28 @@
--- Enable RLS on the profiles table
-ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+-- SELECT Policy
+create policy "Allow address-based select"
+on profiles
+for select
+to authenticated
+using ( (auth.jwt() ->> 'sub') = address );
 
--- Allow public reads of profiles
-CREATE POLICY "Anyone can read profiles"
-ON profiles
-FOR SELECT
-USING (true);
+-- INSERT Policy (critical fix)
+create policy "Allow address-based insert"
+on profiles
+for insert
+to authenticated
+with check ( (auth.jwt() ->> 'sub') = address );
 
--- Allow authenticated users to update their own profile
-CREATE POLICY "Users can update own profile"
-ON profiles
-FOR UPDATE
-USING ((auth.jwt() ->> 'sub')::text = address);
+-- UPDATE Policy
+create policy "Allow address-based update"
+on profiles
+for update
+to authenticated
+using ( (auth.jwt() ->> 'sub') = address )
+with check ( (auth.jwt() ->> 'sub') = address );
 
--- For service role access (handled by the API)
--- Note: This is handled by using the admin client in the API
-
--- Delete existing policy if it's causing issues
-DROP POLICY IF EXISTS "Authenticated users can insert profiles with matching address" ON profiles;
-
--- Create a policy that correctly verifies the JWT sub claim
-CREATE POLICY "Authenticated users can insert profiles with matching address"
-ON profiles
-FOR INSERT
-TO authenticated
-WITH CHECK ((auth.jwt() ->> 'sub')::text = address);
-
--- Additional policy for deleting profiles (optional)
-CREATE POLICY "Users can delete own profile"
-ON profiles
-FOR DELETE
-USING ((auth.jwt() ->> 'sub')::text = address); 
+-- DELETE Policy
+create policy "Allow address-based delete"
+on profiles
+for delete
+to authenticated
+using ( (auth.jwt() ->> 'sub') = address );
