@@ -2,33 +2,92 @@
 
 import { useState, useEffect } from 'react';
 import { useAppKit, useAppKitAccount, useAppKitState } from '@reown/appkit/react';
+import { createClient } from '@supabase/supabase-js';
 import { motion } from 'framer-motion';
 import { Wallet } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
+import { updateProfile } from '@/lib/supabase/profile';
+import { getProfile } from '@/lib/supabase/profile';
 import { ThemeToggle } from './theme-toggle';
 
 export function ConnectPage() {
   const router = useRouter();
   const { resolvedTheme } = useTheme();
   const { open } = useAppKit();
-  const { isConnected } = useAppKitAccount();
+  const { isConnected, address } = useAppKitAccount();
   const { open: isOpen } = useAppKitState();
   const [connecting, setConnecting] = useState(isConnected);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   const handleConnect = async () => {
     open();
-
     setConnecting(true);
+    setAuthError(null);
   };
 
   useEffect(() => {
-    if (isConnected) {
-      router.push('/dashboard');
-    }
-  }, [isConnected, router]);
+    const authenticateWithSupabase = async () => {
+      if (isConnected && address) {
+        try {
+          // Call the API to generate JWT and authenticate with Supabase
+          const response = await fetch('/api/auth/wallet-login', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ address }),
+          });
+
+          if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Authentication failed');
+          }
+
+          // Get the JWT token from the response
+          const { token } = await response.json();
+
+          // Store the token in localStorage for future API calls
+          localStorage.setItem('auth_token', token);
+
+          // Check if a profile exists for this address
+          try {
+            const profile = await getProfile({ address });
+
+            // If no profile exists, create one with address as username
+            if (!profile) {
+              await updateProfile({
+                address,
+                profileData: {
+                  username: address,
+                  email: '',
+                  avatar_url: '',
+                  level: 1,
+                  streak_days: 0,
+                  address,
+                },
+              });
+            }
+          } catch (profileError) {
+            console.error('Profile setup error:', profileError);
+            // Don't fail the authentication if profile creation fails
+            // Just log the error and continue
+          }
+
+          // Navigate to dashboard on successful authentication
+          router.push('/dashboard');
+        } catch (error) {
+          console.error('Authentication error:', error);
+          setAuthError((error as Error).message);
+          setConnecting(false);
+        }
+      }
+    };
+
+    authenticateWithSupabase();
+  }, [isConnected, address, router]);
 
   useEffect(() => {
     if (isOpen) {
@@ -146,6 +205,16 @@ export function ConnectPage() {
               </motion.div>
             )}
           </Button>
+
+          {authError && (
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="mt-4 text-red-500 text-center"
+            >
+              {authError}
+            </motion.p>
+          )}
         </motion.div>
 
         <motion.div

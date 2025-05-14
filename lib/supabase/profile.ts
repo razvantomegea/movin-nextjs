@@ -1,4 +1,5 @@
-import { createSupabaseClientBrowser } from './createClient';
+import { SupabaseClient } from '@supabase/supabase-js';
+import { getClient } from './createClient';
 
 export interface IProfile {
   id: string;
@@ -17,10 +18,10 @@ export async function getProfile({
   client,
 }: {
   address: string;
-  client?: Awaited<ReturnType<typeof createSupabaseClientBrowser>>;
+  client?: SupabaseClient;
 }): Promise<IProfile | null> {
   if (!client) {
-    client = await createSupabaseClientBrowser();
+    client = getClient();
   }
 
   const { data, error } = await client.from('profiles').select('*').eq('address', address);
@@ -29,17 +30,21 @@ export async function getProfile({
     throw error;
   }
 
-  return data[0] || null;
+  return data?.[0] || null;
 }
 
 export async function updateProfile({
   address,
   profileData,
+  client,
 }: {
   address: string;
   profileData: Partial<IProfile>;
+  client?: SupabaseClient;
 }): Promise<IProfile> {
-  const client = await createSupabaseClientBrowser();
+  if (!client) {
+    client = getClient();
+  }
 
   const existingProfile = await getProfile({ address, client });
 
@@ -47,13 +52,14 @@ export async function updateProfile({
     const { data, error } = await client
       .from('profiles')
       .update(profileData)
-      .eq('address', address);
+      .eq('address', address)
+      .select();
 
     if (error) {
       throw error;
     }
 
-    if (!data) {
+    if (!data || data.length === 0) {
       throw new Error('Profile update failed: No data returned');
     }
 
@@ -69,14 +75,14 @@ export async function updateProfile({
     streak_days: profileData.streak_days || 0,
   };
 
-  const { data, error } = await client.from('profiles').insert(dataToInsert);
+  const { data, error } = await client.from('profiles').insert(dataToInsert).select();
 
   if (error) {
     throw error;
   }
 
-  if (!data) {
-    throw new Error('Profile update failed: No data returned');
+  if (!data || data.length === 0) {
+    throw new Error('Profile creation failed: No data returned');
   }
 
   return data[0];
