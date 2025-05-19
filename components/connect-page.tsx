@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useAppKit, useAppKitAccount, useAppKitState } from '@reown/appkit/react';
-import { createClient } from '@supabase/supabase-js';
 import { motion } from 'framer-motion';
 import { Wallet } from 'lucide-react';
 import Image from 'next/image';
@@ -169,7 +168,7 @@ export function ConnectPage() {
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.4, duration: 0.5 }}
-          className="text-xl mb-12 text-center text-gray-700 dark:text-blue-100"
+          className="text-xl mb-20 text-center text-gray-700 dark:text-blue-100"
         >
           It all starts with one step
         </motion.p>
