@@ -13,6 +13,7 @@ interface StakeItemProps {
   activeAction: { type: string; index: number } | null;
   onUnstake: (index: number) => Promise<void>;
   onStakeUnlocked: (amount: string) => void;
+  rewardsEarned?: number;
 }
 
 export function StakeItem({
@@ -23,6 +24,7 @@ export function StakeItem({
   activeAction,
   onUnstake,
   onStakeUnlocked,
+  rewardsEarned,
 }: StakeItemProps) {
   const aprValue = parseInt(stake.lockDurationFormatted) / 30;
   const endDateISO = new Date(stake.endTime * 1000).toISOString();
@@ -38,7 +40,7 @@ export function StakeItem({
         <div className="flex items-center">
           <Lock className="h-4 w-4 mr-2 text-blue-500" />
           <span className="font-medium">
-            {stake.amount} {displayTokenSymbol}
+            {Number(stake.amount).toFixed(2)} {displayTokenSymbol}
           </span>
         </div>
         <div className="flex items-center">
@@ -53,11 +55,20 @@ export function StakeItem({
       </div>
 
       <div className="flex items-center justify-between mb-3">
-        <span className="text-sm text-gray-500">Rewards</span>
+        <span className="text-sm text-gray-500">Pending Rewards</span>
         <span className="text-blue-500">
-          +{stake.reward} {displayTokenSymbol}
+          +{Number(stake.reward).toFixed(2)} {displayTokenSymbol}
         </span>
       </div>
+
+      {typeof rewardsEarned === 'number' && (
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-sm text-gray-500">Rewards earned</span>
+          <span className="text-green-500 font-medium">
+            +{Number(rewardsEarned).toFixed(2)} {displayTokenSymbol}
+          </span>
+        </div>
+      )}
 
       <div className="flex items-center justify-between pt-2 border-t border-gray-700">
         {stake.canUnstake ? (

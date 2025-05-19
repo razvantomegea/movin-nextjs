@@ -40,16 +40,19 @@ export function StakingHistory() {
       return [];
     }
 
-    return history.map((stake) => ({
-      ...stake,
-      formattedAmount: `${stake.amount} ${tokenSymbol}`,
-      formattedRewards: `${stake.rewards} ${tokenSymbol}`,
-      formattedPeriod: `${stake.lock_period_months} ${
-        stake.lock_period_months === 1 ? 'month' : 'months'
-      }`,
-      formattedDate: formatDate(stake.stake_time),
-      status: stake.is_active ? 'Active' : 'Completed',
-    }));
+    // Only show completed (inactive) stakes
+    return history
+      .filter((stake) => !stake.is_active)
+      .map((stake) => ({
+        ...stake,
+        formattedAmount: `${Number(stake.amount).toFixed(2)} ${tokenSymbol}`,
+        formattedRewards: `${Number(stake.rewards).toFixed(2)} ${tokenSymbol}`,
+        formattedPeriod: `${stake.lock_period_months} ${
+          stake.lock_period_months === 1 ? 'month' : 'months'
+        }`,
+        formattedDate: formatDate(stake.stake_time),
+        status: 'Completed',
+      }));
   }, [history, tokenSymbol]);
 
   return (

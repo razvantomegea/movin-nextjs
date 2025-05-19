@@ -427,18 +427,23 @@ export function StakingRewards({ refreshing }: StakingRewardsProps) {
                     </Button>
                   </div>
                 ) : (
-                  stakingData.stakes.map((stake: IUserStake, index: number) => (
-                    <StakeItem
-                      key={index}
-                      stake={stake}
-                      index={index}
-                      isDark={isDark}
-                      tokenSymbol={displayTokenSymbol}
-                      activeAction={activeAction}
-                      onUnstake={handleUnstake}
-                      onStakeUnlocked={handleStakeUnlocked}
-                    />
-                  ))
+                  stakingData.stakes.map((stake: IUserStake, index: number) => {
+                    // Find the matching DB stake for rewards earned
+                    const dbStake = stakingHistory?.find((s) => matchUserStakeWithDB(stake, s));
+                    return (
+                      <StakeItem
+                        key={index}
+                        stake={stake}
+                        index={index}
+                        isDark={isDark}
+                        tokenSymbol={displayTokenSymbol}
+                        activeAction={activeAction}
+                        onUnstake={handleUnstake}
+                        onStakeUnlocked={handleStakeUnlocked}
+                        rewardsEarned={dbStake?.rewards}
+                      />
+                    );
+                  })
                 )}
               </div>
             </CardContent>
