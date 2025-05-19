@@ -1,8 +1,6 @@
 'use client';
 
-import type React from 'react';
-
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo, ChangeEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Info, Clock, TrendingUp, AlertCircle } from 'lucide-react';
 import { useTheme } from 'next-themes';
@@ -11,14 +9,20 @@ import { ErrorAlert } from '@/components/ui/error-alert';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { LoadingButton } from '@/components/ui/loading-button';
-import { Slider } from '@/components/ui/slider';
-import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
-import { stakeMVN, resetStakingError } from '@/lib/redux/slices/stakingSlice';
+// import { Slider } from '@/components/ui/slider';
+import { useMovinEarn } from '@/lib/hooks/useMovinEarn';
+import { useMovinToken } from '@/lib/hooks/useMovinToken';
+import { useAppDispatch } from '@/lib/redux/hooks';
 import { showSuccessToast, showErrorToast } from '@/lib/redux/slices/toastSlice';
 
 interface StakeModalProps {
   isOpen: boolean;
-  onClose: () => void;
+  onClose: (isStaked?: boolean) => void;
+}
+
+interface LockPeriodOption {
+  months: number;
+  apr: number;
 }
 
 export function StakeModal({ isOpen, onClose }: StakeModalProps) {
@@ -26,93 +30,130 @@ export function StakeModal({ isOpen, onClose }: StakeModalProps) {
   const isDark = resolvedTheme === 'dark';
   const [amount, setAmount] = useState<string>('');
   const [period, setPeriod] = useState<number>(1); // Default to 1 month
-  const [baseAPR] = useState<number>(5); // Base APR percentage
-  const [totalAPR, setTotalAPR] = useState<number>(6); // Base + period bonus
+  const [baseAPR] = useState<number>(0); // Base APR percentage
   const [formError, setFormError] = useState<string>('');
 
   const dispatch = useAppDispatch();
-  const { availableMVN, error: stakingError, isStaking } = useAppSelector((state) => state.staking);
+
+  // Get token symbol and balance
+  const { useTokenSymbol, useTokenBalance } = useMovinToken();
+  const { data: tokenSymbol } = useTokenSymbol();
+  const { formattedBalance: availableBalance, formattedBalanceWithSuffix } = useTokenBalance();
+
+  // Get staking functions from the hook
+  const { useStakeTokens } = useMovinEarn();
+
+  // For staking tokens
+  const {
+    stakeTokens,
+    isPending: isStaking,
+    isLoading: isStakeLoading,
+    isSuccess: isStakeSuccess,
+    error: stakeError,
+  } = useStakeTokens();
+
+  // Define lock period options
+  const lockPeriodOptions = useMemo<LockPeriodOption[]>(
+    () => [
+      { months: 1, apr: 1 },
+      { months: 3, apr: 3 },
+      { months: 6, apr: 6 },
+      { months: 12, apr: 12 },
+      { months: 24, apr: 24 },
+    ],
+    [],
+  );
 
   // Calculate total APR based on period
-  useEffect(() => {
-    setTotalAPR(baseAPR + period);
+  const totalAPR = useMemo(() => {
+    return baseAPR + period;
   }, [period, baseAPR]);
 
-  // Reset form when modal is opened
-  useEffect(() => {
-    if (isOpen) {
-      setAmount('');
-      setPeriod(1);
-      setFormError('');
-      dispatch(resetStakingError());
-    }
-  }, [isOpen, dispatch]);
+  // Get period label
+  const getPeriodLabel = useCallback((months: number) => {
+    return months === 1 ? '1 month' : `${months} months`;
+  }, []);
 
-  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Calculate estimated rewards based on amount, APR, and period
+  const estimatedRewards = useMemo(() => {
+    if (!amount || isNaN(Number.parseFloat(amount)) || Number.parseFloat(amount) <= 0) {
+      return '0';
+    }
+
+    const amountValue = Number.parseFloat(amount);
+    const reward = (amountValue * totalAPR * period) / (12 * 100);
+    return reward.toFixed(2);
+  }, [amount, totalAPR, period]);
+
+  // Calculate dollar value of amount
+  const dollarValue = useMemo(() => {
+    if (!amount || Number.parseFloat(amount) <= 0) {
+      return '';
+    }
+    return `≈ $${(Number.parseFloat(amount) * 0.01).toFixed(2)}`;
+  }, [amount]);
+
+  // Calculate unlock date
+  const unlockDate = useMemo(() => {
+    return new Date(Date.now() + period * 30 * 24 * 60 * 60 * 1000).toLocaleDateString();
+  }, [period]);
+
+  // Check if form is valid
+  const isFormValid = useMemo(() => {
+    return (
+      amount &&
+      Number.parseFloat(amount) > 0 &&
+      Number.parseFloat(amount) <= Number.parseFloat(availableBalance) &&
+      !isStaking &&
+      !isStakeLoading
+    );
+  }, [amount, availableBalance, isStaking, isStakeLoading]);
+
+  // Handlers
+  const handleAmountChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     // Only allow numbers and decimals
     if (/^\d*\.?\d*$/.test(value)) {
       setAmount(value);
       setFormError('');
     }
-  };
+  }, []);
 
-  const handleMaxClick = () => {
-    setAmount(availableMVN.toString());
+  const handleMaxClick = useCallback(() => {
+    setAmount(availableBalance);
     setFormError('');
-  };
+  }, [availableBalance]);
 
-  const handlePeriodChange = (value: number[]) => {
-    setPeriod(value[0]);
-  };
+  // const handlePeriodChange = useCallback((value: number[]) => {
+  //   setPeriod(value[0]);
+  // }, []);
 
-  const validateForm = (): boolean => {
+  const validateForm = useCallback((): boolean => {
     if (!amount || Number.parseFloat(amount) <= 0) {
       setFormError('Please enter a valid amount');
       return false;
     }
 
-    if (Number.parseFloat(amount) > availableMVN) {
+    if (Number.parseFloat(amount) > Number.parseFloat(availableBalance)) {
       setFormError('Amount exceeds available balance');
       return false;
     }
 
     return true;
-  };
+  }, [amount, availableBalance]);
 
-  const handleStake = async () => {
+  const handleStake = useCallback(async () => {
     // Clear previous errors
     setFormError('');
-    dispatch(resetStakingError());
 
     // Validate form
     if (!validateForm()) return;
 
     try {
-      // Dispatch stake action
-      await dispatch(
-        stakeMVN({
-          amount: Number.parseFloat(amount),
-          period,
-        }),
-      ).unwrap();
-
-      // Success
-      dispatch(
-        showSuccessToast({
-          title: 'Staking Successful',
-          description: `You have successfully staked ${amount} MVN for ${period} ${
-            period === 1 ? 'month' : 'months'
-          }.`,
-        }),
-      );
-
-      // Reset form and close modal
-      setAmount('');
-      setPeriod(1);
-      onClose();
+      // Execute the staking transaction
+      await stakeTokens(amount, period);
     } catch (err) {
-      // Error is handled in the component via the stakingError state
+      // Error is already handled in the hook via the error state
       dispatch(
         showErrorToast({
           title: 'Staking Failed',
@@ -120,15 +161,41 @@ export function StakeModal({ isOpen, onClose }: StakeModalProps) {
         }),
       );
     }
-  };
+  }, [amount, period, validateForm, stakeTokens, dispatch]);
 
-  // Get period label
-  const getPeriodLabel = (months: number) => {
-    return months === 1 ? '1 month' : `${months} months`;
-  };
+  // Handle successful stake
+  useEffect(() => {
+    if (isStakeSuccess) {
+      dispatch(
+        showSuccessToast({
+          title: 'Staking Successful',
+          description: `You have successfully staked ${amount} ${tokenSymbol} for ${period} ${
+            period === 1 ? 'month' : 'months'
+          }.`,
+        }),
+      );
+      // Reset form and close modal
+      setAmount('');
+      setPeriod(1);
+      onClose(true);
+    }
+  }, [isStakeSuccess, amount, period, dispatch, onClose, tokenSymbol]);
 
-  // Get period options
-  const periodOptions = [1, 3, 6, 12, 24];
+  // Handle staking error
+  useEffect(() => {
+    if (stakeError) {
+      setFormError('Failed to stake tokens. Please try again.');
+    }
+  }, [stakeError]);
+
+  // Reset form when modal is opened
+  useEffect(() => {
+    if (isOpen) {
+      setAmount('');
+      setPeriod(1);
+      setFormError('');
+    }
+  }, [isOpen]);
 
   return (
     <AnimatePresence>
@@ -144,7 +211,7 @@ export function StakeModal({ isOpen, onClose }: StakeModalProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={onClose}
+            onClick={() => onClose()}
           />
 
           <motion.div
@@ -162,8 +229,13 @@ export function StakeModal({ isOpen, onClose }: StakeModalProps) {
                 isDark ? 'border-gray-800 bg-gray-900' : 'border-gray-200 bg-white'
               }`}
             >
-              <h2 className="text-xl font-bold">Stake MVN</h2>
-              <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full">
+              <h2 className="text-xl font-bold">Stake {tokenSymbol}</h2>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => onClose()}
+                className="rounded-full"
+              >
                 <X className="h-5 w-5" />
               </Button>
             </div>
@@ -171,13 +243,13 @@ export function StakeModal({ isOpen, onClose }: StakeModalProps) {
             {/* Content */}
             <div className="p-6 space-y-6">
               {/* Network Error Alert */}
-              {stakingError && <ErrorAlert message={stakingError} />}
+              {formError && <ErrorAlert message={formError} />}
 
               {/* Available Balance */}
               <div className={`p-4 rounded-lg ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-500">Available MVN</span>
-                  <span className="font-bold">{availableMVN.toLocaleString()} MVN</span>
+                  <span className="text-sm text-gray-500">Available {tokenSymbol}</span>
+                  <span className="font-bold">{formattedBalanceWithSuffix}</span>
                 </div>
               </div>
 
@@ -216,11 +288,7 @@ export function StakeModal({ isOpen, onClose }: StakeModalProps) {
                 )}
 
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-gray-500">
-                    {Number.parseFloat(amount) > 0
-                      ? `≈ $${(Number.parseFloat(amount) * 1.25).toFixed(2)}`
-                      : ''}
-                  </span>
+                  <span className="text-gray-500">{dollarValue}</span>
                 </div>
               </div>
 
@@ -233,20 +301,20 @@ export function StakeModal({ isOpen, onClose }: StakeModalProps) {
 
                 <div className="space-y-6">
                   <div className="flex justify-between">
-                    {periodOptions.map((months) => (
+                    {lockPeriodOptions.map((option) => (
                       <Button
-                        key={months}
-                        variant={period === months ? 'default' : 'outline'}
+                        key={option.months}
+                        variant={period === option.months ? 'default' : 'outline'}
                         size="sm"
-                        className={period === months ? 'bg-blue-500 hover:bg-blue-600' : ''}
-                        onClick={() => setPeriod(months)}
+                        className={period === option.months ? 'bg-blue-500 hover:bg-blue-600' : ''}
+                        onClick={() => setPeriod(option.months)}
                       >
-                        {getPeriodLabel(months)}
+                        {getPeriodLabel(option.months)}
                       </Button>
                     ))}
                   </div>
 
-                  <Slider
+                  {/* <Slider
                     value={[period]}
                     min={1}
                     max={24}
@@ -258,7 +326,7 @@ export function StakeModal({ isOpen, onClose }: StakeModalProps) {
                   <div className="flex justify-between text-xs text-gray-500">
                     <span>1 month</span>
                     <span>24 months</span>
-                  </div>
+                  </div> */}
                 </div>
               </div>
 
@@ -303,7 +371,7 @@ export function StakeModal({ isOpen, onClose }: StakeModalProps) {
                     <div className="flex items-center justify-between">
                       <span className="text-sm">Amount</span>
                       <span className="font-medium">
-                        {Number.parseFloat(amount).toLocaleString()} MVN
+                        {Number.parseFloat(amount).toLocaleString()} {tokenSymbol}
                       </span>
                     </div>
 
@@ -314,18 +382,13 @@ export function StakeModal({ isOpen, onClose }: StakeModalProps) {
 
                     <div className="flex items-center justify-between">
                       <span className="text-sm">Unlock Date</span>
-                      <span className="font-medium">
-                        {new Date(
-                          Date.now() + period * 30 * 24 * 60 * 60 * 1000,
-                        ).toLocaleDateString()}
-                      </span>
+                      <span className="font-medium">{unlockDate}</span>
                     </div>
 
                     <div className="flex items-center justify-between pt-2 border-t border-blue-800/30">
                       <span className="font-medium">Estimated Rewards</span>
                       <span className="font-bold text-blue-500">
-                        +{((Number.parseFloat(amount) * totalAPR * period) / (12 * 100)).toFixed(2)}{' '}
-                        MVN
+                        +{estimatedRewards} {tokenSymbol}
                       </span>
                     </div>
                   </div>
@@ -335,8 +398,9 @@ export function StakeModal({ isOpen, onClose }: StakeModalProps) {
               {/* Disclaimer */}
               <div className="text-xs text-gray-500">
                 <p>
-                  By staking your MVN tokens, you agree to lock them for the selected period. Early
-                  unstaking may result in penalties. Rewards are distributed monthly.
+                  By staking your {tokenSymbol} tokens, you agree to lock them for the selected
+                  period. You cannot unstake your tokens before the end of the lock period. Rewards
+                  are distributed every minute.
                 </p>
               </div>
             </div>
@@ -349,17 +413,12 @@ export function StakeModal({ isOpen, onClose }: StakeModalProps) {
             >
               <LoadingButton
                 className="w-full py-6 text-lg bg-blue-500 hover:bg-blue-600"
-                disabled={
-                  !amount ||
-                  Number.parseFloat(amount) <= 0 ||
-                  Number.parseFloat(amount) > availableMVN ||
-                  isStaking
-                }
+                disabled={!isFormValid}
                 onClick={handleStake}
-                loading={isStaking}
+                loading={isStaking || isStakeLoading}
                 loadingText="Staking..."
               >
-                Stake MVN
+                Stake {tokenSymbol}
               </LoadingButton>
             </div>
           </motion.div>

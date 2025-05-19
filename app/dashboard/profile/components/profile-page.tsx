@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useAppKitAccount } from '@reown/appkit/react';
 import { motion } from 'framer-motion';
 import { RefreshButton } from '@/components/refresh-button';
-import TokenBalanceExample from '@/components/TokenBalanceExample';
+// import TokenBalanceExample from '@/components/TokenBalanceExample';
 import { useMovinToken } from '@/lib/hooks/useMovinToken';
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
 import { fetchProfile, clearProfileError, updateProfile } from '@/lib/redux/slices/profileSlice';
@@ -36,10 +36,12 @@ export function ProfilePage() {
   const { address } = useAppKitAccount();
   const dispatch = useAppDispatch();
   const { profile, isLoading, isUpdating, error } = useAppSelector((state) => state.profile);
-  const { useTokenBalance, useTokenSymbol } = useMovinToken();
-  const { formattedBalance, isLoading: isBalanceLoading, error: balanceError } = useTokenBalance();
-  const { data: symbol, isLoading: isSymbolLoading, error: symbolError } = useTokenSymbol();
-  const balance = `${formattedBalance()} ${symbol}`;
+  const { useTokenBalance } = useMovinToken();
+  const {
+    formattedBalanceWithSuffix: balance,
+    isLoading: isBalanceLoading,
+    error: balanceError,
+  } = useTokenBalance();
   const [isEditing, setIsEditing] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
@@ -178,11 +180,11 @@ export function ProfilePage() {
     }
   };
 
-  if (isLoading || isBalanceLoading || isSymbolLoading) {
+  if (isLoading || isBalanceLoading) {
     return <ProfilePageSkeleton />;
   }
 
-  const errorMessage = error || balanceError?.message || symbolError?.message;
+  const errorMessage = error || balanceError?.message;
 
   if (errorMessage) {
     return <ProfileLoadingError error={errorMessage} onRefresh={handleRefresh} />;
@@ -230,9 +232,9 @@ export function ProfilePage() {
             <ProfileTabs profile={profile} />
           </motion.div>
 
-          <motion.div variants={item}>
+          {/* <motion.div variants={item}>
             <TokenBalanceExample />
-          </motion.div>
+          </motion.div> */}
         </div>
       </motion.div>
     </>

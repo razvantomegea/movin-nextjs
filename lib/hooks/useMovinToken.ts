@@ -31,11 +31,17 @@ export function useMovinToken() {
    * @returns Number of decimals for the token
    */
   const useTokenDecimals = () => {
-    return useReadContract({
-      address: TOKEN_ADDRESS,
-      abi: movinTokenAbi,
-      functionName: 'decimals',
-    }) as { data: number | undefined; isLoading: boolean; error: Error | null };
+    return {
+      data: 18,
+      isLoading: false,
+      error: { message: '' },
+    };
+
+    // return useReadContract({
+    //   address: TOKEN_ADDRESS,
+    //   abi: movinTokenAbi,
+    //   functionName: 'decimals',
+    // }) as { data: number | undefined; isLoading: boolean; error: Error | null };
   };
 
   /**
@@ -43,11 +49,17 @@ export function useMovinToken() {
    * @returns Token name
    */
   const useTokenName = () => {
-    return useReadContract({
-      address: TOKEN_ADDRESS,
-      abi: movinTokenAbi,
-      functionName: 'name',
-    }) as { data: string | undefined; isLoading: boolean; error: Error | null };
+    return {
+      data: 'Movin',
+      isLoading: false,
+      error: { message: '' },
+    };
+
+    // return useReadContract({
+    //   address: TOKEN_ADDRESS,
+    //   abi: movinTokenAbi,
+    //   functionName: 'name',
+    // }) as { data: string | undefined; isLoading: boolean; error: Error | null };
   };
 
   /**
@@ -55,11 +67,17 @@ export function useMovinToken() {
    * @returns Token symbol
    */
   const useTokenSymbol = () => {
-    return useReadContract({
-      address: TOKEN_ADDRESS,
-      abi: movinTokenAbi,
-      functionName: 'symbol',
-    }) as { data: string | undefined; isLoading: boolean; error: Error | null };
+    return {
+      data: 'MVN',
+      isLoading: false,
+      error: { message: '' },
+    };
+
+    // return useReadContract({
+    //   address: TOKEN_ADDRESS,
+    //   abi: movinTokenAbi,
+    //   functionName: 'symbol',
+    // }) as { data: string | undefined; isLoading: boolean; error: Error | null };
   };
 
   /**
@@ -101,16 +119,16 @@ export function useMovinToken() {
       },
     });
 
-    const formattedBalance = (): string => {
-      if (result.data) {
-        return formatUnits(result.data as bigint, 18);
-      }
-      return '0';
-    };
+    const symbolResult = useTokenSymbol();
+    const decimalsResult = useTokenDecimals();
 
-    const formattedBalanceWithSuffix = (): string => {
-      return formatBalanceWithSuffix(formattedBalance());
-    };
+    const formattedBalance = result.data
+      ? formatUnits(result.data as bigint, decimalsResult.data || 18)
+      : '0';
+
+    const formattedBalanceWithSuffix = `${formatBalanceWithSuffix(formattedBalance)} ${
+      symbolResult.data
+    }`;
 
     return {
       ...result,
@@ -309,34 +327,4 @@ export function useMovinToken() {
     useTransferTokens,
     useIsPaused,
   };
-}
-
-/**
- * Format a numeric string according to token decimals
- * @param amount The amount as a string
- * @param decimals The number of decimals
- * @returns The formatted amount as a string
- */
-export function formatTokenAmount(amount: string, decimals: number): string {
-  try {
-    return formatUnits(parseUnits(amount, decimals), decimals);
-  } catch (error) {
-    console.error('Error formatting token amount:', error);
-    return amount;
-  }
-}
-
-/**
- * Parse a user-friendly amount to the raw amount with decimals
- * @param amount The user-friendly amount as a string
- * @param decimals The number of decimals
- * @returns The raw amount as a bigint
- */
-export function parseTokenAmount(amount: string, decimals: number): bigint {
-  try {
-    return parseUnits(amount, decimals);
-  } catch (error) {
-    console.error('Error parsing token amount:', error);
-    return BigInt(0);
-  }
 }

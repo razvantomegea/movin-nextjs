@@ -202,7 +202,7 @@ export default function TokenBalanceExample() {
             </div>
             <div className="text-right">
               <p className="text-2xl font-bold">
-                {isBalanceLoading ? 'Loading...' : `${formattedBalance()} ${symbol || 'MVN'}`}
+                {isBalanceLoading ? 'Loading...' : `${formattedBalance} ${symbol || 'MVN'}`}
               </p>
             </div>
           </div>

@@ -5,6 +5,7 @@ import movinEarnAbi from '@/lib/abi/movin-earn-abi.json';
 import { useAppDispatch } from '@/lib/redux/hooks';
 import { showErrorToast } from '@/lib/redux/slices/toastSlice';
 import { parseError } from '@/utils/errors';
+import { getFormattedStakes } from '@/utils/staking/getFormattedStakes';
 
 // MovinEarn contract address (Base network)
 const CONTRACT_ADDRESS = '0x865E693ebd875eD997BeEc565CFfBbE687Ee5776';
@@ -16,6 +17,7 @@ const STEPS_THRESHOLD = 10000;
 const METS_THRESHOLD = 10;
 const MAX_STEPS_PER_MINUTE = 300;
 const MAX_METS_PER_MINUTE = 5;
+const REWARDS_PERCENTAGE_FEE = 1;
 
 // Types
 export interface IUserActivity {
@@ -39,18 +41,34 @@ export interface IReferralInfo {
   referralCount: number;
 }
 
-interface IUserStakeAbi {
+export interface IUserStakeAbi {
   amount: bigint;
   startTime: bigint;
   lockDuration: bigint;
   lastClaimed: bigint;
+  rewards: bigint;
 }
 
 export interface IUserStake {
   amount: string;
-  startTime: bigint;
-  lockDuration: bigint;
+  startTime: number;
+  startTimeFormatted: string;
+  lockDuration: number;
+  lockDurationFormatted: string;
+  endTime: number;
+  endTimeFormatted: string;
+  timeRemaining: number;
+  timeRemainingFormatted: string;
+  reward: string;
+  canUnstake: boolean;
   lastClaimed: bigint;
+}
+
+export interface IStakeRewards {
+  stakes: IUserStake[];
+  rewardsPercentageFee: number;
+  totalStaked: string;
+  totalStakingRewards: string;
 }
 
 export interface IPremiumStatus {
@@ -319,6 +337,7 @@ export function useMovinEarn() {
   const getMetsThreshold = (): number => METS_THRESHOLD;
   const getMaxStepsPerMinute = (): number => MAX_STEPS_PER_MINUTE;
   const getMaxMetsPerMinute = (): number => MAX_METS_PER_MINUTE;
+  const getRewardsPercentageFee = (): number => REWARDS_PERCENTAGE_FEE;
 
   /**
    * Gets the reward halving timestamp
@@ -392,21 +411,6 @@ export function useMovinEarn() {
   };
 
   /**
-   * Gets the number of stakes for the user
-   * @returns Hook result with stake count
-   */
-  const useUserStakeCount = () => {
-    return useReadContract({
-      address: CONTRACT_ADDRESS,
-      abi: movinEarnAbi,
-      functionName: 'getUserStakeCount',
-      query: {
-        enabled: !!address,
-      },
-    }) as { data: bigint | undefined; isLoading: boolean; error: Error | null };
-  };
-
-  /**
    * Gets the user's stakes
    * @param userAddress The user's address (defaults to connected wallet)
    * @returns Hook result with stakes
@@ -424,89 +428,14 @@ export function useMovinEarn() {
       },
     });
 
-    // Format the stakes
-    const formattedStakes = (): IUserStake[] => {
-      if (result.data) {
-        const stakes = result.data as IUserStakeAbi[];
-        return stakes.map((stake) => ({
-          amount: formatUnits(stake.amount, 18),
-          startTime: stake.startTime,
-          lockDuration: stake.lockDuration,
-          lastClaimed: stake.lastClaimed,
-        }));
-      }
-      return [];
-    };
+    const rewardsPercentageFee = getRewardsPercentageFee();
 
     return {
       ...result,
-      formattedStakes,
-    };
-  };
-
-  /**
-   * Gets a specific stake
-   * @param index The index of the stake
-   * @returns Hook result with stake
-   */
-  const useUserStake = (index: number) => {
-    const result = useReadContract({
-      address: CONTRACT_ADDRESS,
-      abi: movinEarnAbi,
-      functionName: 'getUserStake',
-      args: [index],
-      query: {
-        enabled: !!address && index >= 0,
-      },
-    });
-
-    // Format the stake
-    const formattedStake = (): IUserStake | null => {
-      if (result.data) {
-        const stake = result.data as IUserStakeAbi;
-        return {
-          amount: formatUnits(stake.amount, 18),
-          startTime: stake.startTime,
-          lockDuration: stake.lockDuration,
-          lastClaimed: stake.lastClaimed,
-        };
-      }
-      return null;
-    };
-
-    return {
-      ...result,
-      formattedStake,
-    };
-  };
-
-  /**
-   * Calculates the staking reward for a stake
-   * @param stakeIndex The index of the stake
-   * @returns Hook result with staking reward
-   */
-  const useCalculateStakingReward = (stakeIndex: number) => {
-    const result = useReadContract({
-      address: CONTRACT_ADDRESS,
-      abi: movinEarnAbi,
-      functionName: 'calculateStakingReward',
-      args: [stakeIndex],
-      query: {
-        enabled: !!address && stakeIndex >= 0,
-      },
-    });
-
-    // Format the reward
-    const formattedReward = (): string => {
-      if (result.data) {
-        return formatUnits(result.data as bigint, 18);
-      }
-      return '0';
-    };
-
-    return {
-      ...result,
-      formattedReward,
+      data: getFormattedStakes({
+        stakes: result?.data as IUserStakeAbi[],
+        rewardsPercentageFee,
+      }),
     };
   };
 
@@ -917,10 +846,8 @@ export function useMovinEarn() {
     useUserReferrals,
     useBaseRates,
     useRewardHalvingTimestamp,
-    useUserStakeCount,
+
     useUserStakes,
-    useUserStake,
-    useCalculateStakingReward,
     usePremiumStatus,
 
     // Write hooks

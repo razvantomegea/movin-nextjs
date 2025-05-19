@@ -206,96 +206,6 @@ export function useMovinEarnUtils() {
       return DEFAULT_ACTIVITY;
     }
   };
-
-  /**
-   * Gets comprehensive user staking data combining several contract calls
-   * @returns Promise that resolves to user staking data
-   */
-  const getUserStaking = async (): Promise<UserStaking> => {
-    try {
-      if (!address) {
-        return DEFAULT_STAKING;
-      }
-
-      // Get stake count
-      const stakeCountResult = movinEarn.useUserStakeCount();
-      const stakeCount = stakeCountResult.data ? Number(stakeCountResult.data) : 0;
-
-      // Get all stakes
-      const stakesResult = movinEarn.useUserStakes();
-      const stakes = stakesResult.formattedStakes();
-
-      let totalStaked = BigInt(0);
-      let totalStakingRewards = 0;
-      const formattedStakes: FormattedStake[] = [];
-
-      // Format each stake with additional information
-      for (let i = 0; i < stakeCount; i++) {
-        if (i >= stakes.length) continue;
-
-        const stake = stakes[i];
-        const rewardResult = movinEarn.useCalculateStakingReward(i);
-        const reward = rewardResult.formattedReward();
-
-        const stakeAmount = parseUnits(stake.amount, 18);
-        totalStaked += stakeAmount;
-
-        // Calculate timestamps and format them
-        const startTimeNum = Number(stake.startTime);
-        const lockDurationNum = Number(stake.lockDuration);
-        const endTime = startTimeNum + lockDurationNum;
-        const now = Math.floor(Date.now() / 1000);
-        const timeRemaining = Math.max(0, endTime - now);
-
-        // Format dates using crypto utils
-        const startTimeFormatted = formatDate(startTimeNum * 1000);
-        const endTimeFormatted = formatDate(endTime * 1000);
-
-        // Format durations using crypto utils
-        const lockDurationFormatted = formatLockPeriod(lockDurationNum);
-        const timeRemainingFormatted = formatTimeRemaining(timeRemaining);
-
-        formattedStakes.push({
-          amount: stake.amount,
-          startTime: startTimeNum,
-          startTimeFormatted,
-          lockDuration: lockDurationNum,
-          lockDurationFormatted,
-          endTime: endTime,
-          endTimeFormatted,
-          timeRemaining: timeRemaining,
-          timeRemainingFormatted: timeRemaining > 0 ? timeRemainingFormatted : 'Unlocked',
-          reward,
-          canUnstake: timeRemaining === 0,
-          lastClaimed: stake.lastClaimed,
-        });
-
-        totalStakingRewards += parseFloat(reward);
-      }
-
-      // Get unstake fee percentage
-      const feePercentage = 1; // Hard-coded for now, could be fetched from contract
-
-      return {
-        stakeCount,
-        stakes: formattedStakes,
-        hasActiveStakes: formattedStakes.length > 0,
-        totalStaked: formatUnits(totalStaked, 18),
-        totalStakingRewards: formatDecimal(totalStakingRewards.toString()),
-        rewardsPercentageFee: feePercentage,
-      };
-    } catch (error) {
-      const parsedError = parseError(error);
-      dispatch(
-        showErrorToast({
-          title: 'Error Getting Staking Info',
-          description: parsedError.message,
-        }),
-      );
-      return DEFAULT_STAKING;
-    }
-  };
-
   /**
    * Checks if activity can be recorded based on rate limits
    * @param steps Number of steps to record
@@ -572,7 +482,6 @@ export function useMovinEarnUtils() {
   return {
     // Data retrieval functions
     getRewardsInfo,
-    getUserStaking,
     getEstimatedRewards,
     wasActivityUpdatedWithinLastMinute,
     wasActivityUpdatedWithinLastMinuteTimeout,

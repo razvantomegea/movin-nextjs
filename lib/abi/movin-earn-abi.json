@@ -909,6 +909,11 @@
   {
     "inputs": [
       {
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      },
+      {
         "internalType": "uint256",
         "name": "stakeIndex",
         "type": "uint256"
@@ -1155,9 +1160,14 @@
             "internalType": "uint256",
             "name": "lastClaimed",
             "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "rewards",
+            "type": "uint256"
           }
         ],
-        "internalType": "struct MOVINEarnV2.Stake",
+        "internalType": "struct MOVINEarnV2.StakeView",
         "name": "",
         "type": "tuple"
       }
@@ -1209,9 +1219,14 @@
             "internalType": "uint256",
             "name": "lastClaimed",
             "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "rewards",
+            "type": "uint256"
           }
         ],
-        "internalType": "struct MOVINEarnV2.Stake[]",
+        "internalType": "struct MOVINEarnV2.StakeView[]",
         "name": "",
         "type": "tuple[]"
       }

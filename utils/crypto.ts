@@ -1,5 +1,5 @@
 import { toast } from 'sonner';
-import { formatUnits } from 'viem';
+import { formatUnits, parseUnits } from 'viem';
 
 // Network-related constants
 export const NETWORK_NAMES: Record<string, string> = {
@@ -439,16 +439,31 @@ export function getNetworkName(chainId: string | null): string {
 }
 
 /**
- * Format a token amount based on its decimals
- * @param amount - Amount in wei
- * @param decimals - Number of decimals
- * @returns Formatted amount
+ * Format a numeric string according to token decimals
+ * @param amount The amount as a string
+ * @param decimals The number of decimals
+ * @returns The formatted amount as a string
  */
-export function formatTokenAmount(amount: bigint, decimals: number): string {
+export function formatTokenAmount(amount: string, decimals: number): string {
   try {
-    return formatUnits(amount, decimals);
+    return formatUnits(parseUnits(amount, decimals), decimals);
   } catch (error) {
     console.error('Error formatting token amount:', error);
-    return '0';
+    return amount;
+  }
+}
+
+/**
+ * Parse a user-friendly amount to the raw amount with decimals
+ * @param amount The user-friendly amount as a string
+ * @param decimals The number of decimals
+ * @returns The raw amount as a bigint
+ */
+export function parseTokenAmount(amount: string, decimals: number): bigint {
+  try {
+    return parseUnits(amount, decimals);
+  } catch (error) {
+    console.error('Error parsing token amount:', error);
+    return BigInt(0);
   }
 }

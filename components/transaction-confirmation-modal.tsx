@@ -33,7 +33,7 @@ export function TransactionConfirmationModal({
   const endTimeRef = useRef<number | null>(null);
 
   // Handle success button click
-  const handleSuccess = () => {
+  const handleSuccess = useCallback(() => {
     dispatch(
       showSuccessToast({
         title: 'Transaction Confirmed',
@@ -41,8 +41,7 @@ export function TransactionConfirmationModal({
       }),
     );
     onSuccess();
-    onClose();
-  };
+  }, [dispatch, onSuccess, rewardAmount]);
 
   // Handle fail button click
   const handleFail = useCallback(() => {
@@ -53,8 +52,7 @@ export function TransactionConfirmationModal({
       }),
     );
     onFail();
-    onClose();
-  }, [dispatch, onFail, onClose]);
+  }, [dispatch, onFail]);
 
   // Set up the timer when the modal opens
   useEffect(() => {
