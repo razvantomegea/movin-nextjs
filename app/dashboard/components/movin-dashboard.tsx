@@ -22,8 +22,8 @@ import {
 import { resetJointTracking } from '@/lib/redux/slices/jointTrackingSlice';
 import { showSuccessToast, showInfoToast } from '@/lib/redux/slices/toastSlice';
 import {
-  formatDistance as formatUIDistance,
-  formatDuration as formatUIDuration,
+  formatDistance,
+  formatDuration,
   mapActivitiesToDaily,
   mapActivitiesToTodaysWorkouts,
   mapActivitiesToWeekly,
@@ -148,7 +148,7 @@ export function MovinDashboard() {
       dispatch(
         showSuccessToast({
           title: routeData.isJoint ? 'Joint Route Saved as Activity' : 'Route Saved as Activity',
-          description: `${formatUIDistance(routeData.distance)} in ${formatUIDuration(
+          description: `${formatDistance(routeData.distance)} in ${formatDuration(
             routeData.duration,
           )}${
             routeData.isJoint ? ` with ${routeData.participants?.length || 0} participants` : ''
@@ -348,6 +348,7 @@ export function MovinDashboard() {
             weeklyData={weeklyChartData}
             monthlyData={monthlyChartData}
             yearlyData={yearlyChartData}
+            isLoading={isLoading}
           />
         </motion.div>
 
@@ -398,9 +399,13 @@ export function MovinDashboard() {
                             isDark ? 'text-gray-400' : 'text-gray-500'
                           } mt-1`}
                         >
-                          <span className="mr-3">Duration: {workout.duration} min</span>
-                          {workout.distance && (
-                            <span className="mr-3">Distance: {workout.distance} m</span>
+                          <span className="mr-3">
+                            Duration: {formatDuration(workout.rawDuration)}
+                          </span>
+                          {workout.rawDistance && (
+                            <span className="mr-3">
+                              Distance: {formatDistance(workout.rawDistance)}
+                            </span>
                           )}
                           <span>Calories: {workout.calories} kcal</span>
                         </div>

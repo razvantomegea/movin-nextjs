@@ -51,7 +51,7 @@ export async function insertActivities({
   if (!client) {
     client = getClient();
   }
-  const activitiesToInsert = activityData.map((activity) => {
+  const activitiesToInsert = [...activityData].map((activity) => {
     delete activity.id;
     delete activity.created_at;
     delete activity.updated_at;
@@ -88,13 +88,11 @@ export async function updateActivity({
     .from('activities')
     .update(activityData)
     .eq('id', activityData.id)
-    .select();
+    .single();
 
   if (error) {
     throw error;
   }
-  if (!data || data.length === 0) {
-    throw new Error('Activity update failed: No data returned');
-  }
-  return data[0];
+
+  return data;
 }

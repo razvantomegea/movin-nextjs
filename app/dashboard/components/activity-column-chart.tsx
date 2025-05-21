@@ -14,6 +14,7 @@ interface ActivityColumnChartProps {
   weeklyData: TimeRangeData[];
   monthlyData: TimeRangeData[];
   yearlyData: TimeRangeData[];
+  isLoading: boolean;
 }
 
 type MetricType = 'steps' | 'calories' | 'distance' | 'duration';
@@ -22,6 +23,7 @@ export function ActivityColumnChart({
   weeklyData,
   monthlyData,
   yearlyData,
+  isLoading,
 }: ActivityColumnChartProps) {
   const [timeRange, setTimeRange] = useState<'week' | 'month' | 'year'>('week');
   const [metric, setMetric] = useState<MetricType>('steps');
@@ -80,7 +82,11 @@ export function ActivityColumnChart({
   const data = useMemo(getData, [timeRange, weeklyData, monthlyData, yearlyData]);
   const hasData = data.length > 0;
   const totalValue = hasData
-    ? data.reduce((sum: number, item: { [key: string]: any }) => sum + item[metric], 0)
+    ? data.reduce(
+        (sum: number, item: TimeRangeData) =>
+          sum + (Number.isFinite(item[metric]) ? (item[metric] as number) : 0),
+        0,
+      )
     : 0;
 
   // Get the color for the chart based on the theme
@@ -159,10 +165,19 @@ export function ActivityColumnChart({
 
         {/* Chart container with fixed height */}
         <div className="h-80 mt-8 mb-4 relative">
-          {!hasData ? (
+          {isLoading ? (
             <div className="absolute inset-0 flex items-center justify-center">
               <Loader2 className="h-8 w-8 text-blue-500 animate-spin" />
               <span className="ml-2 text-gray-500">Loading data...</span>
+            </div>
+          ) : !hasData ? (
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+              {/* Optional: Add an illustration here */}
+              {/* <img src="/path/to/no-activity-illustration.svg" alt="No activity" className="h-24 w-24 mb-4" /> */}
+              <p className="text-lg text-gray-500">No activity recorded for this period.</p>
+              <p className="text-sm text-gray-400">
+                Try selecting a different time range or metric.
+              </p>
             </div>
           ) : (
             <AnimatePresence mode="wait">
@@ -252,7 +267,8 @@ export function ActivityColumnChart({
             {metric === 'duration' && 'Total Duration'}
           </div>
           <div className="text-xl font-bold">
-            {hasData ? formatValue(totalValue) : '0'} {getUnit()}
+            {hasData ? formatValue(totalValue) : '0'}
+            {getUnit() && ` ${getUnit()}`}
           </div>
         </div>
       </CardContent>

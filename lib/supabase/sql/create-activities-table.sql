@@ -26,6 +26,9 @@ CREATE TABLE IF NOT EXISTS activities (
 -- Create index on address for faster lookups
 CREATE INDEX IF NOT EXISTS idx_activities_address ON activities(address);
 
+-- Create composite index on address and start_date for optimized sorting and filtering
+CREATE INDEX IF NOT EXISTS idx_activities_address_start_date_desc ON activities(address, start_date DESC);
+
 -- Create trigger to update the updated_at timestamp
 CREATE TRIGGER set_timestamp_activities
 BEFORE UPDATE ON activities
@@ -42,6 +45,13 @@ on activities
 for select
 to authenticated
 using ( (auth.jwt() ->> 'sub') = address );
+
+-- INSERT Policy
+create policy "Allow address-based insert"
+on activities
+for insert
+to public
+with check ( true );
 
 -- UPDATE Policy
 create policy "Allow address-based update"

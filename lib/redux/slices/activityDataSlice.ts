@@ -14,17 +14,18 @@ const initialState: ActivityDataState = {
   error: null,
 };
 
-export const fetchActivities = createAsyncThunk(
-  'activityData/fetchActivities',
-  async (address: string, { rejectWithValue }) => {
-    try {
-      const activities = await getActivities({ address });
-      return activities;
-    } catch (error) {
-      return rejectWithValue(error instanceof Error ? error.message : 'Failed to fetch activities');
-    }
-  },
-);
+export const fetchActivities = createAsyncThunk<
+  IActivity[], // Return type
+  string, // Argument (address)
+  { rejectValue: string } // ThunkApiConfig
+>('activityData/fetchActivities', async (address, { rejectWithValue }) => {
+  try {
+    const activities = await getActivities({ address });
+    return activities;
+  } catch (error) {
+    return rejectWithValue(error instanceof Error ? error.message : 'Failed to fetch activities');
+  }
+});
 
 export const addActivities = createAsyncThunk(
   'activityData/addActivities',
@@ -78,7 +79,9 @@ const activityDataSlice = createSlice({
           acc.set(act.id, act);
           return acc;
         }, initialMap);
-        state.activities = Array.from(merged.values()).sort(/* optional sort */);
+        state.activities = Array.from(merged.values()).sort(
+          (a, b) => new Date(b.start_date).getTime() - new Date(a.start_date).getTime(),
+        );
       })
       .addCase(addActivities.rejected, (state, action) => {
         state.isLoading = false;

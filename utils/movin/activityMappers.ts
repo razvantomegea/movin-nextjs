@@ -1,5 +1,17 @@
 import { IActivity } from '@/lib/supabase/activities';
 
+// Helper function to check if two dates are the same day
+const isSameDay = (date1: Date | string, date2: Date | string): boolean => {
+  const d1 = new Date(date1);
+  const d2 = new Date(date2);
+
+  return (
+    d1.getFullYear() === d2.getFullYear() &&
+    d1.getMonth() === d2.getMonth() &&
+    d1.getDate() === d2.getDate()
+  );
+};
+
 export interface DailyActivity {
   steps: number;
   distance: number;
@@ -20,7 +32,9 @@ export interface Workout {
   id: string;
   type: string;
   duration: string;
+  rawDuration: number;
   distance: string;
+  rawDistance?: number;
   calories: number;
   time: string;
 }
@@ -31,17 +45,6 @@ export const mapActivitiesToDaily = (activities: IActivity[], date: Date): Daily
     day: 'numeric',
     year: 'numeric',
   });
-  // Add this helper function at the top of the file
-  const isSameDay = (date1: Date | string, date2: Date | string): boolean => {
-    const d1 = new Date(date1);
-    const d2 = new Date(date2);
-
-    return (
-      d1.getFullYear() === d2.getFullYear() &&
-      d1.getMonth() === d2.getMonth() &&
-      d1.getDate() === d2.getDate()
-    );
-  };
 
   // Then use it in the filter function
   const dailyActivities = activities.filter((activity) => isSameDay(activity.start_date, date));
@@ -178,10 +181,12 @@ export const mapActivitiesToTodaysWorkouts = (
     .map((activity) => ({
       id: activity.id,
       type: activity.name || 'Workout',
-      duration: `${Math.round((activity.duration || 0) / 60)} min`,
+      duration: activity.duration !== undefined ? `${Math.round(activity.duration / 60)} min` : '',
+      rawDuration: activity.duration || 0,
       distance: activity.total_distance
         ? `${((activity.total_distance || 0) / 1000).toFixed(1)} km`
         : '',
+      rawDistance: activity.total_distance || undefined,
       calories: activity.total_energy_burned || 0,
       time: new Date(activity.start_date).toLocaleTimeString('en-US', {
         hour: 'numeric',
