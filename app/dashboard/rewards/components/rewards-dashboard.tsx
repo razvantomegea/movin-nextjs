@@ -7,7 +7,7 @@ import ErrorBoundary from '@/components/error-boundary';
 import { TransactionConfirmationModal } from '@/components/transaction-confirmation-modal';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
+import { useAppDispatch } from '@/lib/redux/hooks';
 import {
   fetchActivityRewards,
   claimActivityRewards,

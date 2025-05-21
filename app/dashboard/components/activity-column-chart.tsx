@@ -8,7 +8,7 @@ import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid } fro
 import { Card, CardContent } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import type { TimeRangeData } from '@/lib/redux/slices/activityDataSlice';
+import { TimeRangeData } from '@/utils/movin/activityMappers';
 
 interface ActivityColumnChartProps {
   weeklyData: TimeRangeData[];

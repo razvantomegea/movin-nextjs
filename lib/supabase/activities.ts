@@ -1,0 +1,92 @@
+import { SupabaseClient } from '@supabase/supabase-js';
+import { getClient } from './createClient';
+
+export interface IActivity {
+  id: string;
+  address: string;
+  name: string;
+  source?: string;
+  start_date: string;
+  end_date: string;
+  duration: number;
+  total_energy_burned: number;
+  total_distance: number;
+  total_steps: number;
+  maximum_heart_rate: number;
+  average_heart_rate: number;
+  minimum_heart_rate: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export async function getActivities({
+  address,
+  client,
+}: {
+  address: string;
+  client?: SupabaseClient;
+}): Promise<IActivity[]> {
+  if (!client) {
+    client = getClient();
+  }
+  const { data, error } = await client
+    .from('activities')
+    .select('*')
+    .eq('address', address)
+    .order('start_date', { ascending: false });
+
+  if (error) {
+    throw error;
+  }
+  return data || [];
+}
+
+export async function insertActivities({
+  activityData,
+  client,
+}: {
+  activityData: Partial<IActivity>[];
+  client?: SupabaseClient;
+}): Promise<IActivity[]> {
+  if (!client) {
+    client = getClient();
+  }
+  const activitiesToInsert = activityData.map((activity) => {
+    delete activity.id;
+    return activity;
+  });
+
+  const { data, error } = await client.from('activities').insert(activitiesToInsert).select();
+  if (error) {
+    throw error;
+  }
+  if (!data || data.length === 0) {
+    throw new Error('Activity creation failed: No data returned');
+  }
+  return data;
+}
+
+export async function updateActivity({
+  activityData,
+  client,
+}: {
+  activityData: Partial<IActivity>;
+  client?: SupabaseClient;
+}): Promise<IActivity> {
+  if (!client) {
+    client = getClient();
+  }
+  const { data, error } = await client
+    .from('activities')
+    .update(activityData)
+    .eq('id', activityData.id)
+    .select();
+
+  if (error) {
+    throw error;
+  }
+  if (!data || data.length === 0) {
+    throw new Error('Activity update failed: No data returned');
+  }
+  return data[0];
+}
