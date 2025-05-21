@@ -21,6 +21,7 @@ import {
 } from '@/lib/redux/slices/activityDataSlice';
 import { resetJointTracking } from '@/lib/redux/slices/jointTrackingSlice';
 import { showSuccessToast, showInfoToast } from '@/lib/redux/slices/toastSlice';
+import type { RootState } from '@/lib/redux/store';
 import {
   formatDistance,
   formatDuration,
@@ -64,7 +65,7 @@ export function MovinDashboard() {
 
   const dispatch = useAppDispatch();
 
-  const { activities, isLoading, error } = useAppSelector((state) => state.activityData);
+  const { activities, isLoading, error } = useAppSelector((state: RootState) => state.activityData);
 
   // Memoize derived data
   const dailyActivity: DailyActivity | null = useMemo(() => {

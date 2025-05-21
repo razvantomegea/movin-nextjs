@@ -31,14 +31,14 @@ export async function getActivities({
   }
   const { data, error } = await client
     .from('activities')
-    .select('*')
+    .select()
     .eq('address', address)
     .order('start_date', { ascending: false });
 
   if (error) {
     throw error;
   }
-  return data || [];
+  return (data as IActivity[]) || [];
 }
 
 export async function insertActivities({
@@ -79,10 +79,11 @@ export async function updateActivity({
     throw new Error('Activity update failed: ID is required');
   }
 
+  const { id, ...updateFields } = activityData;
   const { data, error } = await client
     .from('activities')
-    .update(activityData)
-    .eq('id', activityData.id)
+    .update(updateFields)
+    .eq('id', id)
     .single();
 
   if (error) {

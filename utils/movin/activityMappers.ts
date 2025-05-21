@@ -72,13 +72,15 @@ export const mapActivitiesToWeekly = (
   currentDate: Date,
 ): TimeRangeData[] => {
   const weeklyData: TimeRangeData[] = [];
+  // Get the current day of week (0 = Sunday, 6 = Saturday)
+  const currentDayOfWeek = currentDate.getDay();
+
+  // Calculate the date of the first day of the week (Sunday)
+  const firstDayOfWeek = new Date(currentDate);
+  firstDayOfWeek.setDate(currentDate.getDate() - currentDayOfWeek);
+
   for (let i = 0; i < 7; i++) {
-    const day = new Date(currentDate);
-    // Get first day of week based on locale
-    const firstDayOfWeek = new Date(currentDate);
-    const dayOfWeek = currentDate.getDay();
-    const diff = currentDate.getDate() - dayOfWeek;
-    firstDayOfWeek.setDate(diff);
+    const day = new Date(firstDayOfWeek);
     day.setDate(firstDayOfWeek.getDate() + i);
     const dayStr = day.toLocaleDateString('en-US', { weekday: 'short' });
     const dailySummary = mapActivitiesToDaily(activities, day);
@@ -102,11 +104,13 @@ export const mapActivitiesToMonthly = (
   const month = currentDate.getMonth();
   // Get the last day of the month
   const lastDay = new Date(year, month + 1, 0);
-  const firstDay = new Date(year, month, 1);
-  // Calculate weeks by getting the difference in weeks between first and last day
-  const firstWeek = Math.floor(firstDay.getDate() / 7);
-  const lastWeek = Math.floor(lastDay.getDate() / 7);
-  const numWeeks = lastWeek - firstWeek + 1;
+  // Calculate how many weeks we need to display for this month
+  // A more accurate way to determine the number of weeks in a month
+  const firstDayOfMonth = new Date(year, month, 1);
+  const lastDayOfMonth = lastDay.getDate();
+  const firstDayOfWeek = firstDayOfMonth.getDay();
+  // Calculate weeks needed to display this month (ceiling division)
+  const numWeeks = Math.ceil((lastDayOfMonth + firstDayOfWeek) / 7);
 
   for (let i = 0; i < numWeeks; i++) {
     let weeklySteps = 0;
@@ -115,9 +119,6 @@ export const mapActivitiesToMonthly = (
     let weeklyDuration = 0;
 
     for (let j = 0; j < 7; j++) {
-      // Calculate the day more accurately based on week and day of week
-      const firstDayOfMonth = new Date(year, month, 1);
-      const firstDayOfWeek = firstDayOfMonth.getDay();
       const dayOfMonth = i * 7 + j + 1 - firstDayOfWeek;
       const day = new Date(year, month, dayOfMonth);
       if (day.getMonth() !== month) break; // Ensure we are still in the same month
@@ -187,11 +188,9 @@ export const mapActivitiesToTodaysWorkouts = (
     .map((activity: IActivity) => ({
       id: activity.id,
       type: activity.name || 'Workout',
-      duration: activity.duration != null ? `${Math.round(activity.duration / 60)} min` : '',
+      duration: formatDuration(activity.duration),
       rawDuration: activity.duration || 0,
-      distance: activity.total_distance
-        ? `${((activity.total_distance || 0) / 1000).toFixed(1)} km`
-        : '',
+      distance: formatDistance(activity.total_distance),
       rawDistance: activity.total_distance || undefined,
       calories: activity.total_energy_burned || 0,
       time: new Date(activity.start_date).toLocaleTimeString('en-US', {
@@ -199,4 +198,13 @@ export const mapActivitiesToTodaysWorkouts = (
         minute: '2-digit',
       }),
     }));
+};
+
+// Add these utility functions at the top of the file or in a separate utils file
+export const formatDuration = (durationInSeconds?: number | null): string => {
+  return durationInSeconds != null ? `${Math.round(durationInSeconds / 60)} min` : '';
+};
+
+export const formatDistance = (distanceInMeters?: number | null): string => {
+  return distanceInMeters ? `${(distanceInMeters / 1000).toFixed(1)} km` : '';
 };

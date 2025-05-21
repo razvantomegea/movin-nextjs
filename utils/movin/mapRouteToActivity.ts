@@ -17,8 +17,8 @@ export function mapRouteToActivity(routeData: RouteData, userAddress: string): P
   // Using an average weight of 70kg for estimation
   const MET = 8; // Moderate running
   const avgWeightKg = 70;
-  const durationHours = routeData.duration / 3600;
-  const caloriesBurned = Math.round((MET * 3.5 * avgWeightKg * durationHours) / 200);
+  const durationMinutes = routeData.duration / 60;
+  const caloriesBurned = Math.round((MET * 3.5 * avgWeightKg * durationMinutes) / 200);
 
   // Estimate steps: (distance in km) * (average steps per km)
   // Using a common estimate of 1300 steps per km.
