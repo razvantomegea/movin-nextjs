@@ -102,40 +102,34 @@ export const mapActivitiesToMonthly = (
   const monthlyData: TimeRangeData[] = [];
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
-  // Get the last day of the month
-  const lastDay = new Date(year, month + 1, 0);
-  // Calculate how many weeks we need to display for this month
-  // A more accurate way to determine the number of weeks in a month
-  const firstDayOfMonth = new Date(year, month, 1);
-  const lastDayOfMonth = lastDay.getDate();
-  const firstDayOfWeek = firstDayOfMonth.getDay();
-  // Calculate weeks needed to display this month (ceiling division)
-  const numWeeks = Math.ceil((lastDayOfMonth + firstDayOfWeek) / 7);
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-  for (let i = 0; i < numWeeks; i++) {
-    let weeklySteps = 0;
-    let weeklyDistance = 0;
-    let weeklyCalories = 0;
-    let weeklyDuration = 0;
+  for (let day = 1; day <= daysInMonth; day++) {
+    const date = new Date(year, month, day);
+    const dailySummary = mapActivitiesToDaily(activities, date);
 
-    for (let j = 0; j < 7; j++) {
-      const dayOfMonth = i * 7 + j + 1 - firstDayOfWeek;
-      const day = new Date(year, month, dayOfMonth);
-      if (day.getMonth() !== month) break; // Ensure we are still in the same month
-
-      const dailySummary = mapActivitiesToDaily(activities, day);
-      weeklySteps += dailySummary.steps;
-      weeklyDistance += dailySummary.distance;
-      weeklyCalories += dailySummary.calories;
-      weeklyDuration += dailySummary.activeMinutes;
-    }
-    if (weeklySteps > 0 || weeklyDistance > 0 || weeklyCalories > 0 || weeklyDuration > 0) {
+    // Only add data if there was activity on that day
+    if (
+      dailySummary.steps > 0 ||
+      dailySummary.distance > 0 ||
+      dailySummary.calories > 0 ||
+      dailySummary.activeMinutes > 0
+    ) {
       monthlyData.push({
-        label: `Week ${i + 1}`,
-        steps: weeklySteps,
-        distance: weeklyDistance,
-        calories: weeklyCalories,
-        duration: Math.round(weeklyDuration),
+        label: day.toString(), // Use the day of the month as the label
+        steps: dailySummary.steps,
+        distance: dailySummary.distance,
+        calories: dailySummary.calories,
+        duration: Math.round(dailySummary.activeMinutes),
+      });
+    } else {
+      // Optionally, push an entry with zero values if you want all days to be present in the chart
+      monthlyData.push({
+        label: day.toString(),
+        steps: 0,
+        distance: 0,
+        calories: 0,
+        duration: 0,
       });
     }
   }
