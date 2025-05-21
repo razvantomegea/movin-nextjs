@@ -1,11 +1,4 @@
--- SELECT Policy
-create policy "Allow address-based select"
-on profiles
-for select
-to authenticated
-using ( (auth.jwt() ->> 'sub') = address );
-
--- INSERT Policy (critical fix)
+-- INSERT Policy
 create policy "Allow address-based insert"
 on profiles
 for insert

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useId, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
 import { useTheme } from 'next-themes';
@@ -8,12 +8,13 @@ import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid } fro
 import { Card, CardContent } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import type { TimeRangeData } from '@/lib/redux/slices/activityDataSlice';
+import { TimeRangeData } from '@/utils/movin/activityMappers';
 
 interface ActivityColumnChartProps {
   weeklyData: TimeRangeData[];
   monthlyData: TimeRangeData[];
   yearlyData: TimeRangeData[];
+  isLoading: boolean;
 }
 
 type MetricType = 'steps' | 'calories' | 'distance' | 'duration';
@@ -22,11 +23,15 @@ export function ActivityColumnChart({
   weeklyData,
   monthlyData,
   yearlyData,
+  isLoading,
 }: ActivityColumnChartProps) {
   const [timeRange, setTimeRange] = useState<'week' | 'month' | 'year'>('week');
   const [metric, setMetric] = useState<MetricType>('steps');
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
+
+  // Generate unique IDs for gradients
+  const uniqueBgGradientId = useId();
 
   // Get the appropriate data based on the selected time range
   const getData = () => {
@@ -74,9 +79,15 @@ export function ActivityColumnChart({
     }
   };
 
-  const data = getData();
+  const data = useMemo(getData, [timeRange, weeklyData, monthlyData, yearlyData]);
   const hasData = data.length > 0;
-  const totalValue = hasData ? data.reduce((sum, item) => sum + item[metric], 0) : 0;
+  const totalValue = hasData
+    ? data.reduce(
+        (sum: number, item: TimeRangeData) =>
+          sum + (Number.isFinite(item[metric]) ? (item[metric] as number) : 0),
+        0,
+      )
+    : 0;
 
   // Get the color for the chart based on the theme
   const getChartColor = () => {
@@ -154,10 +165,19 @@ export function ActivityColumnChart({
 
         {/* Chart container with fixed height */}
         <div className="h-80 mt-8 mb-4 relative">
-          {!hasData ? (
+          {isLoading ? (
             <div className="absolute inset-0 flex items-center justify-center">
               <Loader2 className="h-8 w-8 text-blue-500 animate-spin" />
               <span className="ml-2 text-gray-500">Loading data...</span>
+            </div>
+          ) : !hasData ? (
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+              {/* Optional: Add an illustration here */}
+              {/* <img src="/path/to/no-activity-illustration.svg" alt="No activity" className="h-24 w-24 mb-4" /> */}
+              <p className="text-lg text-gray-500">No activity recorded for this period.</p>
+              <p className="text-sm text-gray-400">
+                Try selecting a different time range or metric.
+              </p>
             </div>
           ) : (
             <AnimatePresence mode="wait">
@@ -181,17 +201,7 @@ export function ActivityColumnChart({
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                       <defs>
-                        <linearGradient id="colorMetricDark" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#1f2937" stopOpacity={0.9} />
-                          <stop offset="50%" stopColor="#1f2937" stopOpacity={0.6} />
-                          <stop offset="100%" stopColor="#1f2937" stopOpacity={0.3} />
-                        </linearGradient>
-                        <linearGradient id="colorMetricLight" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#e5e7eb" stopOpacity={0.9} />
-                          <stop offset="50%" stopColor="#e5e7eb" stopOpacity={0.6} />
-                          <stop offset="100%" stopColor="#e5e7eb" stopOpacity={0.3} />
-                        </linearGradient>
-                        <linearGradient id="bgGradient" x1="0" y1="0" x2="0" y2="1">
+                        <linearGradient id={uniqueBgGradientId} x1="0" y1="0" x2="0" y2="1">
                           <stop
                             offset="0%"
                             stopColor={isDark ? getChartColor() : '#f3f4f6'}
@@ -204,7 +214,14 @@ export function ActivityColumnChart({
                           />
                         </linearGradient>
                       </defs>
-                      <rect x="0" y="0" width="100%" height="100%" fill="url(#bgGradient)" rx="4" />
+                      <rect
+                        x="0"
+                        y="0"
+                        width="100%"
+                        height="100%"
+                        fill={`url(#${uniqueBgGradientId})`}
+                        rx="4"
+                      />
                       <CartesianGrid
                         strokeDasharray="3 3"
                         vertical={false}
@@ -250,7 +267,8 @@ export function ActivityColumnChart({
             {metric === 'duration' && 'Total Duration'}
           </div>
           <div className="text-xl font-bold">
-            {hasData ? formatValue(totalValue) : '0'} {getUnit()}
+            {hasData ? formatValue(totalValue) : '0'}
+            {getUnit() && ` ${getUnit()}`}
           </div>
         </div>
       </CardContent>
