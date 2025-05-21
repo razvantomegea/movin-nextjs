@@ -73,9 +73,12 @@ const activityDataSlice = createSlice({
       })
       .addCase(addActivities.fulfilled, (state, action) => {
         state.isLoading = false;
-        const existingIds = new Set(state.activities.map((a) => a.id));
-        const uniqueNewActivities = action.payload.filter((a) => !existingIds.has(a.id));
-        state.activities = [...uniqueNewActivities, ...state.activities];
+        const initialMap = new Map(state.activities.map((a) => [a.id, a]));
+        const merged = action.payload.reduce((acc, act) => {
+          acc.set(act.id, act);
+          return acc;
+        }, initialMap);
+        state.activities = Array.from(merged.values()).sort(/* optional sort */);
       })
       .addCase(addActivities.rejected, (state, action) => {
         state.isLoading = false;

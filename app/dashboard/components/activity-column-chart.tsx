@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useId, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
 import { useTheme } from 'next-themes';
@@ -27,6 +27,9 @@ export function ActivityColumnChart({
   const [metric, setMetric] = useState<MetricType>('steps');
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
+
+  // Generate unique IDs for gradients
+  const uniqueBgGradientId = useId();
 
   // Get the appropriate data based on the selected time range
   const getData = () => {
@@ -74,9 +77,11 @@ export function ActivityColumnChart({
     }
   };
 
-  const data = getData();
+  const data = useMemo(getData, [timeRange, weeklyData, monthlyData, yearlyData]);
   const hasData = data.length > 0;
-  const totalValue = hasData ? data.reduce((sum, item) => sum + item[metric], 0) : 0;
+  const totalValue = hasData
+    ? data.reduce((sum: number, item: { [key: string]: any }) => sum + item[metric], 0)
+    : 0;
 
   // Get the color for the chart based on the theme
   const getChartColor = () => {
@@ -181,17 +186,7 @@ export function ActivityColumnChart({
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                       <defs>
-                        <linearGradient id="colorMetricDark" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#1f2937" stopOpacity={0.9} />
-                          <stop offset="50%" stopColor="#1f2937" stopOpacity={0.6} />
-                          <stop offset="100%" stopColor="#1f2937" stopOpacity={0.3} />
-                        </linearGradient>
-                        <linearGradient id="colorMetricLight" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#e5e7eb" stopOpacity={0.9} />
-                          <stop offset="50%" stopColor="#e5e7eb" stopOpacity={0.6} />
-                          <stop offset="100%" stopColor="#e5e7eb" stopOpacity={0.3} />
-                        </linearGradient>
-                        <linearGradient id="bgGradient" x1="0" y1="0" x2="0" y2="1">
+                        <linearGradient id={uniqueBgGradientId} x1="0" y1="0" x2="0" y2="1">
                           <stop
                             offset="0%"
                             stopColor={isDark ? getChartColor() : '#f3f4f6'}
@@ -204,7 +199,14 @@ export function ActivityColumnChart({
                           />
                         </linearGradient>
                       </defs>
-                      <rect x="0" y="0" width="100%" height="100%" fill="url(#bgGradient)" rx="4" />
+                      <rect
+                        x="0"
+                        y="0"
+                        width="100%"
+                        height="100%"
+                        fill={`url(#${uniqueBgGradientId})`}
+                        rx="4"
+                      />
                       <CartesianGrid
                         strokeDasharray="3 3"
                         vertical={false}

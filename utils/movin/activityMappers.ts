@@ -17,7 +17,7 @@ export interface TimeRangeData {
 }
 
 export interface Workout {
-  id: number;
+  id: string;
   type: string;
   duration: string;
   distance: string;
@@ -31,22 +31,27 @@ export const mapActivitiesToDaily = (activities: IActivity[], date: Date): Daily
     day: 'numeric',
     year: 'numeric',
   });
+  // Add this helper function at the top of the file
+  const isSameDay = (date1: Date | string, date2: Date | string): boolean => {
+    const d1 = new Date(date1);
+    const d2 = new Date(date2);
 
-  const dailyActivities = activities.filter(
-    (activity) =>
-      new Date(activity.start_date).toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-      }) === targetDateStr,
-  );
+    return (
+      d1.getFullYear() === d2.getFullYear() &&
+      d1.getMonth() === d2.getMonth() &&
+      d1.getDate() === d2.getDate()
+    );
+  };
+
+  // Then use it in the filter function
+  const dailyActivities = activities.filter((activity) => isSameDay(activity.start_date, date));
 
   return dailyActivities.reduce<DailyActivity>(
     (acc, activity) => {
-      acc.steps += activity.total_steps || 0;
-      acc.distance += (activity.total_distance || 0) / 1000;
-      acc.calories += activity.total_energy_burned || 0;
-      acc.activeMinutes += (activity.duration || 0) / 60;
+      acc.steps += activity?.total_steps || 0;
+      acc.distance += (activity?.total_distance || 0) / 1000;
+      acc.calories += activity?.total_energy_burned || 0;
+      acc.activeMinutes += (activity?.duration || 0) / 60;
       return acc;
     },
     {
@@ -87,7 +92,13 @@ export const mapActivitiesToMonthly = (
   const monthlyData: TimeRangeData[] = [];
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
-  const numWeeks = Math.ceil(new Date(year, month + 1, 0).getDate() / 7);
+  // Get the last day of the month
+  const lastDay = new Date(year, month + 1, 0);
+  const firstDay = new Date(year, month, 1);
+  // Calculate weeks by getting the difference in weeks between first and last day
+  const firstWeek = Math.floor(firstDay.getDate() / 7);
+  const lastWeek = Math.floor(lastDay.getDate() / 7);
+  const numWeeks = lastWeek - firstWeek + 1;
 
   for (let i = 0; i < numWeeks; i++) {
     let weeklySteps = 0;
@@ -165,7 +176,7 @@ export const mapActivitiesToTodaysWorkouts = (
       (activity) => new Date(activity.start_date).toLocaleDateString('en-US') === targetDateStr,
     )
     .map((activity) => ({
-      id: parseInt(activity.id, 10),
+      id: activity.id,
       type: activity.name || 'Workout',
       duration: `${Math.round((activity.duration || 0) / 60)} min`,
       distance: activity.total_distance

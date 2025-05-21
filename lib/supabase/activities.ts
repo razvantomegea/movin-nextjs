@@ -10,11 +10,11 @@ export interface IActivity {
   end_date: string;
   duration: number;
   total_energy_burned: number;
-  total_distance: number;
-  total_steps: number;
-  maximum_heart_rate: number;
-  average_heart_rate: number;
-  minimum_heart_rate: number;
+  total_distance?: number;
+  total_steps?: number;
+  maximum_heart_rate?: number;
+  average_heart_rate?: number;
+  minimum_heart_rate?: number;
   created_at: string;
   updated_at: string;
 }
@@ -53,6 +53,9 @@ export async function insertActivities({
   }
   const activitiesToInsert = activityData.map((activity) => {
     delete activity.id;
+    delete activity.created_at;
+    delete activity.updated_at;
+
     return activity;
   });
 
@@ -76,6 +79,11 @@ export async function updateActivity({
   if (!client) {
     client = getClient();
   }
+
+  if (!activityData.id) {
+    throw new Error('Activity update failed: ID is required');
+  }
+
   const { data, error } = await client
     .from('activities')
     .update(activityData)

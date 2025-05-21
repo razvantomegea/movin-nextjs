@@ -59,7 +59,7 @@ export function MovinDashboard() {
   const [refreshing, setRefreshing] = useState(false);
   const [isRouteTypeModalOpen, setIsRouteTypeModalOpen] = useState(false);
   const [isRouteModalOpen, setIsRouteModalOpen] = useState(false);
-  const [currentDate] = useState(new Date());
+  const currentDate = useMemo(() => new Date(), []);
   const { address } = useAccount();
 
   const dispatch = useAppDispatch();
@@ -262,7 +262,7 @@ export function MovinDashboard() {
                         transition={{ duration: 0.5, delay: 0.3 }}
                       >
                         <Progress
-                          value={(dailyActivity.steps / 10000) * 100}
+                          value={Math.min((dailyActivity.steps / 10000) * 100, 100)}
                           className="h-2 mt-3"
                         />
                       </motion.div>
@@ -398,11 +398,11 @@ export function MovinDashboard() {
                             isDark ? 'text-gray-400' : 'text-gray-500'
                           } mt-1`}
                         >
-                          <span className="mr-3">Duration: {workout.duration}</span>
+                          <span className="mr-3">Duration: {workout.duration} min</span>
                           {workout.distance && (
-                            <span className="mr-3">Distance: {workout.distance}</span>
+                            <span className="mr-3">Distance: {workout.distance} m</span>
                           )}
-                          <span>Calories: {workout.calories}</span>
+                          <span>Calories: {workout.calories} kcal</span>
                         </div>
                       </div>
                     </motion.div>

@@ -1,7 +1,7 @@
 import { RouteData } from '@/app/dashboard/components/route-tracking-modal'; // Assuming RouteData is exported from here
 import { IActivity } from '@/lib/supabase/activities';
 
-/**z
+/**
  * Maps manually tracked route data to a partial IActivity object.
  * @param routeData The route data collected from tracking.
  * @param userAddress The wallet address of the user.
@@ -11,9 +11,14 @@ export function mapRouteToActivity(routeData: RouteData, userAddress: string): P
   const startDate = new Date();
   const endDate = new Date(startDate.getTime() + routeData.duration * 1000);
 
-  // Calorie calculation based on the existing logic in movin-dashboard.tsx
-  // (distance in km) / 15. Note: This formula results in very low calorie values.
-  const caloriesBurned = Math.round(routeData.distance / 1000 / 15);
+  // Improved calorie calculation using MET values
+  // Running MET is typically 7-12.5 depending on intensity, using 8 for moderate running
+  // Formula: calories = MET * 3.5 * weight(kg) * duration(hours) / 200
+  // Using an average weight of 70kg for estimation
+  const MET = 8; // Moderate running
+  const avgWeightKg = 70;
+  const durationHours = routeData.duration / 3600;
+  const caloriesBurned = Math.round((MET * 3.5 * avgWeightKg * durationHours) / 200);
 
   // Estimate steps: (distance in km) * (average steps per km)
   // Using a common estimate of 1300 steps per km.
