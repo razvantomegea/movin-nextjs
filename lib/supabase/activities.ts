@@ -51,13 +51,8 @@ export async function insertActivities({
   if (!client) {
     client = getClient();
   }
-  const activitiesToInsert = [...activityData].map((activity) => {
-    delete activity.id;
-    delete activity.created_at;
-    delete activity.updated_at;
 
-    return activity;
-  });
+  const activitiesToInsert = activityData.map(({ id, created_at, updated_at, ...rest }) => rest);
 
   const { data, error } = await client.from('activities').insert(activitiesToInsert).select();
   if (error) {

@@ -74,7 +74,12 @@ export const mapActivitiesToWeekly = (
   const weeklyData: TimeRangeData[] = [];
   for (let i = 0; i < 7; i++) {
     const day = new Date(currentDate);
-    day.setDate(currentDate.getDate() - currentDate.getDay() + i); // Adjust to start of week (Sunday) then add offset
+    // Get first day of week based on locale
+    const firstDayOfWeek = new Date(currentDate);
+    const dayOfWeek = currentDate.getDay();
+    const diff = currentDate.getDate() - dayOfWeek;
+    firstDayOfWeek.setDate(diff);
+    day.setDate(firstDayOfWeek.getDate() + i);
     const dayStr = day.toLocaleDateString('en-US', { weekday: 'short' });
     const dailySummary = mapActivitiesToDaily(activities, day);
     weeklyData.push({
@@ -110,7 +115,11 @@ export const mapActivitiesToMonthly = (
     let weeklyDuration = 0;
 
     for (let j = 0; j < 7; j++) {
-      const day = new Date(year, month, i * 7 + j + 1);
+      // Calculate the day more accurately based on week and day of week
+      const firstDayOfMonth = new Date(year, month, 1);
+      const firstDayOfWeek = firstDayOfMonth.getDay();
+      const dayOfMonth = i * 7 + j + 1 - firstDayOfWeek;
+      const day = new Date(year, month, dayOfMonth);
       if (day.getMonth() !== month) break; // Ensure we are still in the same month
 
       const dailySummary = mapActivitiesToDaily(activities, day);
@@ -173,15 +182,12 @@ export const mapActivitiesToTodaysWorkouts = (
   activities: IActivity[],
   currentDate: Date,
 ): Workout[] => {
-  const targetDateStr = currentDate.toLocaleDateString('en-US');
   return activities
-    .filter(
-      (activity) => new Date(activity.start_date).toLocaleDateString('en-US') === targetDateStr,
-    )
-    .map((activity) => ({
+    .filter((activity) => isSameDay(activity.start_date, currentDate))
+    .map((activity: IActivity) => ({
       id: activity.id,
       type: activity.name || 'Workout',
-      duration: activity.duration !== undefined ? `${Math.round(activity.duration / 60)} min` : '',
+      duration: activity.duration != null ? `${Math.round(activity.duration / 60)} min` : '',
       rawDuration: activity.duration || 0,
       distance: activity.total_distance
         ? `${((activity.total_distance || 0) / 1000).toFixed(1)} km`
