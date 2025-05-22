@@ -260,7 +260,7 @@ export function formatAddress(
   if (!address) return '';
 
   // Handle special cases
-  if (address === 'Unknown' || address === 'Contract Creation') {
+  if (address === 'Unknown' || address === 'Contract Creation' || !address.startsWith('0x')) {
     return address;
   }
 

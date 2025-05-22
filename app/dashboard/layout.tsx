@@ -13,6 +13,7 @@ import { ThemeToggle } from '@/components/theme-toggle';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { useAppSelector } from '@/lib/redux/hooks';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -25,6 +26,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const { isConnected } = useAppKitAccount();
+  const { profile } = useAppSelector((state) => state.profile);
 
   const isActive = (path: string) => {
     return pathname === path;
@@ -58,7 +60,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           <ThemeToggle />
           <Link href="/dashboard/profile">
             <Avatar className="h-8 w-8 border border-blue-500 cursor-pointer">
-              <AvatarImage src="/placeholder.svg?height=32&width=32" alt="User" />
+              <AvatarImage
+                src={profile?.avatar_url || '/placeholder.svg?height=32&width=32'}
+                alt="User"
+              />
               <AvatarFallback className=" dark:bg-blue-900 dark:text-blue-100 bg-blue-100 text-blue-900">
                 UN
               </AvatarFallback>

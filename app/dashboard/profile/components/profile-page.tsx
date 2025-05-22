@@ -10,7 +10,6 @@ import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
 import { fetchProfile, clearProfileError, updateProfile } from '@/lib/redux/slices/profileSlice';
 import { showSuccessToast, showErrorToast } from '@/lib/redux/slices/toastSlice';
 import { IProfile } from '@/lib/supabase/profile';
-import { uploadAvatar, validateAvatarFile } from '@/lib/supabase/storage';
 import { ProfileEditForm } from './profile-edit-form';
 import { ProfileError, ProfileLoadingError, ProfileNotFound } from './profile-error';
 import { ProfileHeader } from './profile-header';
@@ -43,7 +42,6 @@ export function ProfilePage() {
     error: balanceError,
   } = useTokenBalance();
   const [isEditing, setIsEditing] = useState(false);
-  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
   useEffect(() => {
     if (address) {
@@ -106,80 +104,6 @@ export function ProfilePage() {
     }
   };
 
-  const handleAvatarUpload = async (file: File) => {
-    if (!address) {
-      dispatch(
-        showErrorToast({
-          title: 'Upload Failed',
-          description: 'Please connect your wallet to upload an avatar',
-        }),
-      );
-      return;
-    }
-
-    // Validate the file first
-    const validation = validateAvatarFile(file);
-
-    if (!validation.isValid) {
-      dispatch(
-        showErrorToast({
-          title: 'Invalid File',
-          description: validation.errorMessage || 'Please select a valid image file',
-        }),
-      );
-      return;
-    }
-
-    try {
-      setIsUploadingAvatar(true);
-
-      let profileId = profile?.id;
-
-      if (!profileId) {
-        const savedProfile = await dispatch(
-          updateProfile({ address, profileData: { avatar_url: '' } }),
-        ).unwrap();
-        profileId = savedProfile.id;
-      }
-
-      // Upload avatar to Supabase storage with file information
-      dispatch(
-        showSuccessToast({
-          title: 'Upload Started',
-          description: `Uploading ${file.name} (${validation.sizeInfo})...`,
-        }),
-      );
-
-      // Upload avatar to Supabase storage
-      const avatarUrl = await uploadAvatar(file, profileId);
-
-      // Update profile with new avatar URL
-      await dispatch(
-        updateProfile({
-          address,
-          profileData: { avatar_url: avatarUrl },
-        }),
-      ).unwrap();
-      await dispatch(fetchProfile(address)).unwrap();
-
-      dispatch(
-        showSuccessToast({
-          title: 'Avatar Updated',
-          description: 'Your profile picture has been successfully updated',
-        }),
-      );
-    } catch (error) {
-      dispatch(
-        showErrorToast({
-          title: 'Upload Failed',
-          description: error instanceof Error ? error.message : 'Please try again later',
-        }),
-      );
-    } finally {
-      setIsUploadingAvatar(false);
-    }
-  };
-
   if (isLoading || isBalanceLoading) {
     return <ProfilePageSkeleton />;
   }
@@ -213,10 +137,9 @@ export function ProfilePage() {
             <ProfileHeader
               profile={profile}
               balance={balance}
-              isUpdating={isUpdating || isUploadingAvatar}
+              isUpdating={isUpdating}
               isEditing={isEditing}
               onEdit={setIsEditing}
-              onAvatarUpload={handleAvatarUpload}
             />
             {isEditing && (
               <ProfileEditForm
