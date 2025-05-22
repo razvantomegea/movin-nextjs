@@ -84,9 +84,7 @@ export function StakingRewards({ refreshing }: StakingRewardsProps) {
   const refreshAllData = useCallback(async () => {
     await refetchStakingData();
     await refetchTokenBalance();
-    if (userAddress) {
-      dispatch(fetchStakingData(userAddress));
-    }
+    dispatch(fetchStakingData(userAddress));
   }, [refetchStakingData, refetchTokenBalance, dispatch, userAddress]);
 
   const addStakesToDb = useCallback(async () => {

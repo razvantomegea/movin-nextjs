@@ -17,13 +17,11 @@ export function ConnectPage() {
   const { resolvedTheme } = useTheme();
   const { open } = useAppKit();
   const { isConnected, address } = useAppKitAccount();
-  const { open: isOpen } = useAppKitState();
   const [connecting, setConnecting] = useState(isConnected);
   const [authError, setAuthError] = useState<string | null>(null);
 
   const handleConnect = async () => {
     open();
-    setConnecting(true);
     setAuthError(null);
   };
 
@@ -32,6 +30,7 @@ export function ConnectPage() {
       if (isConnected && address) {
         try {
           // Call the API to generate JWT and authenticate with Supabase
+          setConnecting(true);
           const response = await fetch('/api/auth/wallet-login', {
             method: 'POST',
             headers: {
@@ -87,12 +86,6 @@ export function ConnectPage() {
 
     authenticateWithSupabase();
   }, [isConnected, address, router]);
-
-  useEffect(() => {
-    if (isOpen) {
-      setConnecting(false);
-    }
-  }, [isOpen]);
 
   const isDark = resolvedTheme === 'dark';
 

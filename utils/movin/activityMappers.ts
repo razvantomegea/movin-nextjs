@@ -1,4 +1,6 @@
-import { IActivity } from '@/lib/supabase/activities';
+import { formatDistance } from './formatDistance';
+import { formatDuration } from './formatDuration';
+
 
 // Helper function to check if two dates are the same day
 const isSameDay = (date1: Date | string, date2: Date | string): boolean => {
@@ -192,13 +194,4 @@ export const mapActivitiesToTodaysWorkouts = (
         minute: '2-digit',
       }),
     }));
-};
-
-// Add these utility functions at the top of the file or in a separate utils file
-export const formatDuration = (durationInSeconds?: number | null): string => {
-  return durationInSeconds != null ? `${Math.round(durationInSeconds / 60)} min` : '';
-};
-
-export const formatDistance = (distanceInMeters?: number | null): string => {
-  return distanceInMeters ? `${(distanceInMeters / 1000).toFixed(1)} km` : '';
 };

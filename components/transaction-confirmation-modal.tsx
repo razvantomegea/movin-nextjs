@@ -29,7 +29,7 @@ export function TransactionConfirmationModal({
   const dispatch = useAppDispatch();
 
   // Timer state
-  const [timeLeft, setTimeLeft] = useState(3 * 60); // 3 minutes in seconds
+  const [timeLeft, setTimeLeft] = useState(1 * 60); // 3 minutes in seconds
   const endTimeRef = useRef<number | null>(null);
 
   // Handle success button click
@@ -57,7 +57,7 @@ export function TransactionConfirmationModal({
   // Set up the timer when the modal opens
   useEffect(() => {
     if (isOpen) {
-      // Set the end time (current time + 3 minutes)
+      // Set the end time (current time + 1 minute)
       endTimeRef.current = Date.now() + timeLeft * 1000;
 
       // Update the timer every second
@@ -85,7 +85,7 @@ export function TransactionConfirmationModal({
   };
 
   // Calculate progress percentage for the timer
-  const timerProgress = (timeLeft / (3 * 60)) * 100;
+  const timerProgress = (timeLeft / (1 * 60)) * 100;
 
   return (
     <AnimatePresence>
@@ -206,6 +206,7 @@ export function TransactionConfirmationModal({
               {/* Action Buttons */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
                 <Button
+                  disabled={timeLeft > 0}
                   variant="outline"
                   className="border-red-500 text-red-500 hover:bg-red-500/10"
                   onClick={handleFail}
