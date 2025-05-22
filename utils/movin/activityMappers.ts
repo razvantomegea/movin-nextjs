@@ -1,6 +1,6 @@
-import { IActivity } from '@/lib/supabase/activities';
 import { formatDistance } from './formatDistance';
 import { formatDuration } from './formatDuration';
+
 
 // Helper function to check if two dates are the same day
 const isSameDay = (date1: Date | string, date2: Date | string): boolean => {
