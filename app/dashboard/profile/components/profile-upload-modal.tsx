@@ -46,6 +46,10 @@ export function ProfileUploadModal({
   const handleAvatarChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
+      // Clean up any earlier preview to avoid leaking
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
       setSelectedFile(file);
       const validation = validateAvatarFile(file);
       setFileValidation(validation);
@@ -139,7 +143,13 @@ export function ProfileUploadModal({
       <DialogContent className="max-w-md w-full">
         <DialogTitle>Upload New Avatar</DialogTitle>
         <div className="flex flex-col items-center">
-          <Avatar className="h-24 w-24 border-4 border-blue-500 mb-4" onClick={handleAvatarClick}>
+          <Avatar
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && handleAvatarClick()}
+            className="h-24 w-24 border-4 border-blue-500 mb-4"
+            onClick={handleAvatarClick}
+          >
             {previewUrl ? (
               <AvatarImage src={previewUrl} alt="Preview" />
             ) : (

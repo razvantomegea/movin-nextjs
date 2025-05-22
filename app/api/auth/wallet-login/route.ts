@@ -1,6 +1,5 @@
 import jwt from 'jsonwebtoken';
 import { NextResponse } from 'next/server';
-import { createSupabaseClientBrowser } from '@/lib/supabase/createClient';
 
 export async function POST(request: Request) {
   try {
@@ -24,35 +23,10 @@ export async function POST(request: Request) {
       process.env.NEXT_PUBLIC_JWT_SECRET || '',
     );
 
-    // Create Supabase admin client to check/create user
-    const supabase = createSupabaseClientBrowser();
-
-    // Check if user exists in Supabase
-    const { data: existingUser, error: getUserError } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('address', address)
-      .single();
-
-    if (getUserError && getUserError.code !== 'PGRST116') {
-      console.error('Error checking user:', getUserError);
-    }
-
-    // If user doesn't exist, create one
-    if (!existingUser) {
-      const { error: createUserError } = await supabase
-        .from('profiles')
-        .insert([{ address, username: address }]);
-
-      if (createUserError) {
-        console.error('Error creating user:', createUserError);
-      }
-    }
-
     // Create the response with authentication data
     const response = NextResponse.json({
       token,
-      user: existingUser || { address },
+      user: { address },
       message: 'Authentication successful',
     });
 
@@ -62,10 +36,10 @@ export async function POST(request: Request) {
       name: 'supabase-auth-token',
       value: token,
       maxAge: 60 * 60 * 24, // 1 day
+      httpOnly: false, // restrict JS access; proxy requests via server
       path: '/',
-      httpOnly: false, // Allow JavaScript access for Supabase client
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax', // Allow cross-site requests in a relaxed way
+      sameSite: 'lax',
     });
 
     return response;

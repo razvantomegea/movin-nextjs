@@ -9,9 +9,6 @@ import {
 
 // Dynamic import for server-side client to avoid bundling server code in client
 // Will only be used on server side
-const createSupabaseClientServer:
-  | typeof import('./createServerClient').createSupabaseClientServer
-  | null = null;
 
 // Re-export constants and utilities
 export { formatFileSize, getStorageConfigBase as getStorageConfig };
@@ -87,8 +84,9 @@ export async function uploadAvatar(file: File, userId: string): Promise<string> 
 
   try {
     // Create a unique file path using the userId (address) as a folder and a timestamp for the file name
-    const fileExt = file.name.split('.').pop();
-    const filePath = `${userId}/avatar.${fileExt}`;
+    const fileExt = (file.name.split('.').pop() || 'jpg').toLowerCase();
+    const sanitizedExt = ALLOWED_MIME_TYPES.some((t) => t.endsWith(fileExt)) ? fileExt : 'jpg';
+    const filePath = `${userId}/avatar.${sanitizedExt}`;
 
     // Upload the file to the avatars bucket
     const { data, error } = await client.storage.from(AVATAR_BUCKET).upload(filePath, file, {

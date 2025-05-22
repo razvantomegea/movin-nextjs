@@ -1,5 +1,7 @@
 export function formatDistance(meters?: number | null): string {
-  if (!meters) return '';
+  if (meters == null) return '';
+
+  if (meters === 0) return '0m';
 
   if (meters < 1000) {
     return `${Math.round(meters)}m`;
