@@ -1,19 +1,28 @@
 'use client';
 
-import { useEffect } from 'react';
-import { Flame, History, Award, RefreshCw } from 'lucide-react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useAppKitAccount } from '@reown/appkit/react';
+import { Flame, Award, RefreshCw } from 'lucide-react';
 
+import { TransactionConfirmationModal } from '@/components/transaction-confirmation-modal';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ErrorAlert } from '@/components/ui/error-alert';
 import { LoadingButton } from '@/components/ui/loading-button';
 import { Progress } from '@/components/ui/progress';
+import { RewardCountdownTimer } from '@/components/ui/reward-countdown-timer';
+import { useMovinEarn } from '@/lib/hooks/useMovinEarn';
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
+import { fetchActivities } from '@/lib/redux/slices/activityDataSlice';
 import {
-  fetchActivityRewards,
-  claimActivityRewards,
-  resetActivityRewardsError,
+  fetchActivityRewardsHistory,
+  recordActivityReward,
 } from '@/lib/redux/slices/activityRewardsSlice';
+import { showSuccessToast, showErrorToast } from '@/lib/redux/slices/toastSlice';
+import { RootState } from '@/lib/redux/store';
+import { isPremiumExpired, mapActivitiesToDaily, type DailyActivity } from '@/utils';
+import { calculateMetsFromCalories } from '@/utils/movin/calculateMets';
+import { ActivityRewardsHistory } from './activity-rewards-history';
 import { ActivityRewardsSkeleton } from './activity-rewards-skeleton';
 
 interface ActivityRewardsProps {
@@ -23,39 +32,283 @@ interface ActivityRewardsProps {
 
 export function ActivityRewards({ refreshing, onInitiateClaimProcess }: ActivityRewardsProps) {
   const dispatch = useAppDispatch();
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [claimAmount, setClaimAmount] = useState(0);
+  const [activeAction, setActiveAction] = useState<{ type: string; index: number } | null>(null);
+  const [dbUpdateInProgress, setDbUpdateInProgress] = useState(false);
+  const [expirationTimestamp, setExpirationTimestamp] = useState<number | null>(null);
+  const { address } = useAppKitAccount();
+  const addressLower = address?.toLowerCase();
+  const userAddress = useMemo(() => addressLower || '', [addressLower]);
+  const currentDate = useMemo(() => new Date(), []);
+  const { useUserActivity, useCalculateActivityRewards, useRecordActivity, usePremiumStatus } =
+    useMovinEarn();
+  const { formattedPremiumStatus } = usePremiumStatus();
+  const premiumStatus = formattedPremiumStatus();
+  const isPremium = premiumStatus.status && !isPremiumExpired(premiumStatus);
 
-  // Activity rewards state
   const {
-    totalRewards: activityTotalRewards,
-    activityRewards,
-    challenges,
+    formattedActivity,
     isLoading: activityLoading,
-    isClaiming: activityClaiming,
     error: activityError,
-  } = useAppSelector((state) => state.activityRewards);
+    refetch: refetchUserActivity,
+  } = useUserActivity();
 
-  // Fetch data on component mount
+  const {
+    activities,
+    isLoading: activitiesLoading,
+    error: activitiesError,
+  } = useAppSelector((state: RootState) => state.activityData);
+
+  const dailyActivity: DailyActivity | null = useMemo(() => {
+    if (activities.length > 0) {
+      return mapActivitiesToDaily(activities, currentDate);
+    }
+    return null;
+  }, [activities, currentDate]);
+
+  const stepsToClaim = useMemo(() => {
+    const formattedData = formattedActivity();
+    const dailySteps = dailyActivity?.steps || 0;
+
+    if (!formattedData) return dailySteps;
+
+    return dailySteps - formattedData.dailySteps;
+  }, [formattedActivity, dailyActivity]);
+
+  const metsToClaim = useMemo(() => {
+    if (!isPremium) return 0;
+
+    const formattedData = formattedActivity();
+    const dailyMets = calculateMetsFromCalories(dailyActivity?.calories || 0);
+
+    if (!formattedData) return dailyMets;
+
+    return dailyMets - formattedData.dailyMets;
+  }, [formattedActivity, dailyActivity, isPremium]);
+
+  const {
+    formattedRewards,
+    isLoading: rewardsLoading,
+    error: rewardsError,
+    refetch: refetchRewards,
+  } = useCalculateActivityRewards(stepsToClaim, metsToClaim);
+
+  const rewards = useMemo(() => formattedRewards(), [formattedRewards]);
+
+  console.log('dailyActivity', dailyActivity);
+  console.log('formattedActivity', formattedActivity());
+  console.log('stepsToClaim', stepsToClaim);
+  console.log('metsToClaim', metsToClaim);
+  console.log('rewards', rewards);
+
+  const {
+    recordActivity,
+    isSuccess: isClaimSuccess,
+    error: claimError,
+    isPending: isClaiming,
+  } = useRecordActivity();
+
+  const totalRewards = useMemo(() => {
+    if (!rewards) return 0;
+    return rewards.stepsRewards + rewards.metsRewards;
+  }, [rewards]);
+
+  const activityRewards = useMemo(() => {
+    if (!rewards) return [];
+
+    const stepsPercentage = totalRewards > 0 ? (rewards.stepsRewards / totalRewards) * 100 : 0;
+    const metsPercentage = totalRewards > 0 ? (rewards.metsRewards / totalRewards) * 100 : 0;
+
+    return [
+      { type: 'Steps', amount: rewards.stepsRewards, percentage: stepsPercentage },
+      { type: 'METs', amount: rewards.metsRewards, percentage: metsPercentage },
+    ];
+  }, [rewards, totalRewards]);
+
+  // Sample challenges (could be replaced with real data from blockchain in the future)
+  const challenges = useMemo(() => {
+    if (!dailyActivity) return [];
+
+    const mets = calculateMetsFromCalories(dailyActivity.calories || 0);
+
+    return [
+      {
+        id: 1,
+        title: 'Daily Steps',
+        description: `Complete ${dailyActivity.steps} steps today`,
+        reward: rewards?.stepsRewards || 0,
+        progress: dailyActivity.steps,
+        total: rewards?.steps || 0,
+      },
+      {
+        id: 2,
+        title: 'Daily METs',
+        description: `Burn ${rewards?.mets || 0} METs today`,
+        reward: rewards?.metsRewards || 0,
+        progress: mets,
+        total: rewards?.mets || 0,
+      },
+    ];
+  }, [rewards, dailyActivity]);
+
+  // Calculate activity rewards expiration (midnight tomorrow)
+  const updateActivityRewardExpiration = useCallback(() => {
+    if (totalRewards <= 0) {
+      setExpirationTimestamp(null);
+      return;
+    }
+
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(0, 0, 0, 0);
+    setExpirationTimestamp(Math.floor(tomorrow.getTime() / 1000));
+  }, [totalRewards]);
+
+  // Fetch data on component mount and when refreshing
   useEffect(() => {
-    dispatch(fetchActivityRewards());
-  }, [dispatch]);
+    refetchUserActivity();
 
-  const handleClaimActivityRewards = () => {
-    onInitiateClaimProcess('activity', activityTotalRewards);
+    if (addressLower) {
+      dispatch(fetchActivities(addressLower));
+    }
+  }, [refetchUserActivity, dispatch, addressLower, refreshing]);
+
+  // Update expiration timestamp when rewards change
+  useEffect(() => {
+    updateActivityRewardExpiration();
+  }, [totalRewards, updateActivityRewardExpiration]);
+
+  // Fetch activity rewards history when the component mounts
+  useEffect(() => {
+    if (userAddress) {
+      dispatch(fetchActivityRewardsHistory(userAddress));
+    }
+  }, [dispatch, userAddress]);
+
+  // Update rewards in Supabase database
+  const saveRewardsToDatabase = useCallback(async () => {
+    if (dbUpdateInProgress || !userAddress || !activeAction || totalRewards <= 0) {
+      return;
+    }
+
+    try {
+      setDbUpdateInProgress(true);
+
+      if (activeAction.type === 'claim') {
+        await dispatch(
+          recordActivityReward({
+            address: userAddress,
+            rewards: totalRewards,
+          }),
+        ).unwrap();
+      }
+    } catch (error) {
+      console.error('Error recording activity reward:', error);
+    } finally {
+      setDbUpdateInProgress(false);
+      setActiveAction(null);
+    }
+  }, [activeAction, dbUpdateInProgress, dispatch, totalRewards, userAddress]);
+
+  // Handle successful claim
+  useEffect(() => {
+    if (isClaimSuccess && activeAction?.type === 'claim' && isConfirmModalOpen) {
+      setIsConfirmModalOpen(false);
+
+      dispatch(
+        showSuccessToast({
+          title: 'Claim Successful',
+          description: 'Your activity rewards have been claimed successfully.',
+        }),
+      );
+
+      // Save the claimed rewards to the database
+      saveRewardsToDatabase();
+      refetchUserActivity();
+    }
+  }, [
+    isClaimSuccess,
+    activeAction,
+    dispatch,
+    isConfirmModalOpen,
+    refetchUserActivity,
+    saveRewardsToDatabase,
+  ]);
+
+  // Handle claim error
+  useEffect(() => {
+    if (claimError && isConfirmModalOpen && activeAction?.type === 'claim') {
+      setIsConfirmModalOpen(false);
+
+      dispatch(
+        showErrorToast({
+          title: 'Claim Failed',
+          description: 'Failed to claim rewards. Please try again.',
+        }),
+      );
+
+      setActiveAction(null);
+    }
+  }, [claimError, isConfirmModalOpen, dispatch, activeAction]);
+
+  const handleClaimActivityRewards = async () => {
+    try {
+      setActiveAction({ type: 'claim', index: -1 });
+      setClaimAmount(totalRewards);
+      setIsConfirmModalOpen(true);
+      onInitiateClaimProcess('activity', totalRewards);
+
+      await recordActivity(stepsToClaim, metsToClaim);
+    } catch (err) {
+      setIsConfirmModalOpen(false);
+
+      dispatch(
+        showErrorToast({
+          title: 'Transaction Failed',
+          description: 'Failed to claim rewards. Please try again.',
+        }),
+      );
+
+      console.error('Claim error:', err);
+      setActiveAction(null);
+    }
   };
 
   const handleRetryLoadActivity = () => {
-    dispatch(resetActivityRewardsError());
-    dispatch(fetchActivityRewards());
+    refetchUserActivity();
+    refetchRewards();
   };
 
-  if (activityLoading && !refreshing) {
+  const handleTransactionSuccess = useCallback(async () => {
+    setIsConfirmModalOpen(false);
+    setActiveAction(null);
+    setClaimAmount(0);
+    refetchUserActivity();
+  }, [refetchUserActivity]);
+
+  const handleTransactionFail = useCallback(async () => {
+    setIsConfirmModalOpen(false);
+    setActiveAction(null);
+    setClaimAmount(0);
+    refetchUserActivity();
+  }, [refetchUserActivity]);
+
+  const handleCloseConfirmModal = useCallback(() => {
+    setIsConfirmModalOpen(false);
+  }, []);
+
+  const isLoading = activityLoading || rewardsLoading || activitiesLoading;
+  const errorMessage = activityError?.message || rewardsError?.message || activitiesError;
+
+  if (isLoading && !refreshing) {
     return <ActivityRewardsSkeleton />;
   }
 
-  if (activityError) {
+  if (errorMessage) {
     return (
       <div className="space-y-4">
-        <ErrorAlert message={activityError} />
+        <ErrorAlert message={errorMessage} />
         <Button onClick={handleRetryLoadActivity} className="w-full">
           <RefreshCw className="h-4 w-4 mr-2" />
           Retry
@@ -74,19 +327,25 @@ export function ActivityRewards({ refreshing, onInitiateClaimProcess }: Activity
             <div className="flex items-center mb-2">
               <Flame className="h-6 w-6 text-blue-600 dark:text-blue-400 mr-2" />
               <span className="text-4xl font-bold text-blue-600 dark:text-blue-400">
-                {activityTotalRewards.toFixed(2)}
+                {totalRewards.toFixed(2)}
               </span>
               <span className="text-xl ml-2 text-gray-500 dark:text-gray-400">MVN</span>
             </div>
-            <span className="text-sm text-gray-500 dark:text-gray-400">Total earned this week</span>
+            <span className="text-sm text-gray-500 dark:text-gray-400">Total earned today</span>
+            {totalRewards > 0 && expirationTimestamp && (
+              <RewardCountdownTimer
+                expirationTimestamp={expirationTimestamp}
+                hasRewards={totalRewards > 0}
+              />
+            )}
           </div>
 
           <LoadingButton
             className="w-full py-6 text-lg bg-blue-500 hover:bg-blue-600"
-            loading={activityClaiming}
+            loading={activeAction?.type === 'claim' || isClaiming}
             loadingText="Preparing Transaction..."
             onClick={handleClaimActivityRewards}
-            disabled={activityTotalRewards <= 0}
+            disabled={totalRewards <= 0 || activeAction !== null}
           >
             Claim Rewards
           </LoadingButton>
@@ -96,10 +355,6 @@ export function ActivityRewards({ refreshing, onInitiateClaimProcess }: Activity
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-medium">Reward Breakdown</h2>
-          <Button variant="ghost" size="sm" className="text-gray-400">
-            <History className="h-4 w-4 mr-1" />
-            History
-          </Button>
         </div>
 
         <Card className="bg-gray-100 dark:bg-gray-900 border-gray-300 dark:border-gray-800">
@@ -120,7 +375,7 @@ export function ActivityRewards({ refreshing, onInitiateClaimProcess }: Activity
       </div>
 
       <div className="space-y-4">
-        <h2 className="text-lg font-medium">Upcoming Rewards</h2>
+        <h2 className="text-lg font-medium">Current Progress</h2>
         <Card className="bg-gray-100 dark:bg-gray-900 border-gray-300 dark:border-gray-800">
           <CardContent className="p-4">
             <div className="space-y-4">
@@ -151,6 +406,21 @@ export function ActivityRewards({ refreshing, onInitiateClaimProcess }: Activity
           </CardContent>
         </Card>
       </div>
+
+      {/* Activity Rewards History */}
+      <ActivityRewardsHistory />
+
+      {/* Transaction Confirmation Modal */}
+      <TransactionConfirmationModal
+        isOpen={isConfirmModalOpen}
+        onClose={handleCloseConfirmModal}
+        onSuccess={handleTransactionSuccess}
+        onFail={handleTransactionFail}
+        rewardAmount={claimAmount}
+        transactionDescription={`Please confirm the transaction in your wallet to claim ${claimAmount.toFixed(
+          2,
+        )} MVN from your activity`}
+      />
     </div>
   );
 }

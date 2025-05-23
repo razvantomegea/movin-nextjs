@@ -8,6 +8,7 @@ import { TransactionConfirmationModal } from '@/components/transaction-confirmat
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { LoadingButton } from '@/components/ui/loading-button';
+import { RewardCountdownTimer } from '@/components/ui/reward-countdown-timer';
 import { IUserStake, useMovinEarn } from '@/lib/hooks/useMovinEarn';
 import { useMovinToken } from '@/lib/hooks/useMovinToken';
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
@@ -31,6 +32,7 @@ export function StakingRewards({ refreshing }: StakingRewardsProps) {
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [claimAmount, setClaimAmount] = useState(0);
   const [dbUpdateInProgress, setDbUpdateInProgress] = useState(false);
+  const [expirationTimestamp, setExpirationTimestamp] = useState<number | null>(null);
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
   const dispatch = useAppDispatch();
@@ -149,6 +151,46 @@ export function StakingRewards({ refreshing }: StakingRewardsProps) {
     refreshAllData,
   ]);
 
+  // Calculate earliest expiration timestamp for staking rewards
+  const updateOldestStakeExpirationTimestamp = useCallback(() => {
+    if (!stakingData?.stakes || stakingData.stakes.length === 0) {
+      setExpirationTimestamp(null);
+      return;
+    }
+
+    const nowSeconds = new Date().getTime() / 1000;
+    let soonestExpiration: number | null = null;
+
+    for (const stake of stakingData.stakes) {
+      const hasRewards = stake.reward && parseFloat(stake.reward) > 0;
+      if (!hasRewards) {
+        continue; // Skip stakes with no rewards
+      }
+
+      let stakeExpirationTimestamp: number | null = null;
+      const lastClaimedBigInt = stake.lastClaimed;
+
+      if (!lastClaimedBigInt || lastClaimedBigInt === BigInt(0)) {
+        // Rewards never claimed, expire 24h after stake start time
+        const startTimeNum = Number(stake.startTime);
+        stakeExpirationTimestamp = startTimeNum + 24 * 60 * 60;
+      } else {
+        // Rewards claimed, expire 24h after last claim time
+        const lastClaimedNum = Number(lastClaimedBigInt);
+        stakeExpirationTimestamp = lastClaimedNum + 24 * 60 * 60;
+      }
+
+      // Only consider timestamps that are in the future
+      if (stakeExpirationTimestamp !== null && stakeExpirationTimestamp > nowSeconds) {
+        if (soonestExpiration === null || stakeExpirationTimestamp < soonestExpiration) {
+          soonestExpiration = stakeExpirationTimestamp;
+        }
+      }
+    }
+
+    setExpirationTimestamp(soonestExpiration);
+  }, [stakingData]);
+
   useEffect(() => {
     if (userAddress) {
       dispatch(fetchStakingData(userAddress));
@@ -160,6 +202,12 @@ export function StakingRewards({ refreshing }: StakingRewardsProps) {
       refreshAllData();
     }
   }, [refreshing, refreshAllData]);
+
+  useEffect(() => {
+    if (stakingData?.stakes) {
+      updateOldestStakeExpirationTimestamp();
+    }
+  }, [stakingData, updateOldestStakeExpirationTimestamp]);
 
   useEffect(() => {
     if (
@@ -369,6 +417,12 @@ export function StakingRewards({ refreshing }: StakingRewardsProps) {
                 <span className="text-xl ml-2 text-gray-400">{displayTokenSymbol}</span>
               </div>
               <span className="text-sm text-gray-400">Total staking rewards</span>
+              {!hasNoRewards && expirationTimestamp && (
+                <RewardCountdownTimer
+                  expirationTimestamp={expirationTimestamp}
+                  hasRewards={!hasNoRewards}
+                />
+              )}
             </div>
 
             <LoadingButton

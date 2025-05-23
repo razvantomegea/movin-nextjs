@@ -314,7 +314,7 @@ export function MovinDashboard() {
                           </div>
                           <span className="text-sm font-medium">
                             {Math.floor(dailyActivity.activeMinutes / 60)}h{' '}
-                            {dailyActivity.activeMinutes % 60}m
+                            {Math.round(dailyActivity.activeMinutes % 60)}m
                           </span>
                           <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                             active

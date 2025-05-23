@@ -29,6 +29,14 @@ export interface IUserActivity {
   lastUpdated: number;
 }
 
+export interface IUserActivityAbi {
+  dailySteps: bigint;
+  dailyMets: bigint;
+  lastRewardAccumulationTime: bigint;
+  isPremium: boolean;
+  lastUpdated: bigint;
+}
+
 export interface IActivityRewards {
   stepsRewards: number;
   metsRewards: number;
@@ -123,13 +131,13 @@ export function useMovinEarn() {
     // Format the activity data
     const formattedActivity = (): IUserActivity => {
       if (result.data) {
-        const activity = result.data as [bigint, bigint, bigint, bigint, bigint, boolean, bigint];
+        const activity = result.data as IUserActivityAbi;
         return {
-          dailySteps: Number(activity[0]),
-          dailyMets: Number(activity[1]),
-          lastRewardAccumulationTime: Number(activity[4]),
-          isPremium: activity[5],
-          lastUpdated: Number(activity[6]),
+          dailySteps: Number(activity.dailySteps),
+          dailyMets: Number(activity.dailyMets),
+          lastRewardAccumulationTime: Number(activity.lastRewardAccumulationTime),
+          isPremium: activity.isPremium,
+          lastUpdated: Number(activity.lastUpdated),
         };
       }
       return {
