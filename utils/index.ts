@@ -1,6 +1,7 @@
 export * from './cn';
 export * from './crypto';
 export * from './errors';
+export * from './subscription';
 export * from './movin/formatDistance';
 export * from './movin/formatDuration';
 export * from './randomInRange';

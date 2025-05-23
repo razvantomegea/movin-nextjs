@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
+import { useAppKitAccount } from '@reown/appkit/react';
 import { formatUnits, parseUnits } from 'viem';
-import { useReadContract, useWriteContract, useAccount, useWaitForTransactionReceipt } from 'wagmi';
+import { useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import movinEarnAbi from '@/lib/abi/movin-earn-abi.json';
 import { useAppDispatch } from '@/lib/redux/hooks';
 import { showErrorToast } from '@/lib/redux/slices/toastSlice';
@@ -77,6 +78,12 @@ export interface IPremiumStatus {
   expiration: number;
 }
 
+export interface IPremiumStatusAbi {
+  status: boolean;
+  paid: bigint;
+  expiration: bigint;
+}
+
 export interface IBaseRates {
   baseStepsRate: string;
   baseMetsRate: string;
@@ -88,7 +95,8 @@ export interface IBaseRates {
  */
 export function useMovinEarn() {
   const dispatch = useAppDispatch();
-  const { address } = useAccount();
+  const { address } = useAppKitAccount();
+  const addressLower = address?.toLowerCase();
 
   /**
    * Gets the contract address
@@ -108,7 +116,7 @@ export function useMovinEarn() {
       abi: movinEarnAbi,
       functionName: 'getTodayUserActivity',
       query: {
-        enabled: !!address,
+        enabled: !!addressLower,
       },
     });
 
@@ -152,7 +160,7 @@ export function useMovinEarn() {
       functionName: 'calculateActivityRewards',
       args: [steps, mets],
       query: {
-        enabled: !!address && steps > 0 && mets > 0,
+        enabled: !!addressLower && steps > 0 && mets > 0,
       },
     });
 
@@ -188,7 +196,7 @@ export function useMovinEarn() {
    * @returns Hook result with referral information
    */
   const useReferralInfo = (userAddress?: string) => {
-    const addressToUse = userAddress || address;
+    const addressToUse = userAddress || addressLower;
 
     const result = useReadContract({
       address: CONTRACT_ADDRESS,
@@ -225,7 +233,7 @@ export function useMovinEarn() {
    * @returns Hook result with referrals
    */
   const useUserReferrals = (userAddress?: string) => {
-    const addressToUse = userAddress || address;
+    const addressToUse = userAddress || addressLower;
 
     return useReadContract({
       address: CONTRACT_ADDRESS,
@@ -416,7 +424,7 @@ export function useMovinEarn() {
    * @returns Hook result with stakes
    */
   const useUserStakes = (userAddress?: string) => {
-    const addressToUse = userAddress || address;
+    const addressToUse = userAddress || addressLower;
 
     const result = useReadContract({
       address: CONTRACT_ADDRESS,
@@ -740,21 +748,24 @@ export function useMovinEarn() {
       address: CONTRACT_ADDRESS,
       abi: movinEarnAbi,
       functionName: 'getPremiumStatus',
+      args: addressLower ? [addressLower] : undefined,
       query: {
-        enabled: !!address,
+        enabled: !!addressLower,
       },
     });
 
     // Format the premium status
     const formattedPremiumStatus = (): IPremiumStatus => {
       if (result.data) {
-        const status = result.data as [boolean, bigint, bigint];
+        const premiumStatus = result.data as IPremiumStatusAbi;
+
         return {
-          status: status[0],
-          paid: formatUnits(status[1], 18),
-          expiration: Number(status[2]),
+          status: premiumStatus.status,
+          paid: formatUnits(premiumStatus.paid, 18),
+          expiration: Number(premiumStatus.expiration),
         };
       }
+
       return {
         status: false,
         paid: '0',

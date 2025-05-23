@@ -33,6 +33,7 @@ const item = {
 
 export function ProfilePage() {
   const { address } = useAppKitAccount();
+  const addressLower = address?.toLowerCase();
   const dispatch = useAppDispatch();
   const { profile, isLoading, isUpdating, error } = useAppSelector((state) => state.profile);
   const { useTokenBalance } = useMovinToken();
@@ -44,18 +45,18 @@ export function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
-    if (address) {
-      dispatch(fetchProfile(address));
+    if (addressLower) {
+      dispatch(fetchProfile(addressLower));
     }
-  }, [dispatch, address]);
+  }, [dispatch, addressLower]);
 
   const handleRefresh = async () => {
-    if (!address) {
+    if (!addressLower) {
       return;
     }
 
     try {
-      await dispatch(fetchProfile(address)).unwrap();
+      await dispatch(fetchProfile(addressLower)).unwrap();
       dispatch(
         showSuccessToast({
           title: 'Profile Refreshed',
@@ -78,13 +79,13 @@ export function ProfilePage() {
 
   const handleSave = async (profileData: Partial<IProfile>) => {
     try {
-      if (!address) {
+      if (!addressLower) {
         throw new Error('Wallet address not available');
       }
 
       // Update profile directly without using Redux
-      await dispatch(updateProfile({ address, profileData })).unwrap();
-      await dispatch(fetchProfile(address)).unwrap();
+      await dispatch(updateProfile({ address: addressLower, profileData })).unwrap();
+      await dispatch(fetchProfile(addressLower)).unwrap();
 
       dispatch(
         showSuccessToast({
@@ -143,7 +144,7 @@ export function ProfilePage() {
             />
             {isEditing && (
               <ProfileEditForm
-                address={address}
+                address={addressLower}
                 profile={profile}
                 isUpdating={isUpdating}
                 onSave={handleSave}
