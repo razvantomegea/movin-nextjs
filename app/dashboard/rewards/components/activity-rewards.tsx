@@ -101,6 +101,7 @@ export function ActivityRewards({ refreshing, onInitiateClaimProcess }: Activity
   console.log('stepsToClaim', stepsToClaim);
   console.log('metsToClaim', metsToClaim);
   console.log('rewards', rewards);
+  console.log('isPremium', isPremium);
 
   const {
     recordActivity,
