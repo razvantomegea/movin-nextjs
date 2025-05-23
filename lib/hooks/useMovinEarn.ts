@@ -168,7 +168,7 @@ export function useMovinEarn() {
       functionName: 'calculateActivityRewards',
       args: [steps, mets],
       query: {
-        enabled: !!addressLower && steps > 0 && mets > 0,
+        enabled: !!addressLower && (steps > 0 || mets > 0),
       },
     });
 
