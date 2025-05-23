@@ -3,12 +3,13 @@ import { useMovinEarn } from '@/lib/hooks/useMovinEarn';
 import { useAppDispatch } from '@/lib/redux/hooks';
 import { showErrorToast, showSuccessToast } from '@/lib/redux/slices/toastSlice';
 import {
-  PlanType,
+  PlanTypeEnum,
   PendingTransaction,
   getCurrentPlan,
   isPremiumExpired,
   isPlanCurrent,
 } from '@/utils/subscription';
+import { MONTHLY_SUBSCRIPTION_AMOUNT, YEARLY_SUBSCRIPTION_AMOUNT } from '@/utils/subscription';
 
 export function useSubscription() {
   const dispatch = useAppDispatch();
@@ -32,7 +33,7 @@ export function useSubscription() {
   } = useSetPremiumStatus();
 
   // Local state
-  const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('yearly');
+  const [billingCycle, setBillingCycle] = useState<PlanTypeEnum>(PlanTypeEnum.YEARLY);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [pendingTransaction, setPendingTransaction] = useState<PendingTransaction | null>(null);
 
@@ -44,21 +45,21 @@ export function useSubscription() {
   // Set default billing cycle based on current plan when premium status loads
   useEffect(() => {
     if (!premiumLoading && premiumStatus) {
-      if (currentPlan === 'yearly') {
-        setBillingCycle('yearly');
-      } else if (currentPlan === 'monthly') {
-        setBillingCycle('monthly');
+      if (currentPlan === PlanTypeEnum.YEARLY) {
+        setBillingCycle(PlanTypeEnum.YEARLY);
+      } else if (currentPlan === PlanTypeEnum.MONTHLY) {
+        setBillingCycle(PlanTypeEnum.MONTHLY);
       }
     }
   }, [premiumLoading, premiumStatus, currentPlan]);
 
   // Handle successful upgrade
   useEffect(() => {
-    if (upgradeSuccess && isModalOpen && pendingTransaction) {
+    if (upgradeSuccess && pendingTransaction) {
       setIsModalOpen(false);
 
       const actionDescription =
-        pendingTransaction.planType === 'free'
+        pendingTransaction.planType === PlanTypeEnum.FREE
           ? 'Premium subscription cancelled successfully.'
           : `Successfully upgraded to ${pendingTransaction.planType} premium!`;
 
@@ -72,11 +73,11 @@ export function useSubscription() {
       setPendingTransaction(null);
       refetchPremiumStatus();
     }
-  }, [upgradeSuccess, isModalOpen, pendingTransaction, dispatch, refetchPremiumStatus]);
+  }, [upgradeSuccess, pendingTransaction, dispatch, refetchPremiumStatus]);
 
   // Handle upgrade errors
   useEffect(() => {
-    if (upgradeError && isModalOpen && pendingTransaction) {
+    if (upgradeError && pendingTransaction) {
       setIsModalOpen(false);
       setPendingTransaction(null);
 
@@ -87,10 +88,10 @@ export function useSubscription() {
         }),
       );
     }
-  }, [upgradeError, isModalOpen, pendingTransaction, dispatch]);
+  }, [upgradeError, pendingTransaction, dispatch]);
 
   // Action handlers
-  const handlePlanAction = async (planType: PlanType) => {
+  const handlePlanAction = async (planType: PlanTypeEnum) => {
     // Don't allow selecting the current plan
     if (isPlanCurrent(planType, currentPlan)) {
       return;
@@ -99,10 +100,10 @@ export function useSubscription() {
     let amount = '0';
     let isUpgrade = true;
 
-    if (planType === 'monthly') {
-      amount = '100';
-    } else if (planType === 'yearly') {
-      amount = '1000';
+    if (planType === PlanTypeEnum.MONTHLY) {
+      amount = MONTHLY_SUBSCRIPTION_AMOUNT;
+    } else if (planType === PlanTypeEnum.YEARLY) {
+      amount = YEARLY_SUBSCRIPTION_AMOUNT;
     } else {
       // Free plan - downgrade
       isUpgrade = false;
@@ -128,7 +129,7 @@ export function useSubscription() {
     }
   };
 
-  const handleUpgrade = async (planType: PlanType) => {
+  const handleUpgrade = async (planType: PlanTypeEnum) => {
     await handlePlanAction(planType);
   };
 
@@ -178,6 +179,6 @@ export function useSubscription() {
     handleModalClose,
 
     // Utilities
-    isPlanCurrent: (plan: PlanType) => isPlanCurrent(plan, currentPlan),
+    isPlanCurrent: (plan: PlanTypeEnum) => isPlanCurrent(plan, currentPlan),
   };
 }

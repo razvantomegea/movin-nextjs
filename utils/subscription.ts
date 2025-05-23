@@ -1,9 +1,16 @@
 import { IPremiumStatus } from '@/lib/hooks/useMovinEarn';
 
-export type PlanType = 'free' | 'monthly' | 'yearly';
+export enum PlanTypeEnum {
+  FREE = 'free',
+  MONTHLY = 'monthly',
+  YEARLY = 'yearly',
+}
+
+export const MONTHLY_SUBSCRIPTION_AMOUNT = '100';
+export const YEARLY_SUBSCRIPTION_AMOUNT = '1000';
 
 export interface PendingTransaction {
-  planType: PlanType;
+  planType: PlanTypeEnum;
   amount: string;
   isUpgrade: boolean;
 }
@@ -25,9 +32,9 @@ export function isPremiumExpired(premiumStatus: IPremiumStatus): boolean {
 /**
  * Determine current plan based on premium status and expiration
  */
-export function getCurrentPlan(premiumStatus: IPremiumStatus): PlanType {
+export function getCurrentPlan(premiumStatus: IPremiumStatus): PlanTypeEnum {
   if (!premiumStatus.status || isPremiumExpired(premiumStatus)) {
-    return 'free';
+    return PlanTypeEnum.FREE;
   }
 
   // Calculate months until expiry to determine if it's monthly or yearly
@@ -37,13 +44,13 @@ export function getCurrentPlan(premiumStatus: IPremiumStatus): PlanType {
     (expiry.getTime() - now.getTime()) / (30 * 24 * 60 * 60 * 1000),
   );
 
-  return monthsUntilExpiry >= 11 ? 'yearly' : 'monthly';
+  return monthsUntilExpiry >= 11 ? PlanTypeEnum.YEARLY : PlanTypeEnum.MONTHLY;
 }
 
 /**
  * Check if a plan is the current active plan
  */
-export function isPlanCurrent(plan: PlanType, currentPlan: PlanType): boolean {
+export function isPlanCurrent(plan: PlanTypeEnum, currentPlan: PlanTypeEnum): boolean {
   return currentPlan === plan;
 }
 
@@ -57,13 +64,13 @@ export function getTransactionDetails(
 
   const { planType, amount, isUpgrade } = pendingTransaction;
 
-  if (planType === 'free') {
+  if (planType === PlanTypeEnum.FREE) {
     return {
       description: 'Cancel Premium Subscription',
       amount: 0,
     };
   } else {
-    const planName = planType === 'monthly' ? 'Monthly Premium' : 'Yearly Premium';
+    const planName = planType === PlanTypeEnum.MONTHLY ? 'Monthly Premium' : 'Yearly Premium';
     const mvnAmount = parseFloat(amount);
     return {
       description: `${isUpgrade ? 'Upgrade to' : 'Switch to'} ${planName}`,
@@ -76,14 +83,14 @@ export function getTransactionDetails(
  * Get button text based on plan type and current status
  */
 export function getButtonText(
-  planType: 'free' | 'premium',
-  cycle: PlanType | undefined,
-  currentPlan: PlanType,
+  planType: PlanTypeEnum,
+  cycle: Exclude<PlanTypeEnum, PlanTypeEnum.FREE> | undefined,
+  currentPlan: PlanTypeEnum,
   isUpgrading: boolean,
   pendingTransaction: PendingTransaction | null,
 ): string {
-  if (planType === 'free') {
-    if (isPlanCurrent('free', currentPlan)) {
+  if (planType === PlanTypeEnum.FREE) {
+    if (isPlanCurrent(PlanTypeEnum.FREE, currentPlan)) {
       return 'Current Plan';
     }
     if (isUpgrading || pendingTransaction) {
@@ -91,7 +98,7 @@ export function getButtonText(
     }
     return 'Downgrade to Free';
   } else {
-    const targetPlan = cycle || 'yearly';
+    const targetPlan = cycle || PlanTypeEnum.YEARLY;
     if (isPlanCurrent(targetPlan, currentPlan)) {
       return 'Current Plan';
     }
@@ -105,9 +112,9 @@ export function getButtonText(
 /**
  * Get plan configuration for rendering
  */
-export function getPlanConfig(planType: PlanType) {
+export function getPlanConfig(planType: PlanTypeEnum) {
   const plans = {
-    free: {
+    [PlanTypeEnum.FREE]: {
       title: 'Free',
       subtitle: 'Basic',
       price: '0',
@@ -121,7 +128,7 @@ export function getPlanConfig(planType: PlanType) {
         'Contains ads',
       ],
     },
-    monthly: {
+    [PlanTypeEnum.MONTHLY]: {
       title: 'Premium',
       subtitle: 'Advanced',
       price: '100',
@@ -137,7 +144,7 @@ export function getPlanConfig(planType: PlanType) {
       ],
       isRecommended: true,
     },
-    yearly: {
+    [PlanTypeEnum.YEARLY]: {
       title: 'Premium',
       subtitle: 'Advanced',
       price: '1000',
@@ -152,7 +159,7 @@ export function getPlanConfig(planType: PlanType) {
         'AI based calorie tracking (soon)',
       ],
       isRecommended: true,
-      discount: 'Save 16%',
+      discount: 'Save 17%',
     },
   };
 

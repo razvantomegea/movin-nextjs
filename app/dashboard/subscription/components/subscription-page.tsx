@@ -11,6 +11,7 @@ import {
   getButtonText,
   getPlanConfig,
   formatSubscriptionDate,
+  PlanTypeEnum,
 } from '@/utils/subscription';
 import { SubscriptionPageSkeleton } from './subscription-page-skeleton';
 import { SubscriptionPlanCard } from './subscription-plan-card';
@@ -85,7 +86,7 @@ export function SubscriptionPage() {
             </AlertTitle>
             <AlertDescription className="text-blue-600 dark:text-blue-400">
               Your premium subscription is active until{' '}
-              {formatSubscriptionDate(premiumStatus.expiration)}
+              {premiumStatus?.expiration ? formatSubscriptionDate(premiumStatus.expiration) : 'N/A'}
             </AlertDescription>
           </Alert>
         </motion.div>
@@ -108,7 +109,7 @@ export function SubscriptionPage() {
       <motion.div variants={item} className="mb-6">
         <Tabs
           defaultValue="yearly"
-          onValueChange={(value) => setBillingCycle(value as 'monthly' | 'yearly')}
+          onValueChange={(value) => setBillingCycle(value as PlanTypeEnum)}
         >
           <div className="flex justify-center mb-6">
             <TabsList>
@@ -122,30 +123,30 @@ export function SubscriptionPage() {
           <TabsContent value="monthly" className="mt-0">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <SubscriptionPlanCard
-                {...getPlanConfig('free')}
+                {...getPlanConfig(PlanTypeEnum.FREE)}
                 buttonText={getButtonText(
-                  'free',
+                  PlanTypeEnum.FREE,
                   undefined,
                   currentPlan,
                   isUpgrading,
                   pendingTransaction,
                 )}
-                onButtonClick={() => handlePlanAction('free')}
-                isCurrentPlan={isPlanCurrent('free')}
+                onButtonClick={() => handlePlanAction(PlanTypeEnum.FREE)}
+                isCurrentPlan={isPlanCurrent(PlanTypeEnum.FREE)}
                 isLoading={isUpgrading || !!pendingTransaction}
               />
 
               <SubscriptionPlanCard
-                {...getPlanConfig('monthly')}
+                {...getPlanConfig(PlanTypeEnum.MONTHLY)}
                 buttonText={getButtonText(
-                  'premium',
-                  'monthly',
+                  PlanTypeEnum.MONTHLY,
+                  PlanTypeEnum.MONTHLY,
                   currentPlan,
                   isUpgrading,
                   pendingTransaction,
                 )}
-                onButtonClick={() => handleUpgrade('monthly')}
-                isCurrentPlan={isPlanCurrent('monthly')}
+                onButtonClick={() => handleUpgrade(PlanTypeEnum.MONTHLY)}
+                isCurrentPlan={isPlanCurrent(PlanTypeEnum.MONTHLY)}
                 isLoading={isUpgrading || !!pendingTransaction}
               />
             </div>
@@ -154,30 +155,30 @@ export function SubscriptionPage() {
           <TabsContent value="yearly" className="mt-0">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <SubscriptionPlanCard
-                {...getPlanConfig('free')}
+                {...getPlanConfig(PlanTypeEnum.FREE)}
                 buttonText={getButtonText(
-                  'free',
+                  PlanTypeEnum.FREE,
                   undefined,
                   currentPlan,
                   isUpgrading,
                   pendingTransaction,
                 )}
-                onButtonClick={() => handlePlanAction('free')}
-                isCurrentPlan={isPlanCurrent('free')}
+                onButtonClick={() => handlePlanAction(PlanTypeEnum.FREE)}
+                isCurrentPlan={isPlanCurrent(PlanTypeEnum.FREE)}
                 isLoading={isUpgrading || !!pendingTransaction}
               />
 
               <SubscriptionPlanCard
-                {...getPlanConfig('yearly')}
+                {...getPlanConfig(PlanTypeEnum.YEARLY)}
                 buttonText={getButtonText(
-                  'premium',
-                  'yearly',
+                  PlanTypeEnum.YEARLY,
+                  PlanTypeEnum.YEARLY,
                   currentPlan,
                   isUpgrading,
                   pendingTransaction,
                 )}
-                onButtonClick={() => handleUpgrade('yearly')}
-                isCurrentPlan={isPlanCurrent('yearly')}
+                onButtonClick={() => handleUpgrade(PlanTypeEnum.YEARLY)}
+                isCurrentPlan={isPlanCurrent(PlanTypeEnum.YEARLY)}
                 isLoading={isUpgrading || !!pendingTransaction}
               />
             </div>
