@@ -6,13 +6,7 @@ import { TransactionConfirmationModal } from '@/components/transaction-confirmat
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  getTransactionDetails,
-  getButtonText,
-  getPlanConfig,
-  formatSubscriptionDate,
-  PlanTypeEnum,
-} from '@/utils/subscription';
+import { getTransactionDetails, formatSubscriptionDate, PlanTypeEnum } from '@/utils/subscription';
 import { SubscriptionPageSkeleton } from './subscription-page-skeleton';
 import { SubscriptionPlanCard } from './subscription-plan-card';
 import { useSubscription } from '../hooks/useSubscription';
@@ -39,16 +33,11 @@ export function SubscriptionPage() {
     setBillingCycle,
     isModalOpen,
     pendingTransaction,
-    isUpgrading,
     isExpired,
-    currentPlan,
     isPremium,
-    handlePlanAction,
-    handleUpgrade,
     handleTransactionSuccess,
     handleTransactionFail,
     handleModalClose,
-    isPlanCurrent,
     premiumStatus,
   } = useSubscription();
 
@@ -122,65 +111,15 @@ export function SubscriptionPage() {
 
           <TabsContent value="monthly" className="mt-0">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <SubscriptionPlanCard
-                {...getPlanConfig(PlanTypeEnum.FREE)}
-                buttonText={getButtonText(
-                  PlanTypeEnum.FREE,
-                  undefined,
-                  currentPlan,
-                  isUpgrading,
-                  pendingTransaction,
-                )}
-                onButtonClick={() => handlePlanAction(PlanTypeEnum.FREE)}
-                isCurrentPlan={isPlanCurrent(PlanTypeEnum.FREE)}
-                isLoading={isUpgrading || !!pendingTransaction}
-              />
-
-              <SubscriptionPlanCard
-                {...getPlanConfig(PlanTypeEnum.MONTHLY)}
-                buttonText={getButtonText(
-                  PlanTypeEnum.MONTHLY,
-                  PlanTypeEnum.MONTHLY,
-                  currentPlan,
-                  isUpgrading,
-                  pendingTransaction,
-                )}
-                onButtonClick={() => handleUpgrade(PlanTypeEnum.MONTHLY)}
-                isCurrentPlan={isPlanCurrent(PlanTypeEnum.MONTHLY)}
-                isLoading={isUpgrading || !!pendingTransaction}
-              />
+              <SubscriptionPlanCard planType={PlanTypeEnum.FREE} />
+              <SubscriptionPlanCard planType={PlanTypeEnum.MONTHLY} isRecommended={true} />
             </div>
           </TabsContent>
 
           <TabsContent value="yearly" className="mt-0">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <SubscriptionPlanCard
-                {...getPlanConfig(PlanTypeEnum.FREE)}
-                buttonText={getButtonText(
-                  PlanTypeEnum.FREE,
-                  undefined,
-                  currentPlan,
-                  isUpgrading,
-                  pendingTransaction,
-                )}
-                onButtonClick={() => handlePlanAction(PlanTypeEnum.FREE)}
-                isCurrentPlan={isPlanCurrent(PlanTypeEnum.FREE)}
-                isLoading={isUpgrading || !!pendingTransaction}
-              />
-
-              <SubscriptionPlanCard
-                {...getPlanConfig(PlanTypeEnum.YEARLY)}
-                buttonText={getButtonText(
-                  PlanTypeEnum.YEARLY,
-                  PlanTypeEnum.YEARLY,
-                  currentPlan,
-                  isUpgrading,
-                  pendingTransaction,
-                )}
-                onButtonClick={() => handleUpgrade(PlanTypeEnum.YEARLY)}
-                isCurrentPlan={isPlanCurrent(PlanTypeEnum.YEARLY)}
-                isLoading={isUpgrading || !!pendingTransaction}
-              />
+              <SubscriptionPlanCard planType={PlanTypeEnum.FREE} />
+              <SubscriptionPlanCard planType={PlanTypeEnum.YEARLY} isRecommended={true} />
             </div>
           </TabsContent>
         </Tabs>

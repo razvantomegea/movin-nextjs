@@ -1,5 +1,6 @@
 'use client';
 
+import { useCallback, useMemo } from 'react';
 import { Check, Crown, Sparkles } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -11,34 +12,110 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { PlanTypeEnum } from '@/utils/subscription';
+import { useSubscription } from '../hooks/useSubscription';
 
 interface IPlanCardProps {
-  title: string;
-  subtitle: string;
-  price: string;
-  period: string;
-  features: string[];
-  buttonText: string;
-  onButtonClick: () => void;
-  isCurrentPlan: boolean;
-  isLoading: boolean;
+  planType: PlanTypeEnum;
   isRecommended?: boolean;
-  discount?: string;
 }
 
-export function SubscriptionPlanCard({
-  title,
-  subtitle,
-  price,
-  period,
-  features,
-  buttonText,
-  onButtonClick,
-  isCurrentPlan,
-  isLoading,
-  isRecommended = false,
-  discount,
-}: IPlanCardProps) {
+/**
+ * Get plan configuration for rendering
+ */
+export function getPlanConfig(planType: PlanTypeEnum) {
+  const plans = {
+    [PlanTypeEnum.FREE]: {
+      title: 'Free',
+      subtitle: 'Basic',
+      price: '0',
+      period: 'forever',
+      features: [
+        'Basic step tracking',
+        'Earn MVN tokens for activity',
+        'Staking up to 12 months',
+        'Referral program (1% rewards)',
+        'Import from Apple Health & Google Fit',
+        'Contains ads',
+      ],
+    },
+    [PlanTypeEnum.MONTHLY]: {
+      title: 'Premium',
+      subtitle: 'Advanced',
+      price: '100',
+      period: 'month',
+      features: [
+        'Everything in Free plan',
+        'MET tracking and advanced fitness metrics',
+        'Ad-free experience',
+        '24% APY staking for 2 years',
+        'Access to maps & route tracking (soon)',
+        'Friend sync for joint exercises (soon)',
+        'AI based calorie tracking (soon)',
+      ],
+      isRecommended: true,
+    },
+    [PlanTypeEnum.YEARLY]: {
+      title: 'Premium',
+      subtitle: 'Advanced',
+      price: '1000',
+      period: 'year',
+      features: [
+        'Everything in Free plan',
+        'MET tracking and advanced fitness metrics',
+        'Ad-free experience',
+        '24% APY staking for 2 years',
+        'Access to maps & route tracking (soon)',
+        'Friend sync for joint exercises (soon)',
+        'AI based calorie tracking (soon)',
+      ],
+      isRecommended: true,
+      discount: 'Save 17%',
+    },
+  };
+
+  return plans[planType];
+}
+
+export function SubscriptionPlanCard({ planType, isRecommended = false }: IPlanCardProps) {
+  const { isUpgrading, pendingTransaction, handlePlanAction, handleUpgrade, isPlanCurrent } =
+    useSubscription();
+
+  const isLoading = isUpgrading || !!pendingTransaction;
+  const isCurrentPlan = isPlanCurrent(planType);
+  const isFree = planType === PlanTypeEnum.FREE;
+
+  // Get plan configuration
+  const planConfig = getPlanConfig(planType);
+  const { title, subtitle, price, period, features } = planConfig;
+  // Handle discount safely
+  const discount = 'discount' in planConfig ? planConfig.discount : undefined;
+
+  // Get button text
+  const buttonText = useMemo(() => {
+    if (isPlanCurrent(planType)) {
+      return 'Current Plan';
+    }
+
+    if (isUpgrading || pendingTransaction) {
+      return 'Processing...';
+    }
+
+    if (planType === PlanTypeEnum.FREE) {
+      return 'Downgrade to Free';
+    }
+
+    return 'Upgrade to Premium';
+  }, [planType, isUpgrading, pendingTransaction, isPlanCurrent]);
+
+  const onButtonClick = useCallback(() => {
+    if (isFree) {
+      handlePlanAction(planType);
+    } else {
+      handleUpgrade(planType);
+    }
+  }, [isFree, planType, handlePlanAction, handleUpgrade]);
+
   return (
     <Card
       className={`relative overflow-hidden ${
