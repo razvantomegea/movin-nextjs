@@ -4,16 +4,15 @@ import type React from 'react';
 
 import { useEffect, useState } from 'react';
 import { useAppKitAccount } from '@reown/appkit/react';
-import { Activity, Bolt, Gift, Menu, Settings, Target, User, X, Users, Crown } from 'lucide-react';
+import { Activity, Gift, Menu, Settings, User, X, Crown } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { PremiumBadge } from '@/components/premium-badge';
-import { ThemeToggle } from '@/components/theme-toggle';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { useAppSelector } from '@/lib/redux/hooks';
+import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
+import { fetchProfile } from '@/lib/redux/slices/profileSlice';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -25,8 +24,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const { isConnected } = useAppKitAccount();
+  const { isConnected, address } = useAppKitAccount();
+  const addressLower = address?.toLowerCase();
   const { profile } = useAppSelector((state) => state.profile);
+  const dispatch = useAppDispatch();
 
   const isActive = (path: string) => {
     return pathname === path;
@@ -34,17 +35,42 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   const tabs = [
     { name: 'Movin', path: '/dashboard', icon: <Activity className="h-5 w-5" /> },
-    { name: 'Energy', path: '/dashboard/energy', icon: <Bolt className="h-5 w-5" /> },
+    // { name: 'Energy', path: '/dashboard/energy', icon: <Bolt className="h-5 w-5" /> },
     { name: 'Rewards', path: '/dashboard/rewards', icon: <Gift className="h-5 w-5" /> },
-    { name: 'Social', path: '/dashboard/social', icon: <Users className="h-5 w-5" /> },
+    // { name: 'Social', path: '/dashboard/social', icon: <Users className="h-5 w-5" /> },
     { name: 'More', path: '#', icon: <Menu className="h-5 w-5" /> },
+  ];
+
+  const sideNavLinks = [
+    {
+      name: 'Profile',
+      path: '/dashboard/profile',
+      icon: <User className="h-6 w-6 mr-4 text-blue-400" />,
+    },
+    {
+      name: 'Settings',
+      path: '/dashboard/settings',
+      icon: <Settings className="h-6 w-6 mr-4 text-blue-400" />,
+    },
+    // {
+    //   name: 'Goals',
+    //   path: '/dashboard/goals',
+    //   icon: <Target className="h-6 w-6 mr-4 text-blue-400" />,
+    // },
+    {
+      name: 'Subscription',
+      path: '/dashboard/subscription',
+      icon: <Crown className="h-6 w-6 mr-4 text-blue-400" />,
+    },
   ];
 
   useEffect(() => {
     if (!isConnected) {
       router.push('/');
+    } else if (addressLower && !profile) {
+      dispatch(fetchProfile(addressLower));
     }
-  }, [isConnected, router]);
+  }, [isConnected, router, addressLower, profile, dispatch]);
 
   const content = (
     <div className="flex flex-col min-h-screen">
@@ -56,8 +82,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         </div>
 
         <div className="flex items-center gap-2">
-          <PremiumBadge />
-          <ThemeToggle />
+          {/* <PremiumBadge /> */}
+          {/* <ThemeToggle /> */}
           <Link href="/dashboard/profile">
             <Avatar className="h-8 w-8 border border-blue-500 cursor-pointer">
               <AvatarImage
@@ -119,46 +145,18 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                             Account
                           </h3>
                           <ul className="space-y-3">
-                            <li>
-                              <Link
-                                href="/dashboard/profile"
-                                className="flex items-center p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
-                                onClick={() => setIsSheetOpen(false)}
-                              >
-                                <User className="h-6 w-6 mr-4 text-blue-400" />
-                                <span className="text-base">Profile</span>
-                              </Link>
-                            </li>
-                            <li>
-                              <Link
-                                href="/dashboard/settings"
-                                className="flex items-center p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
-                                onClick={() => setIsSheetOpen(false)}
-                              >
-                                <Settings className="h-6 w-6 mr-4 text-blue-400" />
-                                <span className="text-base">Settings</span>
-                              </Link>
-                            </li>
-                            <li>
-                              <Link
-                                href="/dashboard/goals"
-                                className="flex items-center p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
-                                onClick={() => setIsSheetOpen(false)}
-                              >
-                                <Target className="h-6 w-6 mr-4 text-blue-400" />
-                                <span className="text-base">Goals</span>
-                              </Link>
-                            </li>
-                            <li>
-                              <Link
-                                href="/dashboard/subscription"
-                                className="flex items-center p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
-                                onClick={() => setIsSheetOpen(false)}
-                              >
-                                <Crown className="h-6 w-6 mr-4 text-blue-400" />
-                                <span className="text-base">Subscription</span>
-                              </Link>
-                            </li>
+                            {sideNavLinks.map((link) => (
+                              <li key={link.path}>
+                                <Link
+                                  href={link.path}
+                                  className="flex items-center p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+                                  onClick={() => setIsSheetOpen(false)}
+                                >
+                                  {link.icon}
+                                  <span className="text-base">{link.name}</span>
+                                </Link>
+                              </li>
+                            ))}
                           </ul>
                         </div>
 

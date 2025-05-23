@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useAppKit, useAppKitAccount, useAppKitState } from '@reown/appkit/react';
+import { useAppKit, useAppKitAccount } from '@reown/appkit/react';
 import { motion } from 'framer-motion';
 import { Wallet } from 'lucide-react';
 import Image from 'next/image';
@@ -10,13 +10,13 @@ import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
 import { updateProfile } from '@/lib/supabase/profile';
 import { getProfile } from '@/lib/supabase/profile';
-import { ThemeToggle } from './theme-toggle';
 
 export function ConnectPage() {
   const router = useRouter();
   const { resolvedTheme } = useTheme();
   const { open } = useAppKit();
   const { isConnected, address } = useAppKitAccount();
+  const addressLower = address?.toLowerCase();
   const [connecting, setConnecting] = useState(isConnected);
   const [authError, setAuthError] = useState<string | null>(null);
 
@@ -27,7 +27,7 @@ export function ConnectPage() {
 
   useEffect(() => {
     const authenticateWithSupabase = async () => {
-      if (isConnected && address) {
+      if (isConnected && addressLower) {
         try {
           // Call the API to generate JWT and authenticate with Supabase
           setConnecting(true);
@@ -36,7 +36,7 @@ export function ConnectPage() {
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ address }),
+            body: JSON.stringify({ address: addressLower }),
           });
 
           if (!response.ok) {
@@ -52,19 +52,19 @@ export function ConnectPage() {
 
           // Check if a profile exists for this address
           try {
-            const profile = await getProfile({ address });
+            const profile = await getProfile({ address: addressLower });
 
             // If no profile exists, create one with address as username
             if (!profile) {
               await updateProfile({
-                address,
+                address: addressLower,
                 profileData: {
-                  username: address,
+                  username: addressLower,
                   email: '',
                   avatar_url: '',
                   level: 1,
                   streak_days: 0,
-                  address,
+                  address: addressLower,
                 },
               });
             }
@@ -75,7 +75,11 @@ export function ConnectPage() {
           }
 
           // Navigate to dashboard on successful authentication
-          router.push('/dashboard');
+          const navigateTimeout = setTimeout(() => {
+            router.push('/dashboard');
+          }, 2000);
+
+          return () => clearTimeout(navigateTimeout);
         } catch (error) {
           console.error('Authentication error:', error);
           setAuthError((error as Error).message);
@@ -85,15 +89,15 @@ export function ConnectPage() {
     };
 
     authenticateWithSupabase();
-  }, [isConnected, address, router]);
+  }, [isConnected, addressLower, router]);
 
   const isDark = resolvedTheme === 'dark';
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-gray-950 dark:to-gray-900 p-4 text-gray-900 dark:text-white transition-colors duration-300">
-      <div className="absolute top-4 right-4 z-10">
+      {/* <div className="absolute top-4 right-4 z-10">
         <ThemeToggle />
-      </div>
+      </div> */}
 
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.15)_0%,rgba(0,0,0,0)_60%)]"></div>

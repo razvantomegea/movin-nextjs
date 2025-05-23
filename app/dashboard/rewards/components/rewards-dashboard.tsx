@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { useAccount } from 'wagmi';
-
+import { useAppKitAccount } from '@reown/appkit/react';
 import ErrorBoundary from '@/components/error-boundary';
 import { TransactionConfirmationModal } from '@/components/transaction-confirmation-modal';
 import { RefreshButton } from '@/components/ui/refresh-button';
@@ -37,8 +36,9 @@ export function RewardsDashboard() {
   const dispatch = useAppDispatch();
 
   // Get user address from wagmi
-  const { address, isConnected } = useAccount();
-  const userAddress = useMemo(() => address || '', [address]);
+  const { address, isConnected } = useAppKitAccount();
+  const addressLower = address?.toLowerCase();
+  const userAddress = useMemo(() => addressLower || '', [addressLower]);
 
   // Initial data loading
   useEffect(() => {

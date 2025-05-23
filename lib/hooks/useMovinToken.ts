@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
+import { useAppKitAccount } from '@reown/appkit/react';
 import { formatUnits, parseUnits } from 'viem';
-import { useReadContract, useWriteContract, useAccount, useWaitForTransactionReceipt } from 'wagmi';
+import { useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import movinTokenAbi from '@/lib/abi/movin-token-abi.json';
 import { useAppDispatch } from '@/lib/redux/hooks';
 import { showErrorToast } from '@/lib/redux/slices/toastSlice';
@@ -16,7 +17,8 @@ const TOKEN_ADDRESS = '0x3082c5301afD22543866Fe510C0fB351E3CfF561';
  */
 export function useMovinToken() {
   const dispatch = useAppDispatch();
-  const { address } = useAccount();
+  const { address } = useAppKitAccount();
+  const addressLower = address?.toLowerCase();
 
   /**
    * Returns the token address
@@ -113,9 +115,9 @@ export function useMovinToken() {
       address: TOKEN_ADDRESS,
       abi: movinTokenAbi,
       functionName: 'balanceOf',
-      args: address ? [address] : undefined,
+      args: addressLower ? [addressLower] : undefined,
       query: {
-        enabled: !!address,
+        enabled: !!addressLower,
       },
     });
 
@@ -144,7 +146,7 @@ export function useMovinToken() {
    * @returns Allowance in wei
    */
   const useTokenAllowance = (spender: string, owner?: string) => {
-    const ownerAddress = owner || address;
+    const ownerAddress = owner || addressLower;
 
     const result = useReadContract({
       address: TOKEN_ADDRESS,

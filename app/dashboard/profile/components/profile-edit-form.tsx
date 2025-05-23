@@ -6,8 +6,6 @@ import { Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useAppDispatch } from '@/lib/redux/hooks';
-import { updateProfile } from '@/lib/redux/slices/profileSlice';
 import { IProfile } from '@/lib/supabase/profile';
 
 interface ProfileEditFormProps {
@@ -18,7 +16,6 @@ interface ProfileEditFormProps {
 }
 
 export function ProfileEditForm({ address, profile, isUpdating, onSave }: ProfileEditFormProps) {
-  const dispatch = useAppDispatch();
   const [username, setUsername] = useState(profile.username);
   const [email, setEmail] = useState(profile.email);
 

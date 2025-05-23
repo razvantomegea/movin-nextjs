@@ -1,8 +1,8 @@
-import { formatUnits, parseUnits } from 'viem';
-import { useAccount } from 'wagmi';
+import { useAppKitAccount } from '@reown/appkit/react';
+import { parseUnits } from 'viem';
 import { useAppDispatch } from '@/lib/redux/hooks';
 import { showErrorToast } from '@/lib/redux/slices/toastSlice';
-import { formatDecimal, formatTimeRemaining, formatLockPeriod, formatDate } from '@/utils/crypto';
+import { formatDecimal } from '@/utils/crypto';
 import { parseError } from '@/utils/errors';
 import { useMovinEarn } from './useMovinEarn';
 import { useMovinToken } from './useMovinToken';
@@ -58,7 +58,8 @@ export interface HealthData {
  */
 export function useMovinEarnUtils() {
   const dispatch = useAppDispatch();
-  const { address } = useAccount();
+  const { address } = useAppKitAccount();
+  const addressLower = address?.toLowerCase();
   const movinEarn = useMovinEarn();
   const movinToken = useMovinToken();
 
@@ -94,10 +95,10 @@ export function useMovinEarnUtils() {
    */
   const checkIfTokenApprovalIsNeeded = async (amount: string): Promise<boolean> => {
     try {
-      if (!address) return false;
+      if (!addressLower) return false;
 
       const earnAddress = movinEarn.getContractAddress();
-      const allowanceResult = movinToken.useTokenAllowance(earnAddress, address);
+      const allowanceResult = movinToken.useTokenAllowance(earnAddress, addressLower);
       const decimalsResult = movinToken.useTokenDecimals();
 
       if (!allowanceResult.data || decimalsResult.data === undefined) {
@@ -155,7 +156,7 @@ export function useMovinEarnUtils() {
    */
   const getRewardsInfo = async (): Promise<RewardsInfo> => {
     try {
-      if (!address) {
+      if (!addressLower) {
         return DEFAULT_ACTIVITY;
       }
 
@@ -272,7 +273,7 @@ export function useMovinEarnUtils() {
    */
   const recordActivity = async (steps: number, mets: number): Promise<boolean> => {
     try {
-      if (!address) {
+      if (!addressLower) {
         dispatch(
           showErrorToast({
             title: 'Wallet Not Connected',

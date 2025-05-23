@@ -15,6 +15,9 @@ interface TransactionConfirmationModalProps {
   onSuccess: () => void;
   onFail: () => void;
   rewardAmount?: number;
+  transactionDescription?: string;
+  successTitle?: string;
+  successDescription?: string;
 }
 
 export function TransactionConfirmationModal({
@@ -23,6 +26,9 @@ export function TransactionConfirmationModal({
   onSuccess,
   onFail,
   rewardAmount = 0,
+  transactionDescription,
+  successTitle,
+  successDescription,
 }: TransactionConfirmationModalProps) {
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
@@ -36,12 +42,14 @@ export function TransactionConfirmationModal({
   const handleSuccess = useCallback(() => {
     dispatch(
       showSuccessToast({
-        title: 'Transaction Confirmed',
-        description: `You have successfully claimed ${rewardAmount.toFixed(2)} MVN in rewards.`,
+        title: successTitle || 'Transaction Confirmed',
+        description:
+          successDescription ||
+          `You have successfully claimed ${rewardAmount.toFixed(2)} MVN in rewards.`,
       }),
     );
     onSuccess();
-  }, [dispatch, onSuccess, rewardAmount]);
+  }, [dispatch, onSuccess, rewardAmount, successTitle, successDescription]);
 
   // Handle fail button click
   const handleFail = useCallback(() => {
@@ -142,8 +150,10 @@ export function TransactionConfirmationModal({
               <div className="text-center space-y-2">
                 <h3 className="text-xl font-bold">Waiting for Confirmation</h3>
                 <p className="text-gray-500 dark:text-gray-400">
-                  Please confirm the transaction in your wallet to claim {rewardAmount.toFixed(2)}{' '}
-                  MVN
+                  {transactionDescription ||
+                    `Please confirm the transaction in your wallet to claim ${rewardAmount.toFixed(
+                      2,
+                    )} MVN`}
                 </p>
 
                 <div className="flex items-center justify-center mt-2">

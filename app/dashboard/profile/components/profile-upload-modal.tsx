@@ -1,6 +1,6 @@
 import { useRef, ChangeEvent, useState } from 'react';
+import { useAppKitAccount } from '@reown/appkit/react';
 import { Loader2, Camera, X, Upload, FileText, FileImage, AlertCircle } from 'lucide-react';
-import { useAccount } from 'wagmi';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -35,7 +35,8 @@ export function ProfileUploadModal({
     typeof validateAvatarFile
   > | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const { address } = useAccount();
+  const { address } = useAppKitAccount();
+  const addressLower = address?.toLowerCase();
 
   const handleAvatarClick = () => {
     if (fileInputRef.current) {
@@ -59,7 +60,7 @@ export function ProfileUploadModal({
   };
 
   const handleConfirmUpload = async () => {
-    if (!selectedFile || !fileValidation?.isValid || !address) return;
+    if (!selectedFile || !fileValidation?.isValid || !addressLower) return;
 
     setIsUploading(true);
 
@@ -86,18 +87,18 @@ export function ProfileUploadModal({
       );
 
       // Upload avatar to Supabase storage
-      const avatarUrl = await uploadAvatar(selectedFile, address);
+      const avatarUrl = await uploadAvatar(selectedFile, addressLower);
 
       // Update profile with new avatar URL
       await dispatch(
         updateProfile({
-          address,
+          address: addressLower,
           profileData: { avatar_url: avatarUrl },
         }),
       ).unwrap();
 
       // Refresh profile data
-      await dispatch(fetchProfile(address)).unwrap();
+      await dispatch(fetchProfile(addressLower)).unwrap();
 
       dispatch(
         showSuccessToast({

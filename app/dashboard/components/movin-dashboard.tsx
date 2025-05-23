@@ -1,10 +1,10 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { useAppKitAccount } from '@reown/appkit/react';
 import { motion } from 'framer-motion';
 import { Activity, Clock, Flame, TrendingUp, RefreshCw, Dumbbell, MapPin } from 'lucide-react';
 import { useTheme } from 'next-themes';
-import { useAccount } from 'wagmi';
 import { ActivityColumnChart } from '@/app/dashboard/components/activity-column-chart';
 import { CircularProgress } from '@/components/circular-progress';
 import ErrorBoundary from '@/components/error-boundary';
@@ -61,7 +61,8 @@ export function MovinDashboard() {
   const [isRouteTypeModalOpen, setIsRouteTypeModalOpen] = useState(false);
   const [isRouteModalOpen, setIsRouteModalOpen] = useState(false);
   const currentDate = useMemo(() => new Date(), []);
-  const { address } = useAccount();
+  const { address } = useAppKitAccount();
+  const addressLower = address?.toLowerCase();
 
   const dispatch = useAppDispatch();
 
@@ -92,10 +93,10 @@ export function MovinDashboard() {
   }, [activities, currentDate]);
 
   useEffect(() => {
-    if (address) {
-      dispatch(fetchActivities(address));
+    if (addressLower) {
+      dispatch(fetchActivities(addressLower));
     }
-  }, [dispatch, address]);
+  }, [dispatch, addressLower]);
 
   useEffect(() => {
     return () => {
@@ -106,8 +107,8 @@ export function MovinDashboard() {
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
-      if (address) {
-        await dispatch(fetchActivities(address)).unwrap();
+      if (addressLower) {
+        await dispatch(fetchActivities(addressLower)).unwrap();
         dispatch(
           showSuccessToast({
             title: 'Data Refreshed',
@@ -130,21 +131,23 @@ export function MovinDashboard() {
   const handleRetryLoadActivity = () => {
     dispatch(resetActivityError());
 
-    if (address) {
-      dispatch(fetchActivities(address));
+    if (addressLower) {
+      dispatch(fetchActivities(addressLower));
     }
   };
 
   const handleSaveRoute = async (routeData: RouteData) => {
-    if (!address) {
+    if (!addressLower) {
       return;
     }
 
-    const newActivity = mapRouteToActivity(routeData, address);
+    const newActivity = mapRouteToActivity(routeData, addressLower);
 
     try {
       // Dispatch addActivities to save the new activity
-      await dispatch(addActivities({ address, activityData: [newActivity] })).unwrap();
+      await dispatch(
+        addActivities({ address: addressLower, activityData: [newActivity] }),
+      ).unwrap();
 
       dispatch(
         showSuccessToast({

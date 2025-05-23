@@ -9,7 +9,6 @@ import referralRewardsReducer from './slices/referralRewardsSlice';
 import routeDataReducer from './slices/routeDataSlice';
 import socialFeedReducer from './slices/socialFeedSlice';
 import stakingReducer from './slices/stakingSlice';
-import subscriptionReducer from './slices/subscriptionSlice';
 import toastReducer from './slices/toastSlice';
 
 export const store = configureStore({
@@ -25,7 +24,6 @@ export const store = configureStore({
     jointTracking: jointTrackingReducer,
     goals: goalsReducer,
     profile: profileReducer,
-    subscription: subscriptionReducer,
   },
 });
 

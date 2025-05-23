@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useAppKitAccount } from '@reown/appkit/react';
 import { Flame, Lock, Plus } from 'lucide-react';
 import { useTheme } from 'next-themes';
-import { useAccount } from 'wagmi';
 import { TransactionConfirmationModal } from '@/components/transaction-confirmation-modal';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -34,8 +34,9 @@ export function StakingRewards({ refreshing }: StakingRewardsProps) {
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
   const dispatch = useAppDispatch();
-  const { address, isConnected } = useAccount();
-  const userAddress = useMemo(() => address || '', [address]);
+  const { address, isConnected } = useAppKitAccount();
+  const addressLower = address?.toLowerCase();
+  const userAddress = useMemo(() => addressLower || '', [addressLower]);
 
   const { useUserStakes, useClaimAllStakingRewards, useUnstake } = useMovinEarn();
   const { data: stakingData, refetch: refetchStakingData } = useUserStakes();

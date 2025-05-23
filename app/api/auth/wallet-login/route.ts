@@ -5,17 +5,18 @@ export async function POST(request: Request) {
   try {
     // Get address from request
     const { address } = await request.json();
+    const addressLower = address?.toLowerCase();
 
-    if (!address) {
+    if (!addressLower) {
       return NextResponse.json({ error: 'Wallet address is required' }, { status: 400 });
     }
 
     // Create JWT with claims needed for Supabase
     const token = jwt.sign(
       {
-        sub: address,
+        sub: addressLower,
         role: 'authenticated',
-        address,
+        address: addressLower,
         aud: 'authenticated',
         iat: Math.floor(Date.now() / 1000),
         exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24, // 1 day
@@ -26,7 +27,7 @@ export async function POST(request: Request) {
     // Create the response with authentication data
     const response = NextResponse.json({
       token,
-      user: { address },
+      user: { address: addressLower },
       message: 'Authentication successful',
     });
 
