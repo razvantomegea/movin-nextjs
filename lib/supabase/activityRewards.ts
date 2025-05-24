@@ -50,6 +50,10 @@ export async function getActivityRewardById({
   id: string;
   client?: SupabaseClient;
 }): Promise<IActivityReward | null> {
+  if (!id || id.trim() === '') {
+    throw new Error('ID is required');
+  }
+
   if (!client) {
     client = getClient();
   }
@@ -139,6 +143,10 @@ export async function getTotalActivityRewards({
   address: string;
   client?: SupabaseClient;
 }): Promise<number> {
+  if (!address || address.trim() === '') {
+    throw new Error('Address is required');
+  }
+
   if (!client) {
     client = getClient();
   }
