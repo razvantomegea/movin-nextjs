@@ -19,6 +19,10 @@ export async function getUserActivityRewards({
   address: string;
   client?: SupabaseClient;
 }): Promise<IActivityReward[]> {
+  if (!address || address.trim() === '') {
+    throw new Error('Address is required');
+  }
+
   if (!client) {
     client = getClient();
   }
@@ -152,32 +156,8 @@ export async function getTotalActivityRewards({
     return 0;
   }
 
-  return data.reduce((sum, reward) => sum + Number(reward.rewards), 0);
-}
-
-/**
- * Get activity rewards history for an address
- */
-export async function getActivityRewardsHistory({
-  address,
-  client,
-}: {
-  address: string;
-  client?: SupabaseClient;
-}): Promise<IActivityReward[]> {
-  if (!client) {
-    client = getClient();
-  }
-
-  const { data, error } = await client
-    .from('activity_rewards')
-    .select('*')
-    .eq('address', address)
-    .order('created_at', { ascending: false });
-
-  if (error) {
-    throw error;
-  }
-
-  return data || [];
+  return data.reduce((sum, reward) => {
+    const rewardValue = Number(reward.rewards);
+    return sum + (isNaN(rewardValue) ? 0 : rewardValue);
+  }, 0);
 }

@@ -1,8 +1,8 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import {
-  getActivityRewardsHistory,
   insertActivityReward,
   IActivityReward,
+  getUserActivityRewards,
 } from '@/lib/supabase/activityRewards';
 
 // Define types for our state
@@ -129,7 +129,7 @@ export const fetchActivityRewardsHistory = createAsyncThunk(
   'activityRewards/fetchActivityRewardsHistory',
   async (address: string, { rejectWithValue }) => {
     try {
-      const history = await getActivityRewardsHistory({ address });
+      const history = await getUserActivityRewards({ address });
       return history;
     } catch (error) {
       return rejectWithValue(

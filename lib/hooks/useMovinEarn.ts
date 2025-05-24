@@ -166,7 +166,7 @@ export function useMovinEarn() {
       address: CONTRACT_ADDRESS,
       abi: movinEarnAbi,
       functionName: 'calculateActivityRewards',
-      args: [steps, mets],
+      args: [addressLower, steps, mets],
       query: {
         enabled: !!addressLower && (steps > 0 || mets > 0),
       },
@@ -400,7 +400,7 @@ export function useMovinEarn() {
           address: CONTRACT_ADDRESS,
           abi: movinEarnAbi,
           functionName: 'recordActivity',
-          args: [steps, mets],
+          args: [addressLower, steps, mets],
         });
 
         return true;

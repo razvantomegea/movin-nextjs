@@ -164,9 +164,14 @@ export function StakeModal({ isOpen, onClose }: StakeModalProps) {
       return needsApproval;
     } catch (err) {
       console.error('Error checking approval:', err);
-      return false;
+      dispatch(
+        showErrorToast({
+          title: 'Approval Check Failed',
+          description: 'Unable to verify token approval status. Please try again.',
+        }),
+      );
     }
-  }, [amount, checkApproval]);
+  }, [amount, checkApproval, dispatch]);
 
   // Handle approval process
   const handleApproval = useCallback(async () => {

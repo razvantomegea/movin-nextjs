@@ -96,13 +96,6 @@ export function ActivityRewards({ refreshing, onInitiateClaimProcess }: Activity
 
   const rewards = useMemo(() => formattedRewards(), [formattedRewards]);
 
-  console.log('dailyActivity', dailyActivity);
-  console.log('formattedActivity', formattedActivity());
-  console.log('stepsToClaim', stepsToClaim);
-  console.log('metsToClaim', metsToClaim);
-  console.log('rewards', rewards);
-  console.log('isPremium', isPremium);
-
   const {
     recordActivity,
     isSuccess: isClaimSuccess,
@@ -145,7 +138,7 @@ export function ActivityRewards({ refreshing, onInitiateClaimProcess }: Activity
       {
         id: 2,
         title: 'Daily METs',
-        description: `Burn ${rewards?.mets || 0} METs today`,
+        description: `Burn ${mets} METs today`,
         reward: rewards?.metsRewards || 0,
         progress: mets,
         total: rewards?.mets || 0,
@@ -214,7 +207,7 @@ export function ActivityRewards({ refreshing, onInitiateClaimProcess }: Activity
 
   // Handle successful claim
   useEffect(() => {
-    if (isClaimSuccess && activeAction?.type === 'claim' && isConfirmModalOpen) {
+    if (isClaimSuccess && activeAction?.type === 'claim') {
       setIsConfirmModalOpen(false);
 
       dispatch(
@@ -239,7 +232,7 @@ export function ActivityRewards({ refreshing, onInitiateClaimProcess }: Activity
 
   // Handle claim error
   useEffect(() => {
-    if (claimError && isConfirmModalOpen && activeAction?.type === 'claim') {
+    if (claimError && activeAction?.type === 'claim') {
       setIsConfirmModalOpen(false);
 
       dispatch(
