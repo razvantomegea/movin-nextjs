@@ -1,4 +1,9 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import {
+  insertActivityReward,
+  IActivityReward,
+  getUserActivityRewards,
+} from '@/lib/supabase/activityRewards';
 
 // Define types for our state
 export interface ActivityReward {
@@ -21,9 +26,12 @@ export interface ActivityRewardsState {
   weeklyRewards: number;
   activityRewards: ActivityReward[];
   challenges: Challenge[];
+  history: IActivityReward[];
   isLoading: boolean;
+  isLoadingHistory: boolean;
   isClaiming: boolean;
   error: string | null;
+  historyError: string | null;
 }
 
 // Initial state
@@ -32,9 +40,12 @@ const initialState: ActivityRewardsState = {
   weeklyRewards: 0,
   activityRewards: [],
   challenges: [],
+  history: [],
   isLoading: false,
+  isLoadingHistory: false,
   isClaiming: false,
   error: null,
+  historyError: null,
 };
 
 // Sample data for simulation
@@ -113,6 +124,41 @@ export const claimActivityRewards = createAsyncThunk(
   },
 );
 
+// Fetch activity rewards history from Supabase
+export const fetchActivityRewardsHistory = createAsyncThunk(
+  'activityRewards/fetchActivityRewardsHistory',
+  async (address: string, { rejectWithValue }) => {
+    try {
+      const history = await getUserActivityRewards({ address });
+      return history;
+    } catch (error) {
+      return rejectWithValue(
+        error instanceof Error ? error.message : 'Failed to fetch activity rewards history',
+      );
+    }
+  },
+);
+
+// Record a new activity reward in Supabase
+export const recordActivityReward = createAsyncThunk(
+  'activityRewards/recordActivityReward',
+  async ({ address, rewards }: { address: string; rewards: number }, { rejectWithValue }) => {
+    try {
+      const newReward = await insertActivityReward({
+        rewardData: {
+          address,
+          rewards,
+        },
+      });
+      return newReward;
+    } catch (error) {
+      return rejectWithValue(
+        error instanceof Error ? error.message : 'Failed to record activity reward',
+      );
+    }
+  },
+);
+
 // Create the slice
 const activityRewardsSlice = createSlice({
   name: 'activityRewards',
@@ -120,6 +166,9 @@ const activityRewardsSlice = createSlice({
   reducers: {
     resetActivityRewardsError: (state) => {
       state.error = null;
+    },
+    resetActivityRewardsHistoryError: (state) => {
+      state.historyError = null;
     },
   },
   extraReducers: (builder) => {
@@ -158,9 +207,39 @@ const activityRewardsSlice = createSlice({
       .addCase(claimActivityRewards.rejected, (state, action) => {
         state.isClaiming = false;
         state.error = (action.payload as string) || 'Failed to claim rewards';
+      })
+
+      // Handle fetchActivityRewardsHistory
+      .addCase(fetchActivityRewardsHistory.pending, (state) => {
+        state.isLoadingHistory = true;
+        state.historyError = null;
+      })
+      .addCase(fetchActivityRewardsHistory.fulfilled, (state, action) => {
+        state.isLoadingHistory = false;
+        state.history = action.payload;
+      })
+      .addCase(fetchActivityRewardsHistory.rejected, (state, action) => {
+        state.isLoadingHistory = false;
+        state.historyError =
+          (action.payload as string) || 'Failed to load activity rewards history';
+      })
+
+      // Handle recordActivityReward
+      .addCase(recordActivityReward.pending, (state) => {
+        state.isClaiming = true;
+        state.error = null;
+      })
+      .addCase(recordActivityReward.fulfilled, (state, action) => {
+        state.isClaiming = false;
+        state.history = [action.payload, ...state.history];
+      })
+      .addCase(recordActivityReward.rejected, (state, action) => {
+        state.isClaiming = false;
+        state.error = (action.payload as string) || 'Failed to record activity reward';
       });
   },
 });
 
-export const { resetActivityRewardsError } = activityRewardsSlice.actions;
+export const { resetActivityRewardsError, resetActivityRewardsHistoryError } =
+  activityRewardsSlice.actions;
 export default activityRewardsSlice.reducer;

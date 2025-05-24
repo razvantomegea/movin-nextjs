@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { AlertCircle, Crown } from 'lucide-react';
+import { AlertCircle, Crown, Info } from 'lucide-react';
 import { TransactionConfirmationModal } from '@/components/transaction-confirmation-modal';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -32,13 +32,19 @@ export function SubscriptionPage() {
     premiumError,
     setBillingCycle,
     isModalOpen,
+    isApprovalModalOpen,
     pendingTransaction,
     isExpired,
     isPremium,
     handleTransactionSuccess,
+    handleApprovalSuccess,
     handleTransactionFail,
+    handleApprovalFail,
     handleModalClose,
+    handleApprovalModalClose,
     premiumStatus,
+    isApprovalNeeded,
+    tokenSymbol,
   } = useSubscription();
 
   if (premiumLoading) {
@@ -129,6 +135,14 @@ export function SubscriptionPage() {
         <h2 className="text-xl font-semibold mb-4">Frequently Asked Questions</h2>
         <div className="space-y-4">
           <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border">
+            <h3 className="font-medium mb-2">Do I need to approve tokens before subscribing?</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Yes, when subscribing for the first time, you&apos;ll need to approve {tokenSymbol}{' '}
+              tokens before completing the subscription. This requires two separate transactions:
+              first to approve the tokens, then to complete the subscription payment.
+            </p>
+          </div>
+          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border">
             <h3 className="font-medium mb-2">How do I cancel my subscription?</h3>
             <p className="text-sm text-gray-500 dark:text-gray-400">
               You can cancel your subscription at any time from your account settings. Your premium
@@ -146,14 +160,25 @@ export function SubscriptionPage() {
           <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border">
             <h3 className="font-medium mb-2">What payment methods do you accept?</h3>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              We accept MVN tokens as payment for premium subscriptions. You can use tokens earned
-              through activity or purchase them directly.
+              We accept {tokenSymbol} tokens as payment for premium subscriptions. You can use
+              tokens earned through activity or purchase them directly.
             </p>
           </div>
         </div>
       </motion.div>
 
-      {/* Transaction Confirmation Modal */}
+      {/* Transaction Confirmation Modal for Token Approval */}
+      <TransactionConfirmationModal
+        isOpen={isApprovalModalOpen}
+        onClose={handleApprovalModalClose}
+        onSuccess={handleApprovalSuccess}
+        onFail={handleApprovalFail}
+        transactionDescription={`Please approve ${tokenSymbol} tokens for subscription. This is step 1 of 2: token approval.`}
+        successTitle="Token Approval"
+        successDescription={`You have approved ${tokenSymbol} tokens for subscription. You will now need to confirm the subscription transaction.`}
+      />
+
+      {/* Transaction Confirmation Modal for Subscription */}
       <TransactionConfirmationModal
         isOpen={isModalOpen}
         onClose={handleModalClose}
@@ -163,9 +188,23 @@ export function SubscriptionPage() {
         transactionDescription={
           pendingTransaction?.planType === 'free'
             ? 'Please confirm the transaction in your wallet to cancel your premium subscription.'
-            : `Please confirm the transaction in your wallet to upgrade to ${transactionDetails.description.toLowerCase()} for ${
+            : `Please confirm the transaction in your wallet ${
+                isApprovalNeeded ? '(step 2 of 2)' : ''
+              } to upgrade to ${transactionDetails.description.toLowerCase()} for ${
                 transactionDetails.amount
-              } MVN.`
+              } ${tokenSymbol}.`
+        }
+        successTitle={
+          pendingTransaction?.planType === 'free'
+            ? 'Subscription Cancelled'
+            : 'Subscription Upgraded'
+        }
+        successDescription={
+          pendingTransaction?.planType === 'free'
+            ? 'You have successfully cancelled your premium subscription.'
+            : `You have successfully upgraded to ${transactionDetails.description.toLowerCase()} for ${
+                transactionDetails.amount
+              } ${tokenSymbol}.`
         }
       />
     </motion.div>
