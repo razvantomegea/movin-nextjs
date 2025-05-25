@@ -77,7 +77,7 @@ export function ConnectPage() {
           // Navigate to dashboard on successful authentication
           const navigateTimeout = setTimeout(() => {
             router.push('/dashboard');
-          }, 2000);
+          }, 3000);
 
           return () => clearTimeout(navigateTimeout);
         } catch (error) {

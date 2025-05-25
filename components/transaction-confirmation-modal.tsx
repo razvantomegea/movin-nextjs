@@ -225,6 +225,7 @@ export function TransactionConfirmationModal({
                   No Transaction Received
                 </Button>
                 <Button
+                  disabled={timeLeft > 0}
                   className="bg-green-500 hover:bg-green-600 text-white"
                   onClick={handleSuccess}
                 >

@@ -52,18 +52,15 @@ export function RouteTypeModal({
     dispatch(inviteUser(userId));
 
     // Simulate the user accepting after a delay (for demo purposes)
-    setTimeout(
-      () => {
-        dispatch(simulateAcceptInvitation(userId));
-        dispatch(
-          showInfoToast({
-            title: 'Invitation Accepted',
-            description: 'A user has accepted your invitation to join the route tracking.',
-          }),
-        );
-      },
-      2000 + Math.random() * 2000,
-    ); // Random delay between 2-4 seconds
+    setTimeout(() => {
+      dispatch(simulateAcceptInvitation(userId));
+      dispatch(
+        showInfoToast({
+          title: 'Invitation Accepted',
+          description: 'A user has accepted your invitation to join the route tracking.',
+        }),
+      );
+    }, 2000 + Math.random() * 2000); // Random delay between 2-4 seconds
   };
 
   // Handle starting joint tracking
@@ -93,9 +90,9 @@ export function RouteTypeModal({
         </Button>
 
         <Button
-          onClick={handleSearchNearby}
           variant="outline"
-          className={`h-auto py-6 flex flex-col items-center justify-center space-y-3 ${
+          disabled
+          className={`h-auto py-6 flex flex-col items-center justify-center space-y-3 opacity-70 ${
             isDark ? 'hover:bg-gray-800' : 'hover:bg-gray-100'
           }`}
         >
@@ -103,6 +100,7 @@ export function RouteTypeModal({
           <div className="text-center">
             <div className="font-medium">Joint</div>
             <p className="text-xs text-gray-500 mt-1">Track with friends nearby</p>
+            <p className="text-xs font-medium text-amber-500 mt-1">Coming Soon</p>
           </div>
         </Button>
       </div>
@@ -140,7 +138,9 @@ export function RouteTypeModal({
             {nearbyUsers.map((user) => (
               <div
                 key={user.id}
-                className={`flex items-center justify-between p-3 rounded-lg ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}
+                className={`flex items-center justify-between p-3 rounded-lg ${
+                  isDark ? 'bg-gray-800' : 'bg-gray-100'
+                }`}
               >
                 <div className="flex items-center space-x-3">
                   <Avatar>

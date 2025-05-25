@@ -17,7 +17,9 @@ export function CircularProgress({
 }: CircularProgressProps) {
   const radius = (size - strokeWidth) / 2;
   const circumference = radius * 2 * Math.PI;
-  const offset = circumference - (value / 100) * circumference;
+  // Cap the value at 100 for the progress calculation
+  const cappedValue = Math.min(value, 100);
+  const offset = circumference - (cappedValue / 100) * circumference;
 
   return (
     <div className={`relative ${className}`} style={{ width: size, height: size }}>
