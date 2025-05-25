@@ -3,20 +3,13 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useAppKitAccount } from '@reown/appkit/react';
 import ErrorBoundary from '@/components/error-boundary';
-import { TransactionConfirmationModal } from '@/components/transaction-confirmation-modal';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAppDispatch } from '@/lib/redux/hooks';
-import {
-  fetchActivityRewards,
-  claimActivityRewards,
-} from '@/lib/redux/slices/activityRewardsSlice';
-import {
-  fetchReferralRewards,
-  claimReferralRewards,
-} from '@/lib/redux/slices/referralRewardsSlice';
-import { fetchStakingData, claimStakingRewards } from '@/lib/redux/slices/stakingSlice';
-import { showSuccessToast, showErrorToast, showInfoToast } from '@/lib/redux/slices/toastSlice';
+import { fetchActivityRewards } from '@/lib/redux/slices/activityRewardsSlice';
+import { fetchReferralRewards } from '@/lib/redux/slices/referralRewardsSlice';
+import { fetchStakingData } from '@/lib/redux/slices/stakingSlice';
+import { showSuccessToast, showInfoToast } from '@/lib/redux/slices/toastSlice';
 
 import { ActivityRewards } from './activity-rewards';
 import { ReferralRewards } from './referral-rewards';
@@ -25,13 +18,6 @@ import { StakingRewards } from './staking-rewards';
 export function RewardsDashboard() {
   const [activeTab, setActiveTab] = useState('activity');
   const [refreshing, setRefreshing] = useState(false);
-
-  // Transaction confirmation modal state
-  const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
-  const [pendingTransactionType, setPendingTransactionType] = useState<
-    'staking' | 'activity' | 'referral' | null
-  >(null);
-  const [pendingRewardAmount, setPendingRewardAmount] = useState(0);
 
   const dispatch = useAppDispatch();
 
@@ -77,43 +63,6 @@ export function RewardsDashboard() {
     } finally {
       setRefreshing(false);
     }
-  };
-
-  // Handle initiating claim process - shows the transaction modal
-  const initiateClaimProcess = (type: 'staking' | 'activity' | 'referral', amount: number) => {
-    setPendingTransactionType(type);
-    setPendingRewardAmount(amount);
-    setIsTransactionModalOpen(true);
-  };
-
-  // Handle successful transaction confirmation
-  const handleTransactionSuccess = async () => {
-    try {
-      if (pendingTransactionType === 'staking' && userAddress) {
-        await dispatch(claimStakingRewards({ address: userAddress })).unwrap();
-      } else if (pendingTransactionType === 'activity') {
-        await dispatch(claimActivityRewards()).unwrap();
-      } else if (pendingTransactionType === 'referral') {
-        await dispatch(claimReferralRewards()).unwrap();
-      }
-
-      // Refresh data after successful claim
-      handleRefresh();
-    } catch (err) {
-      dispatch(
-        showErrorToast({
-          title: 'Claim Failed',
-          description: err instanceof Error ? err.message : 'An unknown error occurred',
-        }),
-      );
-    } finally {
-      setPendingTransactionType(null);
-    }
-  };
-
-  // Handle failed transaction confirmation
-  const handleTransactionFail = () => {
-    setPendingTransactionType(null);
   };
 
   // Handle tab change
@@ -165,10 +114,7 @@ export function RewardsDashboard() {
 
           <TabsContent value="activity" className="mt-0">
             <ErrorBoundary>
-              <ActivityRewards
-                refreshing={refreshing}
-                onInitiateClaimProcess={initiateClaimProcess}
-              />
+              <ActivityRewards refreshing={refreshing} />
             </ErrorBoundary>
           </TabsContent>
 
@@ -180,23 +126,11 @@ export function RewardsDashboard() {
 
           <TabsContent value="referrals" className="mt-0">
             <ErrorBoundary>
-              <ReferralRewards
-                refreshing={refreshing}
-                onInitiateClaimProcess={initiateClaimProcess}
-              />
+              <ReferralRewards refreshing={refreshing} />
             </ErrorBoundary>
           </TabsContent>
         </Tabs>
       </div>
-
-      {/* Transaction Confirmation Modal */}
-      <TransactionConfirmationModal
-        isOpen={isTransactionModalOpen}
-        onClose={() => setIsTransactionModalOpen(false)}
-        onSuccess={handleTransactionSuccess}
-        onFail={handleTransactionFail}
-        rewardAmount={pendingRewardAmount}
-      />
     </>
   );
 }

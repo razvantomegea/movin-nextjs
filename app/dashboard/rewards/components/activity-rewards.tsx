@@ -20,21 +20,18 @@ import {
 } from '@/lib/redux/slices/activityRewardsSlice';
 import { showSuccessToast, showErrorToast } from '@/lib/redux/slices/toastSlice';
 import { RootState } from '@/lib/redux/store';
-import { isPremiumExpired, mapActivitiesToDaily, type DailyActivity } from '@/utils';
+import { isPremiumExpired, mapActivitiesToDaily, mapError, type DailyActivity } from '@/utils';
 import { calculateMetsFromCalories } from '@/utils/movin/calculateMets';
 import { ActivityRewardsHistory } from './activity-rewards-history';
 import { ActivityRewardsSkeleton } from './activity-rewards-skeleton';
 
 interface ActivityRewardsProps {
   refreshing: boolean;
-  onInitiateClaimProcess: (type: 'staking' | 'activity' | 'referral', amount: number) => void;
 }
 
-export function ActivityRewards({ refreshing, onInitiateClaimProcess }: ActivityRewardsProps) {
+export function ActivityRewards({ refreshing }: ActivityRewardsProps) {
   const dispatch = useAppDispatch();
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
-  const [claimAmount, setClaimAmount] = useState(0);
-  const [activeAction, setActiveAction] = useState<{ type: string; index: number } | null>(null);
   const [dbUpdateInProgress, setDbUpdateInProgress] = useState(false);
   const [expirationTimestamp, setExpirationTimestamp] = useState<number | null>(null);
   const { address } = useAppKitAccount();
@@ -60,6 +57,8 @@ export function ActivityRewards({ refreshing, onInitiateClaimProcess }: Activity
     error: activitiesError,
   } = useAppSelector((state: RootState) => state.activityData);
 
+  const blockchainActivity = formattedActivity();
+
   const dailyActivity: DailyActivity | null = useMemo(() => {
     if (activities.length > 0) {
       return mapActivitiesToDaily(activities, currentDate);
@@ -68,24 +67,30 @@ export function ActivityRewards({ refreshing, onInitiateClaimProcess }: Activity
   }, [activities, currentDate]);
 
   const stepsToClaim = useMemo(() => {
-    const formattedData = formattedActivity();
     const dailySteps = dailyActivity?.steps || 0;
 
-    if (!formattedData) return dailySteps;
+    if (!blockchainActivity) return dailySteps;
 
-    return dailySteps - formattedData.dailySteps;
-  }, [formattedActivity, dailyActivity]);
+    if (blockchainActivity.dailySteps >= dailySteps) {
+      return 0;
+    }
+
+    return Math.abs(dailySteps - blockchainActivity.dailySteps);
+  }, [blockchainActivity, dailyActivity]);
 
   const metsToClaim = useMemo(() => {
     if (!isPremium) return 0;
 
-    const formattedData = formattedActivity();
     const dailyMets = calculateMetsFromCalories(dailyActivity?.calories || 0);
 
-    if (!formattedData) return dailyMets;
+    if (!blockchainActivity) return dailyMets;
 
-    return dailyMets - formattedData.dailyMets;
-  }, [formattedActivity, dailyActivity, isPremium]);
+    if (blockchainActivity.dailyMets >= dailyMets) {
+      return 0;
+    }
+
+    return Math.abs(dailyMets - blockchainActivity.dailyMets);
+  }, [blockchainActivity, dailyActivity, isPremium]);
 
   const {
     formattedRewards,
@@ -94,7 +99,7 @@ export function ActivityRewards({ refreshing, onInitiateClaimProcess }: Activity
     refetch: refetchRewards,
   } = useCalculateActivityRewards(stepsToClaim, metsToClaim);
 
-  const rewards = useMemo(() => formattedRewards(), [formattedRewards]);
+  const rewards = formattedRewards();
 
   const {
     recordActivity,
@@ -182,33 +187,30 @@ export function ActivityRewards({ refreshing, onInitiateClaimProcess }: Activity
 
   // Update rewards in Supabase database
   const saveRewardsToDatabase = useCallback(async () => {
-    if (dbUpdateInProgress || !userAddress || !activeAction || totalRewards <= 0) {
+    if (dbUpdateInProgress || !userAddress || totalRewards <= 0) {
       return;
     }
 
     try {
       setDbUpdateInProgress(true);
-
-      if (activeAction.type === 'claim') {
-        await dispatch(
-          recordActivityReward({
-            address: userAddress,
-            rewards: totalRewards,
-          }),
-        ).unwrap();
-      }
+      await dispatch(
+        recordActivityReward({
+          address: userAddress,
+          rewards: totalRewards,
+        }),
+      ).unwrap();
     } catch (error) {
       console.error('Error recording activity reward:', error);
     } finally {
       setDbUpdateInProgress(false);
-      setActiveAction(null);
     }
-  }, [activeAction, dbUpdateInProgress, dispatch, totalRewards, userAddress]);
+  }, [dbUpdateInProgress, dispatch, totalRewards, userAddress]);
 
-  // Handle successful claim
-  useEffect(() => {
-    if (isClaimSuccess && activeAction?.type === 'claim') {
+  const handleTransactionSuccess = useCallback(async () => {
+    if (isClaimSuccess && isConfirmModalOpen) {
       setIsConfirmModalOpen(false);
+      await saveRewardsToDatabase();
+      await refetchUserActivity();
 
       dispatch(
         showSuccessToast({
@@ -216,42 +218,38 @@ export function ActivityRewards({ refreshing, onInitiateClaimProcess }: Activity
           description: 'Your activity rewards have been claimed successfully.',
         }),
       );
-
-      // Save the claimed rewards to the database
-      saveRewardsToDatabase();
-      refetchUserActivity();
     }
-  }, [
-    isClaimSuccess,
-    activeAction,
-    dispatch,
-    isConfirmModalOpen,
-    refetchUserActivity,
-    saveRewardsToDatabase,
-  ]);
+  }, [refetchUserActivity, dispatch, saveRewardsToDatabase, isConfirmModalOpen, isClaimSuccess]);
 
-  // Handle claim error
-  useEffect(() => {
-    if (claimError && activeAction?.type === 'claim') {
+  const handleTransactionFail = useCallback(async () => {
+    if (claimError && isConfirmModalOpen) {
       setIsConfirmModalOpen(false);
+      refetchUserActivity();
 
       dispatch(
         showErrorToast({
           title: 'Claim Failed',
-          description: 'Failed to claim rewards. Please try again.',
+          description: mapError(claimError),
         }),
       );
-
-      setActiveAction(null);
     }
-  }, [claimError, isConfirmModalOpen, dispatch, activeAction]);
+  }, [refetchUserActivity, dispatch, claimError, isConfirmModalOpen]);
+
+  useEffect(() => {
+    if (claimError && isConfirmModalOpen) {
+      handleTransactionFail();
+    }
+  }, [claimError, handleTransactionFail, isConfirmModalOpen]);
+
+  useEffect(() => {
+    if (isClaimSuccess && isConfirmModalOpen) {
+      handleTransactionSuccess();
+    }
+  }, [isClaimSuccess, handleTransactionSuccess, isConfirmModalOpen]);
 
   const handleClaimActivityRewards = async () => {
     try {
-      setActiveAction({ type: 'claim', index: -1 });
-      setClaimAmount(totalRewards);
       setIsConfirmModalOpen(true);
-      onInitiateClaimProcess('activity', totalRewards);
 
       await recordActivity(stepsToClaim, metsToClaim);
     } catch (err) {
@@ -265,7 +263,6 @@ export function ActivityRewards({ refreshing, onInitiateClaimProcess }: Activity
       );
 
       console.error('Claim error:', err);
-      setActiveAction(null);
     }
   };
 
@@ -273,20 +270,6 @@ export function ActivityRewards({ refreshing, onInitiateClaimProcess }: Activity
     refetchUserActivity();
     refetchRewards();
   };
-
-  const handleTransactionSuccess = useCallback(async () => {
-    setIsConfirmModalOpen(false);
-    setActiveAction(null);
-    setClaimAmount(0);
-    refetchUserActivity();
-  }, [refetchUserActivity]);
-
-  const handleTransactionFail = useCallback(async () => {
-    setIsConfirmModalOpen(false);
-    setActiveAction(null);
-    setClaimAmount(0);
-    refetchUserActivity();
-  }, [refetchUserActivity]);
 
   const handleCloseConfirmModal = useCallback(() => {
     setIsConfirmModalOpen(false);
@@ -336,10 +319,10 @@ export function ActivityRewards({ refreshing, onInitiateClaimProcess }: Activity
 
           <LoadingButton
             className="w-full py-6 text-lg bg-blue-500 hover:bg-blue-600"
-            loading={activeAction?.type === 'claim' || isClaiming}
+            loading={isClaiming}
             loadingText="Preparing Transaction..."
             onClick={handleClaimActivityRewards}
-            disabled={totalRewards <= 0 || activeAction !== null}
+            disabled={totalRewards <= 0}
           >
             Claim Rewards
           </LoadingButton>
@@ -410,8 +393,8 @@ export function ActivityRewards({ refreshing, onInitiateClaimProcess }: Activity
         onClose={handleCloseConfirmModal}
         onSuccess={handleTransactionSuccess}
         onFail={handleTransactionFail}
-        rewardAmount={claimAmount}
-        transactionDescription={`Please confirm the transaction in your wallet to claim ${claimAmount.toFixed(
+        rewardAmount={totalRewards}
+        transactionDescription={`Please confirm the transaction in your wallet to claim ${totalRewards.toFixed(
           2,
         )} MVN from your activity`}
       />

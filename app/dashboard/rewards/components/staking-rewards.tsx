@@ -350,10 +350,11 @@ export function StakingRewards({ refreshing }: StakingRewardsProps) {
         await addStakesToDb();
       }
 
+      await refreshAllData();
       setIsStakeModalOpen(false);
       setActiveAction(null);
     },
-    [setActiveAction, setIsStakeModalOpen, addStakesToDb],
+    [setActiveAction, setIsStakeModalOpen, addStakesToDb, refreshAllData],
   );
 
   const handleStakeUnlocked = useCallback(

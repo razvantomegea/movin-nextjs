@@ -1,11 +1,10 @@
-import { useEffect } from 'react';
 import { useAppKitAccount } from '@reown/appkit/react';
 import { formatUnits, parseUnits } from 'viem';
 import { useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import movinEarnAbi from '@/lib/abi/movin-earn-abi.json';
 import { useAppDispatch } from '@/lib/redux/hooks';
 import { showErrorToast } from '@/lib/redux/slices/toastSlice';
-import { parseError } from '@/utils/errors';
+import { mapError } from '@/utils/errors';
 import { getFormattedStakes } from '@/utils/staking/getFormattedStakes';
 
 // MovinEarn contract address (Base network)
@@ -123,6 +122,7 @@ export function useMovinEarn() {
       address: CONTRACT_ADDRESS,
       abi: movinEarnAbi,
       functionName: 'getTodayUserActivity',
+      args: [addressLower],
       query: {
         enabled: !!addressLower,
       },
@@ -259,21 +259,8 @@ export function useMovinEarn() {
    * @returns Hook result with register function
    */
   const useRegisterReferral = () => {
-    const { writeContract, data: hash, error, isPending } = useWriteContract();
-    const { isLoading, isSuccess } = useWaitForTransactionReceipt({ hash });
-
-    // Handle user rejection in the wallet
-    useEffect(() => {
-      if (error) {
-        const parsedError = parseError(error);
-        dispatch(
-          showErrorToast({
-            title: 'Transaction Rejected',
-            description: parsedError.message,
-          }),
-        );
-      }
-    }, [error]);
+    const { writeContract, data: hash, error: writeError, isPending } = useWriteContract();
+    const { isLoading, isSuccess, error: waitError } = useWaitForTransactionReceipt({ hash });
 
     /**
      * Registers a referral
@@ -291,11 +278,11 @@ export function useMovinEarn() {
 
         return true;
       } catch (err) {
-        const parsedError = parseError(err);
+        const errorMessage = mapError(err);
         dispatch(
           showErrorToast({
             title: 'Error Registering Referral',
-            description: parsedError.message,
+            description: errorMessage,
           }),
         );
         return false;
@@ -305,7 +292,7 @@ export function useMovinEarn() {
     return {
       registerReferral,
       hash,
-      error,
+      error: writeError || waitError,
       isPending,
       isLoading,
       isSuccess,
@@ -372,21 +359,8 @@ export function useMovinEarn() {
    * @returns Hook result with record function
    */
   const useRecordActivity = () => {
-    const { writeContract, data: hash, error, isPending } = useWriteContract();
-    const { isLoading, isSuccess } = useWaitForTransactionReceipt({ hash });
-
-    // Handle user rejection in the wallet
-    useEffect(() => {
-      if (error) {
-        const parsedError = parseError(error);
-        dispatch(
-          showErrorToast({
-            title: 'Transaction Rejected',
-            description: parsedError.message,
-          }),
-        );
-      }
-    }, [error]);
+    const { writeContract, data: hash, error: writeError, isPending } = useWriteContract();
+    const { isLoading, isSuccess, error: waitError } = useWaitForTransactionReceipt({ hash });
 
     /**
      * Records activity
@@ -396,7 +370,7 @@ export function useMovinEarn() {
      */
     const recordActivity = async (steps: number, mets: number): Promise<boolean> => {
       try {
-        writeContract({
+        await writeContract({
           address: CONTRACT_ADDRESS,
           abi: movinEarnAbi,
           functionName: 'recordActivity',
@@ -405,11 +379,11 @@ export function useMovinEarn() {
 
         return true;
       } catch (err) {
-        const parsedError = parseError(err);
+        const errorMessage = mapError(err);
         dispatch(
           showErrorToast({
             title: 'Error Recording Activity',
-            description: parsedError.message,
+            description: errorMessage,
           }),
         );
         return false;
@@ -419,7 +393,7 @@ export function useMovinEarn() {
     return {
       recordActivity,
       hash,
-      error,
+      error: writeError || waitError,
       isPending,
       isLoading,
       isSuccess,
@@ -460,21 +434,8 @@ export function useMovinEarn() {
    * @returns Hook result with claim function
    */
   const useClaimStakingRewards = () => {
-    const { writeContract, data: hash, error, isPending } = useWriteContract();
-    const { isLoading, isSuccess } = useWaitForTransactionReceipt({ hash });
-
-    // Handle user rejection in the wallet
-    useEffect(() => {
-      if (error) {
-        const parsedError = parseError(error);
-        dispatch(
-          showErrorToast({
-            title: 'Transaction Rejected',
-            description: parsedError.message,
-          }),
-        );
-      }
-    }, [error]);
+    const { writeContract, data: hash, error: writeError, isPending } = useWriteContract();
+    const { isLoading, isSuccess, error: waitError } = useWaitForTransactionReceipt({ hash });
 
     /**
      * Claims staking rewards for a specific stake
@@ -483,7 +444,7 @@ export function useMovinEarn() {
      */
     const claimStakingRewards = async (stakeIndex: number): Promise<boolean> => {
       try {
-        writeContract({
+        await writeContract({
           address: CONTRACT_ADDRESS,
           abi: movinEarnAbi,
           functionName: 'claimStakingRewards',
@@ -492,11 +453,11 @@ export function useMovinEarn() {
 
         return true;
       } catch (err) {
-        const parsedError = parseError(err);
+        const errorMessage = mapError(err);
         dispatch(
           showErrorToast({
             title: 'Error Claiming Staking Rewards',
-            description: parsedError.message,
+            description: errorMessage,
           }),
         );
         return false;
@@ -506,7 +467,7 @@ export function useMovinEarn() {
     return {
       claimStakingRewards,
       hash,
-      error,
+      error: writeError || waitError,
       isPending,
       isLoading,
       isSuccess,
@@ -518,21 +479,8 @@ export function useMovinEarn() {
    * @returns Hook result with claim function
    */
   const useClaimAllStakingRewards = () => {
-    const { writeContract, data: hash, error, isPending } = useWriteContract();
-    const { isLoading, isSuccess } = useWaitForTransactionReceipt({ hash });
-
-    // Handle user rejection in the wallet
-    useEffect(() => {
-      if (error) {
-        const parsedError = parseError(error);
-        dispatch(
-          showErrorToast({
-            title: 'Transaction Rejected',
-            description: parsedError.message,
-          }),
-        );
-      }
-    }, [error]);
+    const { writeContract, data: hash, error: writeError, isPending } = useWriteContract();
+    const { isLoading, isSuccess, error: waitError } = useWaitForTransactionReceipt({ hash });
 
     /**
      * Claims all staking rewards
@@ -540,7 +488,7 @@ export function useMovinEarn() {
      */
     const claimAllStakingRewards = async (): Promise<boolean> => {
       try {
-        writeContract({
+        await writeContract({
           address: CONTRACT_ADDRESS,
           abi: movinEarnAbi,
           functionName: 'claimAllStakingRewards',
@@ -548,11 +496,11 @@ export function useMovinEarn() {
 
         return true;
       } catch (err) {
-        const parsedError = parseError(err);
+        const errorMessage = mapError(err);
         dispatch(
           showErrorToast({
             title: 'Error Claiming All Staking Rewards',
-            description: parsedError.message,
+            description: errorMessage,
           }),
         );
         return false;
@@ -562,7 +510,7 @@ export function useMovinEarn() {
     return {
       claimAllStakingRewards,
       hash,
-      error,
+      error: writeError || waitError,
       isPending,
       isLoading,
       isSuccess,
@@ -574,21 +522,8 @@ export function useMovinEarn() {
    * @returns Hook result with stake function
    */
   const useStakeTokens = () => {
-    const { writeContract, data: hash, error, isPending } = useWriteContract();
-    const { isLoading, isSuccess } = useWaitForTransactionReceipt({ hash });
-
-    // Handle user rejection in the wallet
-    useEffect(() => {
-      if (error) {
-        const parsedError = parseError(error);
-        dispatch(
-          showErrorToast({
-            title: 'Transaction Rejected',
-            description: parsedError.message,
-          }),
-        );
-      }
-    }, [error]);
+    const { writeContract, data: hash, error: writeError, isPending } = useWriteContract();
+    const { isLoading, isSuccess, error: waitError } = useWaitForTransactionReceipt({ hash });
 
     /**
      * Stakes tokens
@@ -600,7 +535,7 @@ export function useMovinEarn() {
       try {
         const amountWei = parseUnits(amount, 18);
 
-        writeContract({
+        await writeContract({
           address: CONTRACT_ADDRESS,
           abi: movinEarnAbi,
           functionName: 'stakeTokens',
@@ -609,11 +544,12 @@ export function useMovinEarn() {
 
         return true;
       } catch (err) {
-        const parsedError = parseError(err);
+        const errorMessage = mapError(err);
+
         dispatch(
           showErrorToast({
             title: 'Error Staking Tokens',
-            description: parsedError.message,
+            description: errorMessage,
           }),
         );
         return false;
@@ -623,7 +559,7 @@ export function useMovinEarn() {
     return {
       stakeTokens,
       hash,
-      error,
+      error: writeError || waitError,
       isPending,
       isLoading,
       isSuccess,
@@ -635,21 +571,8 @@ export function useMovinEarn() {
    * @returns Hook result with unstake function
    */
   const useUnstake = () => {
-    const { writeContract, data: hash, error, isPending } = useWriteContract();
-    const { isLoading, isSuccess } = useWaitForTransactionReceipt({ hash });
-
-    // Handle user rejection in the wallet
-    useEffect(() => {
-      if (error) {
-        const parsedError = parseError(error);
-        dispatch(
-          showErrorToast({
-            title: 'Transaction Rejected',
-            description: parsedError.message,
-          }),
-        );
-      }
-    }, [error]);
+    const { writeContract, data: hash, error: writeError, isPending } = useWriteContract();
+    const { isLoading, isSuccess, error: waitError } = useWaitForTransactionReceipt({ hash });
 
     /**
      * Unstakes tokens
@@ -658,7 +581,7 @@ export function useMovinEarn() {
      */
     const unstake = async (stakeIndex: number): Promise<boolean> => {
       try {
-        writeContract({
+        await writeContract({
           address: CONTRACT_ADDRESS,
           abi: movinEarnAbi,
           functionName: 'unstake',
@@ -667,11 +590,11 @@ export function useMovinEarn() {
 
         return true;
       } catch (err) {
-        const parsedError = parseError(err);
+        const errorMessage = mapError(err);
         dispatch(
           showErrorToast({
             title: 'Error Unstaking Tokens',
-            description: parsedError.message,
+            description: errorMessage,
           }),
         );
         return false;
@@ -681,7 +604,7 @@ export function useMovinEarn() {
     return {
       unstake,
       hash,
-      error,
+      error: writeError || waitError,
       isPending,
       isLoading,
       isSuccess,
@@ -693,21 +616,8 @@ export function useMovinEarn() {
    * @returns Hook result with restake function
    */
   const useRestake = () => {
-    const { writeContract, data: hash, error, isPending } = useWriteContract();
-    const { isLoading, isSuccess } = useWaitForTransactionReceipt({ hash });
-
-    // Handle user rejection in the wallet
-    useEffect(() => {
-      if (error) {
-        const parsedError = parseError(error);
-        dispatch(
-          showErrorToast({
-            title: 'Transaction Rejected',
-            description: parsedError.message,
-          }),
-        );
-      }
-    }, [error]);
+    const { writeContract, data: hash, error: writeError, isPending } = useWriteContract();
+    const { isLoading, isSuccess, error: waitError } = useWaitForTransactionReceipt({ hash });
 
     /**
      * Restakes tokens
@@ -717,7 +627,7 @@ export function useMovinEarn() {
      */
     const restake = async (stakeIndex: number, lockMonths: number): Promise<boolean> => {
       try {
-        writeContract({
+        await writeContract({
           address: CONTRACT_ADDRESS,
           abi: movinEarnAbi,
           functionName: 'restake',
@@ -726,11 +636,11 @@ export function useMovinEarn() {
 
         return true;
       } catch (err) {
-        const parsedError = parseError(err);
+        const errorMessage = mapError(err);
         dispatch(
           showErrorToast({
             title: 'Error Restaking Tokens',
-            description: parsedError.message,
+            description: errorMessage,
           }),
         );
         return false;
@@ -740,7 +650,7 @@ export function useMovinEarn() {
     return {
       restake,
       hash,
-      error,
+      error: writeError || waitError,
       isPending,
       isLoading,
       isSuccess,
@@ -792,21 +702,8 @@ export function useMovinEarn() {
    * @returns Hook result with set premium function
    */
   const useSetPremiumStatus = () => {
-    const { writeContract, data: hash, error, isPending } = useWriteContract();
-    const { isLoading, isSuccess } = useWaitForTransactionReceipt({ hash });
-
-    // Handle user rejection in the wallet
-    useEffect(() => {
-      if (error) {
-        const parsedError = parseError(error);
-        dispatch(
-          showErrorToast({
-            title: 'Transaction Rejected',
-            description: parsedError.message,
-          }),
-        );
-      }
-    }, [error]);
+    const { writeContract, data: hash, error: writeError, isPending } = useWriteContract();
+    const { isLoading, isSuccess, error: waitError } = useWaitForTransactionReceipt({ hash });
 
     /**
      * Sets premium status
@@ -818,7 +715,7 @@ export function useMovinEarn() {
       try {
         const amountWei = parseUnits(amount, 18);
 
-        writeContract({
+        await writeContract({
           address: CONTRACT_ADDRESS,
           abi: movinEarnAbi,
           functionName: 'setPremiumStatus',
@@ -827,11 +724,11 @@ export function useMovinEarn() {
 
         return true;
       } catch (err) {
-        const parsedError = parseError(err);
+        const errorMessage = mapError(err);
         dispatch(
           showErrorToast({
             title: 'Error Setting Premium Status',
-            description: parsedError.message,
+            description: errorMessage,
           }),
         );
         return false;
@@ -841,7 +738,7 @@ export function useMovinEarn() {
     return {
       setPremiumStatus,
       hash,
-      error,
+      error: writeError || waitError,
       isPending,
       isLoading,
       isSuccess,

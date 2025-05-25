@@ -11,7 +11,6 @@ import { LoadingButton } from '@/components/ui/loading-button';
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
 import {
   fetchReferralRewards,
-  claimReferralRewards,
   resetReferralRewardsError,
   inviteFriend,
 } from '@/lib/redux/slices/referralRewardsSlice';
@@ -20,10 +19,9 @@ import { ReferralRewardsSkeleton } from './referral-rewards-skeleton';
 
 interface ReferralRewardsProps {
   refreshing: boolean;
-  onInitiateClaimProcess: (type: 'staking' | 'activity' | 'referral', amount: number) => void;
 }
 
-export function ReferralRewards({ refreshing, onInitiateClaimProcess }: ReferralRewardsProps) {
+export function ReferralRewards({ refreshing }: ReferralRewardsProps) {
   const [inviteEmail, setInviteEmail] = useState('');
   const dispatch = useAppDispatch();
 
@@ -45,7 +43,7 @@ export function ReferralRewards({ refreshing, onInitiateClaimProcess }: Referral
   }, [dispatch]);
 
   const handleClaimReferralRewards = () => {
-    onInitiateClaimProcess('referral', referralTotalRewards);
+    console.log('handleClaimReferralRewards');
   };
 
   const handleCopyReferralCode = () => {

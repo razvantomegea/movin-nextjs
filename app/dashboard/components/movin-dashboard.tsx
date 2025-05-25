@@ -325,7 +325,7 @@ export function MovinDashboard() {
 
                     <div className="ml-6">
                       <CircularProgress
-                        value={(dailyActivity.steps / 10000) * 100}
+                        value={Math.round((dailyActivity.steps / 10000) * 100)}
                         size={100}
                         strokeWidth={8}
                       />

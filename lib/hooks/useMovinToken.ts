@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { useAppKitAccount } from '@reown/appkit/react';
 import { formatUnits, parseUnits } from 'viem';
 import { useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
@@ -6,7 +5,7 @@ import movinTokenAbi from '@/lib/abi/movin-token-abi.json';
 import { useAppDispatch } from '@/lib/redux/hooks';
 import { showErrorToast } from '@/lib/redux/slices/toastSlice';
 import { formatBalanceWithSuffix } from '@/utils/crypto';
-import { parseError } from '@/utils/errors';
+import { mapError } from '@/utils/errors';
 
 // MovinToken contract address (Base network)
 const TOKEN_ADDRESS = '0x3082c5301afD22543866Fe510C0fB351E3CfF561';
@@ -177,21 +176,8 @@ export function useMovinToken() {
    */
   const useApproveTokens = () => {
     const decimalsResult = useTokenDecimals();
-    const { writeContract, data: hash, error, isPending } = useWriteContract();
-    const { isLoading, isSuccess } = useWaitForTransactionReceipt({ hash });
-
-    // Handle user rejection in the wallet
-    useEffect(() => {
-      if (error) {
-        const parsedError = parseError(error);
-        dispatch(
-          showErrorToast({
-            title: 'Transaction Rejected',
-            description: parsedError.message,
-          }),
-        );
-      }
-    }, [error]);
+    const { writeContract, data: hash, error: writeError, isPending } = useWriteContract();
+    const { isLoading, isSuccess, error: waitError } = useWaitForTransactionReceipt({ hash });
 
     /**
      * Approves tokens for a spender
@@ -208,7 +194,7 @@ export function useMovinToken() {
         const decimals = decimalsResult.data;
         const amountWei = parseUnits(amount, decimals);
 
-        writeContract({
+        await writeContract({
           address: TOKEN_ADDRESS,
           abi: movinTokenAbi,
           functionName: 'approve',
@@ -217,11 +203,11 @@ export function useMovinToken() {
 
         return true;
       } catch (err) {
-        const parsedError = parseError(err);
+        const errorMessage = mapError(err);
         dispatch(
           showErrorToast({
             title: 'Error Approving Tokens',
-            description: parsedError.message,
+            description: errorMessage,
           }),
         );
         return false;
@@ -231,7 +217,7 @@ export function useMovinToken() {
     return {
       approveTokens,
       hash,
-      error,
+      error: writeError || waitError,
       isPending,
       isLoading,
       isSuccess,
@@ -244,21 +230,8 @@ export function useMovinToken() {
    */
   const useTransferTokens = () => {
     const decimalsResult = useTokenDecimals();
-    const { writeContract, data: hash, error, isPending } = useWriteContract();
-    const { isLoading, isSuccess } = useWaitForTransactionReceipt({ hash });
-
-    // Handle user rejection in the wallet
-    useEffect(() => {
-      if (error) {
-        const parsedError = parseError(error);
-        dispatch(
-          showErrorToast({
-            title: 'Transaction Rejected',
-            description: parsedError.message,
-          }),
-        );
-      }
-    }, [error]);
+    const { writeContract, data: hash, error: writeError, isPending } = useWriteContract();
+    const { isLoading, isSuccess, error: waitError } = useWaitForTransactionReceipt({ hash });
 
     /**
      * Transfers tokens to a recipient
@@ -284,11 +257,11 @@ export function useMovinToken() {
 
         return true;
       } catch (err) {
-        const parsedError = parseError(err);
+        const errorMessage = mapError(err);
         dispatch(
           showErrorToast({
             title: 'Error Transferring Tokens',
-            description: parsedError.message,
+            description: errorMessage,
           }),
         );
         return false;
@@ -298,7 +271,7 @@ export function useMovinToken() {
     return {
       transferTokens,
       hash,
-      error,
+      error: writeError || waitError,
       isPending,
       isLoading,
       isSuccess,

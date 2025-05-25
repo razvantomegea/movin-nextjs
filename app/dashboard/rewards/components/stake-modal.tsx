@@ -16,6 +16,7 @@ import { useMovinEarnUtils } from '@/lib/hooks/useMovinEarnUtils';
 import { useMovinToken } from '@/lib/hooks/useMovinToken';
 import { useAppDispatch } from '@/lib/redux/hooks';
 import { showSuccessToast, showErrorToast } from '@/lib/redux/slices/toastSlice';
+import { mapError } from '@/utils/errors';
 
 interface StakeModalProps {
   isOpen: boolean;
@@ -38,6 +39,7 @@ export function StakeModal({ isOpen, onClose }: StakeModalProps) {
   const [isApprovalModalOpen, setIsApprovalModalOpen] = useState<boolean>(false);
   const [isStakeModalOpen, setIsStakeModalOpen] = useState<boolean>(false);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
+  const [hasShownSuccessToast, setHasShownSuccessToast] = useState<boolean>(false);
 
   const dispatch = useAppDispatch();
 
@@ -45,7 +47,13 @@ export function StakeModal({ isOpen, onClose }: StakeModalProps) {
   const { useTokenSymbol, useTokenBalance, useApproveTokens } = useMovinToken();
   const { data: tokenSymbol } = useTokenSymbol();
   const { formattedBalance: availableBalance, formattedBalanceWithSuffix } = useTokenBalance();
-  const { approveTokens } = useApproveTokens();
+  const {
+    approveTokens,
+    isSuccess: isApprovalSuccess,
+    isLoading: isApprovalLoading,
+    isPending: isApprovalPending,
+    error: approvalError,
+  } = useApproveTokens();
 
   // Get staking functions from the hook
   const { getContractAddress, useStakeTokens } = useMovinEarn();
@@ -159,8 +167,12 @@ export function StakeModal({ isOpen, onClose }: StakeModalProps) {
     if (!amount || Number.parseFloat(amount) <= 0) return false;
 
     try {
-      const needsApproval = checkApproval(amount);
-      setIsApprovalNeeded(needsApproval);
+      const needsApproval = await checkApproval(amount);
+
+      if (needsApproval) {
+        setIsApprovalNeeded(true);
+      }
+
       return needsApproval;
     } catch (err) {
       console.error('Error checking approval:', err);
@@ -174,59 +186,128 @@ export function StakeModal({ isOpen, onClose }: StakeModalProps) {
   }, [amount, checkApproval, dispatch]);
 
   // Handle approval process
-  const handleApproval = useCallback(async () => {
+  const handleApproveTokens = useCallback(async () => {
     try {
       setIsProcessing(true);
-      const earnAddress = getContractAddress();
-      const result = await approveTokens(earnAddress, amount);
+      setIsApprovalModalOpen(true);
 
-      if (result) {
-        dispatch(
-          showSuccessToast({
-            title: 'Approval Successful',
-            description: `You have successfully approved ${tokenSymbol} for staking.`,
-          }),
-        );
-        setIsApprovalNeeded(false);
-        // Proceed to staking after successful approval
-        setIsApprovalModalOpen(false);
-        setIsStakeModalOpen(true);
-      } else {
-        throw new Error('Approval failed');
-      }
+      const earnAddress = getContractAddress();
+      await approveTokens(earnAddress, amount);
     } catch (err) {
+      // Close the approval modal on error
+      setIsApprovalModalOpen(false);
+      setIsProcessing(false);
+
       dispatch(
         showErrorToast({
           title: 'Approval Failed',
           description: err instanceof Error ? err.message : 'An unknown error occurred',
         }),
       );
-    } finally {
-      setIsProcessing(false);
     }
-  }, [amount, dispatch, tokenSymbol, approveTokens, getContractAddress]);
+  }, [amount, dispatch, approveTokens, getContractAddress]);
 
   // Handle stake process
-  const handleStakeConfirmed = useCallback(async () => {
+  const handleStakeTokens = useCallback(async () => {
     try {
       setIsProcessing(true);
-      const result = await stakeTokens(amount, period);
-      if (!result) {
-        throw new Error('Staking failed');
-      }
+      setIsStakeModalOpen(true);
+
+      await stakeTokens(amount, period);
+
+      // Note: We don't need to handle success here as it will be handled by
+      // the TransactionConfirmationModal onSuccess callback
     } catch (err) {
+      // Close the stake modal on error
+      setIsStakeModalOpen(false);
+      setIsProcessing(false);
+
       dispatch(
         showErrorToast({
           title: 'Staking Failed',
           description: err instanceof Error ? err.message : 'An unknown error occurred',
         }),
       );
-    } finally {
-      setIsProcessing(false);
-      setIsStakeModalOpen(false);
     }
   }, [amount, period, stakeTokens, dispatch]);
 
+  // Handle successful approval - this will be called by the TransactionConfirmationModal
+  const handleApprovalSuccess = useCallback(() => {
+    dispatch(
+      showSuccessToast({
+        title: 'Approval Successful',
+        description: `You have successfully approved ${tokenSymbol} for staking.`,
+      }),
+    );
+
+    // Close the approval modal
+    setIsApprovalNeeded(false);
+    setIsApprovalModalOpen(false);
+
+    // Reset processing state before initiating staking
+    setIsProcessing(false);
+
+    // Wait a short moment before proceeding to staking to allow UI to update
+    setTimeout(() => {
+      // Proceed to staking
+      handleStakeTokens();
+    }, 300);
+  }, [
+    dispatch,
+    tokenSymbol,
+    setIsApprovalNeeded,
+    setIsApprovalModalOpen,
+    setIsProcessing,
+    handleStakeTokens,
+  ]);
+
+  // Handle successful staking - this will be called by the TransactionConfirmationModal
+  const handleStakingSuccess = useCallback(() => {
+    dispatch(
+      showSuccessToast({
+        title: 'Staking Successful',
+        description: `You have successfully staked ${amount} ${tokenSymbol} for ${period} ${
+          period === 1 ? 'month' : 'months'
+        }.`,
+      }),
+    );
+
+    // Close both modals - the confirmation modal and the stake modal
+    setIsStakeModalOpen(false);
+    setIsProcessing(false);
+
+    // Reset form and close the main modal
+    setAmount('');
+    setPeriod(1);
+    onClose(true);
+  }, [amount, period, dispatch, onClose, tokenSymbol]);
+
+  // Handle approval or staking failure - these will be called by the TransactionConfirmationModal
+  const handleTransactionFail = useCallback(() => {
+    if (isApprovalModalOpen && approvalError && isProcessing && isApprovalModalOpen) {
+      setIsApprovalModalOpen(false);
+      dispatch(
+        showErrorToast({
+          title: 'Approval Failed',
+          description: mapError(approvalError),
+        }),
+      );
+
+      setIsProcessing(false);
+    } else if (isStakeModalOpen && stakeError && isProcessing && isStakeModalOpen) {
+      setIsStakeModalOpen(false);
+      dispatch(
+        showErrorToast({
+          title: 'Staking Failed',
+          description: mapError(stakeError),
+        }),
+      );
+
+      setIsProcessing(false);
+    }
+  }, [isApprovalModalOpen, isStakeModalOpen, approvalError, stakeError, dispatch, isProcessing]);
+
+  // Handle the initial stake button click
   const handleStake = useCallback(async () => {
     // Clear previous errors
     setFormError('');
@@ -238,11 +319,11 @@ export function StakeModal({ isOpen, onClose }: StakeModalProps) {
       const needsApproval = await checkApprovalNeeded();
 
       if (needsApproval) {
-        // Show approval modal first
-        setIsApprovalModalOpen(true);
+        // Show approval modal and initiate approval
+        await handleApproveTokens();
       } else {
         // Proceed directly to staking
-        setIsStakeModalOpen(true);
+        await handleStakeTokens();
       }
     } catch (err) {
       dispatch(
@@ -252,32 +333,41 @@ export function StakeModal({ isOpen, onClose }: StakeModalProps) {
         }),
       );
     }
-  }, [validateForm, checkApprovalNeeded, dispatch]);
+  }, [validateForm, checkApprovalNeeded, handleApproveTokens, handleStakeTokens, dispatch]);
 
-  // Handle successful stake
+  // No longer need the success effect since we handle success via the modal callbacks
   useEffect(() => {
-    if (isStakeSuccess) {
-      dispatch(
-        showSuccessToast({
-          title: 'Staking Successful',
-          description: `You have successfully staked ${amount} ${tokenSymbol} for ${period} ${
-            period === 1 ? 'month' : 'months'
-          }.`,
-        }),
-      );
-      // Reset form and close modal
-      setAmount('');
-      setPeriod(1);
-      onClose(true);
+    if (
+      !approvalError &&
+      !stakeError &&
+      !isApprovalModalOpen &&
+      !isStakeModalOpen &&
+      !isProcessing
+    ) {
+      return;
     }
-  }, [isStakeSuccess, amount, period, dispatch, onClose, tokenSymbol]);
 
-  // Handle staking error
+    handleTransactionFail();
+  }, [
+    stakeError,
+    approvalError,
+    handleTransactionFail,
+    isApprovalModalOpen,
+    isStakeModalOpen,
+    isProcessing,
+  ]);
+
   useEffect(() => {
-    if (stakeError) {
-      setFormError('Failed to stake tokens. Please try again.');
+    if (isApprovalSuccess && isApprovalModalOpen && isProcessing) {
+      handleApprovalSuccess();
     }
-  }, [stakeError]);
+  }, [isApprovalSuccess, handleApprovalSuccess, isApprovalModalOpen, isProcessing]);
+
+  useEffect(() => {
+    if (isStakeSuccess && isStakeModalOpen && isProcessing) {
+      handleStakingSuccess();
+    }
+  }, [isStakeSuccess, handleStakingSuccess, isStakeModalOpen, isProcessing]);
 
   // Reset form when modal is opened
   useEffect(() => {
@@ -285,6 +375,7 @@ export function StakeModal({ isOpen, onClose }: StakeModalProps) {
       setAmount('');
       setPeriod(1);
       setFormError('');
+      setHasShownSuccessToast(false);
     }
   }, [isOpen]);
 
@@ -392,7 +483,7 @@ export function StakeModal({ isOpen, onClose }: StakeModalProps) {
                   </Label>
 
                   <div className="space-y-6">
-                    <div className="flex justify-between flex-wrap">
+                    <div className="flex flex-wrap gap-1">
                       {lockPeriodOptions.map((option) => (
                         <Button
                           key={option.months}
@@ -539,9 +630,12 @@ export function StakeModal({ isOpen, onClose }: StakeModalProps) {
       {/* Transaction Confirmation Modal for Token Approval */}
       <TransactionConfirmationModal
         isOpen={isApprovalModalOpen}
-        onClose={() => setIsApprovalModalOpen(false)}
-        onSuccess={handleApproval}
-        onFail={() => setIsApprovalModalOpen(false)}
+        onClose={() => {
+          setIsApprovalModalOpen(false);
+          setIsProcessing(false);
+        }}
+        onSuccess={handleApprovalSuccess}
+        onFail={handleTransactionFail}
         transactionDescription={`Please approve ${tokenSymbol} for staking. This is step 1 of 2: token approval.`}
         successTitle="Token Approval"
         successDescription={`You have approved ${tokenSymbol} for staking. You will now need to confirm the staking transaction.`}
@@ -550,9 +644,12 @@ export function StakeModal({ isOpen, onClose }: StakeModalProps) {
       {/* Transaction Confirmation Modal for Staking */}
       <TransactionConfirmationModal
         isOpen={isStakeModalOpen}
-        onClose={() => setIsStakeModalOpen(false)}
-        onSuccess={handleStakeConfirmed}
-        onFail={() => setIsStakeModalOpen(false)}
+        onClose={() => {
+          setIsStakeModalOpen(false);
+          setIsProcessing(false);
+        }}
+        onSuccess={handleStakingSuccess}
+        onFail={handleTransactionFail}
         transactionDescription={`Please confirm staking ${amount} ${tokenSymbol} for ${period} ${
           period === 1 ? 'month' : 'months'
         }. ${isApprovalNeeded ? 'This is step 2 of 2: token staking.' : ''}`}

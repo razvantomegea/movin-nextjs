@@ -75,7 +75,7 @@ export const mapActivitiesToWeekly = (
 ): TimeRangeData[] => {
   const weeklyData: TimeRangeData[] = [];
   // Get the current day of week (0 = Sunday, 6 = Saturday)
-  const currentDayOfWeek = currentDate.getDay();
+  const currentDayOfWeek = currentDate.getDay() + 6;
 
   // Calculate the date of the first day of the week (Sunday)
   const firstDayOfWeek = new Date(currentDate);

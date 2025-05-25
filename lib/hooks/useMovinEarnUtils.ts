@@ -2,7 +2,7 @@ import { useAppKitAccount } from '@reown/appkit/react';
 import { parseUnits } from 'viem';
 import { useAppDispatch } from '@/lib/redux/hooks';
 import { showErrorToast } from '@/lib/redux/slices/toastSlice';
-import { parseError } from '@/utils/errors';
+import { mapError } from '@/utils/errors';
 import { useMovinEarn } from './useMovinEarn';
 import { useMovinToken } from './useMovinToken';
 
@@ -88,11 +88,11 @@ export function useMovinEarnUtils() {
 
       return canRecord;
     } catch (error) {
-      const parsedError = parseError(error);
+      const errorMessage = mapError(error);
       dispatch(
         showErrorToast({
           title: 'Error Checking Activity Limits',
-          description: parsedError.message,
+          description: errorMessage,
         }),
       );
       return false;
