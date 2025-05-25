@@ -615,9 +615,9 @@ export function RouteTrackingModal({
                         <div className="text-white font-bold">
                           {distance > 0 && duration > 0
                             ? (() => {
-                                const paceSeconds = Math.floor((duration / (distance / 1000)) * 60);
-                                const minutes = Math.floor(paceSeconds / 60);
-                                const seconds = paceSeconds % 60;
+                                const secondsPerKm = duration / (distance / 1000);
+                                const minutes = Math.floor(secondsPerKm / 60);
+                                const seconds = Math.floor(secondsPerKm % 60);
                                 return `${minutes}:${seconds.toString().padStart(2, '0')}/km`;
                               })()
                             : '--:--'}

@@ -39,7 +39,6 @@ export function StakeModal({ isOpen, onClose }: StakeModalProps) {
   const [isApprovalModalOpen, setIsApprovalModalOpen] = useState<boolean>(false);
   const [isStakeModalOpen, setIsStakeModalOpen] = useState<boolean>(false);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
-  const [hasShownSuccessToast, setHasShownSuccessToast] = useState<boolean>(false);
 
   const dispatch = useAppDispatch();
 
@@ -47,13 +46,7 @@ export function StakeModal({ isOpen, onClose }: StakeModalProps) {
   const { useTokenSymbol, useTokenBalance, useApproveTokens } = useMovinToken();
   const { data: tokenSymbol } = useTokenSymbol();
   const { formattedBalance: availableBalance, formattedBalanceWithSuffix } = useTokenBalance();
-  const {
-    approveTokens,
-    isSuccess: isApprovalSuccess,
-    isLoading: isApprovalLoading,
-    isPending: isApprovalPending,
-    error: approvalError,
-  } = useApproveTokens();
+  const { approveTokens, isSuccess: isApprovalSuccess, error: approvalError } = useApproveTokens();
 
   // Get staking functions from the hook
   const { getContractAddress, useStakeTokens } = useMovinEarn();
@@ -284,7 +277,7 @@ export function StakeModal({ isOpen, onClose }: StakeModalProps) {
 
   // Handle approval or staking failure - these will be called by the TransactionConfirmationModal
   const handleTransactionFail = useCallback(() => {
-    if (isApprovalModalOpen && approvalError && isProcessing && isApprovalModalOpen) {
+    if (isApprovalModalOpen && approvalError && isProcessing) {
       setIsApprovalModalOpen(false);
       dispatch(
         showErrorToast({
@@ -294,7 +287,7 @@ export function StakeModal({ isOpen, onClose }: StakeModalProps) {
       );
 
       setIsProcessing(false);
-    } else if (isStakeModalOpen && stakeError && isProcessing && isStakeModalOpen) {
+    } else if (isStakeModalOpen && stakeError && isProcessing) {
       setIsStakeModalOpen(false);
       dispatch(
         showErrorToast({
@@ -375,7 +368,6 @@ export function StakeModal({ isOpen, onClose }: StakeModalProps) {
       setAmount('');
       setPeriod(1);
       setFormError('');
-      setHasShownSuccessToast(false);
     }
   }, [isOpen]);
 

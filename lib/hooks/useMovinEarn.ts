@@ -370,7 +370,7 @@ export function useMovinEarn() {
      */
     const recordActivity = async (steps: number, mets: number): Promise<boolean> => {
       try {
-        await writeContract({
+        writeContract({
           address: CONTRACT_ADDRESS,
           abi: movinEarnAbi,
           functionName: 'recordActivity',
