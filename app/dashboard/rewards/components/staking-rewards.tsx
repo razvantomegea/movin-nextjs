@@ -400,7 +400,7 @@ export function StakingRewards({ refreshing }: StakingRewardsProps) {
     );
   }
 
-  if (!stakingData && !refreshing) {
+  if (!stakingData || refreshing) {
     return <StakingSkeleton />;
   }
 

@@ -278,7 +278,7 @@ export function ActivityRewards({ refreshing }: ActivityRewardsProps) {
   const isLoading = activityLoading || rewardsLoading || activitiesLoading;
   const errorMessage = activityError?.message || rewardsError?.message || activitiesError;
 
-  if (isLoading && !refreshing) {
+  if (isLoading || refreshing) {
     return <ActivityRewardsSkeleton />;
   }
 

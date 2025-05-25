@@ -5,20 +5,34 @@ import { useAppKit, useAppKitAccount } from '@reown/appkit/react';
 import { motion } from 'framer-motion';
 import { Wallet } from 'lucide-react';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
 import { updateProfile } from '@/lib/supabase/profile';
 import { getProfile } from '@/lib/supabase/profile';
+import { useMovinEarn } from '@/lib/hooks/useMovinEarn';
 
 export function ConnectPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { resolvedTheme } = useTheme();
   const { open } = useAppKit();
   const { isConnected, address } = useAppKitAccount();
   const addressLower = address?.toLowerCase();
   const [connecting, setConnecting] = useState(isConnected);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [referrer, setReferrer] = useState<string | null>(null);
+  const { useRegisterReferral } = useMovinEarn();
+  const { registerReferral } = useRegisterReferral();
+
+  // Check for referral in URL
+  useEffect(() => {
+    const referralParam = searchParams.get('referral');
+    if (referralParam && isValidAddress(referralParam)) {
+      setReferrer(referralParam);
+      localStorage.setItem('referrer', referralParam);
+    }
+  }, [searchParams]);
 
   const handleConnect = async () => {
     open();
@@ -68,6 +82,22 @@ export function ConnectPage() {
                 },
               });
             }
+
+            // Register referral if one was provided
+            const storedReferrer = localStorage.getItem('referrer');
+            if (
+              storedReferrer &&
+              isValidAddress(storedReferrer) &&
+              storedReferrer.toLowerCase() !== addressLower
+            ) {
+              try {
+                await registerReferral(storedReferrer);
+                console.log('Referral registered successfully');
+              } catch (referralError) {
+                console.error('Failed to register referral:', referralError);
+                // Don't fail authentication if referral registration fails
+              }
+            }
           } catch (profileError) {
             console.error('Profile setup error:', profileError);
             // Don't fail the authentication if profile creation fails
@@ -89,7 +119,12 @@ export function ConnectPage() {
     };
 
     authenticateWithSupabase();
-  }, [isConnected, addressLower, router]);
+  }, [isConnected, addressLower, router, registerReferral]);
+
+  // Validate Ethereum address
+  const isValidAddress = (address: string): boolean => {
+    return /^0x[a-fA-F0-9]{40}$/.test(address);
+  };
 
   const isDark = resolvedTheme === 'dark';
 
@@ -104,6 +139,20 @@ export function ConnectPage() {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_60%,rgba(59,130,246,0.1)_0%,rgba(0,0,0,0)_60%)]"></div>
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-500/30 to-transparent"></div>
       </div>
+
+      {referrer && (
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="absolute top-4 left-0 right-0 mx-auto w-full max-w-md px-4 z-10"
+        >
+          <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 text-center">
+            <p className="text-blue-600 dark:text-blue-400">
+              You're joining through a referral! Connect your wallet to earn 1 MVN bonus.
+            </p>
+          </div>
+        </motion.div>
+      )}
 
       <div className="w-full max-w-md flex flex-col items-center relative z-10">
         <motion.div
