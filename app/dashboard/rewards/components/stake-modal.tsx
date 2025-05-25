@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Info, Clock, TrendingUp, AlertCircle } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { TransactionConfirmationModal } from '@/components/transaction-confirmation-modal';
+import { TransactionConfirmationModal } from '@/components/transaction-confirmation-modal';
 import { Button } from '@/components/ui/button';
 import { ErrorAlert } from '@/components/ui/error-alert';
 import { Input } from '@/components/ui/input';
@@ -12,6 +13,7 @@ import { Label } from '@/components/ui/label';
 import { LoadingButton } from '@/components/ui/loading-button';
 // import { Slider } from '@/components/ui/slider';
 import { useMovinEarn } from '@/lib/hooks/useMovinEarn';
+import { useMovinEarnUtils } from '@/lib/hooks/useMovinEarnUtils';
 import { useMovinEarnUtils } from '@/lib/hooks/useMovinEarnUtils';
 import { useMovinToken } from '@/lib/hooks/useMovinToken';
 import { useAppDispatch } from '@/lib/redux/hooks';
@@ -45,6 +47,7 @@ export function StakeModal({ isOpen, onClose }: StakeModalProps) {
 
   // Get token symbol and balance
   const { useTokenSymbol, useTokenBalance, useApproveTokens } = useMovinToken();
+  const { useTokenSymbol, useTokenBalance, useApproveTokens } = useMovinToken();
   const { data: tokenSymbol } = useTokenSymbol();
   const { formattedBalance: availableBalance, formattedBalanceWithSuffix } = useTokenBalance();
   const {
@@ -56,6 +59,11 @@ export function StakeModal({ isOpen, onClose }: StakeModalProps) {
   } = useApproveTokens();
 
   // Get staking functions from the hook
+  const { getContractAddress, useStakeTokens } = useMovinEarn();
+
+  // Get MovinEarnUtils for token approval check
+  const { useCheckIfTokenApprovalIsNeeded } = useMovinEarnUtils();
+  const checkApproval = useCheckIfTokenApprovalIsNeeded();
   const { getContractAddress, useStakeTokens } = useMovinEarn();
 
   // Get MovinEarnUtils for token approval check
@@ -126,7 +134,10 @@ export function StakeModal({ isOpen, onClose }: StakeModalProps) {
       !isStaking &&
       !isStakeLoading &&
       !isProcessing
+      !isStakeLoading &&
+      !isProcessing
     );
+  }, [amount, availableBalance, isStaking, isStakeLoading, isProcessing]);
   }, [amount, availableBalance, isStaking, isStakeLoading, isProcessing]);
 
   // Handlers
@@ -161,6 +172,79 @@ export function StakeModal({ isOpen, onClose }: StakeModalProps) {
 
     return true;
   }, [amount, availableBalance]);
+
+  // Check if approval is needed
+  const checkApprovalNeeded = useCallback(async () => {
+    if (!amount || Number.parseFloat(amount) <= 0) return false;
+
+    try {
+      const needsApproval = checkApproval(amount);
+      setIsApprovalNeeded(needsApproval);
+      return needsApproval;
+    } catch (err) {
+      console.error('Error checking approval:', err);
+      dispatch(
+        showErrorToast({
+          title: 'Approval Check Failed',
+          description: 'Unable to verify token approval status. Please try again.',
+        }),
+      );
+    }
+  }, [amount, checkApproval, dispatch]);
+
+  // Handle approval process
+  const handleApproval = useCallback(async () => {
+    try {
+      setIsProcessing(true);
+      const earnAddress = getContractAddress();
+      const result = await approveTokens(earnAddress, amount);
+
+      if (result) {
+        dispatch(
+          showSuccessToast({
+            title: 'Approval Successful',
+            description: `You have successfully approved ${tokenSymbol} for staking.`,
+          }),
+        );
+        setIsApprovalNeeded(false);
+        // Proceed to staking after successful approval
+        setIsApprovalModalOpen(false);
+        setIsStakeModalOpen(true);
+      } else {
+        throw new Error('Approval failed');
+      }
+    } catch (err) {
+      dispatch(
+        showErrorToast({
+          title: 'Approval Failed',
+          description: err instanceof Error ? err.message : 'An unknown error occurred',
+        }),
+      );
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [amount, dispatch, tokenSymbol, approveTokens, getContractAddress]);
+
+  // Handle stake process
+  const handleStakeConfirmed = useCallback(async () => {
+    try {
+      setIsProcessing(true);
+      const result = await stakeTokens(amount, period);
+      if (!result) {
+        throw new Error('Staking failed');
+      }
+    } catch (err) {
+      dispatch(
+        showErrorToast({
+          title: 'Staking Failed',
+          description: err instanceof Error ? err.message : 'An unknown error occurred',
+        }),
+      );
+    } finally {
+      setIsProcessing(false);
+      setIsStakeModalOpen(false);
+    }
+  }, [amount, period, stakeTokens, dispatch]);
 
   // Check if approval is needed
   const checkApprovalNeeded = useCallback(async () => {
@@ -224,7 +308,7 @@ export function StakeModal({ isOpen, onClose }: StakeModalProps) {
 
       dispatch(
         showErrorToast({
-          title: 'Staking Failed',
+          title: 'Staking Process Error',
           description: err instanceof Error ? err.message : 'An unknown error occurred',
         }),
       );
@@ -396,7 +480,48 @@ export function StakeModal({ isOpen, onClose }: StakeModalProps) {
               exit={{ opacity: 0 }}
               onClick={() => onClose()}
             />
+    <>
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-0"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => onClose()}
+            />
 
+            <motion.div
+              className={`relative w-full sm:max-w-lg max-h-[90vh] overflow-auto rounded-xl ${
+                isDark ? 'bg-gray-900' : 'bg-white'
+              } shadow-xl`}
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            >
+              {/* Header */}
+              <div
+                className={`sticky top-0 z-10 flex items-center justify-between p-4 border-b ${
+                  isDark ? 'border-gray-800 bg-gray-900' : 'border-gray-200 bg-white'
+                }`}
+              >
+                <h2 className="text-xl font-bold">Stake {tokenSymbol}</h2>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => onClose()}
+                  className="rounded-full"
+                >
+                  <X className="h-5 w-5" />
+                </Button>
+              </div>
             <motion.div
               className={`relative w-full sm:max-w-lg max-h-[90vh] overflow-auto rounded-xl ${
                 isDark ? 'bg-gray-900' : 'bg-white'
@@ -427,7 +552,18 @@ export function StakeModal({ isOpen, onClose }: StakeModalProps) {
               <div className="p-6 space-y-6">
                 {/* Network Error Alert */}
                 {formError && <ErrorAlert message={formError} />}
+              {/* Content */}
+              <div className="p-6 space-y-6">
+                {/* Network Error Alert */}
+                {formError && <ErrorAlert message={formError} />}
 
+                {/* Available Balance */}
+                <div className={`p-4 rounded-lg ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-500">Available {tokenSymbol}</span>
+                    <span className="font-bold">{formattedBalanceWithSuffix}</span>
+                  </div>
+                </div>
                 {/* Available Balance */}
                 <div className={`p-4 rounded-lg ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
                   <div className="flex items-center justify-between">
@@ -461,7 +597,39 @@ export function StakeModal({ isOpen, onClose }: StakeModalProps) {
                       MAX
                     </Button>
                   </div>
+                {/* Amount Input */}
+                <div className="space-y-2">
+                  <Label htmlFor="stake-amount" className="flex items-center justify-between">
+                    <span>Amount to Stake</span>
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      id="stake-amount"
+                      type="text"
+                      value={amount}
+                      onChange={handleAmountChange}
+                      className={`pr-16 ${
+                        formError ? 'border-red-500 focus-visible:ring-red-500' : ''
+                      }`}
+                      placeholder="0.00"
+                    />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-1 top-1 h-8 text-blue-500"
+                      onClick={handleMaxClick}
+                    >
+                      MAX
+                    </Button>
+                  </div>
 
+                  {/* Form Error */}
+                  {formError && (
+                    <div className="flex items-center text-xs text-red-500 mt-1">
+                      <AlertCircle className="h-3 w-3 mr-1" />
+                      {formError}
+                    </div>
+                  )}
                   {/* Form Error */}
                   {formError && (
                     <div className="flex items-center text-xs text-red-500 mt-1">
@@ -474,7 +642,17 @@ export function StakeModal({ isOpen, onClose }: StakeModalProps) {
                     <span className="text-gray-500">{dollarValue}</span>
                   </div>
                 </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-gray-500">{dollarValue}</span>
+                  </div>
+                </div>
 
+                {/* Staking Period */}
+                <div className="space-y-4">
+                  <Label className="flex items-center">
+                    <Clock className="h-4 w-4 mr-2 text-blue-500" />
+                    Staking Period
+                  </Label>
                 {/* Staking Period */}
                 <div className="space-y-4">
                   <Label className="flex items-center">
@@ -507,7 +685,21 @@ export function StakeModal({ isOpen, onClose }: StakeModalProps) {
                       onValueChange={handlePeriodChange}
                       className="mt-2"
                     />
+                    {/* <Slider
+                      value={[period]}
+                      min={1}
+                      max={24}
+                      step={1}
+                      onValueChange={handlePeriodChange}
+                      className="mt-2"
+                    />
 
+                    <div className="flex justify-between text-xs text-gray-500">
+                      <span>1 month</span>
+                      <span>24 months</span>
+                    </div> */}
+                  </div>
+                </div>
                     <div className="flex justify-between text-xs text-gray-500">
                       <span>1 month</span>
                       <span>24 months</span>
@@ -521,12 +713,26 @@ export function StakeModal({ isOpen, onClose }: StakeModalProps) {
                     <TrendingUp className="h-5 w-5 mr-2 text-green-500" />
                     <span className="font-medium">Estimated APR</span>
                   </div>
+                {/* APR Information */}
+                <div className={`p-4 rounded-lg ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
+                  <div className="flex items-center mb-2">
+                    <TrendingUp className="h-5 w-5 mr-2 text-green-500" />
+                    <span className="font-medium">Estimated APR</span>
+                  </div>
 
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm text-gray-500">Base APR</span>
                     <span className="font-medium">{baseAPR}%</span>
                   </div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-gray-500">Base APR</span>
+                    <span className="font-medium">{baseAPR}%</span>
+                  </div>
 
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-gray-500">Period Bonus</span>
+                    <span className="font-medium text-green-500">+{period}%</span>
+                  </div>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm text-gray-500">Period Bonus</span>
                     <span className="font-medium text-green-500">+{period}%</span>
@@ -537,7 +743,25 @@ export function StakeModal({ isOpen, onClose }: StakeModalProps) {
                     <span className="font-bold text-green-500">{totalAPR}%</span>
                   </div>
                 </div>
+                  <div className="flex items-center justify-between pt-2 border-t border-gray-700">
+                    <span className="font-medium">Total APR</span>
+                    <span className="font-bold text-green-500">{totalAPR}%</span>
+                  </div>
+                </div>
 
+                {/* Staking Summary */}
+                {amount && Number.parseFloat(amount) > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className={`p-4 rounded-lg ${isDark ? 'bg-blue-900/20' : 'bg-blue-50'} border ${
+                      isDark ? 'border-blue-800' : 'border-blue-100'
+                    }`}
+                  >
+                    <div className="flex items-center mb-2">
+                      <Info className="h-5 w-5 mr-2 text-blue-500" />
+                      <span className="font-medium">Staking Summary</span>
+                    </div>
                 {/* Staking Summary */}
                 {amount && Number.parseFloat(amount) > 0 && (
                   <motion.div
@@ -559,12 +783,27 @@ export function StakeModal({ isOpen, onClose }: StakeModalProps) {
                           {Number.parseFloat(amount).toLocaleString()} {tokenSymbol}
                         </span>
                       </div>
+                    <div className="space-y-2 mt-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Amount</span>
+                        <span className="font-medium">
+                          {Number.parseFloat(amount).toLocaleString()} {tokenSymbol}
+                        </span>
+                      </div>
 
                       <div className="flex items-center justify-between">
                         <span className="text-sm">Lock Period</span>
                         <span className="font-medium">{getPeriodLabel(period)}</span>
                       </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Lock Period</span>
+                        <span className="font-medium">{getPeriodLabel(period)}</span>
+                      </div>
 
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Unlock Date</span>
+                        <span className="font-medium">{unlockDate}</span>
+                      </div>
                       <div className="flex items-center justify-between">
                         <span className="text-sm">Unlock Date</span>
                         <span className="font-medium">{unlockDate}</span>
@@ -579,7 +818,41 @@ export function StakeModal({ isOpen, onClose }: StakeModalProps) {
                     </div>
                   </motion.div>
                 )}
+                      <div className="flex items-center justify-between pt-2 border-t border-blue-800/30">
+                        <span className="font-medium">Estimated Rewards</span>
+                        <span className="font-bold text-blue-500">
+                          +{estimatedRewards} {tokenSymbol}
+                        </span>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
 
+                {/* Disclaimer */}
+                <div className="text-xs text-gray-500">
+                  <p>
+                    By staking your {tokenSymbol} tokens, you agree to lock them for the selected
+                    period. You cannot unstake your tokens before the end of the lock period.
+                    Rewards are distributed every minute.
+                  </p>
+                </div>
+
+                {/* Approval Info */}
+                <div
+                  className={`p-3 rounded-lg text-xs ${
+                    isDark ? 'bg-yellow-900/20 text-yellow-400' : 'bg-yellow-50 text-yellow-700'
+                  } border ${isDark ? 'border-yellow-800/50' : 'border-yellow-200'}`}
+                >
+                  <div className="flex items-start">
+                    <Info className="h-4 w-4 mr-2 flex-shrink-0 mt-0.5" />
+                    <p>
+                      When staking for the first time, you&apos;ll need to approve {tokenSymbol}{' '}
+                      tokens before staking. This requires two separate transactions: first to
+                      approve the tokens, then to stake them.
+                    </p>
+                  </div>
+                </div>
+              </div>
                 {/* Disclaimer */}
                 <div className="text-xs text-gray-500">
                   <p>
