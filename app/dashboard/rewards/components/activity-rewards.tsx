@@ -3,11 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAppKitAccount } from '@reown/appkit/react';
 import { Flame, Award, RefreshCw } from 'lucide-react';
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useAppKitAccount } from '@reown/appkit/react';
-import { Flame, Award, RefreshCw } from 'lucide-react';
 
-import { TransactionConfirmationModal } from '@/components/transaction-confirmation-modal';
 import { TransactionConfirmationModal } from '@/components/transaction-confirmation-modal';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -16,14 +12,9 @@ import { LoadingButton } from '@/components/ui/loading-button';
 import { Progress } from '@/components/ui/progress';
 import { RewardCountdownTimer } from '@/components/ui/reward-countdown-timer';
 import { useMovinEarn } from '@/lib/hooks/useMovinEarn';
-import { RewardCountdownTimer } from '@/components/ui/reward-countdown-timer';
-import { useMovinEarn } from '@/lib/hooks/useMovinEarn';
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
 import { fetchActivities } from '@/lib/redux/slices/activityDataSlice';
-import { fetchActivities } from '@/lib/redux/slices/activityDataSlice';
 import {
-  fetchActivityRewardsHistory,
-  recordActivityReward,
   fetchActivityRewardsHistory,
   recordActivityReward,
 } from '@/lib/redux/slices/activityRewardsSlice';
@@ -54,7 +45,6 @@ export function ActivityRewards({ refreshing }: ActivityRewardsProps) {
   const isPremium = premiumStatus.status && !isPremiumExpired(premiumStatus);
 
   const {
-    formattedActivity,
     formattedActivity,
     isLoading: activityLoading,
     error: activityError,
@@ -293,10 +283,8 @@ export function ActivityRewards({ refreshing }: ActivityRewardsProps) {
   }
 
   if (errorMessage) {
-  if (errorMessage) {
     return (
       <div className="space-y-4">
-        <ErrorAlert message={errorMessage} />
         <ErrorAlert message={errorMessage} />
         <Button onClick={handleRetryLoadActivity} className="w-full">
           <RefreshCw className="h-4 w-4 mr-2" />
@@ -317,17 +305,9 @@ export function ActivityRewards({ refreshing }: ActivityRewardsProps) {
               <Flame className="h-6 w-6 text-blue-600 dark:text-blue-400 mr-2" />
               <span className="text-4xl font-bold text-blue-600 dark:text-blue-400">
                 {totalRewards.toFixed(2)}
-                {totalRewards.toFixed(2)}
               </span>
               <span className="text-xl ml-2 text-gray-500 dark:text-gray-400">MVN</span>
             </div>
-            <span className="text-sm text-gray-500 dark:text-gray-400">Total earned today</span>
-            {totalRewards > 0 && expirationTimestamp && (
-              <RewardCountdownTimer
-                expirationTimestamp={expirationTimestamp}
-                hasRewards={totalRewards > 0}
-              />
-            )}
             <span className="text-sm text-gray-500 dark:text-gray-400">Total earned today</span>
             {totalRewards > 0 && expirationTimestamp && (
               <RewardCountdownTimer
@@ -372,7 +352,6 @@ export function ActivityRewards({ refreshing }: ActivityRewardsProps) {
       </div>
 
       <div className="space-y-4">
-        <h2 className="text-lg font-medium">Current Progress</h2>
         <h2 className="text-lg font-medium">Current Progress</h2>
         <Card className="bg-gray-100 dark:bg-gray-900 border-gray-300 dark:border-gray-800">
           <CardContent className="p-4">
