@@ -60,6 +60,7 @@ export function MovinDashboard() {
   const [refreshing, setRefreshing] = useState(false);
   const [isRouteTypeModalOpen, setIsRouteTypeModalOpen] = useState(false);
   const [isRouteModalOpen, setIsRouteModalOpen] = useState(false);
+  const [isJointTrackingSelected, setIsJointTrackingSelected] = useState(false);
   const currentDate = useMemo(() => new Date(), []);
   const { address } = useAppKitAccount();
   const addressLower = address?.toLowerCase();
@@ -184,12 +185,14 @@ export function MovinDashboard() {
   // Handle selecting single route tracking
   const handleSelectSingleTracking = () => {
     setIsRouteTypeModalOpen(false);
+    setIsJointTrackingSelected(false);
     setIsRouteModalOpen(true);
   };
 
   // Handle selecting joint route tracking
   const handleSelectJointTracking = () => {
     setIsRouteTypeModalOpen(false);
+    setIsJointTrackingSelected(true);
     setIsRouteModalOpen(true);
   };
 
@@ -450,6 +453,7 @@ export function MovinDashboard() {
         isOpen={isRouteModalOpen}
         onClose={handleCloseRouteModal}
         onSaveRoute={handleSaveRoute}
+        isJointTracking={isJointTrackingSelected}
       />
     </>
   );

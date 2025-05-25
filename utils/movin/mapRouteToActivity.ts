@@ -24,12 +24,12 @@ export function mapRouteToActivity(routeData: RouteData, userAddress: string): P
   // Using a common estimate of 1300 steps per km.
   const stepsTaken = Math.round((routeData.distance / 1000) * 1300);
 
-  const activityName = routeData.isJoint ? 'Joint Run' : 'Manual Run';
+  const activityName = routeData.isJoint ? 'Joint Exercise' : 'Manual Exercise';
 
   return {
     address: userAddress,
     name: activityName,
-    source: 'Route Tracking', // Indicates this activity was manually tracked in the app
+    source: 'Movin App', // Indicates this activity was manually tracked in the app
     start_date: startDate.toISOString(),
     end_date: endDate.toISOString(),
     duration: routeData.duration, // seconds

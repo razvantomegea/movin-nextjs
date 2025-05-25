@@ -14,6 +14,7 @@ interface RouteTrackingModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSaveRoute: (routeData: RouteData) => void;
+  isJointTracking?: boolean;
 }
 
 export interface RouteData {
@@ -41,7 +42,12 @@ const sarrahUser = {
   location: { lat: 0, lng: 0 }, // Will be updated based on current position
 };
 
-export function RouteTrackingModal({ isOpen, onClose, onSaveRoute }: RouteTrackingModalProps) {
+export function RouteTrackingModal({
+  isOpen,
+  onClose,
+  onSaveRoute,
+  isJointTracking = false,
+}: RouteTrackingModalProps) {
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
   const mapRef = useRef<google.maps.Map | null>(null);
@@ -61,7 +67,6 @@ export function RouteTrackingModal({ isOpen, onClose, onSaveRoute }: RouteTracki
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
 
   // Simulated joint tracking state
-  const [isJointTracking] = useState(true);
   const [sarrahPosition, setSarrahPosition] = useState<google.maps.LatLngLiteral | null>(null);
 
   // Initialize permission check
@@ -609,8 +614,12 @@ export function RouteTrackingModal({ isOpen, onClose, onSaveRoute }: RouteTracki
                         <div className="text-xs text-gray-300">Pace</div>
                         <div className="text-white font-bold">
                           {distance > 0 && duration > 0
-                            ? formatDuration(Math.floor((duration / (distance / 1000)) * 60)) +
-                              '/km'
+                            ? (() => {
+                                const paceSeconds = Math.floor((duration / (distance / 1000)) * 60);
+                                const minutes = Math.floor(paceSeconds / 60);
+                                const seconds = paceSeconds % 60;
+                                return `${minutes}:${seconds.toString().padStart(2, '0')}/km`;
+                              })()
                             : '--:--'}
                         </div>
                       </div>
