@@ -8,9 +8,9 @@ import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
+import { useMovinEarn } from '@/lib/hooks/useMovinEarn';
 import { updateProfile } from '@/lib/supabase/profile';
 import { getProfile } from '@/lib/supabase/profile';
-import { useMovinEarn } from '@/lib/hooks/useMovinEarn';
 
 export function ConnectPage() {
   const router = useRouter();
@@ -85,6 +85,7 @@ export function ConnectPage() {
 
             // Register referral if one was provided
             const storedReferrer = localStorage.getItem('referrer');
+
             if (
               storedReferrer &&
               isValidAddress(storedReferrer) &&
@@ -106,6 +107,7 @@ export function ConnectPage() {
 
           // Navigate to dashboard on successful authentication
           const navigateTimeout = setTimeout(() => {
+            localStorage.removeItem('referrer');
             router.push('/dashboard');
           }, 3000);
 

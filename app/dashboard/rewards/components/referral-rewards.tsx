@@ -2,13 +2,11 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useAppKitAccount } from '@reown/appkit/react';
-import { Users, Copy, Send, RefreshCw } from 'lucide-react';
+import { Users, Copy, RefreshCw, Share2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ErrorAlert } from '@/components/ui/error-alert';
-import { Input } from '@/components/ui/input';
-import { LoadingButton } from '@/components/ui/loading-button';
 import { useMovinEarn } from '@/lib/hooks/useMovinEarn';
 import { useAppDispatch } from '@/lib/redux/hooks';
 import { showSuccessToast, showErrorToast } from '@/lib/redux/slices/toastSlice';
@@ -16,17 +14,16 @@ import { ReferralRewardsSkeleton } from './referral-rewards-skeleton';
 
 interface ReferralRewardsProps {
   refreshing: boolean;
+  onDataLoaded?: () => void;
 }
 
-export function ReferralRewards({ refreshing }: ReferralRewardsProps) {
-  const [inviteEmail, setInviteEmail] = useState('');
-  const [isInviting, setIsInviting] = useState(false);
+export function ReferralRewards({ refreshing, onDataLoaded }: ReferralRewardsProps) {
   const dispatch = useAppDispatch();
   const { address } = useAppKitAccount();
   const addressLower = useMemo(() => address?.toLowerCase() || '', [address]);
 
   // Get hooks from useMovinEarn
-  const { useReferralInfo, useUserReferrals, useRegisterReferral } = useMovinEarn();
+  const { useReferralInfo, useUserReferrals } = useMovinEarn();
 
   // Get referral info
   const {
@@ -43,20 +40,14 @@ export function ReferralRewards({ refreshing }: ReferralRewardsProps) {
     error: referralsError,
   } = useUserReferrals();
 
-  // Register referral hook
-  const {
-    registerReferral,
-    isPending: isRegistering,
-    error: registerError,
-  } = useRegisterReferral();
-
   // Format referral info
   const referralInfo = useMemo(() => formattedReferralInfo(), [formattedReferralInfo]);
 
   // Generate referral link
   const referralLink = useMemo(() => {
     if (!addressLower) return '';
-    const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://getmovin.ai';
+
+    const baseUrl = 'https://app.getmovin.ai';
     return `${baseUrl}?referral=${addressLower}`;
   }, [addressLower]);
 
@@ -87,12 +78,7 @@ export function ReferralRewards({ refreshing }: ReferralRewardsProps) {
   const isLoading = referralInfoLoading || referralsLoading || refreshing;
 
   // Check for error
-  const error = referralInfoError?.message || referralsError?.message || registerError?.message;
-
-  // Handle claim referral rewards
-  const handleClaimReferralRewards = () => {
-    console.log('handleClaimReferralRewards');
-  };
+  const error = referralInfoError?.message || referralsError?.message;
 
   // Handle copy referral code
   const handleCopyReferralCode = () => {
@@ -116,48 +102,56 @@ export function ReferralRewards({ refreshing }: ReferralRewardsProps) {
     );
   };
 
-  // Handle invite friend
-  const handleInviteFriend = async () => {
-    if (!inviteEmail || !inviteEmail.includes('@')) {
-      dispatch(
-        showErrorToast({
-          title: 'Invalid Email',
-          description: 'Please enter a valid email address',
-        }),
-      );
-      return;
-    }
+  // Handle share referral code
+  const handleShareReferralCode = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Join Movin with my referral',
+          text: 'Use my referral link to join Movin and earn 1 MVN rewards!',
+          url: referralLink,
+        });
 
-    try {
-      setIsInviting(true);
-      // Here you would integrate with an email service to send invites
-      // This is a mock implementation similar to the previous one
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
-      dispatch(
-        showSuccessToast({
-          title: 'Invitation Sent',
-          description: `Invitation sent to ${inviteEmail}`,
-        }),
-      );
-
-      // Clear the input
-      setInviteEmail('');
-    } catch (err) {
-      dispatch(
-        showErrorToast({
-          title: 'Invitation Failed',
-          description: err instanceof Error ? err.message : 'An unknown error occurred',
-        }),
-      );
-    } finally {
-      setIsInviting(false);
+        dispatch(
+          showSuccessToast({
+            title: 'Shared Successfully',
+            description: 'Referral link shared successfully',
+          }),
+        );
+      } catch (err) {
+        // User cancelled or share failed
+        if (err instanceof Error && err.name !== 'AbortError') {
+          dispatch(
+            showErrorToast({
+              title: 'Share Failed',
+              description: 'Failed to share referral link',
+            }),
+          );
+        }
+      }
+    } else {
+      // Fallback to copy if share is not available
+      handleCopyReferralCode();
     }
   };
 
   const handleRetryLoadReferrals = () => {
     refetchReferralInfo();
   };
+
+  // Add useEffect to handle the refreshing state
+  useEffect(() => {
+    if (refreshing) {
+      const loadData = async () => {
+        await refetchReferralInfo();
+        if (onDataLoaded) {
+          onDataLoaded();
+        }
+      };
+
+      loadData();
+    }
+  }, [refreshing, refetchReferralInfo, onDataLoaded]);
 
   if (isLoading && !refreshing) {
     return <ReferralRewardsSkeleton />;
@@ -181,7 +175,7 @@ export function ReferralRewards({ refreshing }: ReferralRewardsProps) {
         <CardContent className="p-6">
           <h2 className="text-2xl font-bold text-center mb-6">Referral Rewards</h2>
 
-          <div className="flex flex-col items-center mb-8">
+          <div className="flex flex-col items-center">
             <div className="flex items-center mb-2">
               <Users className="h-6 w-6 text-blue-400 mr-2" />
               <span className="text-4xl font-bold text-blue-400">
@@ -195,16 +189,6 @@ export function ReferralRewards({ refreshing }: ReferralRewardsProps) {
               <span className="text-sm ml-1 text-gray-400">MVN earned</span>
             </div>
           </div>
-
-          <LoadingButton
-            className="w-full py-6 text-lg bg-blue-500 hover:bg-blue-600"
-            loading={false}
-            loadingText="Preparing Transaction..."
-            onClick={handleClaimReferralRewards}
-            disabled={totalRewards <= 0}
-          >
-            Claim Rewards
-          </LoadingButton>
         </CardContent>
       </Card>
 
@@ -216,45 +200,30 @@ export function ReferralRewards({ refreshing }: ReferralRewardsProps) {
               <div className="font-mono text-lg font-medium bg-gray-800 p-2 rounded flex-1 text-center overflow-hidden text-ellipsis">
                 {referralLink}
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                className="ml-3 border-blue-500 text-blue-400 hover:bg-blue-500/10"
-                onClick={handleCopyReferralCode}
-              >
-                <Copy className="h-4 w-4 mr-1" />
-                Copy
-              </Button>
+              <div className="ml-3 flex space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-blue-500 text-blue-400 hover:bg-blue-500/10"
+                  onClick={handleCopyReferralCode}
+                >
+                  <Copy className="h-4 w-4 mr-1" />
+                  Copy
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-blue-500 text-blue-400 hover:bg-blue-500/10"
+                  onClick={handleShareReferralCode}
+                >
+                  <Share2 className="h-4 w-4 mr-1" />
+                  Share
+                </Button>
+              </div>
             </div>
 
             <div className="mt-4 text-sm text-gray-400 text-center">
-              Earn 1.5 MVN for each friend who joins and completes their first activity
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="space-y-4">
-        <h2 className="text-lg font-medium">Invite Friends</h2>
-        <Card className="bg-gray-100 dark:bg-gray-900 border-gray-300 dark:border-gray-800">
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <Input
-                type="email"
-                placeholder="friend@example.com"
-                value={inviteEmail}
-                onChange={(e) => setInviteEmail(e.target.value)}
-              />
-              <LoadingButton
-                variant="outline"
-                className="border-blue-500 text-blue-500"
-                loading={isInviting}
-                loadingText="Sending..."
-                onClick={handleInviteFriend}
-              >
-                <Send className="h-4 w-4 mr-1" />
-                Invite
-              </LoadingButton>
+              Earn 1 MVN for each friend who joins
             </div>
           </CardContent>
         </Card>

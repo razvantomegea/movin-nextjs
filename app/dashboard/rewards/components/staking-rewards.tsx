@@ -6,7 +6,7 @@ import { Flame, Lock, Plus } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { TransactionConfirmationModal } from '@/components/transaction-confirmation-modal';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { LoadingButton } from '@/components/ui/loading-button';
 import { RewardCountdownTimer } from '@/components/ui/reward-countdown-timer';
 import { IUserStake, useMovinEarn } from '@/lib/hooks/useMovinEarn';
@@ -24,9 +24,10 @@ import { StakingSkeleton } from './staking-skeleton';
 
 interface StakingRewardsProps {
   refreshing: boolean;
+  onDataLoaded?: () => void;
 }
 
-export function StakingRewards({ refreshing }: StakingRewardsProps) {
+export function StakingRewards({ refreshing, onDataLoaded }: StakingRewardsProps) {
   const [isStakeModalOpen, setIsStakeModalOpen] = useState(false);
   const [activeAction, setActiveAction] = useState<{ type: string; index: number } | null>(null);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
@@ -36,7 +37,7 @@ export function StakingRewards({ refreshing }: StakingRewardsProps) {
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
   const dispatch = useAppDispatch();
-  const { address, isConnected } = useAppKitAccount();
+  const { address } = useAppKitAccount();
   const addressLower = address?.toLowerCase();
   const userAddress = useMemo(() => addressLower || '', [addressLower]);
 
@@ -88,7 +89,11 @@ export function StakingRewards({ refreshing }: StakingRewardsProps) {
     await refetchStakingData();
     await refetchTokenBalance();
     dispatch(fetchStakingData(userAddress));
-  }, [refetchStakingData, refetchTokenBalance, dispatch, userAddress]);
+
+    if (onDataLoaded) {
+      onDataLoaded();
+    }
+  }, [refetchStakingData, refetchTokenBalance, dispatch, userAddress, onDataLoaded]);
 
   const addStakesToDb = useCallback(async () => {
     const { stakesToCreate, stakesToUpdate } = prepareUpdateStakesInDB({
@@ -199,9 +204,16 @@ export function StakingRewards({ refreshing }: StakingRewardsProps) {
 
   useEffect(() => {
     if (refreshing) {
-      refreshAllData();
+      const loadData = async () => {
+        await refreshAllData();
+        if (onDataLoaded) {
+          onDataLoaded();
+        }
+      };
+
+      loadData();
     }
-  }, [refreshing, refreshAllData]);
+  }, [refreshing, refreshAllData, onDataLoaded]);
 
   useEffect(() => {
     if (stakingData?.stakes) {
@@ -389,18 +401,7 @@ export function StakingRewards({ refreshing }: StakingRewardsProps) {
     setIsConfirmModalOpen(false);
   }, []);
 
-  if (!isConnected) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Staking Rewards</CardTitle>
-          <CardDescription>Connect your wallet to view your staking rewards</CardDescription>
-        </CardHeader>
-      </Card>
-    );
-  }
-
-  if (!stakingData || refreshing) {
+  if (refreshing) {
     return <StakingSkeleton />;
   }
 

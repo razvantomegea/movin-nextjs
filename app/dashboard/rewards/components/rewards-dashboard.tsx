@@ -13,7 +13,15 @@ export function RewardsDashboard() {
   const [refreshing, setRefreshing] = useState(false);
 
   const handleRefresh = async () => {
-    setRefreshing(true);
+    if (!refreshing) {
+      setRefreshing(true);
+    }
+  };
+
+  const handleDataLoaded = () => {
+    if (refreshing) {
+      setRefreshing(false);
+    }
   };
 
   return (
@@ -40,19 +48,19 @@ export function RewardsDashboard() {
 
           <TabsContent value="activity" className="mt-0">
             <ErrorBoundary>
-              <ActivityRewards refreshing={refreshing} />
+              <ActivityRewards refreshing={refreshing} onDataLoaded={handleDataLoaded} />
             </ErrorBoundary>
           </TabsContent>
 
           <TabsContent value="staking" className="mt-0">
             <ErrorBoundary>
-              <StakingRewards refreshing={refreshing} />
+              <StakingRewards refreshing={refreshing} onDataLoaded={handleDataLoaded} />
             </ErrorBoundary>
           </TabsContent>
 
           <TabsContent value="referrals" className="mt-0">
             <ErrorBoundary>
-              <ReferralRewards refreshing={refreshing} />
+              <ReferralRewards refreshing={refreshing} onDataLoaded={handleDataLoaded} />
             </ErrorBoundary>
           </TabsContent>
         </Tabs>
