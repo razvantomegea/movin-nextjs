@@ -1,7 +1,15 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-// Client-side Supabase client for browser usage
+// Singleton instance for the browser client
+let browserClientInstance: SupabaseClient | null = null;
+
+// Client-side Supabase client for browser usage - singleton implementation
 export function createSupabaseClientBrowser() {
+  // Return existing instance if available
+  if (browserClientInstance) {
+    return browserClientInstance;
+  }
+
   // Extract token from cookies if available
   let authToken = '';
   if (typeof document !== 'undefined') {
@@ -16,8 +24,8 @@ export function createSupabaseClientBrowser() {
     }
   }
 
-  // Basic Supabase client for unauthenticated actions or when token is in cookie
-  return createClient(
+  // Create a new instance if none exists
+  browserClientInstance = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
@@ -34,14 +42,25 @@ export function createSupabaseClientBrowser() {
       },
     },
   );
+
+  return browserClientInstance;
 }
+
+// Singleton instance for the authenticated client
+let authenticatedClientInstance: SupabaseClient | null = null;
 
 export function getClient() {
   // For explicit token usage (legacy method)
   const token = typeof localStorage !== 'undefined' ? localStorage.getItem('auth_token') : null;
   if (!token) throw new Error('No auth token');
 
-  return createClient(
+  // Check if we already have a client with this token
+  if (authenticatedClientInstance) {
+    return authenticatedClientInstance;
+  }
+
+  // Create a new authenticated client
+  authenticatedClientInstance = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
@@ -49,4 +68,6 @@ export function getClient() {
       auth: { persistSession: false },
     },
   );
+
+  return authenticatedClientInstance;
 }

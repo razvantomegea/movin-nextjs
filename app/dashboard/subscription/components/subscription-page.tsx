@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { AlertCircle, Crown, Info } from 'lucide-react';
+import { AlertCircle, Crown } from 'lucide-react';
 import { TransactionConfirmationModal } from '@/components/transaction-confirmation-modal';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';

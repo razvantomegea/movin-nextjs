@@ -27,9 +27,10 @@ import { ActivityRewardsSkeleton } from './activity-rewards-skeleton';
 
 interface ActivityRewardsProps {
   refreshing: boolean;
+  onDataLoaded?: () => void;
 }
 
-export function ActivityRewards({ refreshing }: ActivityRewardsProps) {
+export function ActivityRewards({ refreshing, onDataLoaded }: ActivityRewardsProps) {
   const dispatch = useAppDispatch();
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [dbUpdateInProgress, setDbUpdateInProgress] = useState(false);
@@ -46,16 +47,13 @@ export function ActivityRewards({ refreshing }: ActivityRewardsProps) {
 
   const {
     formattedActivity,
-    isLoading: activityLoading,
     error: activityError,
     refetch: refetchUserActivity,
   } = useUserActivity();
 
-  const {
-    activities,
-    isLoading: activitiesLoading,
-    error: activitiesError,
-  } = useAppSelector((state: RootState) => state.activityData);
+  const { activities, error: activitiesError } = useAppSelector(
+    (state: RootState) => state.activityData,
+  );
 
   const blockchainActivity = formattedActivity();
 
@@ -94,7 +92,6 @@ export function ActivityRewards({ refreshing }: ActivityRewardsProps) {
 
   const {
     formattedRewards,
-    isLoading: rewardsLoading,
     error: rewardsError,
     refetch: refetchRewards,
   } = useCalculateActivityRewards(stepsToClaim, metsToClaim);
@@ -151,6 +148,20 @@ export function ActivityRewards({ refreshing }: ActivityRewardsProps) {
     ];
   }, [rewards, dailyActivity]);
 
+  const handleRetryLoadActivity = useCallback(async () => {
+    await refetchUserActivity();
+    await refetchRewards();
+
+    if (addressLower) {
+      await dispatch(fetchActivities(addressLower));
+      await dispatch(fetchActivityRewardsHistory(addressLower));
+    }
+
+    if (refreshing && onDataLoaded) {
+      onDataLoaded();
+    }
+  }, [refetchUserActivity, refetchRewards, addressLower, dispatch, refreshing, onDataLoaded]);
+
   // Calculate activity rewards expiration (midnight tomorrow)
   const updateActivityRewardExpiration = useCallback(() => {
     if (totalRewards <= 0) {
@@ -166,24 +177,13 @@ export function ActivityRewards({ refreshing }: ActivityRewardsProps) {
 
   // Fetch data on component mount and when refreshing
   useEffect(() => {
-    refetchUserActivity();
-
-    if (addressLower) {
-      dispatch(fetchActivities(addressLower));
-    }
-  }, [refetchUserActivity, dispatch, addressLower, refreshing]);
+    handleRetryLoadActivity();
+  }, [handleRetryLoadActivity]);
 
   // Update expiration timestamp when rewards change
   useEffect(() => {
     updateActivityRewardExpiration();
   }, [totalRewards, updateActivityRewardExpiration]);
-
-  // Fetch activity rewards history when the component mounts
-  useEffect(() => {
-    if (userAddress) {
-      dispatch(fetchActivityRewardsHistory(userAddress));
-    }
-  }, [dispatch, userAddress]);
 
   // Update rewards in Supabase database
   const saveRewardsToDatabase = useCallback(async () => {
@@ -210,7 +210,7 @@ export function ActivityRewards({ refreshing }: ActivityRewardsProps) {
     if (isClaimSuccess && isConfirmModalOpen) {
       setIsConfirmModalOpen(false);
       await saveRewardsToDatabase();
-      await refetchUserActivity();
+      await handleRetryLoadActivity();
 
       dispatch(
         showSuccessToast({
@@ -219,12 +219,18 @@ export function ActivityRewards({ refreshing }: ActivityRewardsProps) {
         }),
       );
     }
-  }, [refetchUserActivity, dispatch, saveRewardsToDatabase, isConfirmModalOpen, isClaimSuccess]);
+  }, [
+    dispatch,
+    saveRewardsToDatabase,
+    isConfirmModalOpen,
+    isClaimSuccess,
+    handleRetryLoadActivity,
+  ]);
 
   const handleTransactionFail = useCallback(async () => {
     if (claimError && isConfirmModalOpen) {
       setIsConfirmModalOpen(false);
-      refetchUserActivity();
+      await handleRetryLoadActivity();
 
       dispatch(
         showErrorToast({
@@ -233,7 +239,7 @@ export function ActivityRewards({ refreshing }: ActivityRewardsProps) {
         }),
       );
     }
-  }, [refetchUserActivity, dispatch, claimError, isConfirmModalOpen]);
+  }, [dispatch, claimError, isConfirmModalOpen, handleRetryLoadActivity]);
 
   useEffect(() => {
     if (claimError && isConfirmModalOpen) {
@@ -266,19 +272,13 @@ export function ActivityRewards({ refreshing }: ActivityRewardsProps) {
     }
   };
 
-  const handleRetryLoadActivity = () => {
-    refetchUserActivity();
-    refetchRewards();
-  };
-
   const handleCloseConfirmModal = useCallback(() => {
     setIsConfirmModalOpen(false);
   }, []);
 
-  const isLoading = activityLoading || rewardsLoading || activitiesLoading;
   const errorMessage = activityError?.message || rewardsError?.message || activitiesError;
 
-  if (isLoading && !refreshing) {
+  if (refreshing) {
     return <ActivityRewardsSkeleton />;
   }
 

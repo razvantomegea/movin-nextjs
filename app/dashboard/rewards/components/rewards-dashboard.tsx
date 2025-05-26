@@ -1,99 +1,33 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
-import { useAppKitAccount } from '@reown/appkit/react';
+import { useState } from 'react';
 import ErrorBoundary from '@/components/error-boundary';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useAppDispatch } from '@/lib/redux/hooks';
-import { fetchActivityRewards } from '@/lib/redux/slices/activityRewardsSlice';
-import { fetchReferralRewards } from '@/lib/redux/slices/referralRewardsSlice';
-import { fetchStakingData } from '@/lib/redux/slices/stakingSlice';
-import { showSuccessToast, showInfoToast } from '@/lib/redux/slices/toastSlice';
 
 import { ActivityRewards } from './activity-rewards';
 import { ReferralRewards } from './referral-rewards';
 import { StakingRewards } from './staking-rewards';
 
 export function RewardsDashboard() {
-  const [activeTab, setActiveTab] = useState('activity');
   const [refreshing, setRefreshing] = useState(false);
 
-  const dispatch = useAppDispatch();
-
-  // Get user address from wagmi
-  const { address, isConnected } = useAppKitAccount();
-  const addressLower = address?.toLowerCase();
-  const userAddress = useMemo(() => addressLower || '', [addressLower]);
-
-  // Initial data loading
-  useEffect(() => {
-    if (userAddress) {
-      // Load all rewards data when component mounts
-      dispatch(fetchStakingData(userAddress));
-      dispatch(fetchActivityRewards());
-      dispatch(fetchReferralRewards());
-    }
-  }, [dispatch, userAddress]);
-
   const handleRefresh = async () => {
-    setRefreshing(true);
-    try {
-      if (activeTab === 'staking' && userAddress) {
-        await dispatch(fetchStakingData(userAddress)).unwrap();
-      } else if (activeTab === 'activity') {
-        await dispatch(fetchActivityRewards()).unwrap();
-      } else if (activeTab === 'referrals') {
-        await dispatch(fetchReferralRewards()).unwrap();
-      }
+    if (!refreshing) {
+      setRefreshing(true);
+    }
+  };
 
-      dispatch(
-        showSuccessToast({
-          title: 'Data Refreshed',
-          description: 'Your rewards data has been updated',
-        }),
-      );
-    } catch (error) {
-      dispatch(
-        showInfoToast({
-          title: 'Refresh Failed',
-          description: 'Please try again later',
-        }),
-      );
-    } finally {
+  const handleDataLoaded = () => {
+    if (refreshing) {
       setRefreshing(false);
     }
   };
 
-  // Handle tab change
-  const handleTabChange = (value: string) => {
-    setActiveTab(value);
-    if (value === 'staking' && userAddress) {
-      // Refresh staking data when switching to staking tab
-      dispatch(fetchStakingData(userAddress));
-    } else if (value === 'activity') {
-      dispatch(fetchActivityRewards());
-    } else if (value === 'referrals') {
-      dispatch(fetchReferralRewards());
-    }
-  };
-
-  // Show connection message if not connected
-  if (!isConnected) {
-    return (
-      <div className="p-4">
-        <div className="text-center py-8">
-          <h2 className="text-xl font-bold mb-2">Connect Your Wallet</h2>
-          <p className="text-gray-500">Please connect your wallet to view your rewards.</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <>
       <div className="p-4">
-        <Tabs defaultValue="activity" onValueChange={handleTabChange} className="w-full">
+        <Tabs defaultValue="activity" onValueChange={handleRefresh} className="w-full">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center">
               <h1 className="text-2xl font-bold mr-2">Rewards</h1>
@@ -114,19 +48,19 @@ export function RewardsDashboard() {
 
           <TabsContent value="activity" className="mt-0">
             <ErrorBoundary>
-              <ActivityRewards refreshing={refreshing} />
+              <ActivityRewards refreshing={refreshing} onDataLoaded={handleDataLoaded} />
             </ErrorBoundary>
           </TabsContent>
 
           <TabsContent value="staking" className="mt-0">
             <ErrorBoundary>
-              <StakingRewards refreshing={refreshing} />
+              <StakingRewards refreshing={refreshing} onDataLoaded={handleDataLoaded} />
             </ErrorBoundary>
           </TabsContent>
 
           <TabsContent value="referrals" className="mt-0">
             <ErrorBoundary>
-              <ReferralRewards refreshing={refreshing} />
+              <ReferralRewards refreshing={refreshing} onDataLoaded={handleDataLoaded} />
             </ErrorBoundary>
           </TabsContent>
         </Tabs>
