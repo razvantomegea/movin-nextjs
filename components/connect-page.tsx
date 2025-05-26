@@ -150,7 +150,7 @@ export function ConnectPage() {
         >
           <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 text-center">
             <p className="text-blue-600 dark:text-blue-400">
-              You're joining through a referral! Connect your wallet to earn 1 MVN bonus.
+              You&apos;re joining through a referral! Connect your wallet to earn 1 MVN bonus.
             </p>
           </div>
         </motion.div>

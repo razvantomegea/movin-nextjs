@@ -52,15 +52,18 @@ export function RouteTypeModal({
     dispatch(inviteUser(userId));
 
     // Simulate the user accepting after a delay (for demo purposes)
-    setTimeout(() => {
-      dispatch(simulateAcceptInvitation(userId));
-      dispatch(
-        showInfoToast({
-          title: 'Invitation Accepted',
-          description: 'A user has accepted your invitation to join the route tracking.',
-        }),
-      );
-    }, 2000 + Math.random() * 2000); // Random delay between 2-4 seconds
+    setTimeout(
+      () => {
+        dispatch(simulateAcceptInvitation(userId));
+        dispatch(
+          showInfoToast({
+            title: 'Invitation Accepted',
+            description: 'A user has accepted your invitation to join the route tracking.',
+          }),
+        );
+      },
+      2000 + Math.random() * 2000, // Random delay between 2-4 seconds
+    );
   };
 
   // Handle starting joint tracking
