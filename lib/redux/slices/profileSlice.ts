@@ -51,11 +51,7 @@ export const updateProfile = createAsyncThunk(
 const profileSlice = createSlice({
   name: 'profile',
   initialState,
-  reducers: {
-    clearProfileError: (state) => {
-      state.error = null;
-    },
-  },
+  reducers: {},
   extraReducers: (builder) => {
     builder
       // Fetch profile
@@ -65,6 +61,7 @@ const profileSlice = createSlice({
       })
       .addCase(fetchProfile.fulfilled, (state, action: PayloadAction<IProfile | null>) => {
         state.isLoading = false;
+        state.error = null;
         state.profile = action.payload || null;
         state.lastUpdated = Date.now();
       })
@@ -80,6 +77,8 @@ const profileSlice = createSlice({
       })
       .addCase(updateProfile.fulfilled, (state, action: PayloadAction<IProfile>) => {
         state.isUpdating = false;
+        state.error = null;
+
         if (state.profile) {
           state.profile = {
             ...state.profile,
@@ -96,5 +95,4 @@ const profileSlice = createSlice({
   },
 });
 
-export const { clearProfileError } = profileSlice.actions;
 export default profileSlice.reducer;

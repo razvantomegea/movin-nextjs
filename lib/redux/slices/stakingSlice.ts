@@ -33,36 +33,11 @@ export const fetchStakingData = createAsyncThunk(
   },
 );
 
-/**
- * Async thunk for claiming staking rewards - this just updates Supabase
- * The actual blockchain transaction is handled by useMovinEarn hook
- */
-export const claimStakingRewards = createAsyncThunk(
-  'staking/claimStakingRewards',
-  async ({ address }: { address: string; stakeId?: string }, { rejectWithValue }) => {
-    try {
-      // This is just a placeholder to update history
-      // Real claiming happens in useMovinEarn hook
-
-      // After claiming, refresh the history
-      const stakes = await getUserStakes({ address });
-
-      return { history: stakes };
-    } catch (error) {
-      return rejectWithValue(error instanceof Error ? error.message : 'An unknown error occurred');
-    }
-  },
-);
-
 // Create the slice
 const stakingSlice = createSlice({
   name: 'staking',
   initialState,
-  reducers: {
-    resetStakingError: (state) => {
-      state.error = null;
-    },
-  },
+  reducers: {},
   extraReducers: (builder) => {
     builder
       // Handle fetchStakingData
@@ -72,28 +47,14 @@ const stakingSlice = createSlice({
       })
       .addCase(fetchStakingData.fulfilled, (state, action) => {
         state.isLoading = false;
+        state.error = null;
         state.history = action.payload.history;
       })
       .addCase(fetchStakingData.rejected, (state, action) => {
         state.isLoading = false;
         state.error = (action.payload as string) || 'Failed to load staking data';
-      })
-
-      // Handle claimStakingRewards
-      .addCase(claimStakingRewards.pending, (state) => {
-        state.isLoading = true;
-        state.error = null;
-      })
-      .addCase(claimStakingRewards.fulfilled, (state, action) => {
-        state.isLoading = false;
-        state.history = action.payload.history;
-      })
-      .addCase(claimStakingRewards.rejected, (state, action) => {
-        state.isLoading = false;
-        state.error = (action.payload as string) || 'Failed to claim rewards';
       });
   },
 });
 
-export const { resetStakingError } = stakingSlice.actions;
 export default stakingSlice.reducer;

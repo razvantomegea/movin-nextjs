@@ -15,7 +15,7 @@ import { useMovinEarn } from '@/lib/hooks/useMovinEarn';
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
 import { fetchActivities } from '@/lib/redux/slices/activityDataSlice';
 import {
-  fetchActivityRewardsHistory,
+  fetchActivityRewards,
   recordActivityReward,
 } from '@/lib/redux/slices/activityRewardsSlice';
 import { showSuccessToast, showErrorToast } from '@/lib/redux/slices/toastSlice';
@@ -33,6 +33,7 @@ interface ActivityRewardsProps {
 export function ActivityRewards({ refreshing, onDataLoaded }: ActivityRewardsProps) {
   const dispatch = useAppDispatch();
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [rewardsToSave, setRewardsToSave] = useState(0);
   const [dbUpdateInProgress, setDbUpdateInProgress] = useState(false);
   const [expirationTimestamp, setExpirationTimestamp] = useState<number | null>(null);
   const { address } = useAppKitAccount();
@@ -153,7 +154,7 @@ export function ActivityRewards({ refreshing, onDataLoaded }: ActivityRewardsPro
 
     if (addressLower) {
       await dispatch(fetchActivities(addressLower));
-      await dispatch(fetchActivityRewardsHistory(addressLower));
+      await dispatch(fetchActivityRewards(addressLower));
     }
 
     if (refreshing && onDataLoaded) {
@@ -188,7 +189,7 @@ export function ActivityRewards({ refreshing, onDataLoaded }: ActivityRewardsPro
 
   // Update rewards in Supabase database
   const saveRewardsToDatabase = useCallback(async () => {
-    if (dbUpdateInProgress || totalRewards <= 0 || !addressLower) {
+    if (dbUpdateInProgress || rewardsToSave <= 0 || !addressLower) {
       return;
     }
 
@@ -197,15 +198,16 @@ export function ActivityRewards({ refreshing, onDataLoaded }: ActivityRewardsPro
       await dispatch(
         recordActivityReward({
           address: addressLower,
-          rewards: totalRewards,
+          rewards: rewardsToSave,
         }),
       ).unwrap();
     } catch (error) {
       console.error('Error recording activity reward:', error);
     } finally {
+      setRewardsToSave(0);
       setDbUpdateInProgress(false);
     }
-  }, [dbUpdateInProgress, dispatch, totalRewards, addressLower]);
+  }, [dbUpdateInProgress, dispatch, rewardsToSave, addressLower]);
 
   const handleTransactionSuccess = useCallback(async () => {
     if (isClaimSuccess && isConfirmModalOpen) {
@@ -251,7 +253,7 @@ export function ActivityRewards({ refreshing, onDataLoaded }: ActivityRewardsPro
   const handleClaimActivityRewards = async () => {
     try {
       setIsConfirmModalOpen(true);
-
+      setRewardsToSave(totalRewards);
       await recordActivity(stepsToClaim, metsToClaim);
     } catch (err) {
       setIsConfirmModalOpen(false);

@@ -48,11 +48,7 @@ export const addActivities = createAsyncThunk(
 const activityDataSlice = createSlice({
   name: 'activityData',
   initialState,
-  reducers: {
-    resetActivityError: (state) => {
-      state.error = null;
-    },
-  },
+  reducers: {},
   extraReducers: (builder) => {
     builder
       .addCase(fetchActivities.pending, (state) => {
@@ -61,6 +57,7 @@ const activityDataSlice = createSlice({
       })
       .addCase(fetchActivities.fulfilled, (state, action) => {
         state.isLoading = false;
+        state.error = null;
         state.activities = action.payload;
       })
       .addCase(fetchActivities.rejected, (state, action) => {
@@ -74,6 +71,7 @@ const activityDataSlice = createSlice({
       })
       .addCase(addActivities.fulfilled, (state, action) => {
         state.isLoading = false;
+        state.error = null;
         const initialMap = new Map(state.activities.map((a) => [a.id, a]));
         const merged = action.payload.reduce((acc, act) => {
           acc.set(act.id, act);
@@ -90,5 +88,4 @@ const activityDataSlice = createSlice({
   },
 });
 
-export const { resetActivityError } = activityDataSlice.actions;
 export default activityDataSlice.reducer;
