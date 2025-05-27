@@ -13,9 +13,8 @@ import { Progress } from '@/components/ui/progress';
 import { RewardCountdownTimer } from '@/components/ui/reward-countdown-timer';
 import { useMovinEarn } from '@/lib/hooks/useMovinEarn';
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
-import { fetchActivities } from '@/lib/redux/slices/activityDataSlice';
 import {
-  fetchActivityRewardsHistory,
+  fetchActivityRewards,
   recordActivityReward,
 } from '@/lib/redux/slices/activityRewardsSlice';
 import { showSuccessToast, showErrorToast } from '@/lib/redux/slices/toastSlice';
@@ -33,11 +32,10 @@ interface ActivityRewardsProps {
 export function ActivityRewards({ refreshing, onDataLoaded }: ActivityRewardsProps) {
   const dispatch = useAppDispatch();
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
-  const [dbUpdateInProgress, setDbUpdateInProgress] = useState(false);
+  const [rewardsToSave, setRewardsToSave] = useState(0);
   const [expirationTimestamp, setExpirationTimestamp] = useState<number | null>(null);
   const { address } = useAppKitAccount();
-  const addressLower = address?.toLowerCase();
-  const userAddress = useMemo(() => addressLower || '', [addressLower]);
+  const addressLower = useMemo(() => address?.toLowerCase(), [address]);
   const currentDate = useMemo(() => new Date(), []);
   const { useUserActivity, useCalculateActivityRewards, useRecordActivity, usePremiumStatus } =
     useMovinEarn();
@@ -51,8 +49,14 @@ export function ActivityRewards({ refreshing, onDataLoaded }: ActivityRewardsPro
     refetch: refetchUserActivity,
   } = useUserActivity();
 
-  const { activities, error: activitiesError } = useAppSelector(
-    (state: RootState) => state.activityData,
+  const {
+    activities,
+    error: activitiesError,
+    isLoading: activitiesLoading,
+  } = useAppSelector((state: RootState) => state.activityData);
+
+  const { isLoading: rewardsLoading, error: rewardsDbError } = useAppSelector(
+    (state) => state.activityRewards,
   );
 
   const blockchainActivity = formattedActivity();
@@ -110,7 +114,7 @@ export function ActivityRewards({ refreshing, onDataLoaded }: ActivityRewardsPro
     return rewards.stepsRewards + rewards.metsRewards;
   }, [rewards]);
 
-  const activityRewards = useMemo(() => {
+  const rewardBreakdown = useMemo(() => {
     if (!rewards) return [];
 
     const stepsPercentage = totalRewards > 0 ? (rewards.stepsRewards / totalRewards) * 100 : 0;
@@ -148,19 +152,27 @@ export function ActivityRewards({ refreshing, onDataLoaded }: ActivityRewardsPro
     ];
   }, [rewards, dailyActivity]);
 
-  const handleRetryLoadActivity = useCallback(async () => {
-    await refetchUserActivity();
-    await refetchRewards();
-
-    if (addressLower) {
-      await dispatch(fetchActivities(addressLower));
-      await dispatch(fetchActivityRewardsHistory(addressLower));
+  const handleRefresh = useCallback(async () => {
+    if (!addressLower) {
+      return;
     }
 
-    if (refreshing && onDataLoaded) {
+    await Promise.all([
+      refetchUserActivity(),
+      refetchRewards(),
+      dispatch(fetchActivityRewards(addressLower)),
+    ]);
+
+    if (onDataLoaded) {
       onDataLoaded();
     }
-  }, [refetchUserActivity, refetchRewards, addressLower, dispatch, refreshing, onDataLoaded]);
+  }, [refetchUserActivity, refetchRewards, addressLower, dispatch, onDataLoaded]);
+
+  useEffect(() => {
+    if (refreshing) {
+      handleRefresh();
+    }
+  }, [handleRefresh, refreshing]);
 
   // Calculate activity rewards expiration (midnight tomorrow)
   const updateActivityRewardExpiration = useCallback(() => {
@@ -175,11 +187,6 @@ export function ActivityRewards({ refreshing, onDataLoaded }: ActivityRewardsPro
     setExpirationTimestamp(Math.floor(tomorrow.getTime() / 1000));
   }, [totalRewards]);
 
-  // Fetch data on component mount and when refreshing
-  useEffect(() => {
-    handleRetryLoadActivity();
-  }, [handleRetryLoadActivity]);
-
   // Update expiration timestamp when rewards change
   useEffect(() => {
     updateActivityRewardExpiration();
@@ -187,30 +194,35 @@ export function ActivityRewards({ refreshing, onDataLoaded }: ActivityRewardsPro
 
   // Update rewards in Supabase database
   const saveRewardsToDatabase = useCallback(async () => {
-    if (dbUpdateInProgress || !userAddress || totalRewards <= 0) {
+    if (rewardsToSave <= 0 || !addressLower || rewardsLoading) {
       return;
     }
 
     try {
-      setDbUpdateInProgress(true);
       await dispatch(
         recordActivityReward({
-          address: userAddress,
-          rewards: totalRewards,
+          address: addressLower,
+          rewards: rewardsToSave,
         }),
       ).unwrap();
     } catch (error) {
       console.error('Error recording activity reward:', error);
+      dispatch(
+        showErrorToast({
+          title: 'Database Update Failed',
+          description: 'Failed to record your rewards. Please try again.',
+        }),
+      );
     } finally {
-      setDbUpdateInProgress(false);
+      setRewardsToSave(0);
     }
-  }, [dbUpdateInProgress, dispatch, totalRewards, userAddress]);
+  }, [dispatch, rewardsToSave, addressLower, rewardsLoading]);
 
   const handleTransactionSuccess = useCallback(async () => {
     if (isClaimSuccess && isConfirmModalOpen) {
       setIsConfirmModalOpen(false);
       await saveRewardsToDatabase();
-      await handleRetryLoadActivity();
+      await handleRefresh();
 
       dispatch(
         showSuccessToast({
@@ -219,18 +231,12 @@ export function ActivityRewards({ refreshing, onDataLoaded }: ActivityRewardsPro
         }),
       );
     }
-  }, [
-    dispatch,
-    saveRewardsToDatabase,
-    isConfirmModalOpen,
-    isClaimSuccess,
-    handleRetryLoadActivity,
-  ]);
+  }, [dispatch, saveRewardsToDatabase, isConfirmModalOpen, isClaimSuccess, handleRefresh]);
 
   const handleTransactionFail = useCallback(async () => {
     if (claimError && isConfirmModalOpen) {
       setIsConfirmModalOpen(false);
-      await handleRetryLoadActivity();
+      await handleRefresh();
 
       dispatch(
         showErrorToast({
@@ -239,7 +245,7 @@ export function ActivityRewards({ refreshing, onDataLoaded }: ActivityRewardsPro
         }),
       );
     }
-  }, [dispatch, claimError, isConfirmModalOpen, handleRetryLoadActivity]);
+  }, [dispatch, claimError, isConfirmModalOpen, handleRefresh]);
 
   useEffect(() => {
     if (claimError && isConfirmModalOpen) {
@@ -256,7 +262,7 @@ export function ActivityRewards({ refreshing, onDataLoaded }: ActivityRewardsPro
   const handleClaimActivityRewards = async () => {
     try {
       setIsConfirmModalOpen(true);
-
+      setRewardsToSave(totalRewards);
       await recordActivity(stepsToClaim, metsToClaim);
     } catch (err) {
       setIsConfirmModalOpen(false);
@@ -276,9 +282,28 @@ export function ActivityRewards({ refreshing, onDataLoaded }: ActivityRewardsPro
     setIsConfirmModalOpen(false);
   }, []);
 
-  const errorMessage = activityError?.message || rewardsError?.message || activitiesError;
+  const errorMessage = useMemo(() => {
+    if (activityError) {
+      return activityError.message;
+    }
+    if (rewardsError) {
+      return rewardsError.message;
+    }
+    if (activitiesError) {
+      return activitiesError;
+    }
+    if (rewardsDbError) {
+      return rewardsDbError;
+    }
+    return null;
+  }, [activityError, rewardsError, activitiesError, rewardsDbError]);
 
-  if (refreshing) {
+  const isLoadingData = useMemo(
+    () => refreshing || activitiesLoading || rewardsLoading,
+    [refreshing, activitiesLoading, rewardsLoading],
+  );
+
+  if (isLoadingData) {
     return <ActivityRewardsSkeleton />;
   }
 
@@ -286,7 +311,7 @@ export function ActivityRewards({ refreshing, onDataLoaded }: ActivityRewardsPro
     return (
       <div className="space-y-4">
         <ErrorAlert message={errorMessage} />
-        <Button onClick={handleRetryLoadActivity} className="w-full">
+        <Button onClick={handleRefresh} className="w-full">
           <RefreshCw className="h-4 w-4 mr-2" />
           Retry
         </Button>
@@ -322,7 +347,7 @@ export function ActivityRewards({ refreshing, onDataLoaded }: ActivityRewardsPro
             loading={isClaiming}
             loadingText="Preparing Transaction..."
             onClick={handleClaimActivityRewards}
-            disabled={totalRewards <= 0}
+            disabled={totalRewards <= 0 || isClaiming}
           >
             Claim Rewards
           </LoadingButton>
@@ -337,7 +362,7 @@ export function ActivityRewards({ refreshing, onDataLoaded }: ActivityRewardsPro
         <Card className="bg-gray-100 dark:bg-gray-900 border-gray-300 dark:border-gray-800">
           <CardContent className="p-4">
             <div className="space-y-4">
-              {activityRewards.map((reward, index) => (
+              {rewardBreakdown.map((reward, index) => (
                 <div key={index}>
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-sm">{reward.type}</span>

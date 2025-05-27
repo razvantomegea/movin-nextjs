@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useCallback } from 'react';
 import { useAppKitAccount } from '@reown/appkit/react';
 import { Users, Copy, RefreshCw, Share2 } from 'lucide-react';
 
@@ -59,7 +59,7 @@ export function ReferralRewards({ refreshing, onDataLoaded }: ReferralRewardsPro
       id: index + 1,
       name: `User ${index + 1}`,
       status: 'Active' as const,
-      reward: 1.5, // Default reward per referral
+      reward: 1.0, // Default reward per referral - matches UI text
       date: new Date(Date.now() - index * 86400000).toLocaleDateString('en-US', {
         month: 'short',
         day: 'numeric',
@@ -135,23 +135,19 @@ export function ReferralRewards({ refreshing, onDataLoaded }: ReferralRewardsPro
     }
   };
 
-  const handleRetryLoadReferrals = () => {
-    refetchReferralInfo();
-  };
+  const handleRetryLoadReferrals = useCallback(async () => {
+    await refetchReferralInfo();
+    if (onDataLoaded) {
+      onDataLoaded();
+    }
+  }, [refetchReferralInfo, onDataLoaded]);
 
   // Add useEffect to handle the refreshing state
   useEffect(() => {
     if (refreshing) {
-      const loadData = async () => {
-        await refetchReferralInfo();
-        if (onDataLoaded) {
-          onDataLoaded();
-        }
-      };
-
-      loadData();
+      handleRetryLoadReferrals();
     }
-  }, [refreshing, refetchReferralInfo, onDataLoaded]);
+  }, [refreshing, handleRetryLoadReferrals]);
 
   if (isLoading && !refreshing) {
     return <ReferralRewardsSkeleton />;

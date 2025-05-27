@@ -4,7 +4,6 @@ import { getProfile, IProfile, updateProfile as updateProfileDB } from '@/lib/su
 interface ProfileState {
   profile: IProfile | null;
   isLoading: boolean;
-  isUpdating: boolean;
   error: string | null;
   lastUpdated: number | null;
 }
@@ -13,7 +12,6 @@ interface ProfileState {
 const initialState: ProfileState = {
   profile: null,
   isLoading: false,
-  isUpdating: false,
   error: null,
   lastUpdated: null,
 };
@@ -51,11 +49,7 @@ export const updateProfile = createAsyncThunk(
 const profileSlice = createSlice({
   name: 'profile',
   initialState,
-  reducers: {
-    clearProfileError: (state) => {
-      state.error = null;
-    },
-  },
+  reducers: {},
   extraReducers: (builder) => {
     builder
       // Fetch profile
@@ -65,6 +59,7 @@ const profileSlice = createSlice({
       })
       .addCase(fetchProfile.fulfilled, (state, action: PayloadAction<IProfile | null>) => {
         state.isLoading = false;
+        state.error = null;
         state.profile = action.payload || null;
         state.lastUpdated = Date.now();
       })
@@ -75,11 +70,13 @@ const profileSlice = createSlice({
 
       // Update profile
       .addCase(updateProfile.pending, (state) => {
-        state.isUpdating = true;
+        state.isLoading = true;
         state.error = null;
       })
       .addCase(updateProfile.fulfilled, (state, action: PayloadAction<IProfile>) => {
-        state.isUpdating = false;
+        state.isLoading = false;
+        state.error = null;
+
         if (state.profile) {
           state.profile = {
             ...state.profile,
@@ -90,11 +87,10 @@ const profileSlice = createSlice({
         state.lastUpdated = Date.now();
       })
       .addCase(updateProfile.rejected, (state, action) => {
-        state.isUpdating = false;
+        state.isLoading = false;
         state.error = action.payload as string;
       });
   },
 });
 
-export const { clearProfileError } = profileSlice.actions;
 export default profileSlice.reducer;

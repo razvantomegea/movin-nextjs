@@ -2,7 +2,7 @@
 
 import type React from 'react';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useAppKitAccount } from '@reown/appkit/react';
 import { Activity, Gift, Menu, Settings, User, X, Crown } from 'lucide-react';
 import Image from 'next/image';
@@ -24,8 +24,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const { isConnected, address } = useAppKitAccount();
-  const addressLower = address?.toLowerCase();
+  const { address } = useAppKitAccount();
+  const addressLower = useMemo(() => address?.toLowerCase(), [address]);
   const { profile } = useAppSelector((state) => state.profile);
   const dispatch = useAppDispatch();
 
@@ -65,12 +65,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   ];
 
   useEffect(() => {
-    if (!isConnected) {
+    if (!addressLower) {
       router.push('/');
-    } else if (addressLower && !profile) {
+    } else if (!profile) {
       dispatch(fetchProfile(addressLower));
     }
-  }, [isConnected, router, addressLower, profile, dispatch]);
+  }, [router, addressLower, profile, dispatch]);
 
   const content = (
     <div className="flex flex-col min-h-screen">

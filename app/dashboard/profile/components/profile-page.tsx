@@ -1,13 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import { useAppKitAccount } from '@reown/appkit/react';
 import { motion } from 'framer-motion';
 import { RefreshButton } from '@/components/refresh-button';
 // import TokenBalanceExample from '@/components/TokenBalanceExample';
 import { useMovinToken } from '@/lib/hooks/useMovinToken';
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
-import { fetchProfile, clearProfileError, updateProfile } from '@/lib/redux/slices/profileSlice';
+import { fetchProfile, updateProfile } from '@/lib/redux/slices/profileSlice';
 import { showSuccessToast, showErrorToast } from '@/lib/redux/slices/toastSlice';
 import { IProfile } from '@/lib/supabase/profile';
 import { ProfileEditForm } from './profile-edit-form';
@@ -33,9 +33,9 @@ const item = {
 
 export function ProfilePage() {
   const { address } = useAppKitAccount();
-  const addressLower = address?.toLowerCase();
+  const addressLower = useMemo(() => address?.toLowerCase(), [address]);
   const dispatch = useAppDispatch();
-  const { profile, isLoading, isUpdating, error } = useAppSelector((state) => state.profile);
+  const { profile, isLoading, error } = useAppSelector((state) => state.profile);
   const { useTokenBalance } = useMovinToken();
   const {
     formattedBalanceWithSuffix: balance,
@@ -44,38 +44,19 @@ export function ProfilePage() {
   } = useTokenBalance();
   const [isEditing, setIsEditing] = useState(false);
 
-  useEffect(() => {
-    if (addressLower) {
-      dispatch(fetchProfile(addressLower));
-    }
-  }, [dispatch, addressLower]);
-
-  const handleRefresh = async () => {
+  const handleRefresh = useCallback(async () => {
     if (!addressLower) {
       return;
     }
 
-    try {
-      await dispatch(fetchProfile(addressLower)).unwrap();
-      dispatch(
-        showSuccessToast({
-          title: 'Profile Refreshed',
-          description: 'Your profile data has been updated',
-        }),
-      );
-    } catch (error) {
-      dispatch(
-        showErrorToast({
-          title: 'Refresh Failed',
-          description: (error as string) || 'Please try again later',
-        }),
-      );
-    }
-  };
+    await dispatch(fetchProfile(addressLower)).unwrap();
+  }, [addressLower, dispatch]);
 
-  const handleDismissError = () => {
-    dispatch(clearProfileError());
-  };
+  useEffect(() => {
+    if (addressLower) {
+      handleRefresh();
+    }
+  }, [handleRefresh, addressLower]);
 
   const handleSave = async (profileData: Partial<IProfile>) => {
     try {
@@ -121,7 +102,7 @@ export function ProfilePage() {
 
   return (
     <>
-      <ProfileError error={error} onDismiss={handleDismissError} />
+      <ProfileError error={error} onDismiss={handleRefresh} />
       <motion.div className="p-4" initial="hidden" animate="show" variants={container}>
         <motion.div className="mb-6" variants={item}>
           <div className="flex items-center">
@@ -138,7 +119,7 @@ export function ProfilePage() {
             <ProfileHeader
               profile={profile}
               balance={balance}
-              isUpdating={isUpdating}
+              isUpdating={isLoading}
               isEditing={isEditing}
               onEdit={setIsEditing}
             />
@@ -146,7 +127,7 @@ export function ProfilePage() {
               <ProfileEditForm
                 address={addressLower}
                 profile={profile}
-                isUpdating={isUpdating}
+                isUpdating={isLoading}
                 onSave={handleSave}
               />
             )}

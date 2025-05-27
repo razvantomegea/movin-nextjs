@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { getUserStakes, IStake } from '@/lib/supabase/stake';
+import { getUserStakes, IStake, updateStake, insertStakes } from '@/lib/supabase/stake';
 
 // Define types for state
 
@@ -34,22 +34,31 @@ export const fetchStakingData = createAsyncThunk(
 );
 
 /**
- * Async thunk for claiming staking rewards - this just updates Supabase
- * The actual blockchain transaction is handled by useMovinEarn hook
+ * Async thunk for updating stake in Supabase
  */
-export const claimStakingRewards = createAsyncThunk(
-  'staking/claimStakingRewards',
-  async ({ address }: { address: string; stakeId?: string }, { rejectWithValue }) => {
+export const updateStakeData = createAsyncThunk(
+  'staking/updateStakeData',
+  async (stakeData: Partial<IStake>, { rejectWithValue }) => {
     try {
-      // This is just a placeholder to update history
-      // Real claiming happens in useMovinEarn hook
-
-      // After claiming, refresh the history
-      const stakes = await getUserStakes({ address });
-
-      return { history: stakes };
+      const updated = await updateStake({ stakeData });
+      return updated;
     } catch (error) {
-      return rejectWithValue(error instanceof Error ? error.message : 'An unknown error occurred');
+      return rejectWithValue(error instanceof Error ? error.message : 'Failed to update stake');
+    }
+  },
+);
+
+/**
+ * Async thunk for inserting multiple stakes in Supabase
+ */
+export const insertStakesData = createAsyncThunk(
+  'staking/insertStakesData',
+  async (stakeData: Partial<IStake>[], { rejectWithValue }) => {
+    try {
+      const inserted = await insertStakes({ stakeData });
+      return inserted;
+    } catch (error) {
+      return rejectWithValue(error instanceof Error ? error.message : 'Failed to insert stakes');
     }
   },
 );
@@ -58,11 +67,7 @@ export const claimStakingRewards = createAsyncThunk(
 const stakingSlice = createSlice({
   name: 'staking',
   initialState,
-  reducers: {
-    resetStakingError: (state) => {
-      state.error = null;
-    },
-  },
+  reducers: {},
   extraReducers: (builder) => {
     builder
       // Handle fetchStakingData
@@ -72,6 +77,7 @@ const stakingSlice = createSlice({
       })
       .addCase(fetchStakingData.fulfilled, (state, action) => {
         state.isLoading = false;
+        state.error = null;
         state.history = action.payload.history;
       })
       .addCase(fetchStakingData.rejected, (state, action) => {
@@ -79,21 +85,41 @@ const stakingSlice = createSlice({
         state.error = (action.payload as string) || 'Failed to load staking data';
       })
 
-      // Handle claimStakingRewards
-      .addCase(claimStakingRewards.pending, (state) => {
+      // Handle updateStakeData
+      .addCase(updateStakeData.pending, (state) => {
         state.isLoading = true;
         state.error = null;
       })
-      .addCase(claimStakingRewards.fulfilled, (state, action) => {
+      .addCase(updateStakeData.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.history = action.payload.history;
+        state.error = null;
+        // Update the stake in the history array
+        const updatedIndex = state.history.findIndex((stake) => stake.id === action.payload.id);
+        if (updatedIndex !== -1) {
+          state.history[updatedIndex] = action.payload;
+        }
       })
-      .addCase(claimStakingRewards.rejected, (state, action) => {
+      .addCase(updateStakeData.rejected, (state, action) => {
         state.isLoading = false;
-        state.error = (action.payload as string) || 'Failed to claim rewards';
+        state.error = (action.payload as string) || 'Failed to update stake';
+      })
+
+      // Handle insertStakesData
+      .addCase(insertStakesData.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(insertStakesData.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.error = null;
+        // Add new stakes to history
+        state.history = [...state.history, ...action.payload];
+      })
+      .addCase(insertStakesData.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = (action.payload as string) || 'Failed to insert stakes';
       });
   },
 });
 
-export const { resetStakingError } = stakingSlice.actions;
 export default stakingSlice.reducer;
