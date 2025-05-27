@@ -65,12 +65,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   ];
 
   useEffect(() => {
-    if (!addressLower) {
-      router.push('/');
-    } else if (!profile) {
+    if (addressLower && !profile) {
       dispatch(fetchProfile(addressLower));
     }
-  }, [router, addressLower, profile, dispatch]);
+  }, [addressLower, profile, dispatch]);
 
   const content = (
     <div className="flex flex-col min-h-screen">

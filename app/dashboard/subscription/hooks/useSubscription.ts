@@ -24,6 +24,7 @@ export function useSubscription() {
   // Get premium status from contract
   const {
     formattedPremiumStatus,
+    isPremiumActive,
     isLoading: premiumLoading,
     error: premiumError,
     refetch: refetchPremiumStatus,
@@ -55,7 +56,7 @@ export function useSubscription() {
   // Computed values
   const isExpired = isPremiumExpired(premiumStatus);
   const currentPlan = getCurrentPlan(premiumStatus);
-  const isPremium = premiumStatus.status && !isExpired;
+  const isPremium = isPremiumActive();
 
   // Set default billing cycle based on current plan when premium status loads
   useEffect(() => {

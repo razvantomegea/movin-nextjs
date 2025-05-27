@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Camera, Edit, Trophy, Flame, Activity, Loader2 } from 'lucide-react';
+import { Camera, Edit, Trophy, Flame, Activity, Loader2, Star } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -17,6 +17,8 @@ interface ProfileHeaderProps {
   isEditing: boolean;
   balance: string;
   onEdit: (isEditing: boolean) => void;
+  isPremium?: boolean;
+  activitiesCount?: number;
 }
 
 export function ProfileHeader({
@@ -25,6 +27,8 @@ export function ProfileHeader({
   isEditing,
   balance,
   onEdit,
+  isPremium = false,
+  activitiesCount = 0,
 }: ProfileHeaderProps) {
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
 
@@ -78,9 +82,14 @@ export function ProfileHeader({
 
           <div className="flex-1 text-center sm:text-left">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h2 className="text-2xl font-bold">{formatAddress(profile.username)}</h2>
-                <p className="text-gray-500 dark:text-gray-400">{profile.email}</p>
+              <div className="flex items-center">
+                <h2 className="text-2xl font-bold mr-2">{formatAddress(profile.username)}</h2>
+                {isPremium && (
+                  <Badge className="bg-gradient-to-r from-amber-400 to-yellow-500 text-black">
+                    <Star className="h-3 w-3 mr-1 fill-black" />
+                    Premium
+                  </Badge>
+                )}
               </div>
               <Button
                 variant="outline"
@@ -99,6 +108,8 @@ export function ProfileHeader({
               </Button>
             </div>
 
+            <p className="text-gray-500 dark:text-gray-400">{profile.email}</p>
+
             <div className="flex flex-wrap justify-center sm:justify-start gap-2 mt-4">
               <Badge variant="secondary" className="flex items-center">
                 <Trophy className="h-3 w-3 mr-1 text-yellow-500" />
@@ -111,6 +122,10 @@ export function ProfileHeader({
               <Badge variant="secondary" className="flex items-center">
                 <Activity className="h-3 w-3 mr-1 text-blue-500" />
                 {balance}
+              </Badge>
+              <Badge variant="secondary" className="flex items-center">
+                <Activity className="h-3 w-3 mr-1 text-green-500" />
+                {activitiesCount} Activities
               </Badge>
             </div>
           </div>

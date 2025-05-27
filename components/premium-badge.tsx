@@ -6,18 +6,13 @@ import { useMovinEarn } from '@/lib/hooks/useMovinEarn';
 
 export function PremiumBadge() {
   const { usePremiumStatus } = useMovinEarn();
-  const { formattedPremiumStatus, isLoading, error } = usePremiumStatus();
-  const premiumStatus = formattedPremiumStatus();
-  const isPremiumExpired =
-    premiumStatus.status && premiumStatus.expiration
-      ? premiumStatus.expiration < Math.floor(Date.now() / 1000)
-      : false;
+  const { isPremiumActive, isLoading, error } = usePremiumStatus();
 
   if (isLoading) {
     return <div className="h-5 w-5 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse"></div>;
   }
 
-  if (!premiumStatus.status || error || isPremiumExpired) {
+  if (!isPremiumActive() || error) {
     return null;
   }
 

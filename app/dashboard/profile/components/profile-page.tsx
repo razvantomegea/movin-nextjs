@@ -5,8 +5,10 @@ import { useAppKitAccount } from '@reown/appkit/react';
 import { motion } from 'framer-motion';
 import { RefreshButton } from '@/components/refresh-button';
 // import TokenBalanceExample from '@/components/TokenBalanceExample';
+import { useMovinEarn } from '@/lib/hooks/useMovinEarn';
 import { useMovinToken } from '@/lib/hooks/useMovinToken';
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
+import { fetchActivities } from '@/lib/redux/slices/activityDataSlice';
 import { fetchProfile, updateProfile } from '@/lib/redux/slices/profileSlice';
 import { showSuccessToast, showErrorToast } from '@/lib/redux/slices/toastSlice';
 import { IProfile } from '@/lib/supabase/profile';
@@ -36,6 +38,9 @@ export function ProfilePage() {
   const addressLower = useMemo(() => address?.toLowerCase(), [address]);
   const dispatch = useAppDispatch();
   const { profile, isLoading, error } = useAppSelector((state) => state.profile);
+  const { activities, isLoading: activitiesLoading } = useAppSelector(
+    (state) => state.activityData,
+  );
   const { useTokenBalance } = useMovinToken();
   const {
     formattedBalanceWithSuffix: balance,
@@ -44,12 +49,17 @@ export function ProfilePage() {
   } = useTokenBalance();
   const [isEditing, setIsEditing] = useState(false);
 
+  const { usePremiumStatus } = useMovinEarn();
+  const { isPremiumActive } = usePremiumStatus();
+  const isPremium = isPremiumActive();
+
   const handleRefresh = useCallback(async () => {
     if (!addressLower) {
       return;
     }
 
     await dispatch(fetchProfile(addressLower)).unwrap();
+    await dispatch(fetchActivities(addressLower)).unwrap();
   }, [addressLower, dispatch]);
 
   useEffect(() => {
@@ -86,7 +96,7 @@ export function ProfilePage() {
     }
   };
 
-  if (isLoading || isBalanceLoading) {
+  if (isLoading || isBalanceLoading || activitiesLoading) {
     return <ProfilePageSkeleton />;
   }
 
@@ -122,6 +132,8 @@ export function ProfilePage() {
               isUpdating={isLoading}
               isEditing={isEditing}
               onEdit={setIsEditing}
+              isPremium={isPremium}
+              activitiesCount={activities.length}
             />
             {isEditing && (
               <ProfileEditForm
@@ -134,7 +146,7 @@ export function ProfilePage() {
           </motion.div>
 
           <motion.div variants={item}>
-            <ProfileTabs profile={profile} />
+            <ProfileTabs profile={profile} activities={activities} />
           </motion.div>
 
           {/* <motion.div variants={item}>

@@ -19,7 +19,7 @@ import {
 } from '@/lib/redux/slices/activityRewardsSlice';
 import { showSuccessToast, showErrorToast } from '@/lib/redux/slices/toastSlice';
 import { RootState } from '@/lib/redux/store';
-import { isPremiumExpired, mapActivitiesToDaily, mapError, type DailyActivity } from '@/utils';
+import { mapActivitiesToDaily, mapError, type DailyActivity } from '@/utils';
 import { calculateMetsFromCalories } from '@/utils/movin/calculateMets';
 import { ActivityRewardsHistory } from './activity-rewards-history';
 import { ActivityRewardsSkeleton } from './activity-rewards-skeleton';
@@ -39,9 +39,8 @@ export function ActivityRewards({ refreshing, onDataLoaded }: ActivityRewardsPro
   const currentDate = useMemo(() => new Date(), []);
   const { useUserActivity, useCalculateActivityRewards, useRecordActivity, usePremiumStatus } =
     useMovinEarn();
-  const { formattedPremiumStatus } = usePremiumStatus();
-  const premiumStatus = formattedPremiumStatus();
-  const isPremium = premiumStatus.status && !isPremiumExpired(premiumStatus);
+  const { isPremiumActive } = usePremiumStatus();
+  const isPremium = isPremiumActive();
 
   const {
     formattedActivity,
