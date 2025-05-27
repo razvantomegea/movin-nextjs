@@ -5,13 +5,6 @@ import {
   getUserActivityRewards,
 } from '@/lib/supabase/activityRewards';
 
-// Define types for our state
-export interface ActivityReward {
-  type: string;
-  amount: number;
-  percentage: number;
-}
-
 export interface Challenge {
   id: number;
   title: string;
@@ -22,10 +15,7 @@ export interface Challenge {
 }
 
 export interface ActivityRewardsState {
-  totalRewards: number;
-  weeklyRewards: number;
   activityRewards: IActivityReward[];
-  challenges: Challenge[];
   isLoading: boolean;
   isClaiming: boolean;
   error: string | null;
@@ -33,10 +23,7 @@ export interface ActivityRewardsState {
 
 // Initial state
 const initialState: ActivityRewardsState = {
-  totalRewards: 0,
-  weeklyRewards: 0,
   activityRewards: [],
-  challenges: [],
   isLoading: false,
   isClaiming: false,
   error: null,
