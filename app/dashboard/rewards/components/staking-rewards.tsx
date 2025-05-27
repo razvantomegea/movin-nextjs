@@ -42,15 +42,18 @@ export function StakingRewards({ refreshing, onDataLoaded }: StakingRewardsProps
   const isDark = resolvedTheme === 'dark';
   const dispatch = useAppDispatch();
   const { address } = useAppKitAccount();
-  const addressLower = address?.toLowerCase();
-  const userAddress = useMemo(() => addressLower || '', [addressLower]);
+  const addressLower = useMemo(() => address?.toLowerCase(), [address]);
 
   const { useUserStakes, useClaimAllStakingRewards, useUnstake } = useMovinEarn();
-  const { data: stakingData, refetch: refetchStakingData } = useUserStakes();
+  const {
+    data: stakingData,
+    isLoading: isLoadingStakingData,
+    refetch: refetchStakingData,
+  } = useUserStakes();
 
   const {
     history: stakingHistory,
-    isLoading,
+    isLoading: isLoadingStakingHistory,
     error: stakingError,
   } = useAppSelector((state) => state.staking);
 
@@ -82,8 +85,8 @@ export function StakingRewards({ refreshing, onDataLoaded }: StakingRewardsProps
   }, [totalRewardsValue]);
 
   const buttonDisabled = useMemo(() => {
-    return hasNoRewards || activeAction !== null || isLoading;
-  }, [hasNoRewards, activeAction, isLoading]);
+    return hasNoRewards || activeAction !== null || isLoadingStakingData;
+  }, [hasNoRewards, activeAction, isLoadingStakingData]);
 
   const displayTokenSymbol = useMemo(() => {
     return tokenSymbol || 'MVN';
@@ -93,25 +96,29 @@ export function StakingRewards({ refreshing, onDataLoaded }: StakingRewardsProps
     return stakingData?.stakes?.length > 0;
   }, [stakingData]);
 
-  const refreshAllData = useCallback(async () => {
-    await refetchStakingData();
-    await refetchTokenBalance();
-    if (userAddress) {
-      dispatch(fetchStakingData(userAddress));
+  const handleRefresh = useCallback(async () => {
+    if (!addressLower) {
+      return;
     }
+
+    await Promise.all([
+      refetchStakingData(),
+      refetchTokenBalance(),
+      dispatch(fetchStakingData(addressLower)),
+    ]);
 
     if (onDataLoaded) {
       onDataLoaded();
     }
-  }, [refetchStakingData, refetchTokenBalance, dispatch, userAddress, onDataLoaded]);
+  }, [refetchStakingData, refetchTokenBalance, dispatch, addressLower, onDataLoaded]);
 
   const addStakesToDb = useCallback(async () => {
-    if (!userAddress || !stakingData?.stakes) return;
+    if (!addressLower || !stakingData?.stakes) return;
 
     const { stakesToCreate, stakesToUpdate } = prepareUpdateStakesInDB({
       dbStakes: stakingHistory,
       userStakes: stakingData.stakes,
-      address: userAddress,
+      address: addressLower,
     });
 
     if (stakesToCreate.length) {
@@ -121,10 +128,10 @@ export function StakingRewards({ refreshing, onDataLoaded }: StakingRewardsProps
     for (const stake of stakesToUpdate) {
       await dispatch(updateStakeData(stake)).unwrap();
     }
-  }, [userAddress, stakingHistory, stakingData, dispatch]);
+  }, [addressLower, stakingHistory, stakingData, dispatch]);
 
   const updateStakesInDatabase = useCallback(async () => {
-    if (!userAddress || !activeAction || !stakingData?.stakes.length) {
+    if (!addressLower || !activeAction || !stakingData?.stakes.length) {
       return;
     }
 
@@ -160,15 +167,15 @@ export function StakingRewards({ refreshing, onDataLoaded }: StakingRewardsProps
       );
     } finally {
       setActiveAction(null);
-      await refreshAllData();
+      await handleRefresh();
     }
   }, [
     stakingHistory,
     stakingData,
-    userAddress,
+    addressLower,
     activeAction,
     addStakesToDb,
-    refreshAllData,
+    handleRefresh,
     dispatch,
   ]);
 
@@ -213,23 +220,16 @@ export function StakingRewards({ refreshing, onDataLoaded }: StakingRewardsProps
   }, [stakingData]);
 
   useEffect(() => {
-    if (userAddress) {
-      dispatch(fetchStakingData(userAddress));
+    if (addressLower) {
+      dispatch(fetchStakingData(addressLower));
     }
-  }, [dispatch, userAddress]);
+  }, [dispatch, addressLower]);
 
   useEffect(() => {
     if (refreshing) {
-      const loadData = async () => {
-        await refreshAllData();
-        if (onDataLoaded) {
-          onDataLoaded();
-        }
-      };
-
-      loadData();
+      handleRefresh();
     }
-  }, [refreshing, refreshAllData, onDataLoaded]);
+  }, [refreshing, handleRefresh, onDataLoaded]);
 
   useEffect(() => {
     if (stakingData?.stakes) {
@@ -352,11 +352,11 @@ export function StakingRewards({ refreshing, onDataLoaded }: StakingRewardsProps
         await addStakesToDb();
       }
 
-      await refreshAllData();
+      await handleRefresh();
       setIsStakeModalOpen(false);
       setActiveAction(null);
     },
-    [setActiveAction, setIsStakeModalOpen, addStakesToDb, refreshAllData],
+    [setActiveAction, setIsStakeModalOpen, addStakesToDb, handleRefresh],
   );
 
   const handleStakeUnlocked = useCallback(
@@ -377,25 +377,25 @@ export function StakingRewards({ refreshing, onDataLoaded }: StakingRewardsProps
     setIsConfirmModalOpen(false);
     setActiveAction(null);
     setClaimAmount(0);
-    await refreshAllData();
-  }, [refreshAllData, setActiveAction, setClaimAmount]);
+    await handleRefresh();
+  }, [handleRefresh, setActiveAction, setClaimAmount]);
 
   const handleTransactionFail = useCallback(async () => {
     setIsConfirmModalOpen(false);
     setActiveAction(null);
     setClaimAmount(0);
-    await refreshAllData();
-  }, [refreshAllData, setActiveAction, setClaimAmount]);
+    await handleRefresh();
+  }, [handleRefresh, setActiveAction, setClaimAmount]);
 
   const handleCloseConfirmModal = useCallback(() => {
     setIsConfirmModalOpen(false);
   }, []);
 
-  const handleRefresh = useCallback(async () => {
-    await refreshAllData();
-  }, [refreshAllData]);
+  const isLoadingData = useMemo(() => {
+    return refreshing || isLoadingStakingData || isLoadingStakingHistory;
+  }, [refreshing, isLoadingStakingData, isLoadingStakingHistory]);
 
-  if (refreshing) {
+  if (isLoadingData) {
     return <StakingSkeleton />;
   }
 
@@ -435,7 +435,7 @@ export function StakingRewards({ refreshing, onDataLoaded }: StakingRewardsProps
 
             <LoadingButton
               className="w-full py-6 text-lg bg-blue-500 hover:bg-blue-600"
-              loading={activeAction?.type === 'claim' || isLoading}
+              loading={activeAction?.type === 'claim' || isLoadingData}
               loadingText="Preparing Transaction..."
               onClick={handleClaimStakingRewards}
               disabled={buttonDisabled}
@@ -453,7 +453,7 @@ export function StakingRewards({ refreshing, onDataLoaded }: StakingRewardsProps
               size="sm"
               className="border-blue-500 text-blue-500"
               onClick={handleOpenStakeModal}
-              disabled={activeAction !== null || isLoading}
+              disabled={activeAction !== null || isLoadingData}
             >
               <Plus className="h-4 w-4 mr-1" />
               Stake More
@@ -478,7 +478,7 @@ export function StakingRewards({ refreshing, onDataLoaded }: StakingRewardsProps
               </div>
 
               <div className="space-y-4 mt-6">
-                {isLoading ? (
+                {isLoadingData ? (
                   <div className="text-center py-8">
                     <div className="animate-spin h-8 w-8 border-t-2 border-blue-500 rounded-full mx-auto mb-4"></div>
                     <p className="text-gray-500">Loading stakes...</p>

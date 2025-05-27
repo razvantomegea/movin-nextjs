@@ -13,7 +13,6 @@ import { Progress } from '@/components/ui/progress';
 import { RewardCountdownTimer } from '@/components/ui/reward-countdown-timer';
 import { useMovinEarn } from '@/lib/hooks/useMovinEarn';
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
-import { fetchActivities } from '@/lib/redux/slices/activityDataSlice';
 import {
   fetchActivityRewards,
   recordActivityReward,
@@ -154,18 +153,26 @@ export function ActivityRewards({ refreshing, onDataLoaded }: ActivityRewardsPro
   }, [rewards, dailyActivity]);
 
   const handleRefresh = useCallback(async () => {
-    await refetchUserActivity();
-    await refetchRewards();
-
-    if (addressLower) {
-      await dispatch(fetchActivities(addressLower));
-      await dispatch(fetchActivityRewards(addressLower));
+    if (!addressLower) {
+      return;
     }
 
-    if (refreshing && onDataLoaded) {
+    await Promise.all([
+      refetchUserActivity(),
+      refetchRewards(),
+      dispatch(fetchActivityRewards(addressLower)),
+    ]);
+
+    if (onDataLoaded) {
       onDataLoaded();
     }
-  }, [refetchUserActivity, refetchRewards, addressLower, dispatch, refreshing, onDataLoaded]);
+  }, [refetchUserActivity, refetchRewards, addressLower, dispatch, onDataLoaded]);
+
+  useEffect(() => {
+    if (refreshing) {
+      handleRefresh();
+    }
+  }, [handleRefresh, refreshing]);
 
   // Calculate activity rewards expiration (midnight tomorrow)
   const updateActivityRewardExpiration = useCallback(() => {
@@ -179,13 +186,6 @@ export function ActivityRewards({ refreshing, onDataLoaded }: ActivityRewardsPro
     tomorrow.setHours(0, 0, 0, 0);
     setExpirationTimestamp(Math.floor(tomorrow.getTime() / 1000));
   }, [totalRewards]);
-
-  // Fetch data on component mount and when refreshing
-  useEffect(() => {
-    if (addressLower) {
-      handleRefresh();
-    }
-  }, [handleRefresh, addressLower]);
 
   // Update expiration timestamp when rewards change
   useEffect(() => {
@@ -282,11 +282,28 @@ export function ActivityRewards({ refreshing, onDataLoaded }: ActivityRewardsPro
     setIsConfirmModalOpen(false);
   }, []);
 
-  const errorMessage =
-    activityError?.message || rewardsError?.message || activitiesError || rewardsDbError;
-  const isLoading = refreshing || activitiesLoading || rewardsLoading;
+  const errorMessage = useMemo(() => {
+    if (activityError) {
+      return activityError.message;
+    }
+    if (rewardsError) {
+      return rewardsError.message;
+    }
+    if (activitiesError) {
+      return activitiesError;
+    }
+    if (rewardsDbError) {
+      return rewardsDbError;
+    }
+    return null;
+  }, [activityError, rewardsError, activitiesError, rewardsDbError]);
 
-  if (isLoading) {
+  const isLoadingData = useMemo(
+    () => refreshing || activitiesLoading || rewardsLoading,
+    [refreshing, activitiesLoading, rewardsLoading],
+  );
+
+  if (isLoadingData) {
     return <ActivityRewardsSkeleton />;
   }
 

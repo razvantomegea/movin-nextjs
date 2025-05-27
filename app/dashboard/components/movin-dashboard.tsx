@@ -90,27 +90,13 @@ export function MovinDashboard() {
   }, [activities, currentDate]);
 
   const handleRefresh = useCallback(async () => {
-    setRefreshing(true);
-    try {
-      if (addressLower) {
-        await dispatch(fetchActivities(addressLower)).unwrap();
-        dispatch(
-          showSuccessToast({
-            title: 'Data Refreshed',
-            description: 'Your activity data has been updated',
-          }),
-        );
-      }
-    } catch (error) {
-      dispatch(
-        showInfoToast({
-          title: 'Refresh Failed',
-          description: 'Please try again later',
-        }),
-      );
-    } finally {
-      setRefreshing(false);
+    if (!addressLower) {
+      return;
     }
+
+    setRefreshing(true);
+    await dispatch(fetchActivities(addressLower)).unwrap();
+    setRefreshing(false);
   }, [addressLower, dispatch]);
 
   useEffect(() => {
