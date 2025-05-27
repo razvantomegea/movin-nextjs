@@ -2,19 +2,24 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAppKitAccount } from '@reown/appkit/react';
-import { Flame, Lock, Plus } from 'lucide-react';
+import { Flame, Lock, Plus, RefreshCw } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { TransactionConfirmationModal } from '@/components/transaction-confirmation-modal';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { ErrorAlert } from '@/components/ui/error-alert';
 import { LoadingButton } from '@/components/ui/loading-button';
 import { RewardCountdownTimer } from '@/components/ui/reward-countdown-timer';
 import { IUserStake, useMovinEarn } from '@/lib/hooks/useMovinEarn';
 import { useMovinToken } from '@/lib/hooks/useMovinToken';
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
-import { fetchStakingData } from '@/lib/redux/slices/stakingSlice';
+import {
+  fetchStakingData,
+  updateStakeData,
+  insertStakesData,
+} from '@/lib/redux/slices/stakingSlice';
 import { showSuccessToast, showErrorToast } from '@/lib/redux/slices/toastSlice';
-import { updateStake, IStake, insertStakes } from '@/lib/supabase/stake';
+import { IStake } from '@/lib/supabase/stake';
 import { matchUserStakeWithDB } from '@/utils/staking/matchUserStakeWithDB';
 import { prepareUpdateStakesInDB } from '@/utils/staking/prepareUpdateStakesToDB';
 import { StakeItem } from './stake-item';
@@ -32,7 +37,6 @@ export function StakingRewards({ refreshing, onDataLoaded }: StakingRewardsProps
   const [activeAction, setActiveAction] = useState<{ type: string; index: number } | null>(null);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [claimAmount, setClaimAmount] = useState(0);
-  const [dbUpdateInProgress, setDbUpdateInProgress] = useState(false);
   const [expirationTimestamp, setExpirationTimestamp] = useState<number | null>(null);
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
@@ -44,7 +48,11 @@ export function StakingRewards({ refreshing, onDataLoaded }: StakingRewardsProps
   const { useUserStakes, useClaimAllStakingRewards, useUnstake } = useMovinEarn();
   const { data: stakingData, refetch: refetchStakingData } = useUserStakes();
 
-  const stakingHistory = useAppSelector((state) => state.staking.history);
+  const {
+    history: stakingHistory,
+    isLoading,
+    error: stakingError,
+  } = useAppSelector((state) => state.staking);
 
   const { useTokenBalance, useTokenSymbol } = useMovinToken();
   const { data: tokenSymbol } = useTokenSymbol();
@@ -74,8 +82,8 @@ export function StakingRewards({ refreshing, onDataLoaded }: StakingRewardsProps
   }, [totalRewardsValue]);
 
   const buttonDisabled = useMemo(() => {
-    return hasNoRewards || activeAction !== null;
-  }, [hasNoRewards, activeAction]);
+    return hasNoRewards || activeAction !== null || isLoading;
+  }, [hasNoRewards, activeAction, isLoading]);
 
   const displayTokenSymbol = useMemo(() => {
     return tokenSymbol || 'MVN';
@@ -88,7 +96,9 @@ export function StakingRewards({ refreshing, onDataLoaded }: StakingRewardsProps
   const refreshAllData = useCallback(async () => {
     await refetchStakingData();
     await refetchTokenBalance();
-    dispatch(fetchStakingData(userAddress));
+    if (userAddress) {
+      dispatch(fetchStakingData(userAddress));
+    }
 
     if (onDataLoaded) {
       onDataLoaded();
@@ -96,6 +106,8 @@ export function StakingRewards({ refreshing, onDataLoaded }: StakingRewardsProps
   }, [refetchStakingData, refetchTokenBalance, dispatch, userAddress, onDataLoaded]);
 
   const addStakesToDb = useCallback(async () => {
+    if (!userAddress || !stakingData?.stakes) return;
+
     const { stakesToCreate, stakesToUpdate } = prepareUpdateStakesInDB({
       dbStakes: stakingHistory,
       userStakes: stakingData.stakes,
@@ -103,21 +115,20 @@ export function StakingRewards({ refreshing, onDataLoaded }: StakingRewardsProps
     });
 
     if (stakesToCreate.length) {
-      await insertStakes({ stakeData: stakesToCreate });
+      await dispatch(insertStakesData(stakesToCreate)).unwrap();
     }
 
     for (const stake of stakesToUpdate) {
-      await updateStake({ stakeData: stake });
+      await dispatch(updateStakeData(stake)).unwrap();
     }
-  }, [userAddress, stakingHistory, stakingData]);
+  }, [userAddress, stakingHistory, stakingData, dispatch]);
 
   const updateStakesInDatabase = useCallback(async () => {
-    if (dbUpdateInProgress || !userAddress || !activeAction || !stakingData?.stakes.length) {
+    if (!userAddress || !activeAction || !stakingData?.stakes.length) {
       return;
     }
 
     try {
-      setDbUpdateInProgress(true);
       const dbStakes = stakingHistory || [];
 
       if (activeAction.type === 'claim') {
@@ -129,20 +140,25 @@ export function StakingRewards({ refreshing, onDataLoaded }: StakingRewardsProps
           const dbStake = dbStakes.find((s: IStake) => matchUserStakeWithDB(blockchainStake, s));
 
           if (dbStake) {
-            await updateStake({
-              stakeData: {
+            await dispatch(
+              updateStakeData({
                 id: dbStake.id,
                 is_active: false,
                 unstake_time: new Date().toISOString(),
-              },
-            });
+              }),
+            ).unwrap();
           }
         }
       }
     } catch (error) {
       console.error(`Error updating stake in database (${activeAction.type}):`, error);
+      dispatch(
+        showErrorToast({
+          title: 'Database Update Failed',
+          description: 'Failed to update stake in database. Please refresh.',
+        }),
+      );
     } finally {
-      setDbUpdateInProgress(false);
       setActiveAction(null);
       await refreshAllData();
     }
@@ -150,10 +166,10 @@ export function StakingRewards({ refreshing, onDataLoaded }: StakingRewardsProps
     stakingHistory,
     stakingData,
     userAddress,
-    dbUpdateInProgress,
     activeAction,
     addStakesToDb,
     refreshAllData,
+    dispatch,
   ]);
 
   // Calculate earliest expiration timestamp for staking rewards
@@ -222,11 +238,7 @@ export function StakingRewards({ refreshing, onDataLoaded }: StakingRewardsProps
   }, [stakingData, updateOldestStakeExpirationTimestamp]);
 
   useEffect(() => {
-    if (
-      isClaimSuccess &&
-      activeAction?.type === 'claim' &&
-      (isConfirmModalOpen || !dbUpdateInProgress)
-    ) {
+    if (isClaimSuccess && activeAction?.type === 'claim' && isConfirmModalOpen) {
       setIsConfirmModalOpen(false);
 
       dispatch(
@@ -238,24 +250,10 @@ export function StakingRewards({ refreshing, onDataLoaded }: StakingRewardsProps
 
       updateStakesInDatabase();
     }
-  }, [
-    isClaimSuccess,
-    isConfirmModalOpen,
-    activeAction,
-    dispatch,
-    userAddress,
-    claimAmount,
-    updateStakesInDatabase,
-    refreshAllData,
-    dbUpdateInProgress,
-  ]);
+  }, [isClaimSuccess, isConfirmModalOpen, activeAction, dispatch, updateStakesInDatabase]);
 
   useEffect(() => {
-    if (
-      isUnstakeSuccess &&
-      activeAction?.type === 'unstake' &&
-      (isConfirmModalOpen || !dbUpdateInProgress)
-    ) {
+    if (isUnstakeSuccess && activeAction?.type === 'unstake' && isConfirmModalOpen) {
       setIsConfirmModalOpen(false);
 
       dispatch(
@@ -267,15 +265,7 @@ export function StakingRewards({ refreshing, onDataLoaded }: StakingRewardsProps
 
       updateStakesInDatabase();
     }
-  }, [
-    isUnstakeSuccess,
-    isConfirmModalOpen,
-    dispatch,
-    refreshAllData,
-    updateStakesInDatabase,
-    dbUpdateInProgress,
-    activeAction,
-  ]);
+  }, [isUnstakeSuccess, isConfirmModalOpen, dispatch, updateStakesInDatabase, activeAction]);
 
   useEffect(() => {
     if (claimError && isConfirmModalOpen && activeAction?.type === 'claim') {
@@ -401,8 +391,24 @@ export function StakingRewards({ refreshing, onDataLoaded }: StakingRewardsProps
     setIsConfirmModalOpen(false);
   }, []);
 
+  const handleRefresh = useCallback(async () => {
+    await refreshAllData();
+  }, [refreshAllData]);
+
   if (refreshing) {
     return <StakingSkeleton />;
+  }
+
+  if (stakingError) {
+    return (
+      <div className="space-y-4">
+        <ErrorAlert message={stakingError} />
+        <Button onClick={handleRefresh} className="w-full">
+          <RefreshCw className="h-4 w-4 mr-2" />
+          Retry
+        </Button>
+      </div>
+    );
   }
 
   return (
@@ -429,7 +435,7 @@ export function StakingRewards({ refreshing, onDataLoaded }: StakingRewardsProps
 
             <LoadingButton
               className="w-full py-6 text-lg bg-blue-500 hover:bg-blue-600"
-              loading={activeAction?.type === 'claim'}
+              loading={activeAction?.type === 'claim' || isLoading}
               loadingText="Preparing Transaction..."
               onClick={handleClaimStakingRewards}
               disabled={buttonDisabled}
@@ -447,7 +453,7 @@ export function StakingRewards({ refreshing, onDataLoaded }: StakingRewardsProps
               size="sm"
               className="border-blue-500 text-blue-500"
               onClick={handleOpenStakeModal}
-              disabled={activeAction !== null}
+              disabled={activeAction !== null || isLoading}
             >
               <Plus className="h-4 w-4 mr-1" />
               Stake More
@@ -472,7 +478,12 @@ export function StakingRewards({ refreshing, onDataLoaded }: StakingRewardsProps
               </div>
 
               <div className="space-y-4 mt-6">
-                {!hasStakes ? (
+                {isLoading ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin h-8 w-8 border-t-2 border-blue-500 rounded-full mx-auto mb-4"></div>
+                    <p className="text-gray-500">Loading stakes...</p>
+                  </div>
+                ) : !hasStakes ? (
                   <div className="text-center py-8 text-gray-500">
                     <Lock className="h-12 w-12 mx-auto mb-4 text-gray-400" />
                     <p className="mb-2">You don&apos;t have any active stakes</p>

@@ -8,7 +8,7 @@ import { formatDate } from '@/utils/crypto';
 
 export function ActivityRewardsHistory() {
   // Get activity rewards history from Redux
-  const { history } = useAppSelector((state) => state.activityRewards);
+  const { activityRewards } = useAppSelector((state) => state.activityRewards);
 
   // Get token symbol from useMovinToken
   const { useTokenSymbol } = useMovinToken();
@@ -16,16 +16,16 @@ export function ActivityRewardsHistory() {
 
   // Format the rewards for display
   const formattedRewards = useMemo(() => {
-    if (!history || history.length === 0) {
+    if (!activityRewards || activityRewards.length === 0) {
       return [];
     }
 
-    return history.map((reward) => ({
+    return activityRewards.map((reward) => ({
       ...reward,
       formattedRewards: `${Number(reward.rewards).toFixed(2)} ${tokenSymbol || 'MVN'}`,
       formattedDate: formatDate(reward.created_at),
     }));
-  }, [history, tokenSymbol]);
+  }, [activityRewards, tokenSymbol]);
 
   return (
     <div className="space-y-4">

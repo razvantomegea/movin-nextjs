@@ -4,7 +4,6 @@ import { getProfile, IProfile, updateProfile as updateProfileDB } from '@/lib/su
 interface ProfileState {
   profile: IProfile | null;
   isLoading: boolean;
-  isUpdating: boolean;
   error: string | null;
   lastUpdated: number | null;
 }
@@ -13,7 +12,6 @@ interface ProfileState {
 const initialState: ProfileState = {
   profile: null,
   isLoading: false,
-  isUpdating: false,
   error: null,
   lastUpdated: null,
 };
@@ -72,11 +70,11 @@ const profileSlice = createSlice({
 
       // Update profile
       .addCase(updateProfile.pending, (state) => {
-        state.isUpdating = true;
+        state.isLoading = true;
         state.error = null;
       })
       .addCase(updateProfile.fulfilled, (state, action: PayloadAction<IProfile>) => {
-        state.isUpdating = false;
+        state.isLoading = false;
         state.error = null;
 
         if (state.profile) {
@@ -89,7 +87,7 @@ const profileSlice = createSlice({
         state.lastUpdated = Date.now();
       })
       .addCase(updateProfile.rejected, (state, action) => {
-        state.isUpdating = false;
+        state.isLoading = false;
         state.error = action.payload as string;
       });
   },

@@ -34,7 +34,6 @@ export function ActivityRewards({ refreshing, onDataLoaded }: ActivityRewardsPro
   const dispatch = useAppDispatch();
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [rewardsToSave, setRewardsToSave] = useState(0);
-  const [dbUpdateInProgress, setDbUpdateInProgress] = useState(false);
   const [expirationTimestamp, setExpirationTimestamp] = useState<number | null>(null);
   const { address } = useAppKitAccount();
   const addressLower = useMemo(() => address?.toLowerCase(), [address]);
@@ -51,8 +50,14 @@ export function ActivityRewards({ refreshing, onDataLoaded }: ActivityRewardsPro
     refetch: refetchUserActivity,
   } = useUserActivity();
 
-  const { activities, error: activitiesError } = useAppSelector(
-    (state: RootState) => state.activityData,
+  const {
+    activities,
+    error: activitiesError,
+    isLoading: activitiesLoading,
+  } = useAppSelector((state: RootState) => state.activityData);
+
+  const { isLoading: rewardsLoading, error: rewardsDbError } = useAppSelector(
+    (state) => state.activityRewards,
   );
 
   const blockchainActivity = formattedActivity();
@@ -110,7 +115,7 @@ export function ActivityRewards({ refreshing, onDataLoaded }: ActivityRewardsPro
     return rewards.stepsRewards + rewards.metsRewards;
   }, [rewards]);
 
-  const activityRewards = useMemo(() => {
+  const rewardBreakdown = useMemo(() => {
     if (!rewards) return [];
 
     const stepsPercentage = totalRewards > 0 ? (rewards.stepsRewards / totalRewards) * 100 : 0;
@@ -189,12 +194,11 @@ export function ActivityRewards({ refreshing, onDataLoaded }: ActivityRewardsPro
 
   // Update rewards in Supabase database
   const saveRewardsToDatabase = useCallback(async () => {
-    if (dbUpdateInProgress || rewardsToSave <= 0 || !addressLower) {
+    if (rewardsToSave <= 0 || !addressLower || rewardsLoading) {
       return;
     }
 
     try {
-      setDbUpdateInProgress(true);
       await dispatch(
         recordActivityReward({
           address: addressLower,
@@ -203,11 +207,16 @@ export function ActivityRewards({ refreshing, onDataLoaded }: ActivityRewardsPro
       ).unwrap();
     } catch (error) {
       console.error('Error recording activity reward:', error);
+      dispatch(
+        showErrorToast({
+          title: 'Database Update Failed',
+          description: 'Failed to record your rewards. Please try again.',
+        }),
+      );
     } finally {
       setRewardsToSave(0);
-      setDbUpdateInProgress(false);
     }
-  }, [dbUpdateInProgress, dispatch, rewardsToSave, addressLower]);
+  }, [dispatch, rewardsToSave, addressLower, rewardsLoading]);
 
   const handleTransactionSuccess = useCallback(async () => {
     if (isClaimSuccess && isConfirmModalOpen) {
@@ -273,9 +282,11 @@ export function ActivityRewards({ refreshing, onDataLoaded }: ActivityRewardsPro
     setIsConfirmModalOpen(false);
   }, []);
 
-  const errorMessage = activityError?.message || rewardsError?.message || activitiesError;
+  const errorMessage =
+    activityError?.message || rewardsError?.message || activitiesError || rewardsDbError;
+  const isLoading = refreshing || activitiesLoading || rewardsLoading;
 
-  if (refreshing) {
+  if (isLoading) {
     return <ActivityRewardsSkeleton />;
   }
 
@@ -319,7 +330,7 @@ export function ActivityRewards({ refreshing, onDataLoaded }: ActivityRewardsPro
             loading={isClaiming}
             loadingText="Preparing Transaction..."
             onClick={handleClaimActivityRewards}
-            disabled={totalRewards <= 0}
+            disabled={totalRewards <= 0 || isClaiming}
           >
             Claim Rewards
           </LoadingButton>
@@ -334,7 +345,7 @@ export function ActivityRewards({ refreshing, onDataLoaded }: ActivityRewardsPro
         <Card className="bg-gray-100 dark:bg-gray-900 border-gray-300 dark:border-gray-800">
           <CardContent className="p-4">
             <div className="space-y-4">
-              {activityRewards.map((reward, index) => (
+              {rewardBreakdown.map((reward, index) => (
                 <div key={index}>
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-sm">{reward.type}</span>
