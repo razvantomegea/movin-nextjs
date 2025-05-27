@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ErrorAlert } from '@/components/ui/error-alert';
 import { Progress } from '@/components/ui/progress';
+import { useMovinEarn } from '@/lib/hooks/useMovinEarn';
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
 import { fetchActivities, addActivities } from '@/lib/redux/slices/activityDataSlice';
 import { resetJointTracking } from '@/lib/redux/slices/jointTrackingSlice';
@@ -62,6 +63,11 @@ export function MovinDashboard() {
   const addressLower = useMemo(() => address?.toLowerCase(), [address]);
 
   const dispatch = useAppDispatch();
+
+  // Get premium status
+  const { usePremiumStatus } = useMovinEarn();
+  const { isPremiumActive } = usePremiumStatus();
+  const isPremiumUser = isPremiumActive();
 
   const { activities, isLoading, error } = useAppSelector((state: RootState) => state.activityData);
 
@@ -153,6 +159,15 @@ export function MovinDashboard() {
 
   // Handle opening the route type modal
   const handleOpenRouteTracking = () => {
+    if (!isPremiumUser) {
+      dispatch(
+        showInfoToast({
+          title: 'Premium Feature',
+          description: 'Route tracking is only available for premium subscribers.',
+        }),
+      );
+      return;
+    }
     setIsRouteTypeModalOpen(true);
   };
 
@@ -340,10 +355,12 @@ export function MovinDashboard() {
             <Button
               onClick={handleOpenRouteTracking}
               size="sm"
-              className="bg-blue-500 hover:bg-blue-600"
+              className={`${
+                isPremiumUser ? 'bg-blue-500 hover:bg-blue-600' : 'bg-gray-500 hover:bg-gray-600'
+              }`}
             >
               <MapPin className="h-4 w-4 mr-2" />
-              Track Route
+              {isPremiumUser ? 'Track Route' : '🔒 Premium'}
             </Button>
           </div>
           <Card className={isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}>

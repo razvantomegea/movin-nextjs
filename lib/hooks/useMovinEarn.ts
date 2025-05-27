@@ -691,9 +691,20 @@ export function useMovinEarn() {
       };
     };
 
+    // Check if premium status is active (status = true and not expired)
+    const isPremiumActive = (): boolean => {
+      const premium = formattedPremiumStatus();
+      if (!premium.status) return false;
+
+      // Check expiration
+      if (premium.expiration === 0) return false;
+      return premium.expiration > Math.floor(Date.now() / 1000);
+    };
+
     return {
       ...result,
       formattedPremiumStatus,
+      isPremiumActive,
     };
   };
 
