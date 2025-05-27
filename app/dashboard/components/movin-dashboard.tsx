@@ -355,12 +355,14 @@ export function MovinDashboard() {
             <Button
               onClick={handleOpenRouteTracking}
               size="sm"
+              disabled={!isPremiumUser}
+              aria-label={isPremiumUser ? 'Track Route' : 'Track Route - Premium feature only'}
               className={`${
-                isPremiumUser ? 'bg-blue-500 hover:bg-blue-600' : 'bg-gray-500 hover:bg-gray-600'
+                isPremiumUser ? 'bg-blue-500 hover:bg-blue-600' : 'bg-gray-500 cursor-not-allowed'
               }`}
             >
               <MapPin className="h-4 w-4 mr-2" />
-              {isPremiumUser ? 'Track Route' : '🔒 Premium'}
+              Track Route
             </Button>
           </div>
           <Card className={isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}>

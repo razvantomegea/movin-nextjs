@@ -42,6 +42,27 @@ const sarrahUser = {
   location: { lat: 0, lng: 0 }, // Will be updated based on current position
 };
 
+// Haversine formula to calculate distance between two coordinates
+const calculateHaversineDistance = (
+  lat1: number,
+  lng1: number,
+  lat2: number,
+  lng2: number,
+): number => {
+  const R = 6371e3; // Earth's radius in meters
+  const φ1 = (lat1 * Math.PI) / 180;
+  const φ2 = (lat2 * Math.PI) / 180;
+  const Δφ = ((lat2 - lat1) * Math.PI) / 180;
+  const Δλ = ((lng2 - lng1) * Math.PI) / 180;
+
+  const a =
+    Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+    Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  return R * c; // Distance in meters
+};
+
 export function RouteTrackingModal({
   isOpen,
   onClose,
@@ -134,12 +155,26 @@ export function RouteTrackingModal({
           const newPath = [...prevPath, newPos];
 
           // Calculate new distance
-          if (prevPath.length > 0 && window.google?.maps?.geometry) {
+          if (prevPath.length > 0) {
             const lastPos = prevPath[prevPath.length - 1];
-            const segmentDistance = window.google.maps.geometry.spherical.computeDistanceBetween(
-              new window.google.maps.LatLng(lastPos.lat, lastPos.lng),
-              new window.google.maps.LatLng(newPos.lat, newPos.lng),
-            );
+            let segmentDistance = 0;
+
+            // Try using Google Maps geometry library if available
+            if (window.google?.maps?.geometry) {
+              segmentDistance = window.google.maps.geometry.spherical.computeDistanceBetween(
+                new window.google.maps.LatLng(lastPos.lat, lastPos.lng),
+                new window.google.maps.LatLng(newPos.lat, newPos.lng),
+              );
+            } else {
+              // Fallback to Haversine formula if Google Maps geometry isn't available
+              segmentDistance = calculateHaversineDistance(
+                lastPos.lat,
+                lastPos.lng,
+                newPos.lat,
+                newPos.lng,
+              );
+            }
+
             setDistance((prevDistance) => prevDistance + segmentDistance);
           }
 
