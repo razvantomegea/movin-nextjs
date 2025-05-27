@@ -512,7 +512,7 @@ export function RouteTrackingModal({
               ) : permissionState === 'denied' ? (
                 renderPermissionDenied()
               ) : (
-                <div className="relative aspect-[4/3] w-full bg-gray-200 dark:bg-gray-800">
+                <div className="relative w-full h-[75vh] sm:aspect-[4/3] sm:h-auto bg-gray-200 dark:bg-gray-800">
                   {currentPosition ? (
                     <GoogleMap
                       mapContainerStyle={mapContainerStyle}
