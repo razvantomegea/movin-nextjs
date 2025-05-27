@@ -98,16 +98,6 @@ const activityRewardsSlice = createSlice({
         state.error = (action.payload as string) || 'Failed to load activity rewards data';
       })
 
-      // Handle fetchActivityRewardsHistory
-      .addCase(fetchActivityRewards.pending, (state) => {
-        state.isLoading = true;
-        state.error = null;
-      })
-      .addCase(fetchActivityRewards.fulfilled, (state, action) => {
-        state.isLoading = false;
-        state.activityRewards = action.payload;
-        state.error = null;
-      })
       .addCase(recordActivityReward.pending, (state) => {
         state.isLoading = true;
         state.error = null;
