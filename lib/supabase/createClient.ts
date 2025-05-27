@@ -4,25 +4,30 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 let browserClientInstance: SupabaseClient | null = null;
 
 // Client-side Supabase client for browser usage - singleton implementation
-export function createSupabaseClientBrowser() {
-  // Return existing instance if available
-  if (browserClientInstance) {
-    return browserClientInstance;
-  }
+// Store the current auth token used to create the instance
+let currentAuthToken: string | null = null;
 
-  // Extract token from cookies if available
+export function createSupabaseClientBrowser() {
+  // Extract current token
   let authToken = '';
   if (typeof document !== 'undefined') {
     const match = document.cookie.match(/supabase-auth-token=([^;]+)/);
     if (match && match[1]) {
       try {
-        // The cookie may contain the full token or be encoded
         authToken = decodeURIComponent(match[1]);
       } catch (e) {
         console.error('Error decoding auth token from cookies:', e);
       }
     }
   }
+
+  // Return existing instance if available
+  if (browserClientInstance && currentAuthToken === authToken) {
+    return browserClientInstance;
+  }
+
+  // Update the stored token
+  currentAuthToken = authToken;
 
   // Create a new instance if none exists
   browserClientInstance = createClient(
@@ -49,15 +54,26 @@ export function createSupabaseClientBrowser() {
 // Singleton instance for the authenticated client
 let authenticatedClientInstance: SupabaseClient | null = null;
 
+// Store the token used to create the instance
+let currentToken: string | null = null;
+
 export function getClient() {
   // For explicit token usage (legacy method)
   const token = typeof localStorage !== 'undefined' ? localStorage.getItem('auth_token') : null;
-  if (!token) throw new Error('No auth token');
+  if (!token) {
+    // Reset singleton if no token
+    authenticatedClientInstance = null;
+    currentToken = null;
+    throw new Error('No auth token');
+  }
 
   // Check if we already have a client with this token
-  if (authenticatedClientInstance) {
+  if (authenticatedClientInstance && currentToken === token) {
     return authenticatedClientInstance;
   }
+
+  // Update the stored token
+  currentToken = token;
 
   // Create a new authenticated client
   authenticatedClientInstance = createClient(

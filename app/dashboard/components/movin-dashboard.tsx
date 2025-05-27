@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import { useAppKitAccount } from '@reown/appkit/react';
 import { motion } from 'framer-motion';
 import { Activity, Clock, Flame, TrendingUp, RefreshCw, Dumbbell, MapPin } from 'lucide-react';
@@ -14,11 +14,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { ErrorAlert } from '@/components/ui/error-alert';
 import { Progress } from '@/components/ui/progress';
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
-import {
-  fetchActivities,
-  resetActivityError,
-  addActivities,
-} from '@/lib/redux/slices/activityDataSlice';
+import { fetchActivities, addActivities } from '@/lib/redux/slices/activityDataSlice';
 import { resetJointTracking } from '@/lib/redux/slices/jointTrackingSlice';
 import { showSuccessToast, showInfoToast } from '@/lib/redux/slices/toastSlice';
 import type { RootState } from '@/lib/redux/store';
@@ -57,13 +53,13 @@ const item = {
 export function MovinDashboard() {
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
-  const [refreshing, setRefreshing] = useState(false);
+  const [refreshing, setRefreshing] = useState(true);
   const [isRouteTypeModalOpen, setIsRouteTypeModalOpen] = useState(false);
   const [isRouteModalOpen, setIsRouteModalOpen] = useState(false);
   const [isJointTrackingSelected, setIsJointTrackingSelected] = useState(false);
   const currentDate = useMemo(() => new Date(), []);
   const { address } = useAppKitAccount();
-  const addressLower = address?.toLowerCase();
+  const addressLower = useMemo(() => address?.toLowerCase(), [address]);
 
   const dispatch = useAppDispatch();
 
@@ -93,19 +89,7 @@ export function MovinDashboard() {
     return mapActivitiesToYearly(activities, currentDate);
   }, [activities, currentDate]);
 
-  useEffect(() => {
-    if (addressLower) {
-      dispatch(fetchActivities(addressLower));
-    }
-  }, [dispatch, addressLower]);
-
-  useEffect(() => {
-    return () => {
-      dispatch(resetJointTracking());
-    };
-  }, [dispatch]);
-
-  const handleRefresh = async () => {
+  const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
       if (addressLower) {
@@ -127,15 +111,19 @@ export function MovinDashboard() {
     } finally {
       setRefreshing(false);
     }
-  };
+  }, [addressLower, dispatch]);
 
-  const handleRetryLoadActivity = () => {
-    dispatch(resetActivityError());
-
+  useEffect(() => {
     if (addressLower) {
-      dispatch(fetchActivities(addressLower));
+      handleRefresh();
     }
-  };
+  }, [handleRefresh, addressLower]);
+
+  useEffect(() => {
+    return () => {
+      dispatch(resetJointTracking());
+    };
+  }, [dispatch]);
 
   const handleSaveRoute = async (routeData: RouteData) => {
     if (!addressLower) {
@@ -212,7 +200,7 @@ export function MovinDashboard() {
       return (
         <div className="space-y-4">
           <ErrorAlert message={error} />
-          <Button onClick={handleRetryLoadActivity} className="w-full">
+          <Button onClick={handleRefresh} className="w-full">
             <RefreshCw className="h-4 w-4 mr-2" />
             Retry
           </Button>
