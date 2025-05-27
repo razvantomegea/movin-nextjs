@@ -301,7 +301,6 @@ export function RouteTrackingModal({
     );
   };
 
-  // Update timer when tracking
   useEffect(() => {
     if (!isTracking || !startTime) return;
 
