@@ -5,7 +5,6 @@ import { useAppKitAccount } from '@reown/appkit/react';
 import { motion } from 'framer-motion';
 import { Activity, Clock, Flame, TrendingUp, RefreshCw, Dumbbell, MapPin } from 'lucide-react';
 import { useTheme } from 'next-themes';
-import { useAccount } from 'wagmi';
 import { ActivityColumnChart } from '@/app/dashboard/components/activity-column-chart';
 import { CelebrationAnimation } from '@/components/celebration-animation';
 import { CircularProgress } from '@/components/circular-progress';
@@ -55,10 +54,9 @@ const item = {
 };
 
 export function MovinDashboard() {
-  const { isConnecting } = useAccount();
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
-  const [refreshing, setRefreshing] = useState(isConnecting);
+  const [refreshing, setRefreshing] = useState(true);
   const [isRouteTypeModalOpen, setIsRouteTypeModalOpen] = useState(false);
   const [isRouteModalOpen, setIsRouteModalOpen] = useState(false);
   const [isJointTrackingSelected, setIsJointTrackingSelected] = useState(false);
@@ -212,7 +210,7 @@ export function MovinDashboard() {
 
   // Render the dashboard content
   const renderDashboardContent = () => {
-    if (isLoading && !refreshing) {
+    if (isLoading || refreshing) {
       return <ActivityDashboardSkeleton />;
     }
 

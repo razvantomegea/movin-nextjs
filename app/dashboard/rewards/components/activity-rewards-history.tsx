@@ -4,7 +4,7 @@ import { useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useMovinToken } from '@/lib/hooks/useMovinToken';
 import { useAppSelector } from '@/lib/redux/hooks';
-import { formatDate } from '@/utils/crypto';
+import { formatDate } from '@/utils/date';
 
 export function ActivityRewardsHistory() {
   // Get activity rewards history from Redux

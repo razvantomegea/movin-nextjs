@@ -4,27 +4,7 @@ import { useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useMovinToken } from '@/lib/hooks/useMovinToken';
 import { useAppSelector } from '@/lib/redux/hooks';
-
-// Helper function to format date in a human readable format
-function formatDate(dateString: string): string {
-  if (!dateString) return 'Invalid Date';
-
-  try {
-    const date = new Date(dateString);
-
-    // Check if date is valid
-    if (isNaN(date.getTime())) return 'Invalid Date';
-
-    // Format: "Apr 2, 2025"
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
-  } catch (error) {
-    return 'Invalid Date';
-  }
-}
+import { formatDate } from '@/utils/date';
 
 export function StakingHistory() {
   // Get staking history from Supabase via Redux
