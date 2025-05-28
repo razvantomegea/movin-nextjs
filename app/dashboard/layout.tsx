@@ -8,6 +8,7 @@ import { Activity, Gift, Menu, Settings, User, X, Crown } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { useAccount } from 'wagmi';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -28,6 +29,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const addressLower = useMemo(() => address?.toLowerCase(), [address]);
   const { profile } = useAppSelector((state) => state.profile);
   const dispatch = useAppDispatch();
+  const { isConnecting } = useAccount();
 
   const isActive = (path: string) => {
     return pathname === path;
@@ -67,8 +69,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   useEffect(() => {
     if (addressLower && !profile) {
       dispatch(fetchProfile(addressLower));
+    } else if (!addressLower && !isConnecting) {
+      router.push('/');
     }
-  }, [addressLower, profile, dispatch]);
+  }, [addressLower, profile, dispatch, router, isConnecting]);
 
   const content = (
     <div className="flex flex-col min-h-screen">

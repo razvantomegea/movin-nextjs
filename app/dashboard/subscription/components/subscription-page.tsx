@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { AlertCircle, Crown } from 'lucide-react';
+import { useAccount } from 'wagmi';
 import { TransactionConfirmationModal } from '@/components/transaction-confirmation-modal';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -27,6 +28,7 @@ const item = {
 };
 
 export function SubscriptionPage() {
+  const { isConnecting } = useAccount();
   const {
     premiumLoading,
     premiumError,
@@ -47,7 +49,7 @@ export function SubscriptionPage() {
     tokenSymbol,
   } = useSubscription();
 
-  if (premiumLoading) {
+  if (premiumLoading || isConnecting) {
     return <SubscriptionPageSkeleton />;
   }
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useAccount } from 'wagmi';
 import ErrorBoundary from '@/components/error-boundary';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -10,7 +11,8 @@ import { ReferralRewards } from './referral-rewards';
 import { StakingRewards } from './staking-rewards';
 
 export function RewardsDashboard() {
-  const [refreshing, setRefreshing] = useState(false);
+  const { isConnecting } = useAccount();
+  const [refreshing, setRefreshing] = useState(isConnecting);
 
   const handleRefresh = async () => {
     if (!refreshing) {

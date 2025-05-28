@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
-import { useAppSelector } from '@/lib/redux/hooks';
+import { useMovinEarn } from '@/lib/hooks/useMovinEarn';
 
 const container = {
   hidden: { opacity: 0 },
@@ -37,7 +37,9 @@ const item = {
 
 export function SettingsPage() {
   const router = useRouter();
-  const { isPremium } = useAppSelector((state) => state.subscription);
+  const { usePremiumStatus } = useMovinEarn();
+  const { isPremiumActive } = usePremiumStatus();
+  const isPremium = isPremiumActive();
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [backgroundSync, setBackgroundSync] = useState(true);
   const [dataCollection, setDataCollection] = useState(true);
@@ -286,11 +288,11 @@ export function SettingsPage() {
             <CardContent className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label>Version</Label>
-                <span className="text-sm">1.0.0</span>
+                <span className="text-sm">1.0.1</span>
               </div>
               <div className="flex items-center justify-between">
                 <Label>Build</Label>
-                <span className="text-sm">2023.04.25</span>
+                <span className="text-sm">2025.05.28</span>
               </div>
               <div className="flex items-center justify-between">
                 <Label>Device</Label>

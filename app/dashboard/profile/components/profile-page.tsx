@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, useCallback } from 'react';
 import { useAppKitAccount } from '@reown/appkit/react';
 import { motion } from 'framer-motion';
+import { useAccount } from 'wagmi';
 import { RefreshButton } from '@/components/refresh-button';
 // import TokenBalanceExample from '@/components/TokenBalanceExample';
 import { useMovinEarn } from '@/lib/hooks/useMovinEarn';
@@ -35,6 +36,7 @@ const item = {
 
 export function ProfilePage() {
   const { address } = useAppKitAccount();
+  const { isConnecting } = useAccount();
   const addressLower = useMemo(() => address?.toLowerCase(), [address]);
   const dispatch = useAppDispatch();
   const { profile, isLoading, error } = useAppSelector((state) => state.profile);
@@ -96,7 +98,7 @@ export function ProfilePage() {
     }
   };
 
-  if (isLoading || isBalanceLoading || activitiesLoading) {
+  if (isLoading || isBalanceLoading || activitiesLoading || isConnecting) {
     return <ProfilePageSkeleton />;
   }
 

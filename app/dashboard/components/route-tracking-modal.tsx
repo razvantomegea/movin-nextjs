@@ -1,14 +1,15 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { GoogleMap, Marker, Polyline, InfoWindow } from '@react-google-maps/api';
+
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Play, Pause, Save, RotateCw, MapPin, AlertTriangle, Users } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useGoogleMapsStatus } from '@/app/contexts/google-maps-provider';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { formatDistance, formatDuration } from '@/utils';
+import { cn, formatDistance, formatDuration } from '@/utils';
 
 interface RouteTrackingModalProps {
   isOpen: boolean;
@@ -74,7 +75,6 @@ export function RouteTrackingModal({
   const mapRef = useRef<google.maps.Map | null>(null);
   const watchIdRef = useRef<number | null>(null);
   const { isLoaded: mapsLoaded, loadError: mapsError } = useGoogleMapsStatus();
-  const visibilityChangeRef = useRef<boolean>(false);
 
   const [isTracking, setIsTracking] = useState(false);
   const [currentPosition, setCurrentPosition] = useState<google.maps.LatLngLiteral | null>(null);
@@ -91,189 +91,69 @@ export function RouteTrackingModal({
   // Simulated joint tracking state
   const [sarrahPosition, setSarrahPosition] = useState<google.maps.LatLngLiteral | null>(null);
 
-  // Save route data to session storage
-  const saveRouteToStorage = useCallback(() => {
-    if (!isTracking || !startTime) return;
-
-    const routeData = {
-      path: routePath,
-      distance,
-      duration,
-      startTime: startTime.toISOString(),
-      isTracking,
-    };
-
-    try {
-      sessionStorage.setItem('movin_route_tracking', JSON.stringify(routeData));
-    } catch (err) {
-      console.error('Error saving route to session storage:', err);
-    }
-  }, [isTracking, startTime, routePath, distance, duration]);
-
-  // Load route data from session storage
-  const loadRouteFromStorage = useCallback(() => {
-    try {
-      const storedData = sessionStorage.getItem('movin_route_tracking');
-      if (!storedData) return false;
-
-      const routeData = JSON.parse(storedData);
-
-      if (routeData.isTracking) {
-        setRoutePath(routeData.path);
-        setDistance(routeData.distance);
-
-        // Recalculate duration based on stored start time
-        const storedStartTime = new Date(routeData.startTime);
-        setStartTime(storedStartTime);
-
-        const elapsedSeconds = Math.floor((Date.now() - storedStartTime.getTime()) / 1000);
-        setDuration(elapsedSeconds);
-
-        return true;
-      }
-    } catch (err) {
-      console.error('Error loading route from session storage:', err);
-    }
-
-    return false;
-  }, []);
-
-  // Function to start watching position (extracted for reuse)
-  const startWatchingPosition = useCallback(() => {
-    watchIdRef.current = navigator.geolocation.watchPosition(
-      (position) => {
-        const newPos = {
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-        };
-
-        console.log('New position update:', newPos);
-        setCurrentPosition(newPos);
-
-        // Update route path
-        setRoutePath((prevPath) => {
-          const newPath = [...prevPath, newPos];
-
-          // Calculate new distance
-          if (prevPath.length > 0) {
-            const lastPos = prevPath[prevPath.length - 1];
-            let segmentDistance = 0;
-
-            // Try using Google Maps geometry library if available
-            if (window.google?.maps?.geometry) {
-              segmentDistance = window.google.maps.geometry.spherical.computeDistanceBetween(
-                new window.google.maps.LatLng(lastPos.lat, lastPos.lng),
-                new window.google.maps.LatLng(newPos.lat, newPos.lng),
-              );
-            } else {
-              // Fallback to Haversine formula if Google Maps geometry isn't available
-              segmentDistance = calculateHaversineDistance(
-                lastPos.lat,
-                lastPos.lng,
-                newPos.lat,
-                newPos.lng,
-              );
-            }
-
-            setDistance((prevDistance) => prevDistance + segmentDistance);
-          }
-
-          return newPath;
-        });
-      },
-      (err) => {
-        console.error('Error tracking position:', err);
-
-        if (err.code === 1) {
-          // PERMISSION_DENIED
-          setPermissionState('denied');
-          setError(
-            'Location access was denied. Please enable location permissions in your browser settings.',
-          );
-        } else {
-          setError('Error tracking your location. Please try again.');
-        }
-
-        stopTracking();
-      },
-      { enableHighAccuracy: true, maximumAge: 10000, timeout: 5000 },
-    );
-  }, []);
-
-  // Handle visibility change events
+  // Initialize permission check
   useEffect(() => {
     if (!isOpen) return;
 
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') {
-        console.log('App moved to background, saving route state');
-        visibilityChangeRef.current = true;
+    // Handle permission using the Permissions API
+    const handlePermission = () => {
+      // Check if geolocation is available
+      if (!navigator.geolocation) {
+        setError('Geolocation is not supported by your browser');
+        return;
+      }
 
-        // Save current route state
-        if (isTracking) {
-          saveRouteToStorage();
-        }
-      } else if (document.visibilityState === 'visible') {
-        console.log('App returned to foreground');
+      // Check if Permissions API is available
+      if (navigator.permissions && navigator.permissions.query) {
+        navigator.permissions
+          .query({ name: 'geolocation' as PermissionName })
+          .then((result) => {
+            setPermissionState(result.state as 'prompt' | 'granted' | 'denied');
 
-        // If we were tracking before going to background
-        if (isTracking && visibilityChangeRef.current) {
-          // Get latest position
-          navigator.geolocation.getCurrentPosition(
-            (position) => {
-              const newPos = {
-                lat: position.coords.latitude,
-                lng: position.coords.longitude,
-              };
+            // Handle initial state
+            if (result.state === 'granted') {
+              // Permission already granted, get position
+              getCurrentPosition();
+            } else if (result.state === 'prompt') {
+              // Will prompt when we request position
+              setPermissionState('prompt');
+            } else if (result.state === 'denied') {
+              // Permission denied, show UI to help user enable it
+              setPermissionState('denied');
+            }
 
-              // Update current position
-              setCurrentPosition(newPos);
+            // Listen for changes to permission state
+            result.addEventListener('change', () => {
+              console.log('Permission state changed to:', result.state);
+              setPermissionState(result.state as 'prompt' | 'granted' | 'denied');
 
-              // Restart watch position to continue tracking
-              if (watchIdRef.current) {
-                navigator.geolocation.clearWatch(watchIdRef.current);
+              if (result.state === 'granted') {
+                getCurrentPosition();
               }
-
-              startWatchingPosition();
-            },
-            (err) => {
-              console.error('Error getting position after visibility change:', err);
-            },
-            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
-          );
-        }
-
-        visibilityChangeRef.current = false;
+            });
+          })
+          .catch((error) => {
+            console.error('Error checking permission:', error);
+            // If we can't check permissions, assume we need to prompt
+            setPermissionState('prompt');
+          });
+      } else {
+        // Permissions API not available, assume we need to prompt
+        setPermissionState('prompt');
+        console.log('Permissions API not available, assuming prompt state');
       }
     };
 
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    // Also check if we need to restore a tracking session
-    if (!isTracking) {
-      const hasRestoredSession = loadRouteFromStorage();
-      if (hasRestoredSession) {
-        console.log('Restored tracking session from storage');
-        setIsTracking(true);
-        startWatchingPosition();
-      }
-    }
+    handlePermission();
 
     return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      // Clean up tracking when modal closes
+      if (watchIdRef.current) {
+        navigator.geolocation.clearWatch(watchIdRef.current);
+        watchIdRef.current = null;
+      }
     };
-  }, [isOpen, isTracking, saveRouteToStorage, startWatchingPosition, loadRouteFromStorage]);
-
-  // Save route data periodically when tracking
-  useEffect(() => {
-    if (!isTracking) return;
-
-    const saveInterval = setInterval(() => {
-      saveRouteToStorage();
-    }, 10000); // Save every 10 seconds
-
-    return () => clearInterval(saveInterval);
-  }, [isTracking, routePath, distance, duration, saveRouteToStorage]);
+  }, [isOpen]);
 
   // Update Sarrah's position when current position changes
   useEffect(() => {
@@ -336,6 +216,36 @@ export function RouteTrackingModal({
     );
   };
 
+  // Get current position (when permission is already granted)
+  const getCurrentPosition = () => {
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const currentPos = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        };
+        setCurrentPosition(currentPos);
+        setError(null);
+      },
+      (err) => {
+        console.error('Error getting current position:', err);
+
+        // Handle specific error codes
+        if (err.code === 1) {
+          // PERMISSION_DENIED
+          setPermissionState('denied');
+          setError(
+            'Location access was denied. Please enable location permissions in your browser settings.',
+          );
+        } else {
+          setError('Could not access your location. Please check permissions and try again.');
+        }
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
+    );
+  };
+
+  // Update timer when tracking
   useEffect(() => {
     if (!isTracking || !startTime) return;
 
@@ -364,11 +274,65 @@ export function RouteTrackingModal({
       setRoutePath([currentPosition]);
     }
 
-    // Clear previous session data
-    sessionStorage.removeItem('movin_route_tracking');
-
     // Start watching position
-    startWatchingPosition();
+    watchIdRef.current = navigator.geolocation.watchPosition(
+      (position) => {
+        const newPos = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        };
+
+        console.log('New position update:', newPos);
+        setCurrentPosition(newPos);
+
+        // Update route path
+        setRoutePath((prevPath) => {
+          const newPath = [...prevPath, newPos];
+
+          // Calculate new distance
+          if (prevPath.length > 0) {
+            const lastPos = prevPath[prevPath.length - 1];
+            let segmentDistance = 0;
+
+            // Try using Google Maps geometry library if available
+            if (window.google?.maps?.geometry) {
+              segmentDistance = window.google.maps.geometry.spherical.computeDistanceBetween(
+                new window.google.maps.LatLng(lastPos.lat, lastPos.lng),
+                new window.google.maps.LatLng(newPos.lat, newPos.lng),
+              );
+            } else {
+              // Fallback to Haversine formula if Google Maps geometry isn't available
+              segmentDistance = calculateHaversineDistance(
+                lastPos.lat,
+                lastPos.lng,
+                newPos.lat,
+                newPos.lng,
+              );
+            }
+
+            setDistance((prevDistance) => prevDistance + segmentDistance);
+          }
+
+          return newPath;
+        });
+      },
+      (err) => {
+        console.error('Error tracking position:', err);
+
+        if (err.code === 1) {
+          // PERMISSION_DENIED
+          setPermissionState('denied');
+          setError(
+            'Location access was denied. Please enable location permissions in your browser settings.',
+          );
+        } else {
+          setError('Error tracking your location. Please try again.');
+        }
+
+        stopTracking();
+      },
+      { enableHighAccuracy: true, maximumAge: 10000, timeout: 5000 },
+    );
   };
 
   // Stop tracking
@@ -378,9 +342,6 @@ export function RouteTrackingModal({
       watchIdRef.current = null;
     }
     setIsTracking(false);
-
-    // Clear session storage when tracking is stopped
-    sessionStorage.removeItem('movin_route_tracking');
   };
 
   // Save route
@@ -411,9 +372,6 @@ export function RouteTrackingModal({
         : undefined,
     };
 
-    // Clear session storage when route is saved
-    sessionStorage.removeItem('movin_route_tracking');
-
     onSaveRoute(routeData);
     onClose();
   };
@@ -425,9 +383,6 @@ export function RouteTrackingModal({
     setDistance(0);
     setDuration(0);
     setStartTime(null);
-
-    // Clear session storage when tracking is reset
-    sessionStorage.removeItem('movin_route_tracking');
   };
 
   // Map load handler
@@ -583,7 +538,15 @@ export function RouteTrackingModal({
             </div>
 
             {/* Main Content */}
-            <div className="flex-1">
+            <div
+              className={cn('flex-1', {
+                'flex align-middle h-full pb-32 sm:pb-0':
+                  !mapsLoaded ||
+                  mapsError ||
+                  permissionState === 'prompt' ||
+                  permissionState === 'denied',
+              })}
+            >
               {!mapsLoaded ? (
                 renderLoading()
               ) : mapsError ? (
@@ -593,7 +556,7 @@ export function RouteTrackingModal({
               ) : permissionState === 'denied' ? (
                 renderPermissionDenied()
               ) : (
-                <div className="relative w-full h-[75vh] sm:aspect-[4/3] sm:h-auto bg-gray-200 dark:bg-gray-800">
+                <div className="relative aspect-[4/3] w-full bg-gray-200 dark:bg-gray-800 h-[75vh] sm:h-auto">
                   {currentPosition ? (
                     <GoogleMap
                       mapContainerStyle={mapContainerStyle}
