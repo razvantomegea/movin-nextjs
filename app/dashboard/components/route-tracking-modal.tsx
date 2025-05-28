@@ -445,8 +445,12 @@ export function RouteTrackingModal({
 
   // Render loading UI
   const renderLoading = () => {
+    if (error) {
+      return null;
+    }
+
     return (
-      <div className="flex flex-col items-center justify-center p-8 text-center">
+      <div className="flex align-middle flex-col items-center justify-center text-center">
         <RotateCw className="h-16 w-16 text-blue-500 animate-spin mb-4" />
         <h3 className="text-xl font-bold mb-2">Loading Map</h3>
         <p className="text-gray-500 dark:text-gray-400">Please wait while we load the map...</p>
@@ -556,7 +560,12 @@ export function RouteTrackingModal({
               ) : permissionState === 'denied' ? (
                 renderPermissionDenied()
               ) : (
-                <div className="relative aspect-[4/3] w-full bg-gray-200 dark:bg-gray-800 h-[75vh] sm:h-auto">
+                <div
+                  className={cn('relative w-full bg-gray-200 dark:bg-gray-800 h-[65vh] sm:h-auto', {
+                    flex: !currentPosition,
+                    'aspect-[4/3]': currentPosition,
+                  })}
+                >
                   {currentPosition ? (
                     <GoogleMap
                       mapContainerStyle={mapContainerStyle}
