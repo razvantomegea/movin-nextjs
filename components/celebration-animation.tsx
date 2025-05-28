@@ -14,6 +14,9 @@ interface CelebrationAnimationProps {
   achievementValue: string;
   achievementTitle: string;
   description?: string;
+  rewardAmount?: string;
+  rewardCurrency?: string;
+  showReward?: boolean;
 }
 
 export function CelebrationAnimation({
@@ -23,6 +26,9 @@ export function CelebrationAnimation({
   achievementValue,
   achievementTitle,
   description,
+  rewardAmount = '0.5',
+  rewardCurrency = 'MVN',
+  showReward = true,
 }: CelebrationAnimationProps) {
   const [confettiTriggered, setConfettiTriggered] = useState(false);
   const { resolvedTheme } = useTheme();
@@ -167,22 +173,26 @@ export function CelebrationAnimation({
                   )}
                 </motion.div>
 
-                <motion.div
-                  className="mt-6 w-full"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.5 }}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <Flame className="h-5 w-5 text-blue-500 mr-2" />
-                      <span className="text-sm font-medium text-blue-500">+0.5 MVN</span>
+                {showReward && (
+                  <motion.div
+                    className="mt-6 w-full"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.5 }}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <Flame className="h-5 w-5 text-blue-500 mr-2" />
+                        <span className="text-sm font-medium text-blue-500">
+                          +{rewardAmount} {rewardCurrency}
+                        </span>
+                      </div>
+                      <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                        Reward Added
+                      </span>
                     </div>
-                    <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                      Reward Added
-                    </span>
-                  </div>
-                </motion.div>
+                  </motion.div>
+                )}
 
                 <motion.button
                   className="mt-6 px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium"

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAppKitAccount } from '@reown/appkit/react';
 import { Flame, Lock, Plus, RefreshCw } from 'lucide-react';
 import { useTheme } from 'next-themes';
+import { CelebrationAnimation } from '@/components/celebration-animation';
 import { TransactionConfirmationModal } from '@/components/transaction-confirmation-modal';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -38,6 +39,7 @@ export function StakingRewards({ refreshing, onDataLoaded }: StakingRewardsProps
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [claimAmount, setClaimAmount] = useState(0);
   const [expirationTimestamp, setExpirationTimestamp] = useState<number | null>(null);
+  const [showCelebration, setShowCelebration] = useState(false);
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
   const dispatch = useAppDispatch();
@@ -95,6 +97,10 @@ export function StakingRewards({ refreshing, onDataLoaded }: StakingRewardsProps
   const hasStakes = useMemo(() => {
     return stakingData?.stakes?.length > 0;
   }, [stakingData]);
+
+  const totalClaimedRewards = useMemo(() => {
+    return claimAmount.toFixed(2);
+  }, [claimAmount]);
 
   const handleRefresh = useCallback(async () => {
     if (!addressLower) {
@@ -248,6 +254,7 @@ export function StakingRewards({ refreshing, onDataLoaded }: StakingRewardsProps
         }),
       );
 
+      setShowCelebration(true);
       updateStakesInDatabase();
     }
   }, [isClaimSuccess, isConfirmModalOpen, activeAction, dispatch, updateStakesInDatabase]);
@@ -376,9 +383,8 @@ export function StakingRewards({ refreshing, onDataLoaded }: StakingRewardsProps
   const handleTransactionSuccess = useCallback(async () => {
     setIsConfirmModalOpen(false);
     setActiveAction(null);
-    setClaimAmount(0);
     await handleRefresh();
-  }, [handleRefresh, setActiveAction, setClaimAmount]);
+  }, [handleRefresh, setActiveAction]);
 
   const handleTransactionFail = useCallback(async () => {
     setIsConfirmModalOpen(false);
@@ -389,6 +395,11 @@ export function StakingRewards({ refreshing, onDataLoaded }: StakingRewardsProps
 
   const handleCloseConfirmModal = useCallback(() => {
     setIsConfirmModalOpen(false);
+  }, []);
+
+  const handleCloseCelebration = useCallback(() => {
+    setShowCelebration(false);
+    setClaimAmount(0);
   }, []);
 
   const isLoadingData = useMemo(() => {
@@ -530,6 +541,19 @@ export function StakingRewards({ refreshing, onDataLoaded }: StakingRewardsProps
         onSuccess={handleTransactionSuccess}
         onFail={handleTransactionFail}
         rewardAmount={claimAmount}
+      />
+
+      {/* Celebration Animation */}
+      <CelebrationAnimation
+        isOpen={showCelebration}
+        onClose={handleCloseCelebration}
+        achievementType="streak"
+        achievementValue={`${totalClaimedRewards} ${displayTokenSymbol}`}
+        achievementTitle="Staking Rewards Claimed"
+        description="Congratulations on claiming your staking rewards!"
+        rewardAmount={totalClaimedRewards}
+        rewardCurrency={displayTokenSymbol}
+        showReward={true}
       />
     </>
   );

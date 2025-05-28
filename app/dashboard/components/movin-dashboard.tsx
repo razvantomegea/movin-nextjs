@@ -7,6 +7,7 @@ import { Activity, Clock, Flame, TrendingUp, RefreshCw, Dumbbell, MapPin } from 
 import { useTheme } from 'next-themes';
 import { useAccount } from 'wagmi';
 import { ActivityColumnChart } from '@/app/dashboard/components/activity-column-chart';
+import { CelebrationAnimation } from '@/components/celebration-animation';
 import { CircularProgress } from '@/components/circular-progress';
 import ErrorBoundary from '@/components/error-boundary';
 import { RefreshButton } from '@/components/refresh-button';
@@ -32,6 +33,7 @@ import {
   type DailyActivity,
   type Workout,
   type TimeRangeData,
+  getTodayDate,
 } from '@/utils';
 import { ActivityDashboardSkeleton } from './activity-dashboard-skeleton';
 import { RouteTrackingModal, type RouteData } from './route-tracking-modal';
@@ -60,6 +62,7 @@ export function MovinDashboard() {
   const [isRouteTypeModalOpen, setIsRouteTypeModalOpen] = useState(false);
   const [isRouteModalOpen, setIsRouteModalOpen] = useState(false);
   const [isJointTrackingSelected, setIsJointTrackingSelected] = useState(false);
+  const [showStepsCelebration, setShowStepsCelebration] = useState(false);
   const currentDate = useMemo(() => new Date(), []);
   const { address } = useAppKitAccount();
   const addressLower = useMemo(() => address?.toLowerCase(), [address]);
@@ -96,6 +99,16 @@ export function MovinDashboard() {
   const yearlyChartData: TimeRangeData[] = useMemo(() => {
     return mapActivitiesToYearly(activities, currentDate);
   }, [activities, currentDate]);
+
+  useEffect(() => {
+    const today = getTodayDate();
+    const celebrationShown = localStorage.getItem(`steps-celebration-${today}`);
+
+    if (dailyActivity && dailyActivity.steps >= 10000 && !celebrationShown && !isLoading) {
+      setShowStepsCelebration(true);
+      localStorage.setItem(`steps-celebration-${today}`, 'true');
+    }
+  }, [dailyActivity, isLoading]);
 
   const handleRefresh = useCallback(async () => {
     if (!addressLower) {
@@ -192,6 +205,10 @@ export function MovinDashboard() {
     setIsRouteModalOpen(false);
     dispatch(resetJointTracking());
   };
+
+  const handleCloseStepsCelebration = useCallback(() => {
+    setShowStepsCelebration(false);
+  }, []);
 
   // Render the dashboard content
   const renderDashboardContent = () => {
@@ -426,8 +443,8 @@ export function MovinDashboard() {
   return (
     <>
       <motion.div className="p-4" initial="hidden" animate="show" variants={container}>
-        <motion.div className="flex items-center justify-between mb-6" variants={item}>
-          <h1 className="text-2xl font-bold">Activities</h1>
+        <motion.div className="flex items-center mb-6" variants={item}>
+          <h1 className="text-2xl font-bold mr-2">Activities</h1>
           {/* Conditionally render the refresh button */}
           {<RefreshButton onRefresh={handleRefresh} isLoading={isLoading || refreshing} />}
         </motion.div>
@@ -449,6 +466,17 @@ export function MovinDashboard() {
         onClose={handleCloseRouteModal}
         onSaveRoute={handleSaveRoute}
         isJointTracking={isJointTrackingSelected}
+      />
+
+      {/* Steps Goal Celebration */}
+      <CelebrationAnimation
+        isOpen={showStepsCelebration}
+        onClose={handleCloseStepsCelebration}
+        achievementType="steps"
+        achievementValue="10,000 steps"
+        achievementTitle="Daily Steps Goal"
+        description="Congratulations on reaching your daily steps goal!"
+        showReward={false}
       />
     </>
   );

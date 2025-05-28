@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAppKitAccount } from '@reown/appkit/react';
 import { Flame, Award, RefreshCw } from 'lucide-react';
 
+import { CelebrationAnimation } from '@/components/celebration-animation';
 import { TransactionConfirmationModal } from '@/components/transaction-confirmation-modal';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -34,6 +35,7 @@ export function ActivityRewards({ refreshing, onDataLoaded }: ActivityRewardsPro
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [rewardsToSave, setRewardsToSave] = useState(0);
   const [expirationTimestamp, setExpirationTimestamp] = useState<number | null>(null);
+  const [showCelebration, setShowCelebration] = useState(false);
   const { address } = useAppKitAccount();
   const addressLower = useMemo(() => address?.toLowerCase(), [address]);
   const currentDate = useMemo(() => new Date(), []);
@@ -151,6 +153,10 @@ export function ActivityRewards({ refreshing, onDataLoaded }: ActivityRewardsPro
     ];
   }, [rewards, dailyActivity]);
 
+  const rewardsToSaveString = useMemo(() => {
+    return rewardsToSave.toFixed(2);
+  }, [rewardsToSave]);
+
   const handleRefresh = useCallback(async () => {
     if (!addressLower) {
       return;
@@ -212,7 +218,7 @@ export function ActivityRewards({ refreshing, onDataLoaded }: ActivityRewardsPro
           description: 'Failed to record your rewards. Please try again.',
         }),
       );
-    } finally {
+
       setRewardsToSave(0);
     }
   }, [dispatch, rewardsToSave, addressLower, rewardsLoading]);
@@ -229,6 +235,8 @@ export function ActivityRewards({ refreshing, onDataLoaded }: ActivityRewardsPro
           description: 'Your activity rewards have been claimed successfully.',
         }),
       );
+
+      setShowCelebration(true);
     }
   }, [dispatch, saveRewardsToDatabase, isConfirmModalOpen, isClaimSuccess, handleRefresh]);
 
@@ -279,6 +287,11 @@ export function ActivityRewards({ refreshing, onDataLoaded }: ActivityRewardsPro
 
   const handleCloseConfirmModal = useCallback(() => {
     setIsConfirmModalOpen(false);
+  }, []);
+
+  const handleCloseCelebration = useCallback(() => {
+    setShowCelebration(false);
+    setRewardsToSave(0);
   }, []);
 
   const errorMessage = useMemo(() => {
@@ -421,6 +434,19 @@ export function ActivityRewards({ refreshing, onDataLoaded }: ActivityRewardsPro
         transactionDescription={`Please confirm the transaction in your wallet to claim ${totalRewards.toFixed(
           2,
         )} MVN from your activity`}
+      />
+
+      {/* Celebration Animation */}
+      <CelebrationAnimation
+        isOpen={showCelebration}
+        onClose={handleCloseCelebration}
+        achievementType="workout"
+        achievementValue={`${rewardsToSaveString} MVN`}
+        achievementTitle="Activity Rewards Claimed"
+        description="Congratulations on claiming your activity rewards!"
+        rewardAmount={rewardsToSaveString}
+        rewardCurrency="MVN"
+        showReward={true}
       />
     </div>
   );

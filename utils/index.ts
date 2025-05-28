@@ -7,3 +7,4 @@ export * from './movin/formatDuration';
 export * from './randomInRange';
 export * from './movin/activityMappers';
 export * from './movin/mapRouteToActivity';
+export * from './date';
