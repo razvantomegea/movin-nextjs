@@ -74,12 +74,20 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   }, [pathname, lastPath, addressLower]);
 
   useEffect(() => {
-    if (addressLower && !profile) {
-      dispatch(fetchProfile(addressLower));
-    } else if (!addressLower && !isConnecting) {
-      router.push(lastPath);
+    if (!addressLower && !isConnecting) {
+      router.push('/');
+
+      return;
     }
-  }, [addressLower, profile, dispatch, router, isConnecting, lastPath]);
+
+    if (addressLower) {
+      dispatch(fetchProfile(addressLower));
+
+      if (pathname === '/') {
+        router.push(lastPath);
+      }
+    }
+  }, [addressLower, profile, dispatch, router, isConnecting, lastPath, pathname]);
 
   const handleNavigate = (path: string) => () => {
     router.push(path);
