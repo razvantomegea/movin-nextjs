@@ -68,10 +68,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   ];
 
   useEffect(() => {
-    if (pathname !== lastPath && pathname !== '/') {
+    if (pathname !== lastPath && pathname !== '/' && addressLower) {
       setLastPath(pathname);
     }
-  }, [pathname, lastPath]);
+  }, [pathname, lastPath, addressLower]);
 
   useEffect(() => {
     if (addressLower && !profile) {
@@ -80,6 +80,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       router.push(lastPath);
     }
   }, [addressLower, profile, dispatch, router, isConnecting, lastPath]);
+
+  const handleNavigate = (path: string) => () => {
+    router.push(path);
+  };
 
   const content = (
     <div className="flex flex-col min-h-screen">
@@ -191,7 +195,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   isActive(tab.path) ? 'text-blue-400 font-medium' : 'text-gray-400'
                 }`}
                 style={{ backgroundColor: 'transparent' }}
-                onClick={() => router.push(tab.path)}
+                onClick={handleNavigate(tab.path)}
               >
                 <span className="mb-0.5">{tab.icon}</span>
                 <span className="text-xs">{tab.name}</span>
