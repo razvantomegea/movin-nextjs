@@ -9,6 +9,7 @@ export interface IProfile {
   avatar_url: string;
   level: number;
   streak_days: number;
+  last_streak_update?: string;
   created_at: string;
   updated_at: string;
 }

@@ -81,7 +81,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     }
 
     if (addressLower) {
-      dispatch(fetchProfile(addressLower));
+      if (!profile) {
+        dispatch(fetchProfile(addressLower));
+      }
 
       if (pathname === '/') {
         router.push(lastPath);

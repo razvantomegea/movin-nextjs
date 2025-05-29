@@ -18,6 +18,7 @@ import { useMovinEarn } from '@/lib/hooks/useMovinEarn';
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
 import { fetchActivities, addActivities } from '@/lib/redux/slices/activityDataSlice';
 import { resetJointTracking } from '@/lib/redux/slices/jointTrackingSlice';
+import { fetchProfile, updateProfile } from '@/lib/redux/slices/profileSlice';
 import { showSuccessToast, showInfoToast } from '@/lib/redux/slices/toastSlice';
 import type { RootState } from '@/lib/redux/store';
 import {
@@ -61,6 +62,8 @@ export function MovinDashboard() {
   const [isRouteModalOpen, setIsRouteModalOpen] = useState(false);
   const [isJointTrackingSelected, setIsJointTrackingSelected] = useState(false);
   const [showStepsCelebration, setShowStepsCelebration] = useState(false);
+  const [showStreakCelebration, setShowStreakCelebration] = useState(false);
+  const [streakMilestone, setStreakMilestone] = useState(0);
   const currentDate = useMemo(() => new Date(), []);
   const { address } = useAppKitAccount();
   const addressLower = useMemo(() => address?.toLowerCase(), [address]);
@@ -73,6 +76,7 @@ export function MovinDashboard() {
   const isPremiumUser = isPremiumActive();
 
   const { activities, isLoading, error } = useAppSelector((state: RootState) => state.activityData);
+  const { profile } = useAppSelector((state: RootState) => state.profile);
 
   // Memoize derived data
   const dailyActivity: DailyActivity | null = useMemo(() => {
@@ -108,6 +112,103 @@ export function MovinDashboard() {
     }
   }, [dailyActivity, isLoading]);
 
+  // Function to check if the given date is yesterday
+  const isYesterday = useCallback((date: Date) => {
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    return (
+      date.getDate() === yesterday.getDate() &&
+      date.getMonth() === yesterday.getMonth() &&
+      date.getFullYear() === yesterday.getFullYear()
+    );
+  }, []);
+
+  // Function to update streak based on activity patterns
+  const updateStreakCount = useCallback(() => {
+    if (!addressLower || !profile || activities.length === 0) return;
+
+    // Check if streak was already updated today
+    if (profile.last_streak_update) {
+      const lastUpdate = new Date(profile.last_streak_update);
+      const today = new Date();
+
+      // If streak was already updated today, don't update again
+      if (
+        lastUpdate.getDate() === today.getDate() &&
+        lastUpdate.getMonth() === today.getMonth() &&
+        lastUpdate.getFullYear() === today.getFullYear()
+      ) {
+        return;
+      }
+    }
+
+    // Sort activities by date (newest first)
+    const sortedActivities = [...activities].sort((a, b) => {
+      return new Date(b.start_date).getTime() - new Date(a.start_date).getTime();
+    });
+
+    // Check if there are activities today
+    const hasActivityToday = sortedActivities.some((activity) => {
+      const activityDate = new Date(activity.start_date);
+      const today = new Date();
+      return (
+        activityDate.getDate() === today.getDate() &&
+        activityDate.getMonth() === today.getMonth() &&
+        activityDate.getFullYear() === today.getFullYear()
+      );
+    });
+
+    // If no activity today, do nothing
+    if (!hasActivityToday) return;
+
+    // Check if there was activity yesterday
+    const hasActivityYesterday = sortedActivities.some((activity) => {
+      return isYesterday(new Date(activity.start_date));
+    });
+
+    // Update streak count
+    if (hasActivityYesterday) {
+      // Increment streak
+      const newStreakDays = (profile.streak_days || 0) + 1;
+      dispatch(
+        updateProfile({
+          address: addressLower,
+          profileData: {
+            streak_days: newStreakDays,
+            last_streak_update: new Date().toISOString(),
+          },
+        }),
+      );
+
+      // Check for streak milestones
+      const milestones = [7, 30, 100, 365];
+      if (milestones.includes(newStreakDays)) {
+        setStreakMilestone(newStreakDays);
+        setShowStreakCelebration(true);
+      }
+    } else {
+      // Reset streak to 1 (since there's activity today)
+      dispatch(
+        updateProfile({
+          address: addressLower,
+          profileData: {
+            streak_days: 1,
+            last_streak_update: new Date().toISOString(),
+          },
+        }),
+      );
+    }
+  }, [addressLower, profile, activities, dispatch, isYesterday]);
+
+  // Update streak when activities are loaded
+  useEffect(() => {
+    if (!isLoading && !refreshing && activities.length > 0 && profile) {
+      updateStreakCount();
+    }
+  }, [isLoading, refreshing, activities, profile, updateStreakCount]);
+
   const handleRefresh = useCallback(async () => {
     if (!addressLower) {
       return;
@@ -115,6 +216,7 @@ export function MovinDashboard() {
 
     setRefreshing(true);
     await dispatch(fetchActivities(addressLower)).unwrap();
+    await dispatch(fetchProfile(addressLower)).unwrap();
     setRefreshing(false);
   }, [addressLower, dispatch]);
 
@@ -206,6 +308,10 @@ export function MovinDashboard() {
 
   const handleCloseStepsCelebration = useCallback(() => {
     setShowStepsCelebration(false);
+  }, []);
+
+  const handleCloseStreakCelebration = useCallback(() => {
+    setShowStreakCelebration(false);
   }, []);
 
   // Render the dashboard content
@@ -474,6 +580,17 @@ export function MovinDashboard() {
         achievementValue="10,000 steps"
         achievementTitle="Daily Steps Goal"
         description="Congratulations on reaching your daily steps goal!"
+        showReward={false}
+      />
+
+      {/* Streak Milestone Celebration */}
+      <CelebrationAnimation
+        isOpen={showStreakCelebration}
+        onClose={handleCloseStreakCelebration}
+        achievementType="streak"
+        achievementValue={`${streakMilestone} days`}
+        achievementTitle="Streak Milestone"
+        description={`Congratulations on maintaining a ${streakMilestone}-day activity streak!`}
         showReward={false}
       />
     </>
