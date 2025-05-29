@@ -30,6 +30,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const { profile } = useAppSelector((state) => state.profile);
   const dispatch = useAppDispatch();
   const { isConnecting } = useAccount();
+  const [lastPath, setLastPath] = useState(pathname);
 
   const isActive = (path: string) => {
     return pathname === path;
@@ -67,12 +68,18 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   ];
 
   useEffect(() => {
+    if (pathname !== lastPath && pathname !== '/') {
+      setLastPath(pathname);
+    }
+  }, [pathname, lastPath]);
+
+  useEffect(() => {
     if (addressLower && !profile) {
       dispatch(fetchProfile(addressLower));
     } else if (!addressLower && !isConnecting) {
-      router.push('/');
+      router.push(lastPath);
     }
-  }, [addressLower, profile, dispatch, router, isConnecting]);
+  }, [addressLower, profile, dispatch, router, isConnecting, lastPath]);
 
   const content = (
     <div className="flex flex-col min-h-screen">
