@@ -711,6 +711,10 @@ export function RouteTrackingModal({
                       Your route is being tracked. Press pause to stop tracking.
                     </p>
                   )}
+                  <p className="text-xs text-amber-500 dark:text-amber-400 mt-2">
+                    For best tracking accuracy and experience, please keep the app open or check it
+                    every few minutes.
+                  </p>
                 </div>
               )}
 
