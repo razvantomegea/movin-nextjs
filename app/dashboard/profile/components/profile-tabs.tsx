@@ -19,7 +19,7 @@ export function ProfileTabs({ profile, activities = [] }: ProfileTabsProps) {
         <TabsTrigger value="stats">Stats</TabsTrigger>
       </TabsList>
       <TabsContent value="achievements" className="mt-4">
-        <ProfileAchievements />
+        <ProfileAchievements address={profile.address} activities={activities} profile={profile} />
       </TabsContent>
       <TabsContent value="stats" className="mt-4">
         <ProfileStats profile={profile} activities={activities} />
