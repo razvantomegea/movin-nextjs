@@ -95,6 +95,7 @@ export function useSubscription() {
           }),
         ).unwrap();
       }
+
       setPendingTransaction(null);
       refetchPremiumStatus();
     }

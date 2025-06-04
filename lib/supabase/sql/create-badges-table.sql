@@ -4,13 +4,15 @@ CREATE TABLE IF NOT EXISTS badges (
   name TEXT NOT NULL UNIQUE,
   description TEXT NOT NULL,
   icon TEXT NOT NULL, -- lucide icon name
-  color TEXT NOT NULL, -- hex color code
-  category TEXT NOT NULL, -- 'distance', 'steps', 'streak', 'social', 'time', 'special'
-  requirement_type TEXT NOT NULL, -- 'total', 'single_activity', 'streak', 'condition'
+  category TEXT NOT NULL
+    CHECK (category IN ('distance','steps','streak','social','time','calories','special')),
+  requirement_type TEXT NOT NULL
+    CHECK (requirement_type IN ('total','single_activity','streak','condition')),
+  rarity TEXT NOT NULL DEFAULT 'common'
+    CHECK (rarity IN ('common','rare','epic','legendary')),
   requirement_value DECIMAL, -- numeric value for the requirement
-  requirement_unit TEXT, -- 'meters', 'steps', 'calories', 'minutes', 'days'
+  requirement_unit TEXT CHECK (requirement_unit IN ('meters','steps','calories','minutes','days','activities',NULL))  , -- 'meters', 'steps', 'calories', 'minutes', 'days'
   requirement_condition JSONB, -- for complex conditions
-  rarity TEXT NOT NULL DEFAULT 'common', -- 'common', 'rare', 'epic', 'legendary'
   is_active BOOLEAN NOT NULL DEFAULT TRUE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()

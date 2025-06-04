@@ -159,7 +159,12 @@ export class BadgeManager {
 
     const context: BadgeCheckContext = {
       activities: activities,
-      profile: profile || ({} as IProfile),
+      profile:
+        profile ??
+        ({
+          streak_days: 0,
+          created_at: new Date().toISOString(),
+        } as unknown as IProfile),
       userBadges: this.userBadges,
       isPremium,
       hasStakes,
@@ -224,6 +229,7 @@ export class BadgeManager {
    * Refresh badge data
    */
   async refresh(): Promise<void> {
+    this.initialized = false;
     await this.initialize();
   }
 }

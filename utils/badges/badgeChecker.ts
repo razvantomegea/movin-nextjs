@@ -530,6 +530,19 @@ export function checkSpecialBadges(badge: IBadge, context: BadgeCheckContext): B
         },
       };
       break;
+
+    case 'Premium Member':
+      result.earned = context.isPremium || false;
+      result.metadata = {
+        source: 'system',
+        calculationMethod: 'subscription_status',
+        achievementDate: new Date().toISOString(),
+        version: '1.0',
+        customData: {
+          isPremium: context.isPremium || false,
+        },
+      };
+      break;
   }
 
   return result;

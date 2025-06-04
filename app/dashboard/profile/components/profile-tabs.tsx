@@ -1,9 +1,9 @@
 'use client';
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useMovinEarn } from '@/lib/hooks/useMovinEarn';
 import { IActivity } from '@/lib/supabase/activities';
 import { IProfile } from '@/lib/supabase/profile';
-import { useMovinEarn } from '@/lib/hooks/useMovinEarn';
 import { ProfileAchievements } from './profile-achievements';
 import { ProfileStats } from './profile-stats';
 

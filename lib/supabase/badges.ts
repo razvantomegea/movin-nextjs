@@ -110,9 +110,14 @@ export async function getAllBadges({
   const rarityOrder = { common: 1, rare: 2, epic: 3, legendary: 4 };
 
   return (data || []).sort((a, b) => {
-    const aRarity = rarityOrder[a.rarity as keyof typeof rarityOrder] || 5;
-    const bRarity = rarityOrder[b.rarity as keyof typeof rarityOrder] || 5;
-    return aRarity - bRarity;
+    const aRarity = rarityOrder[a.rarity as keyof typeof rarityOrder] ?? 5;
+    const bRarity = rarityOrder[b.rarity as keyof typeof rarityOrder] ?? 5;
+
+    if (aRarity !== bRarity) {
+      return aRarity - bRarity; // primary sort
+    }
+    // stable secondary sort – keeps the intent of the DB `order`
+    return (a.requirement_value ?? 0) - (b.requirement_value ?? 0);
   });
 }
 

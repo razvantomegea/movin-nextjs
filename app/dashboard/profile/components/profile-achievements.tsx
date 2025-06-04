@@ -13,6 +13,36 @@ import { BadgeCheckResult } from '@/utils/badges/badgeChecker';
 import { createBadgeManager, BadgeManager } from '@/utils/badges/badgeManager';
 import { formatDate } from '@/utils/date';
 
+// Icon mapping to handle different icon names - moved outside component for performance
+const iconMap: Record<string, LucideIcons.LucideIcon> = {
+  award: LucideIcons.Award,
+  trophy: LucideIcons.Trophy,
+  star: LucideIcons.Star,
+  medal: LucideIcons.Medal,
+  crown: LucideIcons.Crown,
+  target: LucideIcons.Target,
+  zap: LucideIcons.Zap,
+  flame: LucideIcons.Flame,
+  heart: LucideIcons.Heart,
+  clock: LucideIcons.Clock,
+  calendar: LucideIcons.Calendar,
+  users: LucideIcons.Users,
+  user: LucideIcons.User,
+  shield: LucideIcons.Shield,
+  gem: LucideIcons.Gem,
+  diamond: LucideIcons.Diamond,
+  sunrise: LucideIcons.Sunrise,
+  moon: LucideIcons.Moon,
+  footprints: LucideIcons.Footprints,
+  activity: LucideIcons.Activity,
+  trending_up: LucideIcons.TrendingUp,
+  trending_down: LucideIcons.TrendingDown,
+  mountain: LucideIcons.Mountain,
+  map_pin: LucideIcons.MapPin,
+  compass: LucideIcons.Compass,
+  // Add more mappings as needed
+};
+
 interface ProfileAchievementsProps {
   address: string;
   activities: IActivity[];
@@ -81,37 +111,7 @@ export function ProfileAchievements({
     loadBadgeData();
   }, [address, activities, profile, hasStakes]);
 
-  // Icon mapping to handle different icon names
   const getIconComponent = (iconName: string) => {
-    const iconMap: Record<string, any> = {
-      award: LucideIcons.Award,
-      trophy: LucideIcons.Trophy,
-      star: LucideIcons.Star,
-      medal: LucideIcons.Medal,
-      crown: LucideIcons.Crown,
-      target: LucideIcons.Target,
-      zap: LucideIcons.Zap,
-      flame: LucideIcons.Flame,
-      heart: LucideIcons.Heart,
-      clock: LucideIcons.Clock,
-      calendar: LucideIcons.Calendar,
-      users: LucideIcons.Users,
-      user: LucideIcons.User,
-      shield: LucideIcons.Shield,
-      gem: LucideIcons.Gem,
-      diamond: LucideIcons.Diamond,
-      sunrise: LucideIcons.Sunrise,
-      moon: LucideIcons.Moon,
-      footprints: LucideIcons.Footprints,
-      activity: LucideIcons.Activity,
-      trending_up: LucideIcons.TrendingUp,
-      trending_down: LucideIcons.TrendingDown,
-      mountain: LucideIcons.Mountain,
-      map_pin: LucideIcons.MapPin,
-      compass: LucideIcons.Compass,
-      // Add more mappings as needed
-    };
-
     // Normalize icon name (lowercase, replace spaces/hyphens with underscores)
     const normalizedIconName = iconName.toLowerCase().replace(/[-\s]/g, '_');
 
