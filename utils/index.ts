@@ -8,3 +8,5 @@ export * from './randomInRange';
 export * from './movin/activityMappers';
 export * from './movin/mapRouteToActivity';
 export * from './date';
+export * from './badges/badgeChecker';
+export * from './badges/badgeManager';
