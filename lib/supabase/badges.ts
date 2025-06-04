@@ -326,10 +326,17 @@ export async function getBadgeProgress({
     throw error;
   }
 
-  return (data ?? []).reduce((acc, item) => {
-    acc[item.badge_id] = item.progress_data || {};
-    return acc;
-  }, {} as Record<string, BadgeProgressData>);
+  const mappedData = {} as Record<string, BadgeProgressData>;
+
+  if (!data) {
+    return mappedData;
+  }
+
+  for (const item of data) {
+    mappedData[item.badge_id] = item.progress_data || {};
+  }
+
+  return mappedData;
 }
 
 /**
