@@ -10,6 +10,7 @@ export interface IProfile {
   level: number;
   streak_days: number;
   last_streak_update?: string;
+  is_premium: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -69,6 +70,7 @@ export async function updateProfile({
 
   const dataToInsert: Partial<IProfile> = {
     address,
+    is_premium: profileData.is_premium || false,
     email: profileData.email || '',
     username: profileData.username || '',
     avatar_url: profileData.avatar_url || '',

@@ -4,6 +4,7 @@ import { useMovinEarn } from '@/lib/hooks/useMovinEarn';
 import { useMovinEarnUtils } from '@/lib/hooks/useMovinEarnUtils';
 import { useMovinToken } from '@/lib/hooks/useMovinToken';
 import { useAppDispatch } from '@/lib/redux/hooks';
+import { updateProfile } from '@/lib/redux/slices/profileSlice';
 import { showErrorToast, showSuccessToast } from '@/lib/redux/slices/toastSlice';
 import {
   PlanTypeEnum,
@@ -86,10 +87,18 @@ export function useSubscription() {
         }),
       );
 
+      if (addressLower) {
+        dispatch(
+          updateProfile({
+            address: addressLower,
+            profileData: { is_premium: pendingTransaction.planType !== PlanTypeEnum.FREE },
+          }),
+        ).unwrap();
+      }
       setPendingTransaction(null);
       refetchPremiumStatus();
     }
-  }, [upgradeSuccess, pendingTransaction, dispatch, refetchPremiumStatus]);
+  }, [upgradeSuccess, pendingTransaction, dispatch, addressLower, refetchPremiumStatus]);
 
   // Handle upgrade errors
   useEffect(() => {

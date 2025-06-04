@@ -11,7 +11,6 @@ import { IUserBadge } from '@/lib/supabase/badges';
 import { IProfile } from '@/lib/supabase/profile';
 import { BadgeCheckResult } from '@/utils/badges/badgeChecker';
 import { createBadgeManager, BadgeManager } from '@/utils/badges/badgeManager';
-import { handleProfileUpdateBadges, BadgeNotification } from '@/utils/badges/integrationHelper';
 import { formatDate } from '@/utils/date';
 
 interface ProfileAchievementsProps {
@@ -25,7 +24,8 @@ export function ProfileAchievements({ address, activities, profile }: ProfileAch
   const [badgeProgress, setBadgeProgress] = useState<Record<string, BadgeCheckResult>>({});
   const [badgeManager, setBadgeManager] = useState<BadgeManager | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [newlyEarnedBadges, setNewlyEarnedBadges] = useState<BadgeNotification[]>([]);
+  const [newlyEarnedBadges, setNewlyEarnedBadges] = useState<IUserBadge[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const loadBadgeData = async () => {
@@ -34,21 +34,16 @@ export function ProfileAchievements({ address, activities, profile }: ProfileAch
       try {
         setIsLoading(true);
 
-        // Check and award any missing badges based on current profile and activities
-        const badgeResult = await handleProfileUpdateBadges({
-          address,
-          activities,
-          updatedProfile: profile,
-          onBadgeEarned: (badges) => {
-            setNewlyEarnedBadges(badges);
-            // Show toast notifications or other UI feedback here if needed
-            console.log('New badges earned:', badges);
-          },
-        });
-
         // Initialize badge manager with fresh data
         const manager = await createBadgeManager(address);
         setBadgeManager(manager);
+
+        await manager.checkAndAwardBadges({
+          activities,
+          profile,
+          isPremium: profile.is_premium,
+          hasStakes: false,
+        });
 
         // Get user badges (including any newly awarded ones)
         const badges = manager.getUserBadges();
@@ -59,6 +54,7 @@ export function ProfileAchievements({ address, activities, profile }: ProfileAch
         setBadgeProgress(progress);
       } catch (error) {
         console.error('Failed to load badge data:', error);
+        setError('Failed to load achievements. Please try again later.');
       } finally {
         setIsLoading(false);
       }
@@ -109,20 +105,19 @@ export function ProfileAchievements({ address, activities, profile }: ProfileAch
     return <Icon className={className} />;
   };
 
-  const getRarityStyle = (rarity: string) => {
-    switch (rarity) {
-      case 'common':
-        return 'border-gray-300 bg-gray-100 text-gray-700';
-      case 'rare':
-        return 'border-blue-300 bg-blue-100 text-blue-700';
-      case 'epic':
-        return 'border-purple-300 bg-purple-100 text-purple-700';
-      case 'legendary':
-        return 'border-yellow-300 bg-yellow-100 text-yellow-700';
-      default:
-        return 'border-gray-300 bg-gray-100 text-gray-700';
-    }
-  };
+  if (error) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Achievements</CardTitle>
+          <CardDescription>Error loading achievements. Please try again later.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="text-red-500">{error}</div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -184,7 +179,7 @@ export function ProfileAchievements({ address, activities, profile }: ProfileAch
                   if (!userBadge.badge) return null;
 
                   const isNewlyEarned = newlyEarnedBadges.some(
-                    (nb) => nb.badge.id === userBadge.badge?.id,
+                    (nb) => nb.badge_id === userBadge.badge_id,
                   );
 
                   return (

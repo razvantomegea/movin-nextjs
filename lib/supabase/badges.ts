@@ -100,14 +100,20 @@ export async function getAllBadges({
     .from('badges')
     .select('*')
     .eq('is_active', true)
-    .order('rarity', { ascending: true })
     .order('requirement_value', { ascending: true });
 
   if (error) {
     throw error;
   }
 
-  return data || [];
+  // Custom rarity order: common -> rare -> epic -> legendary
+  const rarityOrder = { common: 1, rare: 2, epic: 3, legendary: 4 };
+
+  return (data || []).sort((a, b) => {
+    const aRarity = rarityOrder[a.rarity as keyof typeof rarityOrder] || 5;
+    const bRarity = rarityOrder[b.rarity as keyof typeof rarityOrder] || 5;
+    return aRarity - bRarity;
+  });
 }
 
 /**
@@ -188,6 +194,31 @@ export async function awardBadge({
     client = getClient();
   }
 
+  // Check if user already has this badge
+  const alreadyHasBadge = await hasUserBadge({ address, badgeId, client });
+
+  if (alreadyHasBadge) {
+    // Return the existing badge instead of creating a duplicate
+    const { data: existingBadge, error: fetchError } = await client
+      .from('user_badges')
+      .select(
+        `
+        *,
+        badge:badges(*)
+      `,
+      )
+      .eq('address', address)
+      .eq('badge_id', badgeId)
+      .single();
+
+    if (fetchError) {
+      throw new Error(`Failed to fetch existing badge: ${fetchError.message}`);
+    }
+
+    return existingBadge;
+  }
+
+  // User doesn't have the badge, proceed with insert
   const { data, error } = await client
     .from('user_badges')
     .insert({
@@ -204,6 +235,29 @@ export async function awardBadge({
     .single();
 
   if (error) {
+    // Handle potential race condition where badge was awarded between our check and insert
+    if (error.code === '23505') {
+      // Unique constraint violation
+      // Try to fetch the existing badge that was created in the race condition
+      const { data: raceConditionBadge, error: raceError } = await client
+        .from('user_badges')
+        .select(
+          `
+          *,
+          badge:badges(*)
+        `,
+        )
+        .eq('address', address)
+        .eq('badge_id', badgeId)
+        .single();
+
+      if (raceError) {
+        throw new Error(`Badge already exists but failed to fetch: ${raceError.message}`);
+      }
+
+      return raceConditionBadge;
+    }
+
     throw error;
   }
 
@@ -267,7 +321,7 @@ export async function getBadgeProgress({
     throw error;
   }
 
-  return data.reduce((acc, item) => {
+  return (data ?? []).reduce((acc, item) => {
     acc[item.badge_id] = item.progress_data || {};
     return acc;
   }, {} as Record<string, BadgeProgressData>);

@@ -1,4 +1,3 @@
-import { IPremiumStatus } from '@/lib/hooks/useMovinEarn';
 import { IActivity } from '@/lib/supabase/activities';
 import { IBadge, IUserBadge, BadgeProgressData, BadgeMetadata } from '@/lib/supabase/badges';
 import { IProfile } from '@/lib/supabase/profile';
@@ -8,7 +7,7 @@ export interface BadgeCheckContext {
   profile: IProfile;
   userBadges: IUserBadge[];
   newActivity?: IActivity; // For single activity checks
-  premiumStatus?: IPremiumStatus;
+  isPremium?: boolean;
   hasStakes?: boolean;
 }
 
@@ -113,7 +112,7 @@ export function checkDistanceBadges(badge: IBadge, context: BadgeCheckContext): 
     result.progress = {
       current: totalDistance,
       required,
-      percentage: Math.min((totalDistance / required) * 100, 100),
+      percentage: required ? Math.min((totalDistance / required) * 100, 100) : 0,
     };
     result.metadata = {
       source: 'activity',
@@ -434,14 +433,14 @@ export function checkSpecialBadges(badge: IBadge, context: BadgeCheckContext): B
       break;
 
     case 'Premium Member':
-      result.earned = context.premiumStatus?.status || false;
+      result.earned = context.isPremium || false;
       result.metadata = {
         source: 'system',
         calculationMethod: 'premium_status',
         achievementDate: new Date().toISOString(),
         version: '1.0',
         customData: {
-          premiumStatus: context.premiumStatus?.status || false,
+          isPremium: context.isPremium || false,
         },
       };
       break;

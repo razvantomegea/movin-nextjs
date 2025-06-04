@@ -1,4 +1,3 @@
-import { IPremiumStatus } from '@/lib/hooks/useMovinEarn';
 import { IActivity } from '@/lib/supabase/activities';
 import {
   getAllBadges,
@@ -24,6 +23,7 @@ export class BadgeManager {
   private address: string;
   private allBadges: IBadge[] = [];
   private userBadges: IUserBadge[] = [];
+  private initialized = false;
 
   constructor(address: string) {
     this.address = address;
@@ -34,10 +34,16 @@ export class BadgeManager {
    */
   async initialize(): Promise<void> {
     try {
+      if (this.initialized) {
+        return;
+      }
+
       [this.allBadges, this.userBadges] = await Promise.all([
         getAllBadges(),
         getUserBadges({ address: this.address }),
       ]);
+
+      this.initialized = true;
     } catch (error) {
       console.error('Failed to initialize badge manager:', error);
       throw error;
@@ -58,7 +64,7 @@ export class BadgeManager {
 
     try {
       // Make sure we have the latest data
-      if (this.allBadges.length === 0 || this.userBadges.length === 0) {
+      if (!this.initialized) {
         await this.initialize();
       }
 
@@ -97,7 +103,8 @@ export class BadgeManager {
             // Update local cache
             this.userBadges.push(newBadge);
           } catch (error) {
-            if (error instanceof Error && error.message.includes('duplicate')) {
+            // Supabase/PostgREST wraps sqlstate in `code`
+            if ((error as { code: string })?.code === '23505') {
               // User already has this badge, ignore
               continue;
             }
@@ -124,31 +131,14 @@ export class BadgeManager {
     newActivity: IActivity,
     allActivities: IActivity[],
     profile: IProfile,
-    premiumStatus?: IPremiumStatus,
+    isPremium?: boolean,
     hasStakes?: boolean,
   ): Promise<BadgeManagerResult> {
     return this.checkAndAwardBadges({
       activities: allActivities,
       profile,
       newActivity,
-      premiumStatus,
-      hasStakes,
-    });
-  }
-
-  /**
-   * Check badges for profile updates
-   */
-  async checkProfileBadges(
-    activities: IActivity[],
-    profile: IProfile,
-    premiumStatus?: IPremiumStatus,
-    hasStakes?: boolean,
-  ): Promise<BadgeManagerResult> {
-    return this.checkAndAwardBadges({
-      activities,
-      profile,
-      premiumStatus,
+      isPremium,
       hasStakes,
     });
   }
@@ -247,15 +237,9 @@ export async function checkNewActivityBadges(
   newActivity: IActivity,
   allActivities: IActivity[],
   profile: IProfile,
-  premiumStatus?: IPremiumStatus,
+  isPremium?: boolean,
   hasStakes?: boolean,
 ): Promise<BadgeManagerResult> {
   const manager = await createBadgeManager(address);
-  return manager.checkNewActivityBadges(
-    newActivity,
-    allActivities,
-    profile,
-    premiumStatus,
-    hasStakes,
-  );
+  return manager.checkNewActivityBadges(newActivity, allActivities, profile, isPremium, hasStakes);
 }
