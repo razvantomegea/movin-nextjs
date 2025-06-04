@@ -17,9 +17,15 @@ interface ProfileAchievementsProps {
   address: string;
   activities: IActivity[];
   profile: IProfile;
+  hasStakes?: boolean;
 }
 
-export function ProfileAchievements({ address, activities, profile }: ProfileAchievementsProps) {
+export function ProfileAchievements({
+  address,
+  activities,
+  profile,
+  hasStakes = false,
+}: ProfileAchievementsProps) {
   const [userBadges, setUserBadges] = useState<IUserBadge[]>([]);
   const [badgeProgress, setBadgeProgress] = useState<Record<string, BadgeCheckResult>>({});
   const [badgeManager, setBadgeManager] = useState<BadgeManager | null>(null);
@@ -38,19 +44,31 @@ export function ProfileAchievements({ address, activities, profile }: ProfileAch
         const manager = await createBadgeManager(address);
         setBadgeManager(manager);
 
-        await manager.checkAndAwardBadges({
+        // Check and award badges
+        const result = await manager.checkAndAwardBadges({
           activities,
           profile,
           isPremium: profile.is_premium,
-          hasStakes: false,
+          hasStakes,
         });
+
+        // Track newly earned badges
+        if (result.newBadges.length > 0) {
+          setNewlyEarnedBadges(result.newBadges);
+        }
 
         // Get user badges (including any newly awarded ones)
         const badges = manager.getUserBadges();
         setUserBadges(badges);
 
-        // Get progress for all badges
-        const progress = manager.getBadgeProgress();
+        // Get progress for all badges with proper context
+        const progress = manager.getBadgeProgress(
+          undefined,
+          activities,
+          profile,
+          profile.is_premium,
+          hasStakes,
+        );
         setBadgeProgress(progress);
       } catch (error) {
         console.error('Failed to load badge data:', error);
@@ -61,7 +79,7 @@ export function ProfileAchievements({ address, activities, profile }: ProfileAch
     };
 
     loadBadgeData();
-  }, [address, activities, profile]);
+  }, [address, activities, profile, hasStakes]);
 
   // Icon mapping to handle different icon names
   const getIconComponent = (iconName: string) => {

@@ -146,15 +146,23 @@ export class BadgeManager {
   /**
    * Get badge progress for a specific category
    */
-  getBadgeProgress(category?: string): Record<string, BadgeCheckResult> {
+  getBadgeProgress(
+    category?: string,
+    activities: IActivity[] = [],
+    profile: IProfile | null = null,
+    isPremium?: boolean,
+    hasStakes?: boolean,
+  ): Record<string, BadgeCheckResult> {
     const filteredBadges = category
       ? this.allBadges.filter((badge) => badge.category === category)
       : this.allBadges;
 
     const context: BadgeCheckContext = {
-      activities: [],
-      profile: {} as IProfile,
+      activities: activities,
+      profile: profile || ({} as IProfile),
       userBadges: this.userBadges,
+      isPremium,
+      hasStakes,
     };
 
     const results = checkMultipleBadges(filteredBadges, context);

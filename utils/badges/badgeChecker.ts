@@ -120,24 +120,44 @@ export function checkDistanceBadges(badge: IBadge, context: BadgeCheckContext): 
       achievementDate: new Date().toISOString(),
       version: '1.0',
     };
-  } else if (badge.requirement_type === 'single_activity' && context.newActivity) {
-    const activityDistance = context.newActivity.total_distance || 0;
-    const required = badge.requirement_value || 0;
+  } else if (badge.requirement_type === 'single_activity') {
+    if (context.newActivity) {
+      const activityDistance = context.newActivity.total_distance || 0;
+      const required = badge.requirement_value || 0;
 
-    result.earned = activityDistance >= required;
-    result.progress = {
-      current: activityDistance,
-      required,
-      percentage: Math.min((activityDistance / required) * 100, 100),
-    };
-    result.metadata = {
-      source: 'activity',
-      activityId: context.newActivity.id,
-      activityType: context.newActivity.name || 'unknown',
-      calculationMethod: 'single_activity_distance',
-      achievementDate: new Date().toISOString(),
-      version: '1.0',
-    };
+      result.earned = activityDistance >= required;
+      result.progress = {
+        current: activityDistance,
+        required,
+        percentage: Math.min((activityDistance / required) * 100, 100),
+      };
+      result.metadata = {
+        source: 'activity',
+        activityId: context.newActivity.id,
+        activityType: context.newActivity.name || 'unknown',
+        calculationMethod: 'single_activity_distance',
+        achievementDate: new Date().toISOString(),
+        version: '1.0',
+      };
+    } else {
+      // Check if any existing activity meets the distance requirement
+      const distances = context.activities.map((a) => a.total_distance || 0).filter((d) => d > 0);
+      const maxDistance = distances.length > 0 ? Math.max(...distances) : 0;
+      const required = badge.requirement_value || 0;
+
+      result.earned = maxDistance >= required;
+      result.progress = {
+        current: maxDistance,
+        required,
+        percentage: required ? Math.min((maxDistance / required) * 100, 100) : 0,
+      };
+      result.metadata = {
+        source: 'activity',
+        calculationMethod: 'max_distance_check',
+        achievementDate: new Date().toISOString(),
+        version: '1.0',
+      };
+    }
   }
 
   return result;
@@ -173,7 +193,7 @@ export function checkStepBadges(badge: IBadge, context: BadgeCheckContext): Badg
         version: '1.0',
       };
     } else {
-      // Check max steps in a single day
+      // Check for daily step badges like Step Legend, Step Master, etc.
       const today = new Date();
       const todaySteps = getStepsForDay(context.activities, today);
       const required = badge.requirement_value || 0;
@@ -191,6 +211,23 @@ export function checkStepBadges(badge: IBadge, context: BadgeCheckContext): Badg
         version: '1.0',
       };
     }
+  } else if (badge.requirement_type === 'total') {
+    // For total step count badges
+    const totalSteps = calculateTotalSteps(context.activities);
+    const required = badge.requirement_value || 0;
+
+    result.earned = totalSteps >= required;
+    result.progress = {
+      current: totalSteps,
+      required,
+      percentage: Math.min((totalSteps / required) * 100, 100),
+    };
+    result.metadata = {
+      source: 'activity',
+      calculationMethod: 'total_steps',
+      achievementDate: new Date().toISOString(),
+      version: '1.0',
+    };
   }
 
   return result;
@@ -209,7 +246,7 @@ export function checkStreakBadges(badge: IBadge, context: BadgeCheckContext): Ba
     progress: {
       current: currentStreak,
       required,
-      percentage: Math.min((currentStreak / required) * 100, 100),
+      percentage: required ? Math.min((currentStreak / required) * 100, 100) : 0,
     },
     metadata: {
       source: 'profile',
@@ -285,27 +322,47 @@ export function checkTimeBadges(badge: IBadge, context: BadgeCheckContext): Badg
 
     case 'Speed Demon':
     case 'Endurance Hero':
-      if (badge.requirement_type === 'single_activity' && context.newActivity) {
-        const duration = context.newActivity.duration || 0;
-        const required = badge.requirement_value || 0;
+      if (badge.requirement_type === 'single_activity') {
+        if (context.newActivity) {
+          const duration = context.newActivity.duration || 0;
+          const required = badge.requirement_value || 0;
 
-        result.earned = duration >= required;
-        result.progress = {
-          current: duration,
-          required,
-          percentage: Math.min((duration / required) * 100, 100),
-        };
-        result.metadata = {
-          source: 'activity',
-          activityId: context.newActivity.id,
-          activityType: context.newActivity.name || 'unknown',
-          calculationMethod: 'duration_check',
-          achievementDate: new Date().toISOString(),
-          version: '1.0',
-          customData: {
-            durationSeconds: duration,
-          },
-        };
+          result.earned = duration >= required;
+          result.progress = {
+            current: duration,
+            required,
+            percentage: required ? Math.min((duration / required) * 100, 100) : 0,
+          };
+          result.metadata = {
+            source: 'activity',
+            activityId: context.newActivity.id,
+            activityType: context.newActivity.name || 'unknown',
+            calculationMethod: 'duration_check',
+            achievementDate: new Date().toISOString(),
+            version: '1.0',
+            customData: {
+              durationSeconds: duration,
+            },
+          };
+        } else {
+          // Check if any existing activity meets the duration requirement
+          const durations = context.activities.map((a) => a.duration || 0).filter((d) => d > 0);
+          const maxDuration = durations.length > 0 ? Math.max(...durations) : 0;
+          const required = badge.requirement_value || 0;
+
+          result.earned = maxDuration >= required;
+          result.progress = {
+            current: maxDuration,
+            required,
+            percentage: required ? Math.min((maxDuration / required) * 100, 100) : 0,
+          };
+          result.metadata = {
+            source: 'activity',
+            calculationMethod: 'max_duration_check',
+            achievementDate: new Date().toISOString(),
+            version: '1.0',
+          };
+        }
       }
       break;
   }
@@ -322,21 +379,63 @@ export function checkCalorieBadges(badge: IBadge, context: BadgeCheckContext): B
     earned: false,
   };
 
-  if (badge.requirement_type === 'single_activity' && context.newActivity) {
-    const calories = context.newActivity.total_energy_burned || 0;
+  if (badge.requirement_type === 'single_activity') {
+    if (context.newActivity) {
+      const calories = context.newActivity.total_energy_burned || 0;
+      const required = badge.requirement_value || 0;
+
+      result.earned = calories >= required;
+      result.progress = {
+        current: calories,
+        required,
+        percentage: required ? Math.min((calories / required) * 100, 100) : 0,
+      };
+      result.metadata = {
+        source: 'activity',
+        activityId: context.newActivity.id,
+        activityType: context.newActivity.name || 'unknown',
+        calculationMethod: 'calories_burned',
+        achievementDate: new Date().toISOString(),
+        version: '1.0',
+      };
+    } else {
+      // Check if any existing activity meets the calorie requirement
+      const calories = context.activities
+        .map((a) => a.total_energy_burned || 0)
+        .filter((c) => c > 0);
+      const maxCalories = calories.length > 0 ? Math.max(...calories) : 0;
+      const required = badge.requirement_value || 0;
+
+      result.earned = maxCalories >= required;
+      result.progress = {
+        current: maxCalories,
+        required,
+        percentage: required ? Math.min((maxCalories / required) * 100, 100) : 0,
+      };
+      result.metadata = {
+        source: 'activity',
+        calculationMethod: 'max_calories_check',
+        achievementDate: new Date().toISOString(),
+        version: '1.0',
+      };
+    }
+  } else if (badge.requirement_type === 'total') {
+    // For total calorie badges
+    const totalCalories = context.activities.reduce(
+      (total, activity) => total + (activity.total_energy_burned || 0),
+      0,
+    );
     const required = badge.requirement_value || 0;
 
-    result.earned = calories >= required;
+    result.earned = totalCalories >= required;
     result.progress = {
-      current: calories,
+      current: totalCalories,
       required,
-      percentage: Math.min((calories / required) * 100, 100),
+      percentage: required ? Math.min((totalCalories / required) * 100, 100) : 0,
     };
     result.metadata = {
       source: 'activity',
-      activityId: context.newActivity.id,
-      activityType: context.newActivity.name || 'unknown',
-      calculationMethod: 'calories_burned',
+      calculationMethod: 'total_calories',
       achievementDate: new Date().toISOString(),
       version: '1.0',
     };
@@ -428,32 +527,6 @@ export function checkSpecialBadges(badge: IBadge, context: BadgeCheckContext): B
         version: '1.0',
         customData: {
           hasStakes: context.hasStakes || false,
-        },
-      };
-      break;
-
-    case 'Premium Member':
-      result.earned = context.isPremium || false;
-      result.metadata = {
-        source: 'system',
-        calculationMethod: 'premium_status',
-        achievementDate: new Date().toISOString(),
-        version: '1.0',
-        customData: {
-          isPremium: context.isPremium || false,
-        },
-      };
-      break;
-
-    case 'First Steps':
-      result.earned = context.activities.length >= 1;
-      result.metadata = {
-        source: 'activity',
-        calculationMethod: 'activity_count',
-        achievementDate: new Date().toISOString(),
-        version: '1.0',
-        customData: {
-          totalActivities: context.activities.length,
         },
       };
       break;
