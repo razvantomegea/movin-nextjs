@@ -310,9 +310,9 @@ function ConnectPageContent() {
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.8, duration: 0.5 }}
-        className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-20"
+        className="absolute bottom-4"
       >
-        <p className="text-gray-400 dark:text-blue-200/50 text-xs">v1.2.1</p>
+        <p className="text-gray-400 dark:text-blue-200/50 text-xs text-center">v1.2.1</p>
       </motion.div>
     </div>
   );
@@ -381,8 +381,8 @@ function ConnectPageFallback() {
       </div>
 
       {/* Version at bottom of page */}
-      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-20">
-        <p className="text-gray-400 dark:text-blue-200/50 text-xs">v1.2.1</p>
+      <div className="absolute bottom-4">
+        <p className="text-gray-400 dark:text-blue-200/50 text-xs text-center">v1.2.1</p>
       </div>
     </div>
   );
