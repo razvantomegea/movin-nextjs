@@ -25,22 +25,39 @@ const metadata = {
   ],
 };
 
+// Initialize AppKit only if we have a valid project ID
 if (!projectId) {
   console.error('AppKit Initialization Error: Project ID is missing.');
-  // Optionally throw an error or render fallback UI
+  console.error('Please ensure NEXT_PUBLIC_REOWN_PROJECT_ID is set in your .env.local file');
 } else {
-  createAppKit({
-    adapters: [wagmiAdapter],
-    projectId,
-    networks: [base],
-    defaultNetwork: base,
-    metadata: metadata,
-    features: {
-      analytics: true,
-      socials: ['apple', 'google'],
-      email: true,
-    },
-  });
+  console.log('Initializing AppKit with project ID:', projectId);
+
+  try {
+    createAppKit({
+      adapters: [wagmiAdapter],
+      projectId,
+      networks: [base],
+      defaultNetwork: base,
+      metadata: metadata,
+      features: {
+        analytics: true,
+        socials: ['apple', 'google'],
+        email: true,
+      },
+      themeMode: 'dark',
+      themeVariables: {
+        '--w3m-color-mix': '#1f2937',
+        '--w3m-color-mix-strength': 20,
+      },
+      enableWalletConnect: true,
+      enableInjected: true,
+      enableEIP6963: true,
+      enableCoinbase: true,
+    });
+    console.log('AppKit initialized successfully');
+  } catch (error) {
+    console.error('AppKit initialization failed:', error);
+  }
 }
 
 export default function AppkitProvider({

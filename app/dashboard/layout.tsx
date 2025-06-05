@@ -9,13 +9,13 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAccount } from 'wagmi';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AdSenseBanner } from '@/components/ui/adsense-banner';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { useMovinEarn } from '@/lib/hooks/useMovinEarn';
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
 import { fetchProfile } from '@/lib/redux/slices/profileSlice';
-import { useMovinEarn } from '@/lib/hooks/useMovinEarn';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
