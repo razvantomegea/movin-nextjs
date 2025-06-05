@@ -93,36 +93,36 @@ export function RouteTypeModal({
 
   // Render the selection step
   const renderSelectionStep = () => (
-    <div className="p-6 space-y-6">
-      <h3 className="text-xl font-semibold text-center mb-4">Choose Tracking Mode</h3>
+    <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+      <h3 className="text-lg sm:text-xl font-semibold text-center mb-4">Choose Tracking Mode</h3>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Button
           onClick={onSelectSingle}
           variant="outline"
-          className={`h-auto py-6 flex flex-col items-center justify-center space-y-3 ${
+          className={`h-auto min-h-[120px] sm:min-h-[140px] py-6 px-4 flex flex-col items-center justify-center space-y-3 ${
             isDark ? 'hover:bg-gray-800' : 'hover:bg-gray-100'
           }`}
         >
-          <User className="h-10 w-10 text-blue-500" />
-          <div className="text-center">
-            <div className="font-medium">Single</div>
-            <p className="text-xs text-gray-500 mt-1">Track your route individually</p>
+          <User className="h-10 w-10 text-blue-500 flex-shrink-0" />
+          <div className="text-center w-full space-y-2">
+            <div className="font-medium text-base">Single</div>
+            <p className="text-sm text-gray-500 leading-relaxed">Track your route individually</p>
           </div>
         </Button>
 
         <Button
           variant="outline"
           disabled
-          className={`h-auto py-6 flex flex-col items-center justify-center space-y-3 opacity-70 ${
+          className={`h-auto min-h-[120px] sm:min-h-[140px] py-6 px-4 flex flex-col items-center justify-center space-y-3 opacity-70 ${
             isDark ? 'hover:bg-gray-800' : 'hover:bg-gray-100'
           }`}
         >
-          <Users className="h-10 w-10 text-green-500" />
-          <div className="text-center">
-            <div className="font-medium">Joint</div>
-            <p className="text-xs text-gray-500 mt-1">Track with friends nearby</p>
-            <p className="text-xs font-medium text-amber-500 mt-1">Coming Soon</p>
+          <Users className="h-10 w-10 text-green-500 flex-shrink-0" />
+          <div className="text-center w-full space-y-2">
+            <div className="font-medium text-base">Joint</div>
+            <p className="text-sm text-gray-500 leading-relaxed">Track with friends nearby</p>
+            <p className="text-sm font-medium text-amber-500">Coming Soon</p>
           </div>
         </Button>
       </div>
@@ -131,28 +131,28 @@ export function RouteTypeModal({
 
   // Render the search step
   const renderSearchStep = () => (
-    <div className="p-6 space-y-4">
-      <h3 className="text-xl font-semibold text-center mb-2">Find Nearby Users</h3>
+    <div className="p-4 sm:p-6 space-y-4">
+      <h3 className="text-lg sm:text-xl font-semibold text-center mb-2">Find Nearby Users</h3>
 
       {isSearching ? (
         <div className="flex flex-col items-center justify-center py-8">
           <Search className="h-10 w-10 text-blue-500 animate-pulse mb-4" />
-          <p className="text-gray-500">Searching for nearby users...</p>
+          <p className="text-gray-500 text-center px-4">Searching for nearby users...</p>
         </div>
       ) : error ? (
-        <div className="text-center py-6">
-          <p className="text-red-500 mb-4">{error}</p>
+        <div className="text-center py-6 px-4">
+          <p className="text-red-500 mb-4 text-sm">{error}</p>
           <Button onClick={handleSearchNearby}>Try Again</Button>
         </div>
       ) : nearbyUsers.length === 0 ? (
-        <div className="text-center py-6">
+        <div className="text-center py-6 px-4">
           <Users className="h-10 w-10 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-500 mb-4">No users found nearby</p>
+          <p className="text-gray-500 mb-4 text-sm">No users found nearby</p>
           <Button onClick={handleSearchNearby}>Search Again</Button>
         </div>
       ) : (
         <>
-          <p className="text-sm text-gray-500 text-center mb-2">
+          <p className="text-xs sm:text-sm text-gray-500 text-center mb-2 px-2 leading-relaxed">
             Found {nearbyUsers.length} users nearby. Invite them to join your route tracking.
           </p>
 
@@ -164,52 +164,72 @@ export function RouteTypeModal({
                   isDark ? 'bg-gray-800' : 'bg-gray-100'
                 }`}
               >
-                <div className="flex items-center space-x-3">
-                  <Avatar>
+                <div className="flex items-center space-x-3 min-w-0 flex-1">
+                  <Avatar className="flex-shrink-0">
                     <AvatarImage src={user.avatar || '/placeholder.svg'} alt={user.username} />
                     <AvatarFallback>{user.username.charAt(0)}</AvatarFallback>
                   </Avatar>
-                  <div>
-                    <p className="font-medium">{user.username}</p>
-                    <p className="text-xs text-gray-500">Within 10m of you</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-sm truncate">{user.username}</p>
+                    <p className="text-xs text-gray-500">Within 10m</p>
                   </div>
                 </div>
 
-                {joinedUsers.includes(user.id) ? (
-                  <Button size="sm" variant="ghost" className="text-green-500" disabled>
-                    <Check className="h-4 w-4 mr-1" />
-                    Joined
-                  </Button>
-                ) : invitedUsers.includes(user.id) ? (
-                  <Button size="sm" variant="ghost" className="text-amber-500" disabled>
-                    <Clock className="h-4 w-4 mr-1" />
-                    Invited
-                  </Button>
-                ) : (
-                  <Button
-                    size="sm"
-                    onClick={() => handleInviteUser(user.id)}
-                    className="bg-blue-500 hover:bg-blue-600"
-                  >
-                    <UserPlus className="h-4 w-4 mr-1" />
-                    Invite
-                  </Button>
-                )}
+                <div className="flex-shrink-0 ml-2">
+                  {joinedUsers.includes(user.id) ? (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-green-500 text-xs px-2"
+                      disabled
+                    >
+                      <Check className="h-3 w-3 mr-1" />
+                      <span className="hidden sm:inline">Joined</span>
+                      <span className="sm:hidden">✓</span>
+                    </Button>
+                  ) : invitedUsers.includes(user.id) ? (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-amber-500 text-xs px-2"
+                      disabled
+                    >
+                      <Clock className="h-3 w-3 mr-1" />
+                      <span className="hidden sm:inline">Invited</span>
+                      <span className="sm:hidden">⏳</span>
+                    </Button>
+                  ) : (
+                    <Button
+                      size="sm"
+                      onClick={() => handleInviteUser(user.id)}
+                      className="bg-blue-500 hover:bg-blue-600 text-xs px-2"
+                    >
+                      <UserPlus className="h-3 w-3 mr-1" />
+                      <span className="hidden sm:inline">Invite</span>
+                      <span className="sm:hidden">+</span>
+                    </Button>
+                  )}
+                </div>
               </div>
             ))}
           </div>
 
-          <div className="pt-4 flex justify-between">
-            <Button variant="outline" onClick={() => setStep('select')}>
+          <div className="pt-4 flex flex-col sm:flex-row gap-3 sm:justify-between">
+            <Button
+              variant="outline"
+              onClick={() => setStep('select')}
+              className="w-full sm:w-auto"
+            >
               Back
             </Button>
             <Button
               onClick={handleStartJointTracking}
-              className="bg-green-500 hover:bg-green-600"
+              className="bg-green-500 hover:bg-green-600 w-full sm:w-auto"
               disabled={joinedUsers.length === 0}
             >
               <MapPin className="h-4 w-4 mr-2" />
-              Start Joint Tracking ({joinedUsers.length})
+              <span className="hidden sm:inline">Start Joint Tracking ({joinedUsers.length})</span>
+              <span className="sm:hidden">Start ({joinedUsers.length})</span>
             </Button>
           </div>
         </>
@@ -221,7 +241,7 @@ export function RouteTypeModal({
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -235,9 +255,9 @@ export function RouteTypeModal({
           />
 
           <motion.div
-            className={`relative w-full max-w-md rounded-xl overflow-hidden ${
+            className={`relative w-full max-w-md mx-auto rounded-xl overflow-hidden ${
               isDark ? 'bg-gray-900' : 'bg-white'
-            } shadow-xl`}
+            } shadow-xl max-h-[90vh] overflow-y-auto`}
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.95, opacity: 0 }}
@@ -245,11 +265,11 @@ export function RouteTypeModal({
           >
             {/* Header */}
             <div
-              className={`flex items-center justify-between p-4 border-b ${
+              className={`flex items-center justify-between p-3 sm:p-4 border-b ${
                 isDark ? 'border-gray-800' : 'border-gray-200'
               }`}
             >
-              <h2 className="text-xl font-bold">Route Tracking</h2>
+              <h2 className="text-lg sm:text-xl font-bold">Route Tracking</h2>
               <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full">
                 <X className="h-5 w-5" />
               </Button>
