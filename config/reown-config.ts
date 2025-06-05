@@ -1,5 +1,5 @@
-import { WagmiAdapter } from '@reown/appkit-adapter-wagmi';
 import { base } from '@reown/appkit/networks';
+import { WagmiAdapter } from '@reown/appkit-adapter-wagmi';
 import { cookieStorage, http, createStorage, fallback } from 'wagmi';
 
 export const projectId = process.env.NEXT_PUBLIC_REOWN_PROJECT_ID;
