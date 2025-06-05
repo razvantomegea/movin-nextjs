@@ -18,6 +18,14 @@ export {
   addUserActionBreadcrumb,
 } from './utils';
 
+// User feedback functions
+export {
+  showUserFeedbackDialog,
+  captureUserFeedback,
+  showFeedbackForError,
+  UserReportableError,
+} from './feedback';
+
 // Re-export commonly used Sentry functions
 export {
   captureException,

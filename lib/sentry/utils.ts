@@ -3,21 +3,21 @@ import * as Sentry from '@sentry/nextjs';
 
 // Custom error classes for better error categorization
 export class APIError extends Error {
-  constructor(message: string, public statusCode: number = 500) {
+  constructor(message: string) {
     super(message);
     this.name = 'APIError';
   }
 }
 
 export class ValidationError extends Error {
-  constructor(message: string, public field?: string) {
+  constructor(message: string) {
     super(message);
     this.name = 'ValidationError';
   }
 }
 
 export class BlockchainError extends Error {
-  constructor(message: string, public code?: string) {
+  constructor(message: string) {
     super(message);
     this.name = 'BlockchainError';
   }
@@ -112,7 +112,7 @@ export function measurePerformance<T>(
     {
       name: operationName,
       op: 'custom.operation',
-      data: context,
+      attributes: context,
     },
     async () => {
       try {
@@ -152,7 +152,7 @@ export function clearSentryUser() {
 export function addUserActionBreadcrumb(
   action: string,
   category: 'ui' | 'navigation' | 'blockchain' | 'api' = 'ui',
-  data?: Record<string, any>,
+  data?: Record<string, unknown>,
 ) {
   Sentry.addBreadcrumb({
     message: action,

@@ -10,6 +10,7 @@ import { GoogleMapsProvider } from '@/app/contexts/google-maps-provider';
 import { ThemeProvider } from '@/app/contexts/theme-provider';
 import { ReduxToaster } from '@/components/ui/redux-toaster';
 import { ReduxProvider } from '@/lib/redux/provider';
+import { FloatingBugReportButton } from '@/components/feedback';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -40,6 +41,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <GoogleMapsProvider>
               <AppkitProvider>{children}</AppkitProvider>
               <ReduxToaster />
+              <FloatingBugReportButton />
               <Analytics />
             </GoogleMapsProvider>
           </ThemeProvider>

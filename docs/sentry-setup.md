@@ -106,6 +106,84 @@ addUserActionBreadcrumb('Button clicked', 'ui', {
 });
 ```
 
+### User Bug Reporting
+
+#### Quick Setup with Components
+
+```typescript
+import { BugReportButton } from '@/components/feedback';
+
+// Simple bug report button
+<BugReportButton />
+
+// With custom styling and prefilled data
+<BugReportButton
+  variant="default"
+  size="lg"
+  prefilledData={{
+    title: 'Feature Request',
+    severity: 'low',
+  }}
+>
+  Report Issue
+</BugReportButton>
+
+// Use Sentry's native dialog
+<BugReportButton useSentryDialog={true} />
+```
+
+#### Programmatic Usage
+
+```typescript
+import { useBugReport } from '@/lib/hooks/useBugReport';
+import { showUserFeedbackDialog, showFeedbackForError } from '@/lib/sentry';
+
+function MyComponent() {
+  const { openBugReport, showSentryDialog, reportError } = useBugReport();
+
+  const handleError = (error: Error) => {
+    // Show feedback dialog for specific error
+    showFeedbackForError(error, {
+      component: 'MyComponent',
+      action: 'button_click',
+    });
+  };
+
+  const handleManualReport = () => {
+    // Open custom bug report modal
+    openBugReport({
+      title: 'Manual bug report',
+      severity: 'medium',
+    });
+  };
+
+  const handleQuickReport = () => {
+    // Show Sentry's native dialog
+    showSentryDialog({
+      title: 'Quick Bug Report',
+    });
+  };
+}
+```
+
+#### Custom Error Classes for Bug Reporting
+
+```typescript
+import { UserReportableError } from '@/lib/sentry';
+
+// Error that automatically shows feedback dialog
+throw new UserReportableError('Something went wrong', {
+  component: 'PaymentForm',
+  severity: 'high',
+  showFeedbackDialog: true,
+});
+
+// Error captured silently (no dialog)
+const error = new UserReportableError('Background error', {
+  showFeedbackDialog: false,
+});
+```
+
 ## Automatic Integration
 
 ### Wallet Connection Tracking
