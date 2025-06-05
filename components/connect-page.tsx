@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useAppKit, useAppKitAccount } from '@reown/appkit/react';
 import { motion } from 'framer-motion';
 import { Wallet } from 'lucide-react';
@@ -12,7 +12,7 @@ import { useMovinEarn } from '@/lib/hooks/useMovinEarn';
 import { updateProfile } from '@/lib/supabase/profile';
 import { getProfile } from '@/lib/supabase/profile';
 
-export function ConnectPage() {
+function ConnectPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { resolvedTheme } = useTheme();
@@ -310,6 +310,74 @@ export function ConnectPage() {
             }}
           />
         ))}
+      </div>
+    </div>
+  );
+}
+
+export function ConnectPage() {
+  return (
+    <Suspense fallback={<ConnectPageFallback />}>
+      <ConnectPageContent />
+    </Suspense>
+  );
+}
+
+function ConnectPageFallback() {
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === 'dark';
+
+  return (
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-gray-950 dark:to-gray-900 p-4 text-gray-900 dark:text-white transition-colors duration-300">
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.15)_0%,rgba(0,0,0,0)_60%)]"></div>
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_60%,rgba(59,130,246,0.1)_0%,rgba(0,0,0,0)_60%)]"></div>
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-500/30 to-transparent"></div>
+      </div>
+
+      <div className="w-full max-w-md flex flex-col items-center relative z-10">
+        <div className="mb-12 relative">
+          <div className="absolute -inset-8 rounded-full bg-blue-500/10 blur-xl"></div>
+          <div
+            className={`relative w-40 h-40 mb-4 ${
+              isDark ? 'bg-gray-900' : 'bg-white'
+            } rounded-full p-6 shadow-lg border ${
+              isDark ? 'border-blue-500/30' : 'border-blue-500/20'
+            } flex items-center justify-center transition-colors duration-300`}
+          >
+            <Image
+              src="/images/logo.png"
+              alt="Movin Logo"
+              width={120}
+              height={120}
+              className="object-contain"
+              priority
+            />
+          </div>
+        </div>
+
+        <h1 className="text-5xl font-bold mb-4 text-center bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-blue-700 dark:from-blue-300 dark:to-blue-500">
+          Movin
+        </h1>
+
+        <p className="text-xl mb-20 text-center text-gray-700 dark:text-blue-100">
+          It all starts with one step
+        </p>
+
+        <div className="w-full">
+          <div className="w-full py-6 text-lg rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg shadow-blue-500/30 border-0 flex items-center justify-center">
+            <div className="animate-spin mr-2 h-5 w-5 border-2 border-white border-t-transparent rounded-full"></div>
+            Loading...
+          </div>
+        </div>
+
+        <div className="mt-8 text-center text-gray-600 dark:text-blue-200/70 text-sm">
+          <p>Earn while you burn</p>
+        </div>
+
+        <div className="mt-4 text-center text-gray-400 dark:text-blue-200/50 text-xs">
+          <p>v1.2.0</p>
+        </div>
       </div>
     </div>
   );
