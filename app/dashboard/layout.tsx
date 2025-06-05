@@ -10,10 +10,12 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAccount } from 'wagmi';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { AdSenseBanner } from '@/components/ui/adsense-banner';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
 import { fetchProfile } from '@/lib/redux/slices/profileSlice';
+import { useMovinEarn } from '@/lib/hooks/useMovinEarn';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -31,6 +33,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const dispatch = useAppDispatch();
   const { isConnecting } = useAccount();
   const [lastPath, setLastPath] = useState(pathname);
+  const { usePremiumStatus } = useMovinEarn();
+  const { isPremiumActive } = usePremiumStatus();
+  const isPremium = isPremiumActive();
 
   const isActive = (path: string) => {
     return pathname === path;
@@ -121,6 +126,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           <appkit-button />
         </div>
       </header>
+
+      {/* AdSense Banner - Only show for free users */}
+      {!isPremium && (
+        <div className="w-full px-4 py-2 border-b border-gray-200 dark:border-gray-800">
+          <AdSenseBanner className="w-full max-w-full mx-auto" format="auto" responsive={true} />
+        </div>
+      )}
 
       {/* Main content */}
       <main className="flex-1 pb-20">{children}</main>

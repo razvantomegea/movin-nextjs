@@ -18,15 +18,45 @@ A fitness tracking app with rewards, built with Next.js.
 ### Installation
 
 1. Clone the repository
-\`\`\`bash
-git clone https://github.com/yourusername/movin-app.git
-cd movin-app
-\`\`\`
+   \`\`\`bash
+   git clone https://github.com/yourusername/movin-app.git
+   cd movin-app
+   \`\`\`
 
 2. Install dependencies
+   \`\`\`bash
+   npm install
+   \`\`\`
+
+3. Set up environment variables
+   Create a `.env.local` file in the root directory and add the following variables:
+
 \`\`\`bash
-npm install
+
+# AdSense Configuration (optional - for ads on free tier)
+
+NEXT_PUBLIC_ADSENSE_CLIENT_ID=ca-pub-xxxxxxxxxxxxxxxx
+NEXT_PUBLIC_ADSENSE_SLOT_ID=xxxxxxxxxx
+
+# Other required environment variables
+
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+NEXT_PUBLIC_REOWN_PROJECT_ID=your_reown_project_id
+NEXT_PUBLIC_INFURA_ID=your_infura_id
+NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your_google_maps_api_key
+NEXT_PUBLIC_JWT_SECRET=your_jwt_secret_key
 \`\`\`
+
+**AdSense Setup:**
+
+- The AdSense banners will only show for free (non-premium) users
+- To get your AdSense credentials:
+  1. Go to [Google AdSense](https://www.google.com/adsense/)
+  2. Create an account and add your site
+  3. Get your Publisher ID (NEXT_PUBLIC_ADSENSE_CLIENT_ID)
+  4. Create an ad unit and get the Slot ID (NEXT_PUBLIC_ADSENSE_SLOT_ID)
+- If these variables are not set, no ads will be displayed
 
 ### Development
 

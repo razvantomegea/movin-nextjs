@@ -3,7 +3,17 @@
 import { useState } from 'react';
 
 import { motion } from 'framer-motion';
-import { Bell, Trash2, Download, Upload, RefreshCw, Shield, Smartphone, Crown } from 'lucide-react';
+import {
+  Bell,
+  Trash2,
+  Download,
+  Upload,
+  RefreshCw,
+  Shield,
+  Smartphone,
+  Crown,
+  ExternalLink,
+} from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
@@ -45,15 +55,6 @@ export function SettingsPage() {
   const [dataCollection, setDataCollection] = useState(true);
   const [stepGoal, setStepGoal] = useState(10000);
   const [distanceUnit, setDistanceUnit] = useState('km');
-  const [clearingData, setClearingData] = useState(false);
-
-  const handleClearData = () => {
-    setClearingData(true);
-    // Simulate clearing data
-    setTimeout(() => {
-      setClearingData(false);
-    }, 2000);
-  };
 
   return (
     <motion.div className="p-4" initial="hidden" animate="show" variants={container}>
@@ -252,27 +253,99 @@ export function SettingsPage() {
                   <div>
                     <Label className="flex items-center text-red-500">
                       <Trash2 className="h-4 w-4 mr-2" />
-                      Clear All Data
+                      Delete All Data
                     </Label>
                     <p className="text-sm text-gray-500 dark:text-gray-400">
-                      Delete all your activity data (cannot be undone)
+                      Permanently delete all your data from our systems (cannot be undone)
                     </p>
                   </div>
                   <Button
                     variant="destructive"
                     size="sm"
-                    onClick={handleClearData}
-                    disabled={clearingData}
+                    onClick={() => router.push('/dashboard/settings/delete-data')}
                   >
-                    {clearingData ? (
-                      <>
-                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                        Clearing...
-                      </>
-                    ) : (
-                      'Clear'
-                    )}
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete Data
                   </Button>
+                </div>
+
+                <hr className="my-4" />
+
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="flex items-center">
+                        <Shield className="h-4 w-4 mr-2 text-blue-500" />
+                        Privacy Policy
+                      </Label>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        Learn how we protect your privacy
+                      </p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        window.open(
+                          'https://app.termly.io/policy-viewer/policy.html?policyUUID=32f320cc-d83f-43ec-b602-dfb98321a82c',
+                          '_blank',
+                        )
+                      }
+                    >
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      View
+                    </Button>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="flex items-center">
+                        <Shield className="h-4 w-4 mr-2 text-blue-500" />
+                        Terms of Service
+                      </Label>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        Review our terms and conditions
+                      </p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        window.open(
+                          'https://app.termly.io/policy-viewer/policy.html?policyUUID=09b69da0-1641-4776-bbbd-32060e7b8bc6',
+                          '_blank',
+                        )
+                      }
+                    >
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      View
+                    </Button>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="flex items-center">
+                        <Shield className="h-4 w-4 mr-2 text-blue-500" />
+                        Cookies Policy
+                      </Label>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        Understand our cookie usage
+                      </p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        window.open(
+                          'https://app.termly.io/policy-viewer/policy.html?policyUUID=b1b24ed6-3efe-42b2-9328-4699a7d430b0',
+                          '_blank',
+                        )
+                      }
+                    >
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      View
+                    </Button>
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -288,11 +361,11 @@ export function SettingsPage() {
             <CardContent className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label>Version</Label>
-                <span className="text-sm">1.0.3</span>
+                <span className="text-sm">1.2.0</span>
               </div>
               <div className="flex items-center justify-between">
                 <Label>Build</Label>
-                <span className="text-sm">2025.05.29</span>
+                <span className="text-sm">2025.06.05</span>
               </div>
               <div className="flex items-center justify-between">
                 <Label>Device</Label>

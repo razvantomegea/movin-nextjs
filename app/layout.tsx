@@ -3,7 +3,8 @@ import './globals.css';
 import { Analytics } from '@vercel/analytics/next';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
-import { headers } from 'next/headers';
+
+import Script from 'next/script';
 import AppkitProvider from '@/app/contexts/appkit-provider';
 import { GoogleMapsProvider } from '@/app/contexts/google-maps-provider';
 import { ThemeProvider } from '@/app/contexts/theme-provider';
@@ -18,17 +19,26 @@ export const metadata: Metadata = {
   generator: 'v0.dev',
 };
 
-export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const headersObj = await headers();
-  const cookies = headersObj.get('cookie');
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const adsenseClientId = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID;
 
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        {adsenseClientId && (
+          <Script
+            async
+            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseClientId}`}
+            crossOrigin="anonymous"
+            strategy="afterInteractive"
+          />
+        )}
+      </head>
       <body className={inter.className}>
         <ReduxProvider>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
             <GoogleMapsProvider>
-              <AppkitProvider cookies={cookies}>{children}</AppkitProvider>
+              <AppkitProvider>{children}</AppkitProvider>
               <ReduxToaster />
               <Analytics />
             </GoogleMapsProvider>

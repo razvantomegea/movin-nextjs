@@ -272,6 +272,15 @@ export function ConnectPage() {
         >
           <p>Earn while you burn</p>
         </motion.div>
+
+        <motion.div
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.8, duration: 0.5 }}
+          className="mt-4 text-center text-gray-400 dark:text-blue-200/50 text-xs"
+        >
+          <p>v1.2.0</p>
+        </motion.div>
       </div>
 
       {/* Animated particles */}
