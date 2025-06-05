@@ -4,6 +4,7 @@ import { useReadContract, useWriteContract, useWaitForTransactionReceipt } from 
 import movinEarnAbi from '@/lib/abi/movin-earn-abi.json';
 import { useAppDispatch } from '@/lib/redux/hooks';
 import { showErrorToast } from '@/lib/redux/slices/toastSlice';
+import { captureBlockchainError, addUserActionBreadcrumb } from '@/lib/sentry';
 import { mapError } from '@/utils/errors';
 import { getFormattedStakes } from '@/utils/staking/getFormattedStakes';
 
@@ -370,6 +371,11 @@ export function useMovinEarn() {
      */
     const recordActivity = async (steps: number, mets: number): Promise<boolean> => {
       try {
+        addUserActionBreadcrumb('Recording activity', 'blockchain', {
+          steps: steps.toString(),
+          mets: mets.toString(),
+        });
+
         writeContract({
           address: CONTRACT_ADDRESS,
           abi: movinEarnAbi,
@@ -380,6 +386,17 @@ export function useMovinEarn() {
         return true;
       } catch (err) {
         const errorMessage = mapError(err);
+
+        // Capture blockchain error with Sentry
+        captureBlockchainError(
+          err instanceof Error
+            ? err
+            : new Error(String((err as any)?.message || 'Unknown blockchain error')),
+          hash,
+          CONTRACT_ADDRESS,
+          address,
+        );
+
         dispatch(
           showErrorToast({
             title: 'Error Recording Activity',
