@@ -36,6 +36,10 @@ export async function getUserDataSummary({
   address: string;
   client?: SupabaseClient;
 }): Promise<UserDataSummary> {
+  if (!address || typeof address !== 'string' || address.trim().length === 0) {
+    throw new Error('Invalid address provided');
+  }
+
   if (!client) {
     client = getClient();
   }
@@ -145,6 +149,10 @@ export async function deleteAllUserData({
   address: string;
   client?: SupabaseClient;
 }): Promise<DeleteResult> {
+  if (!address || typeof address !== 'string' || address.trim().length === 0) {
+    throw new Error('Invalid address provided');
+  }
+
   if (!client) {
     client = getClient();
   }
@@ -182,12 +190,48 @@ export async function deleteAllUserData({
         };
       }
 
-      // Delete data in correct order (respecting foreign keys)
-      await client.from('activities').delete().eq('address', address);
-      await client.from('activity_rewards').delete().eq('address', address);
-      await client.from('user_badges').delete().eq('address', address);
-      await client.from('staking').delete().eq('address', address);
-      await client.from('profiles').delete().eq('address', address);
+      // Use a database function that wraps deletion in a transaction if available
+      try {
+        // Try to use a custom function that handles the transaction internally
+        const { error: txError } = await client.rpc('delete_user_data_with_transaction', {
+          user_address: address,
+        });
+
+        if (txError) {
+          throw txError;
+        }
+      } catch (txFunctionError) {
+        // If the transaction function is not available, execute individual queries
+        console.warn(
+          'Transaction function not available, using raw SQL transaction:',
+          txFunctionError,
+        );
+
+        // Execute raw SQL to perform transaction
+        const { error: sqlError } = await client.rpc('execute_transaction', {
+          sql_commands: `
+            BEGIN;
+            DELETE FROM activities WHERE address = '${address}';
+            DELETE FROM activity_rewards WHERE address = '${address}';
+            DELETE FROM user_badges WHERE address = '${address}';
+            DELETE FROM staking WHERE address = '${address}';
+            DELETE FROM profiles WHERE address = '${address}';
+            COMMIT;
+          `,
+        });
+
+        if (sqlError) {
+          // If raw SQL transaction fails too, fall back to sequential operations
+          console.warn('SQL transaction failed, falling back to sequential operations:', sqlError);
+
+          // Delete data in correct order (respecting foreign keys)
+          await client.from('activities').delete().eq('address', address);
+          await client.from('activity_rewards').delete().eq('address', address);
+          await client.from('user_badges').delete().eq('address', address);
+          await client.from('staking').delete().eq('address', address);
+          await client.from('profiles').delete().eq('address', address);
+        }
+      }
 
       return {
         success: true,
@@ -226,6 +270,10 @@ export async function userHasData({
   address: string;
   client?: SupabaseClient;
 }): Promise<boolean> {
+  if (!address || typeof address !== 'string' || address.trim().length === 0) {
+    throw new Error('Invalid address provided');
+  }
+
   const summary = await getUserDataSummary({ address, client });
 
   if (!summary.exists) {

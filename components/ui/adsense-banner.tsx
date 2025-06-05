@@ -18,6 +18,12 @@ const formatStyles = {
   'mobile-banner': { width: '320px', height: '50px' },
 };
 
+declare global {
+  interface Window {
+    adsbygoogle: Record<string, unknown>[];
+  }
+}
+
 export function AdSenseBanner({
   className = '',
   slot,
@@ -67,10 +73,10 @@ export function AdSenseBanner({
     const timer = setTimeout(() => {
       try {
         // Initialize adsbygoogle if not already present
-        (window as any).adsbygoogle = (window as any).adsbygoogle || [];
+        window.adsbygoogle = window.adsbygoogle || [];
 
         // Push the ad configuration
-        (window as any).adsbygoogle.push({});
+        window.adsbygoogle.push({});
 
         setIsLoaded(true);
       } catch (err) {
