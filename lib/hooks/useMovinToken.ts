@@ -4,6 +4,7 @@ import { useReadContract, useWriteContract, useWaitForTransactionReceipt } from 
 import movinTokenAbi from '@/lib/abi/movin-token-abi.json';
 import { useAppDispatch } from '@/lib/redux/hooks';
 import { showErrorToast } from '@/lib/redux/slices/toastSlice';
+import { forceLogout, isWalletConnected } from '@/utils/auth';
 import { formatBalanceWithSuffix } from '@/utils/crypto';
 import { mapError } from '@/utils/errors';
 
@@ -16,7 +17,7 @@ const TOKEN_ADDRESS = '0x3082c5301afD22543866Fe510C0fB351E3CfF561';
  */
 export function useMovinToken() {
   const dispatch = useAppDispatch();
-  const { address } = useAppKitAccount();
+  const { address, isConnected } = useAppKitAccount();
   const addressLower = address?.toLowerCase();
 
   /**
@@ -25,6 +26,19 @@ export function useMovinToken() {
    */
   const getTokenAddress = (): string => {
     return TOKEN_ADDRESS;
+  };
+
+  /**
+   * Checks if wallet is connected and forces logout if not
+   * @returns boolean indicating if wallet is connected
+   */
+  const checkWalletConnection = (): boolean => {
+    if (!isWalletConnected(address, isConnected)) {
+      console.warn('Wallet disconnected during transaction attempt, forcing logout');
+      forceLogout();
+      return false;
+    }
+    return true;
   };
 
   /**
@@ -187,6 +201,11 @@ export function useMovinToken() {
      */
     const approveTokens = async (spender: string, amount: string): Promise<boolean> => {
       try {
+        // Check wallet connection before transaction
+        if (!checkWalletConnection()) {
+          return false;
+        }
+
         if (!decimalsResult.data) {
           throw new Error('Token decimals not loaded');
         }
@@ -241,6 +260,11 @@ export function useMovinToken() {
      */
     const transferTokens = async (recipient: string, amount: string): Promise<boolean> => {
       try {
+        // Check wallet connection before transaction
+        if (!checkWalletConnection()) {
+          return false;
+        }
+
         if (!decimalsResult.data) {
           throw new Error('Token decimals not loaded');
         }

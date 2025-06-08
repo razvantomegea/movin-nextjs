@@ -3,7 +3,7 @@
 import type React from 'react';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useAppKitAccount } from '@reown/appkit/react';
+import { useAppKitAccount, useDisconnect } from '@reown/appkit/react';
 import { Activity, Gift, Menu, Settings, User, X, Crown } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -16,6 +16,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useMovinEarn } from '@/lib/hooks/useMovinEarn';
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
 import { fetchProfile } from '@/lib/redux/slices/profileSlice';
+import { forceLogout } from '@/utils/auth';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -28,6 +29,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const { address } = useAppKitAccount();
+  const { disconnect } = useDisconnect();
   const addressLower = useMemo(() => address?.toLowerCase(), [address]);
   const { profile } = useAppSelector((state) => state.profile);
   const dispatch = useAppDispatch();
@@ -98,6 +100,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   const handleNavigate = (path: string) => () => {
     router.push(path);
+  };
+
+  const handleLogout = () => {
+    setIsSheetOpen(false);
+    disconnect();
+    forceLogout();
   };
 
   const content = (
@@ -199,7 +207,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                           <Button
                             variant="outline"
                             className="w-full py-6 text-base"
-                            onClick={() => setIsSheetOpen(false)}
+                            onClick={handleLogout}
                           >
                             Log Out
                           </Button>

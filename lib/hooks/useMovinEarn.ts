@@ -5,6 +5,7 @@ import movinEarnAbi from '@/lib/abi/movin-earn-abi.json';
 import { useAppDispatch } from '@/lib/redux/hooks';
 import { showErrorToast } from '@/lib/redux/slices/toastSlice';
 import { captureBlockchainError, addUserActionBreadcrumb } from '@/lib/sentry';
+import { forceLogout, isWalletConnected } from '@/utils/auth';
 import { mapError } from '@/utils/errors';
 import { getFormattedStakes } from '@/utils/staking/getFormattedStakes';
 
@@ -103,7 +104,7 @@ export interface IBaseRates {
  */
 export function useMovinEarn() {
   const dispatch = useAppDispatch();
-  const { address } = useAppKitAccount();
+  const { address, isConnected } = useAppKitAccount();
   const addressLower = address?.toLowerCase();
 
   /**
@@ -112,6 +113,19 @@ export function useMovinEarn() {
    */
   const getContractAddress = (): string => {
     return CONTRACT_ADDRESS;
+  };
+
+  /**
+   * Checks if wallet is connected and forces logout if not
+   * @returns boolean indicating if wallet is connected
+   */
+  const checkWalletConnection = (): boolean => {
+    if (!isWalletConnected(address, isConnected)) {
+      console.warn('Wallet disconnected during transaction attempt, forcing logout');
+      forceLogout();
+      return false;
+    }
+    return true;
   };
 
   /**
@@ -270,6 +284,11 @@ export function useMovinEarn() {
      */
     const registerReferral = async (referrerAddress: string): Promise<boolean> => {
       try {
+        // Check wallet connection before transaction
+        if (!checkWalletConnection()) {
+          return false;
+        }
+
         writeContract({
           address: CONTRACT_ADDRESS,
           abi: movinEarnAbi,
@@ -371,6 +390,11 @@ export function useMovinEarn() {
      */
     const recordActivity = async (steps: number, mets: number): Promise<boolean> => {
       try {
+        // Check wallet connection before transaction
+        if (!checkWalletConnection()) {
+          return false;
+        }
+
         addUserActionBreadcrumb('Recording activity', 'blockchain', {
           steps: steps.toString(),
           mets: mets.toString(),
@@ -461,6 +485,11 @@ export function useMovinEarn() {
      */
     const claimStakingRewards = async (stakeIndex: number): Promise<boolean> => {
       try {
+        // Check wallet connection before transaction
+        if (!checkWalletConnection()) {
+          return false;
+        }
+
         await writeContract({
           address: CONTRACT_ADDRESS,
           abi: movinEarnAbi,
@@ -505,6 +534,11 @@ export function useMovinEarn() {
      */
     const claimAllStakingRewards = async (): Promise<boolean> => {
       try {
+        // Check wallet connection before transaction
+        if (!checkWalletConnection()) {
+          return false;
+        }
+
         await writeContract({
           address: CONTRACT_ADDRESS,
           abi: movinEarnAbi,
@@ -550,6 +584,11 @@ export function useMovinEarn() {
      */
     const stakeTokens = async (amount: string, lockMonths: number): Promise<boolean> => {
       try {
+        // Check wallet connection before transaction
+        if (!checkWalletConnection()) {
+          return false;
+        }
+
         const amountWei = parseUnits(amount, 18);
 
         await writeContract({
@@ -598,6 +637,11 @@ export function useMovinEarn() {
      */
     const unstake = async (stakeIndex: number): Promise<boolean> => {
       try {
+        // Check wallet connection before transaction
+        if (!checkWalletConnection()) {
+          return false;
+        }
+
         await writeContract({
           address: CONTRACT_ADDRESS,
           abi: movinEarnAbi,
@@ -644,6 +688,11 @@ export function useMovinEarn() {
      */
     const restake = async (stakeIndex: number, lockMonths: number): Promise<boolean> => {
       try {
+        // Check wallet connection before transaction
+        if (!checkWalletConnection()) {
+          return false;
+        }
+
         await writeContract({
           address: CONTRACT_ADDRESS,
           abi: movinEarnAbi,
@@ -741,6 +790,11 @@ export function useMovinEarn() {
      */
     const setPremiumStatus = async (status: boolean, amount: string): Promise<boolean> => {
       try {
+        // Check wallet connection before transaction
+        if (!checkWalletConnection()) {
+          return false;
+        }
+
         const amountWei = parseUnits(amount, 18);
 
         await writeContract({
