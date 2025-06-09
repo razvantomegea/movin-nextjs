@@ -78,7 +78,9 @@ export function mergeStepsActivities(
     total_energy_burned: estimatedCalories,
     // Update the end time to reflect the more recent import
     end_date: newActivity.end_date || existingActivity.end_date,
-    source: `${existingActivity.source}, Screenshot Import`, // Indicate it was updated
+    source: existingActivity.source
+      ? `${existingActivity.source}, Screenshot Import`
+      : 'Screenshot Import',
   };
 }
 
