@@ -1,6 +1,5 @@
-'use client';
-
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useAppKitAccount } from '@reown/appkit/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Edit2, Plus, Trash2, Save, ArrowRight } from 'lucide-react';
 import Image from 'next/image';
@@ -8,8 +7,10 @@ import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAppDispatch } from '@/lib/redux/hooks';
-import { addMeal } from '@/lib/redux/slices/energyDataSlice';
-import { showSuccessToast } from '@/lib/redux/slices/toastSlice';
+import { addEnergyEntry } from '@/lib/redux/slices/energyDataSlice';
+import { addMealToLibrary } from '@/lib/redux/slices/mealsSlice';
+import { showSuccessToast, showErrorToast } from '@/lib/redux/slices/toastSlice';
+import { getTodayDateString } from '@/utils/movin/energyMappers';
 
 // Define types for our component
 interface Ingredient {
@@ -22,12 +23,12 @@ interface Ingredient {
 }
 
 interface DetectedMeal {
-  name: string;
+  mealName: string;
   ingredients: Ingredient[];
-  totalCalories: number;
-  totalCarbs: number;
-  totalFats: number;
-  totalProtein: number;
+  calories: number;
+  carbohydrates: number;
+  fats: number;
+  protein: number;
 }
 
 interface MealDetectionResultsModalProps {
@@ -36,179 +37,147 @@ interface MealDetectionResultsModalProps {
   imageData: string | null;
 }
 
-// Sample data for detected meals
-const sampleDetectedMeals: DetectedMeal[] = [
-  {
-    name: 'Chicken Salad with Avocado',
-    ingredients: [
-      {
-        id: '1',
-        name: 'Grilled Chicken Breast',
-        calories: 165,
-        carbs: 0,
-        fats: 3.6,
-        protein: 31,
-      },
-      {
-        id: '2',
-        name: 'Mixed Greens',
-        calories: 15,
-        carbs: 3,
-        fats: 0,
-        protein: 1,
-      },
-      {
-        id: '3',
-        name: 'Avocado',
-        calories: 160,
-        carbs: 8,
-        fats: 15,
-        protein: 2,
-      },
-      {
-        id: '4',
-        name: 'Olive Oil Dressing',
-        calories: 120,
-        carbs: 0,
-        fats: 14,
-        protein: 0,
-      },
-    ],
-    totalCalories: 460,
-    totalCarbs: 11,
-    totalFats: 32.6,
-    totalProtein: 34,
-  },
-  {
-    name: 'Fruit and Yogurt Bowl',
-    ingredients: [
-      {
-        id: '1',
-        name: 'Greek Yogurt',
-        calories: 100,
-        carbs: 6,
-        fats: 0,
-        protein: 18,
-      },
-      {
-        id: '2',
-        name: 'Strawberries',
-        calories: 50,
-        carbs: 12,
-        fats: 0,
-        protein: 1,
-      },
-      {
-        id: '3',
-        name: 'Blueberries',
-        calories: 40,
-        carbs: 10,
-        fats: 0,
-        protein: 0.5,
-      },
-      {
-        id: '4',
-        name: 'Honey',
-        calories: 60,
-        carbs: 17,
-        fats: 0,
-        protein: 0,
-      },
-    ],
-    totalCalories: 250,
-    totalCarbs: 45,
-    totalFats: 0,
-    totalProtein: 19.5,
-  },
-  {
-    name: 'Salmon with Vegetables',
-    ingredients: [
-      {
-        id: '1',
-        name: 'Grilled Salmon',
-        calories: 206,
-        carbs: 0,
-        fats: 12,
-        protein: 22,
-      },
-      {
-        id: '2',
-        name: 'Broccoli',
-        calories: 55,
-        carbs: 11,
-        fats: 0.5,
-        protein: 3.7,
-      },
-      {
-        id: '3',
-        name: 'Sweet Potato',
-        calories: 112,
-        carbs: 26,
-        fats: 0.1,
-        protein: 2,
-      },
-      {
-        id: '4',
-        name: 'Olive Oil',
-        calories: 40,
-        carbs: 0,
-        fats: 4.5,
-        protein: 0,
-      },
-    ],
-    totalCalories: 413,
-    totalCarbs: 37,
-    totalFats: 17.1,
-    totalProtein: 27.7,
-  },
-];
+// Function to map API response to our component structure
+const mapApiResponseToDetectedMeal = (apiData: any): DetectedMeal => {
+  const mappedIngredients = apiData.ingredients.map((ingredient: any, index: number) => ({
+    id: (index + 1).toString(),
+    name: ingredient.name,
+    calories: ingredient.calories,
+    carbs: ingredient.carbohydrates,
+    fats: ingredient.fats,
+    protein: ingredient.protein,
+  }));
+
+  return {
+    mealName: apiData.mealName,
+    ingredients: mappedIngredients,
+    calories: apiData.calories,
+    carbohydrates: apiData.carbohydrates,
+    fats: apiData.fats,
+    protein: apiData.protein,
+  };
+};
 
 export function MealDetectionResultsModal({
   isOpen,
   onClose,
   imageData,
 }: MealDetectionResultsModalProps) {
-  const { resolvedTheme } = useTheme();
-  const isDark = resolvedTheme === 'dark';
   const dispatch = useAppDispatch();
-
-  // State for the detected meal
-  const [isLoading, setIsLoading] = useState(true);
+  const { theme } = useTheme();
+  const { address } = useAppKitAccount();
   const [detectedMeal, setDetectedMeal] = useState<DetectedMeal | null>(null);
-  const [editMode, setEditMode] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [editedMealName, setEditedMealName] = useState('');
+  const [editMode, setEditMode] = useState(false);
   const [editingIngredientId, setEditingIngredientId] = useState<string | null>(null);
 
-  // Simulate meal detection when the modal opens
+  const isDark = theme === 'dark';
+
+  // Handler for API response success
+  const handleAnalysisSuccess = useCallback((data: any) => {
+    const mappedMeal = mapApiResponseToDetectedMeal(data);
+    setDetectedMeal(mappedMeal);
+    setEditedMealName(mappedMeal.mealName);
+  }, []);
+
+  // Handler for API response error
+  const handleAnalysisError = useCallback(
+    (error: unknown) => {
+      console.error('Error analyzing meal:', error);
+      dispatch(
+        showErrorToast({
+          title: 'Analysis Error',
+          description: 'An error occurred while analyzing the meal',
+        }),
+      );
+    },
+    [dispatch],
+  );
+
+  // Handler for API response failure
+  const handleAnalysisFailure = useCallback(
+    (errorMessage: string) => {
+      dispatch(
+        showErrorToast({
+          title: 'Analysis Failed',
+          description: errorMessage || 'Failed to analyze meal image',
+        }),
+      );
+    },
+    [dispatch],
+  );
+
+  // Handler for API completion
+  const handleAnalysisComplete = useCallback(() => {
+    setIsLoading(false);
+  }, []);
+
+  // Handler for editing meal name input
+  const handleMealNameChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setEditedMealName(e.target.value);
+  }, []);
+
+  // Handler for toggling edit mode
+  const handleToggleEditMode = useCallback(() => {
+    setEditMode(!editMode);
+  }, [editMode]);
+
+  // Handler for backdrop click to close modal
+  const handleBackdropClick = useCallback(() => {
+    onClose();
+  }, [onClose]);
+
+  // Handler for saving ingredient edit
+  const handleSaveIngredientEdit = useCallback(() => {
+    setEditingIngredientId(null);
+  }, []);
+
+  // Analyze meal when modal opens
   useEffect(() => {
     if (isOpen && imageData) {
       setIsLoading(true);
-      // Simulate API call delay
-      const timer = setTimeout(() => {
-        // Randomly select one of the sample meals
-        const randomMeal =
-          sampleDetectedMeals[Math.floor(Math.random() * sampleDetectedMeals.length)];
-        setDetectedMeal(randomMeal);
-        setEditedMealName(randomMeal.name);
-        setIsLoading(false);
-      }, 2000);
 
-      return () => clearTimeout(timer);
+      // Call the meal analysis API
+      fetch('/api/analyze-meal', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ imageData }),
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.success) {
+            handleAnalysisSuccess(data.data);
+          } else {
+            handleAnalysisFailure(data.error);
+          }
+        })
+        .catch(handleAnalysisError)
+        .finally(handleAnalysisComplete);
     }
-  }, [isOpen, imageData]);
+  }, [
+    isOpen,
+    imageData,
+    handleAnalysisSuccess,
+    handleAnalysisFailure,
+    handleAnalysisError,
+    handleAnalysisComplete,
+  ]);
 
   // Calculate totals based on current ingredients
   const calculateTotals = (ingredients: Ingredient[]) => {
     return ingredients.reduce(
       (acc, ingredient) => {
         return {
-          totalCalories: acc.totalCalories + ingredient.calories,
-          totalCarbs: acc.totalCarbs + ingredient.carbs,
-          totalFats: acc.totalFats + ingredient.fats,
-          totalProtein: acc.totalProtein + ingredient.protein,
+          calories: acc.calories + ingredient.calories,
+          carbohydrates: acc.carbohydrates + ingredient.carbs,
+          fats: acc.fats + ingredient.fats,
+          protein: acc.protein + ingredient.protein,
         };
       },
-      { totalCalories: 0, totalCarbs: 0, totalFats: 0, totalProtein: 0 },
+      { calories: 0, carbohydrates: 0, fats: 0, protein: 0 },
     );
   };
 
@@ -280,40 +249,44 @@ export function MealDetectionResultsModal({
   };
 
   // Handle saving the meal
-  const handleSaveMeal = () => {
-    if (!detectedMeal) return;
+  const handleSaveMeal = async () => {
+    if (!detectedMeal || !address) return;
 
-    // Create a new meal with the current time
-    const currentTime = new Date().toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: 'numeric',
-      hour12: true,
-    });
+    try {
+      // Create energy entry data
+      const energyEntryData = {
+        address,
+        meal_name: editedMealName || detectedMeal.mealName,
+        calories: detectedMeal.calories,
+        protein: detectedMeal.protein,
+        carbohydrates: detectedMeal.carbohydrates,
+        fats: detectedMeal.fats,
+        log_date: getTodayDateString(),
+      };
 
-    const newMeal = {
-      name: editedMealName || detectedMeal.name,
-      time: currentTime,
-      calories: detectedMeal.totalCalories,
-      carbs: detectedMeal.totalCarbs,
-      fats: detectedMeal.totalFats,
-      protein: detectedMeal.totalProtein,
-    };
+      // Save to energy log
+      await dispatch(addEnergyEntry(energyEntryData)).unwrap();
 
-    // Dispatch action to add the meal
-    dispatch(addMeal(newMeal))
-      .unwrap()
-      .then(() => {
-        dispatch(
-          showSuccessToast({
-            title: 'Meal Added',
-            description: 'Your meal has been added to your log',
-          }),
-        );
-        onClose();
-      })
-      .catch((error) => {
-        console.error('Failed to add meal:', error);
-      });
+      // Also save to meals library for quick access
+      await dispatch(addMealToLibrary(energyEntryData)).unwrap();
+
+      dispatch(
+        showSuccessToast({
+          title: 'Meal Added',
+          description: 'Your meal has been added to your log',
+        }),
+      );
+
+      onClose();
+    } catch (error) {
+      console.error('Failed to add meal:', error);
+      dispatch(
+        showErrorToast({
+          title: 'Save Failed',
+          description: 'Failed to save meal to your log',
+        }),
+      );
+    }
   };
 
   return (
@@ -330,7 +303,7 @@ export function MealDetectionResultsModal({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={onClose}
+            onClick={handleBackdropClick}
           />
 
           <motion.div
@@ -385,17 +358,19 @@ export function MealDetectionResultsModal({
                     {editMode ? (
                       <Input
                         value={editedMealName}
-                        onChange={(e) => setEditedMealName(e.target.value)}
+                        onChange={handleMealNameChange}
                         className="text-lg font-bold"
                         placeholder="Enter meal name"
                       />
                     ) : (
-                      <h3 className="text-lg font-bold">{editedMealName || detectedMeal.name}</h3>
+                      <h3 className="text-lg font-bold">
+                        {editedMealName || detectedMeal.mealName}
+                      </h3>
                     )}
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => setEditMode(!editMode)}
+                      onClick={handleToggleEditMode}
                       className="ml-2"
                     >
                       <Edit2 className="h-4 w-4" />
@@ -442,14 +417,14 @@ export function MealDetectionResultsModal({
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() => setEditingIngredientId(null)}
+                                  onClick={handleSaveIngredientEdit}
                                   className="ml-2"
                                 >
                                   <Save className="h-4 w-4" />
                                   <span className="sr-only">Save</span>
                                 </Button>
                               </div>
-                              <div className="grid grid-cols-3 gap-2">
+                              <div className="grid grid-cols-4 gap-2">
                                 <div>
                                   <label className="text-xs text-gray-500 mb-1 block">
                                     Calories
@@ -572,26 +547,22 @@ export function MealDetectionResultsModal({
                     <div className="grid grid-cols-4 gap-4">
                       <div className="text-center">
                         <div className="text-2xl font-bold">
-                          {Math.round(detectedMeal.totalCalories)}
+                          {Math.round(detectedMeal.calories)}
                         </div>
                         <div className="text-xs text-gray-500">Calories</div>
                       </div>
                       <div className="text-center">
                         <div className="text-2xl font-bold">
-                          {Math.round(detectedMeal.totalCarbs)}
+                          {Math.round(detectedMeal.carbohydrates)}
                         </div>
                         <div className="text-xs text-gray-500">Carbs (g)</div>
                       </div>
                       <div className="text-center">
-                        <div className="text-2xl font-bold">
-                          {Math.round(detectedMeal.totalFats)}
-                        </div>
+                        <div className="text-2xl font-bold">{Math.round(detectedMeal.fats)}</div>
                         <div className="text-xs text-gray-500">Fats (g)</div>
                       </div>
                       <div className="text-center">
-                        <div className="text-2xl font-bold">
-                          {Math.round(detectedMeal.totalProtein)}
-                        </div>
+                        <div className="text-2xl font-bold">{Math.round(detectedMeal.protein)}</div>
                         <div className="text-xs text-gray-500">Protein (g)</div>
                       </div>
                     </div>

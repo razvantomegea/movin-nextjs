@@ -90,6 +90,19 @@ export function ScreenshotImportModal({
     [handleFileSelect],
   );
 
+  // Handler for click to choose file
+  const handleChooseFileClick = useCallback(() => {
+    fileInputRef.current?.click();
+  }, []);
+
+  // Handler for removing selected file
+  const handleRemoveFile = useCallback(() => {
+    setFile(null);
+    setPreview(null);
+    setExtractedData(null);
+    setError(null);
+  }, []);
+
   const processScreenshot = async () => {
     if (!file) return;
 
@@ -270,10 +283,7 @@ export function ScreenshotImportModal({
                     onChange={handleFileInput}
                     className="hidden"
                   />
-                  <Button
-                    className="bg-blue-500 hover:bg-blue-600"
-                    onClick={() => fileInputRef.current?.click()}
-                  >
+                  <Button className="bg-blue-500 hover:bg-blue-600" onClick={handleChooseFileClick}>
                     <ImageIcon className="h-4 w-4 mr-2" />
                     Choose File
                   </Button>
@@ -287,16 +297,7 @@ export function ScreenshotImportModal({
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between mb-3">
                         <span className="text-sm font-medium">Selected Image</span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setFile(null);
-                            setPreview(null);
-                            setExtractedData(null);
-                            setError(null);
-                          }}
-                        >
+                        <Button variant="ghost" size="sm" onClick={handleRemoveFile}>
                           <X className="h-4 w-4" />
                         </Button>
                       </div>

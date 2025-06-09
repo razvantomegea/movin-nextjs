@@ -4,6 +4,7 @@ import activityRewardsReducer from './slices/activityRewardsSlice';
 import energyDataReducer from './slices/energyDataSlice';
 import goalsReducer from './slices/goalsSlice';
 import jointTrackingReducer from './slices/jointTrackingSlice';
+import mealsReducer from './slices/mealsSlice';
 import profileReducer from './slices/profileSlice';
 import routeDataReducer from './slices/routeDataSlice';
 import socialFeedReducer from './slices/socialFeedSlice';
@@ -17,6 +18,7 @@ export const store = configureStore({
     toast: toastReducer,
     activityData: activityDataReducer,
     energyData: energyDataReducer,
+    meals: mealsReducer,
     socialFeed: socialFeedReducer,
     routeData: routeDataReducer,
     jointTracking: jointTrackingReducer,

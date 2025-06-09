@@ -4,7 +4,7 @@ import type React from 'react';
 
 import { useEffect, useMemo, useState } from 'react';
 import { useAppKitAccount, useDisconnect } from '@reown/appkit/react';
-import { Activity, Gift, Menu, Settings, User, X, Crown } from 'lucide-react';
+import { Activity, Gift, Menu, Settings, User, X, Crown, Bolt } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -45,7 +45,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   const tabs = [
     { name: 'Movin', path: '/dashboard', icon: <Activity className="h-5 w-5" /> },
-    // { name: 'Energy', path: '/dashboard/energy', icon: <Bolt className="h-5 w-5" /> },
+    { name: 'Energy', path: '/dashboard/energy', icon: <Bolt className="h-5 w-5" /> },
     { name: 'Rewards', path: '/dashboard/rewards', icon: <Gift className="h-5 w-5" /> },
     // { name: 'Social', path: '/dashboard/social', icon: <Users className="h-5 w-5" /> },
     { name: 'More', path: '#', icon: <Menu className="h-5 w-5" /> },
