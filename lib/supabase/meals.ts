@@ -40,9 +40,11 @@ export async function getRecentMeals({
 }
 
 export async function insertMeal({
+  address,
   mealData,
   client,
 }: {
+  address: string;
   mealData: Partial<IMeal>;
   client?: SupabaseClient;
 }): Promise<IMeal> {
@@ -50,8 +52,13 @@ export async function insertMeal({
     client = getClient();
   }
 
+  if (!address) {
+    throw new Error('Address is required to insert meal');
+  }
+
   const dataToInsert = {
     ...mealData,
+    address, // Ensure address is always set
     log_date: mealData.log_date || new Date().toISOString().split('T')[0],
   };
   delete dataToInsert.id;
@@ -96,16 +103,22 @@ export async function searchMealsByName({
 
 export async function deleteMeal({
   id,
+  address,
   client,
 }: {
   id: string;
+  address: string;
   client?: SupabaseClient;
 }): Promise<void> {
   if (!client) {
     client = getClient();
   }
 
-  const { error } = await client.from('meals').delete().eq('id', id);
+  if (!address) {
+    throw new Error('Address is required to delete meal');
+  }
+
+  const { error } = await client.from('meals').delete().eq('id', id).eq('address', address);
 
   if (error) {
     throw error;

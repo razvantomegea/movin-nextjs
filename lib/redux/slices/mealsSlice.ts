@@ -33,9 +33,15 @@ export const fetchRecentMeals = createAsyncThunk(
 // Async thunk for adding a meal
 export const addMealToLibrary = createAsyncThunk(
   'meals/addMealToLibrary',
-  async (mealData: Partial<IMeal>, { rejectWithValue }) => {
+  async (
+    { address, mealData }: { address: string; mealData: Partial<IMeal> },
+    { rejectWithValue },
+  ) => {
     try {
-      const meal = await insertMeal({ mealData });
+      if (!address) {
+        throw new Error('Address is required to add meal to library');
+      }
+      const meal = await insertMeal({ address, mealData });
       return meal;
     } catch (error) {
       return rejectWithValue(

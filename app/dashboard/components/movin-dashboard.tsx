@@ -18,6 +18,7 @@ import { ActivityColumnChart } from '@/app/dashboard/components/activity-column-
 import { CelebrationAnimation } from '@/components/celebration-animation';
 import { CircularProgress } from '@/components/circular-progress';
 import ErrorBoundary from '@/components/error-boundary';
+import { PremiumUpgradeModal } from '@/components/premium-upgrade-modal';
 import { RefreshButton } from '@/components/refresh-button';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -79,6 +80,7 @@ export function MovinDashboard() {
   const [isRouteModalOpen, setIsRouteModalOpen] = useState(false);
   const [isJointTrackingSelected, setIsJointTrackingSelected] = useState(false);
   const [isScreenshotImportModalOpen, setIsScreenshotImportModalOpen] = useState(false);
+  const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
   const [showStepsCelebration, setShowStepsCelebration] = useState(false);
   const [showStreakCelebration, setShowStreakCelebration] = useState(false);
   const [streakMilestone, setStreakMilestone] = useState(0);
@@ -293,28 +295,14 @@ export function MovinDashboard() {
   // Handle opening the route type modal
   const handleOpenRouteTracking = () => {
     if (!isPremiumUser) {
-      dispatch(
-        showInfoToast({
-          title: 'Premium Feature',
-          description: 'Route tracking is only available for premium subscribers.',
-        }),
-      );
+      setIsPremiumModalOpen(true);
       return;
     }
     setIsRouteTypeModalOpen(true);
   };
 
-  // Handle opening the screenshot import modal
+  // Handle opening the screenshot import modal (available to all users)
   const handleOpenScreenshotImport = () => {
-    if (!isPremiumUser) {
-      dispatch(
-        showInfoToast({
-          title: 'Premium Feature',
-          description: 'Screenshot import is only available for premium subscribers.',
-        }),
-      );
-      return;
-    }
     setIsScreenshotImportModalOpen(true);
   };
 
@@ -568,15 +556,8 @@ export function MovinDashboard() {
               <Button
                 onClick={handleOpenScreenshotImport}
                 size="sm"
-                disabled={!isPremiumUser}
-                aria-label={
-                  isPremiumUser ? 'Import Activity' : 'Import Activity - Premium feature only'
-                }
-                className={`${
-                  isPremiumUser
-                    ? 'bg-purple-500 hover:bg-purple-600'
-                    : 'bg-gray-500 cursor-not-allowed'
-                }`}
+                aria-label="Import Activity"
+                className="bg-purple-500 hover:bg-purple-600"
               >
                 <Camera className="h-4 w-4 mr-2" />
                 Import Activity
@@ -584,10 +565,9 @@ export function MovinDashboard() {
               <Button
                 onClick={handleOpenRouteTracking}
                 size="sm"
-                disabled={!isPremiumUser}
-                aria-label={isPremiumUser ? 'Track Route' : 'Track Route - Premium feature only'}
+                aria-label={isPremiumUser ? 'Track Route' : 'Track Route - Premium feature'}
                 className={`${
-                  isPremiumUser ? 'bg-blue-500 hover:bg-blue-600' : 'bg-gray-500 cursor-not-allowed'
+                  isPremiumUser ? 'bg-blue-500 hover:bg-blue-600' : 'bg-gray-500 hover:bg-gray-600'
                 }`}
               >
                 <MapPin className="h-4 w-4 mr-2" />
@@ -707,6 +687,15 @@ export function MovinDashboard() {
         achievementTitle="Streak Milestone"
         description={`Congratulations on maintaining a ${streakMilestone}-day activity streak!`}
         showReward={false}
+      />
+
+      {/* Premium Upgrade Modal */}
+      <PremiumUpgradeModal
+        isOpen={isPremiumModalOpen}
+        onClose={() => setIsPremiumModalOpen(false)}
+        featureName="Route Tracking"
+        title="Route Tracking - Premium Feature"
+        description="Track your runs and workouts with GPS, analyze your performance, and enjoy joint tracking with friends. Upgrade to premium to unlock advanced activity features."
       />
     </>
   );

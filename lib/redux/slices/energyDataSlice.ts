@@ -31,9 +31,15 @@ export const fetchEnergyData = createAsyncThunk<
 // Async thunk for adding an energy entry (meal)
 export const addEnergyEntry = createAsyncThunk(
   'energyData/addEnergyEntry',
-  async (energyData: Partial<IEnergy>, { rejectWithValue }) => {
+  async (
+    { address, energyData }: { address: string; energyData: Partial<IEnergy> },
+    { rejectWithValue },
+  ) => {
     try {
-      const newEntry = await insertEnergyEntry({ energyData });
+      if (!address) {
+        throw new Error('Address is required to add energy entry');
+      }
+      const newEntry = await insertEnergyEntry({ address, energyData });
       return newEntry;
     } catch (error) {
       return rejectWithValue(error instanceof Error ? error.message : 'Failed to add energy entry');

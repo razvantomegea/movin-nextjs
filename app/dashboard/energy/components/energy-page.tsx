@@ -1,22 +1,47 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { useAppKitAccount } from '@reown/appkit/react';
 import { motion } from 'framer-motion';
-import { Bolt, Flame, Clock, Utensils, Camera, Plus, RefreshCw } from 'lucide-react';
+import { Bolt, Flame, Clock, Utensils, Camera, Plus, RefreshCw, PenTool } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { CameraModal } from '@/components/camera-modal';
 import { CircularProgress } from '@/components/circular-progress';
 import ErrorBoundary from '@/components/error-boundary';
+import { MealLoggingTypeModal } from '@/components/meal-logging-type-modal';
+import { MealSearchModal } from '@/components/meal-search-modal';
+import { PremiumUpgradeModal } from '@/components/premium-upgrade-modal';
 import { RefreshButton } from '@/components/refresh-button';
+import { TextMealModal } from '@/components/text-meal-modal';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ErrorAlert } from '@/components/ui/error-alert';
 import { Progress } from '@/components/ui/progress';
+import { useMovinEarn } from '@/lib/hooks/useMovinEarn';
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
-import { fetchEnergyData, resetEnergyError } from '@/lib/redux/slices/energyDataSlice';
+import {
+  fetchEnergyData,
+  resetEnergyError,
+  addEnergyEntry,
+} from '@/lib/redux/slices/energyDataSlice';
+import { addMealToLibrary } from '@/lib/redux/slices/mealsSlice';
 import { showSuccessToast, showInfoToast } from '@/lib/redux/slices/toastSlice';
+import { IMeal } from '@/lib/supabase/meals';
+import {
+  mapEnergyToDaily,
+  mapEnergyToWeekly,
+  mapEnergyToMonthly,
+  mapEnergyToYearly,
+  mapEnergyToTodaysMeals,
+  getCaloriesByMealType,
+  type DailyNutrition,
+  type NutritionTimeRangeData,
+  type TodaysMeal,
+  type MealType,
+} from '@/utils/movin/energyMappers';
 import { EnergyOverviewChart } from './energy-overview-chart';
 import { EnergyPageSkeleton } from './energy-page-skeleton';
+import { MealDetectionResultsModal } from './meal-detection-results-modal';
 
 const container = {
   hidden: { opacity: 0 },
@@ -37,29 +62,92 @@ export function EnergyPage() {
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
   const [refreshing, setRefreshing] = useState(false);
+  const [isMealLoggingTypeModalOpen, setIsMealLoggingTypeModalOpen] = useState(false);
   const [isCameraModalOpen, setIsCameraModalOpen] = useState(false);
+  const [isTextMealModalOpen, setIsTextMealModalOpen] = useState(false);
+  const [isMealSearchModalOpen, setIsMealSearchModalOpen] = useState(false);
+  const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
+  const [isMealResultsModalOpen, setIsMealResultsModalOpen] = useState(false);
+  const [capturedImageData, setCapturedImageData] = useState<string | null>(null);
   const dispatch = useAppDispatch();
+  const { address } = useAppKitAccount();
+  const addressLower = useMemo(() => address?.toLowerCase(), [address]);
+  const currentDate = useMemo(() => new Date(), []);
+
+  // Check if user has premium access
+  const { usePremiumStatus } = useMovinEarn();
+  const { isPremiumActive } = usePremiumStatus();
+  const isPremium = isPremiumActive();
 
   // Get energy data from Redux store
-  const {
-    dailyCalories,
-    weeklyEnergyData,
-    monthlyEnergyData,
-    yearlyEnergyData,
-    todaysMeals,
-    isLoading,
-    error,
-  } = useAppSelector((state) => state.energyData);
+  const { energyEntries, isLoading, error } = useAppSelector((state) => state.energyData);
 
-  // Fetch data when component mounts
+  // Memoize derived data using energy mappers
+  const dailyNutrition: DailyNutrition | null = useMemo(() => {
+    if (energyEntries.length > 0) {
+      return mapEnergyToDaily(energyEntries, currentDate);
+    }
+    return null;
+  }, [energyEntries, currentDate]);
+
+  const todaysMeals: TodaysMeal[] = useMemo(() => {
+    return mapEnergyToTodaysMeals(energyEntries, currentDate);
+  }, [energyEntries, currentDate]);
+
+  const weeklyEnergyData: NutritionTimeRangeData[] = useMemo(() => {
+    return mapEnergyToWeekly(energyEntries, currentDate);
+  }, [energyEntries, currentDate]);
+
+  const monthlyEnergyData: NutritionTimeRangeData[] = useMemo(() => {
+    return mapEnergyToMonthly(energyEntries, currentDate);
+  }, [energyEntries, currentDate]);
+
+  const yearlyEnergyData: NutritionTimeRangeData[] = useMemo(() => {
+    return mapEnergyToYearly(energyEntries, currentDate);
+  }, [energyEntries, currentDate]);
+
+  // Compute daily calories from daily nutrition data
+  const dailyCalories = useMemo(() => {
+    if (!dailyNutrition) {
+      return {
+        consumed: 0,
+        goal: 2000,
+        remaining: 2000,
+        breakfast: 0,
+        lunch: 0,
+        dinner: 0,
+      };
+    }
+
+    const goal = 2000; // Default goal, could be made configurable
+    const caloriesByMealType = getCaloriesByMealType(todaysMeals);
+
+    return {
+      consumed: dailyNutrition.calories,
+      goal,
+      remaining: Math.max(0, goal - dailyNutrition.calories),
+      breakfast: caloriesByMealType.breakfast,
+      lunch: caloriesByMealType.lunch,
+      dinner: caloriesByMealType.dinner,
+    };
+  }, [dailyNutrition, todaysMeals]);
+
+  // Fetch data when component mounts (only for premium users)
   useEffect(() => {
-    dispatch(fetchEnergyData());
-  }, [dispatch]);
+    if (isPremium && addressLower) {
+      dispatch(fetchEnergyData(addressLower));
+    } else if (!isPremium) {
+      // Show premium modal for non-premium users
+      setIsPremiumModalOpen(true);
+    }
+  }, [dispatch, isPremium, addressLower]);
 
   const handleRefresh = async () => {
+    if (!addressLower) return;
+
     setRefreshing(true);
     try {
-      await dispatch(fetchEnergyData()).unwrap();
+      await dispatch(fetchEnergyData(addressLower)).unwrap();
       dispatch(
         showSuccessToast({
           title: 'Energy Data Refreshed',
@@ -78,19 +166,88 @@ export function EnergyPage() {
     }
   };
 
-  const handleCameraCapture = async () => {
-    // This function is still needed for backward compatibility
-    // but the actual meal saving is now handled in the MealDetectionResultsModal
-    console.log('Image captured, analysis will be handled in the results modal');
+  const handleOpenMealLogging = () => {
+    setIsMealLoggingTypeModalOpen(true);
+  };
+
+  const handleSelectCamera = () => {
+    setIsMealLoggingTypeModalOpen(false);
+    setIsCameraModalOpen(true);
+  };
+
+  const handleSelectText = () => {
+    setIsMealLoggingTypeModalOpen(false);
+    setIsTextMealModalOpen(true);
+  };
+
+  const handleSelectSearch = () => {
+    setIsMealLoggingTypeModalOpen(false);
+    setIsMealSearchModalOpen(true);
+  };
+
+  const handleCameraCapture = async (imageData: string) => {
+    // Store the captured image data and show the meal detection results modal
+    setCapturedImageData(imageData);
+    setIsMealResultsModalOpen(true);
+  };
+
+  const handleTextMealAnalyze = async (description: string) => {
+    // This function is for backward compatibility
+    // The actual meal saving is handled in the MealDetectionResultsModal
+    console.log('Meal described:', description);
+  };
+
+  const handleMealSelected = async (meal: IMeal) => {
+    if (!addressLower) return;
+
+    try {
+      // Create energy entry data from selected meal
+      const energyEntryData = {
+        address: addressLower,
+        meal_name: meal.meal_name,
+        calories: meal.calories,
+        protein: meal.protein,
+        carbohydrates: meal.carbohydrates,
+        fats: meal.fats,
+        log_date: new Date().toISOString().split('T')[0],
+      };
+
+      // Add the meal to energy log
+      await dispatch(
+        addEnergyEntry({ address: addressLower, energyData: energyEntryData }),
+      ).unwrap();
+
+      dispatch(
+        showSuccessToast({
+          title: 'Meal Added',
+          description: `${meal.meal_name} has been added to your log`,
+        }),
+      );
+    } catch (error) {
+      console.error('Failed to add meal:', error);
+      dispatch(
+        showInfoToast({
+          title: 'Save Failed',
+          description: 'Failed to save meal to your log',
+        }),
+      );
+    }
   };
 
   const handleRetryLoadEnergy = () => {
+    if (!addressLower) return;
+
     dispatch(resetEnergyError());
-    dispatch(fetchEnergyData());
+    dispatch(fetchEnergyData(addressLower));
   };
 
   // Render the energy content
   const renderEnergyContent = () => {
+    // If not premium, show upgrade modal instead of content
+    if (!isPremium) {
+      return null; // Modal will be shown separately
+    }
+
     if (isLoading && !refreshing) {
       return <EnergyPageSkeleton />;
     }
@@ -239,9 +396,14 @@ export function EnergyPage() {
         <motion.div className="space-y-4" variants={item}>
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-medium">Today&apos;s Meals</h2>
-            <Button variant="outline" size="sm" className="text-blue-500 border-blue-500">
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-blue-500 border-blue-500"
+              onClick={handleOpenMealLogging}
+            >
               <Plus className="h-4 w-4 mr-2" />
-              Add Meal
+              Log Meal
             </Button>
           </div>
           <Card className={isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}>
@@ -250,13 +412,9 @@ export function EnergyPage() {
                 <div className="text-center py-8 text-gray-500">
                   <Utensils className="h-12 w-12 mx-auto mb-4 text-gray-400" />
                   <p>No meals recorded today</p>
-                  <Button
-                    variant="outline"
-                    className="mt-4"
-                    onClick={() => setIsCameraModalOpen(true)}
-                  >
-                    <Camera className="h-4 w-4 mr-2" />
-                    Scan a Meal
+                  <Button variant="outline" className="mt-4" onClick={handleOpenMealLogging}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Log Meal
                   </Button>
                 </div>
               ) : (
@@ -300,37 +458,6 @@ export function EnergyPage() {
             </CardContent>
           </Card>
         </motion.div>
-
-        {/* Meal Detection Info Card */}
-        <motion.div variants={item}>
-          <Card
-            className={`${isDark ? 'bg-blue-900/20' : 'bg-blue-50'} border ${
-              isDark ? 'border-blue-800' : 'border-blue-100'
-            }`}
-          >
-            <CardContent className="p-4">
-              <div className="flex items-start">
-                <div className="bg-blue-500/20 p-2 rounded-full mr-3 mt-1">
-                  <Camera className="h-5 w-5 text-blue-500" />
-                </div>
-                <div>
-                  <h3 className="font-medium text-blue-600 dark:text-blue-400">Meal Detection</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
-                    Take a photo of your meal and our AI will automatically detect ingredients,
-                    calories, and macros. Just tap the &quot;Scan Meal&quot; button to get started.
-                  </p>
-                  <Button
-                    className="mt-3 bg-blue-500 hover:bg-blue-600"
-                    onClick={() => setIsCameraModalOpen(true)}
-                  >
-                    <Camera className="h-4 w-4 mr-2" />
-                    Scan Meal
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
       </div>
     );
   };
@@ -341,26 +468,78 @@ export function EnergyPage() {
         <motion.div className="flex items-center justify-between mb-6" variants={item}>
           <div className="flex items-center">
             <h1 className="text-2xl font-bold mr-2">Energy</h1>
-            <RefreshButton onRefresh={handleRefresh} isLoading={isLoading || refreshing} />
+            {isPremium && addressLower && (
+              <RefreshButton onRefresh={handleRefresh} isLoading={isLoading || refreshing} />
+            )}
           </div>
-          <Button
-            onClick={() => setIsCameraModalOpen(true)}
-            className="bg-blue-500 hover:bg-blue-600"
-          >
-            <Camera className="h-4 w-4 mr-2" />
-            Scan Meal
-          </Button>
         </motion.div>
 
         <ErrorBoundary>{renderEnergyContent()}</ErrorBoundary>
       </motion.div>
 
-      {/* Camera Modal */}
-      <CameraModal
-        isOpen={isCameraModalOpen}
-        onClose={() => setIsCameraModalOpen(false)}
-        onCapture={handleCameraCapture}
+      {/* Premium Upgrade Modal */}
+      <PremiumUpgradeModal
+        isOpen={isPremiumModalOpen}
+        onClose={() => setIsPremiumModalOpen(false)}
+        featureName="Energy Tracking"
+        title="Energy Tracking - Premium Feature"
+        description="Track your meals, calories, and nutrition with AI-powered meal detection. Get detailed insights into your energy consumption and macronutrients."
       />
+
+      {/* Meal Logging Type Selection Modal - Only show for premium users */}
+      {isPremium && (
+        <MealLoggingTypeModal
+          isOpen={isMealLoggingTypeModalOpen}
+          onClose={() => setIsMealLoggingTypeModalOpen(false)}
+          onSelectCamera={handleSelectCamera}
+          onSelectText={handleSelectText}
+          onSelectSearch={handleSelectSearch}
+        />
+      )}
+
+      {/* Camera Modal - Only show for premium users */}
+      {isPremium && (
+        <CameraModal
+          isOpen={isCameraModalOpen}
+          onClose={() => setIsCameraModalOpen(false)}
+          onCapture={handleCameraCapture}
+          title="Scan Meal"
+          instruction="Position your meal in the frame and tap the capture button"
+          confirmText="Confirm & Analyze"
+        />
+      )}
+
+      {/* Text Meal Modal - Only show for premium users */}
+      {isPremium && (
+        <TextMealModal
+          isOpen={isTextMealModalOpen}
+          onClose={() => setIsTextMealModalOpen(false)}
+          onAnalyze={handleTextMealAnalyze}
+        />
+      )}
+
+      {/* Meal Search Modal - Only show for premium users */}
+      {isPremium && addressLower && (
+        <MealSearchModal
+          isOpen={isMealSearchModalOpen}
+          onClose={() => setIsMealSearchModalOpen(false)}
+          onSelectMeal={handleMealSelected}
+          userAddress={addressLower}
+        />
+      )}
+
+      {/* Meal Detection Results Modal - Only show for premium users */}
+      {isPremium && (
+        <MealDetectionResultsModal
+          isOpen={isMealResultsModalOpen}
+          onClose={() => {
+            setIsMealResultsModalOpen(false);
+            setCapturedImageData(null);
+          }}
+          imageData={capturedImageData}
+          sourceType="camera"
+        />
+      )}
     </>
   );
 }

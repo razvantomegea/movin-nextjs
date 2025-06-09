@@ -37,9 +37,11 @@ export async function getEnergyEntries({
 }
 
 export async function insertEnergyEntry({
+  address,
   energyData,
   client,
 }: {
+  address: string;
   energyData: Partial<IEnergy>;
   client?: SupabaseClient;
 }): Promise<IEnergy> {
@@ -47,8 +49,13 @@ export async function insertEnergyEntry({
     client = getClient();
   }
 
+  if (!address) {
+    throw new Error('Address is required to insert energy entry');
+  }
+
   const dataToInsert = {
     ...energyData,
+    address, // Ensure address is always set
     log_date: energyData.log_date || new Date().toISOString().split('T')[0],
   };
   delete dataToInsert.id;
@@ -63,14 +70,20 @@ export async function insertEnergyEntry({
 }
 
 export async function updateEnergyEntry({
+  address,
   energyData,
   client,
 }: {
+  address: string;
   energyData: Partial<IEnergy>;
   client?: SupabaseClient;
 }): Promise<IEnergy> {
   if (!client) {
     client = getClient();
+  }
+
+  if (!address) {
+    throw new Error('Address is required to update energy entry');
   }
 
   if (!energyData.id) {
@@ -82,6 +95,7 @@ export async function updateEnergyEntry({
     .from('energy')
     .update(updateFields)
     .eq('id', id)
+    .eq('address', address) // Ensure user can only update their own entries
     .select()
     .single();
 

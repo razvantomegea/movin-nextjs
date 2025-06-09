@@ -26,25 +26,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Parse the request body
-    const { imageData } = await request.json();
+    const { mealDescription } = await request.json();
 
-    if (!imageData) {
-      return NextResponse.json({ error: 'Image data is required' }, { status: 400 });
-    }
-
-    // Handle data URL format (data:image/jpeg;base64,...)
-    let base64Data: string;
-    let mimeType: string;
-
-    if (imageData.startsWith('data:')) {
-      const [header, data] = imageData.split(',');
-      const mimeMatch = header.match(/data:([^;]+)/);
-      mimeType = mimeMatch ? mimeMatch[1] : 'image/jpeg';
-      base64Data = data;
-    } else {
-      // Assume it's already base64 data
-      base64Data = imageData;
-      mimeType = 'image/jpeg';
+    if (
+      !mealDescription ||
+      typeof mealDescription !== 'string' ||
+      mealDescription.trim().length === 0
+    ) {
+      return NextResponse.json({ error: 'Meal description is required' }, { status: 400 });
     }
 
     // Initialize Google AI
@@ -52,11 +41,11 @@ export async function POST(request: NextRequest) {
     const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
     const prompt = `
-      Analyze this food image and provide detailed nutritional information. The image should show a meal, dish, or food item.
+      Analyze this meal description and provide detailed nutritional information: "${mealDescription}"
 
       Please extract and return ONLY a JSON object with the following structure:
       {
-        "mealName": string (descriptive name of the meal/dish),
+        "mealName": string (descriptive name of the meal/dish based on description),
         "calories": number (total estimated calories),
         "protein": number (protein in grams),
         "carbohydrates": number (carbohydrates in grams),
@@ -73,27 +62,19 @@ export async function POST(request: NextRequest) {
       }
 
       Rules:
-      1. Identify all visible ingredients in the meal
-      2. Provide realistic nutritional estimates based on typical serving sizes
+      1. Interpret the description and identify all mentioned or implied ingredients
+      2. Provide realistic nutritional estimates based on typical serving sizes and preparation methods
       3. Break down each ingredient's nutritional contribution
       4. Ensure ingredient nutritional values sum up to the total meal values
       5. Use common food names and descriptions
-      6. If the image is not clearly food, return an error structure with "error": "Not a food image"
-      7. Be specific about cooking methods when relevant (grilled, fried, steamed, etc.)
-      8. Return only the JSON object, no additional text or formatting
+      6. If the description is too vague or not food-related, return an error structure with "error": "Invalid meal description"
+      7. Make reasonable assumptions about cooking methods and portion sizes
+      8. If specific quantities are mentioned, use those; otherwise assume standard serving sizes
+      9. Return only the JSON object, no additional text or formatting
     `;
 
     // Call Google AI API
-    const result = await model.generateContent([
-      prompt,
-      {
-        inlineData: {
-          mimeType,
-          data: base64Data,
-        },
-      },
-    ]);
-
+    const result = await model.generateContent([prompt]);
     const response = await result.response;
     const text = response.text();
 
@@ -106,7 +87,7 @@ export async function POST(request: NextRequest) {
     try {
       const extractedData = JSON.parse(jsonMatch[0]);
 
-      // Check if AI detected an error (not a food image)
+      // Check if AI detected an error (invalid description)
       if (extractedData.error) {
         return NextResponse.json({ error: extractedData.error }, { status: 400 });
       }
@@ -120,9 +101,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to parse AI response' }, { status: 500 });
     }
   } catch (error) {
-    console.error('Error analyzing meal:', error);
+    console.error('Error analyzing meal description:', error);
     return NextResponse.json(
-      { error: 'Internal server error while analyzing meal' },
+      { error: 'Internal server error while analyzing meal description' },
       { status: 500 },
     );
   }
