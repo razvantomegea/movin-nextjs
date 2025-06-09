@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Bug, MessageSquare, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { cn } from '@/utils';
+import { cn } from '@/lib/cn';
 import { BugReportModal } from './BugReportModal';
 
 interface FloatingBugReportButtonProps {

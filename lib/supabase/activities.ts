@@ -84,6 +84,7 @@ export async function updateActivity({
     .from('activities')
     .update(updateFields)
     .eq('id', id)
+    .select()
     .single();
 
   if (error) {

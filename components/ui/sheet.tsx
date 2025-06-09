@@ -7,7 +7,7 @@ import { forwardRef, ComponentRef, ComponentPropsWithoutRef } from 'react';
 import * as SheetPrimitive from '@radix-ui/react-dialog';
 import { cva, type VariantProps } from 'class-variance-authority';
 
-import { cn } from '@/utils';
+import { cn } from '@/lib/cn';
 
 const Sheet = SheetPrimitive.Root;
 

@@ -1,4 +1,3 @@
-export * from './cn';
 export * from './crypto';
 export * from './errors';
 export * from './subscription';
@@ -7,6 +6,7 @@ export * from './movin/formatDuration';
 export * from './randomInRange';
 export * from './movin/activityMappers';
 export * from './movin/mapRouteToActivity';
+export * from './movin/processStepsActivity';
 export * from './date';
 export * from './badges/badgeChecker';
 export * from './badges/badgeManager';

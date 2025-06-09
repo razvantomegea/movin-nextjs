@@ -1,5 +1,10 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { IActivity, getActivities, insertActivities } from '@/lib/supabase/activities';
+import {
+  IActivity,
+  getActivities,
+  insertActivities,
+  updateActivity,
+} from '@/lib/supabase/activities';
 
 interface ActivityDataState {
   activities: IActivity[];
@@ -44,6 +49,18 @@ export const addActivities = createAsyncThunk(
   },
 );
 
+export const updateActivityData = createAsyncThunk(
+  'activityData/updateActivity',
+  async (activityData: Partial<IActivity>, { rejectWithValue }) => {
+    try {
+      const updatedActivity = await updateActivity({ activityData });
+      return updatedActivity;
+    } catch (error) {
+      return rejectWithValue(error instanceof Error ? error.message : 'Failed to update activity');
+    }
+  },
+);
+
 // Create the slice
 const activityDataSlice = createSlice({
   name: 'activityData',
@@ -84,6 +101,24 @@ const activityDataSlice = createSlice({
       .addCase(addActivities.rejected, (state, action) => {
         state.isLoading = false;
         state.error = (action.payload as string) || 'Failed to add activities';
+      })
+      // Handle updateActivityData
+      .addCase(updateActivityData.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(updateActivityData.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.error = null;
+        // Update the activity in the state
+        const index = state.activities.findIndex((a) => a.id === action.payload.id);
+        if (index !== -1) {
+          state.activities[index] = action.payload;
+        }
+      })
+      .addCase(updateActivityData.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = (action.payload as string) || 'Failed to update activity';
       });
   },
 });

@@ -9,7 +9,8 @@ import { useTheme } from 'next-themes';
 import { useGoogleMapsStatus } from '@/app/contexts/google-maps-provider';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { cn, formatDistance, formatDuration } from '@/utils';
+import { cn } from '@/lib/cn';
+import { formatDistance, formatDuration } from '@/utils';
 
 interface RouteTrackingModalProps {
   isOpen: boolean;
