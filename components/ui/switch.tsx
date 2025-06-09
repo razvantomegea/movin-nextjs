@@ -3,7 +3,7 @@
 import { forwardRef, ComponentRef, ComponentPropsWithoutRef } from 'react';
 import * as SwitchPrimitives from '@radix-ui/react-switch';
 
-import { cn } from '@/utils';
+import { cn } from '@/lib/cn';
 
 const Switch = forwardRef<
   ComponentRef<typeof SwitchPrimitives.Root>,

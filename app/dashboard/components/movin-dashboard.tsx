@@ -3,7 +3,16 @@
 import { useEffect, useMemo, useState, useCallback } from 'react';
 import { useAppKitAccount } from '@reown/appkit/react';
 import { motion } from 'framer-motion';
-import { Activity, Clock, Flame, TrendingUp, RefreshCw, Dumbbell, MapPin } from 'lucide-react';
+import {
+  Activity,
+  Clock,
+  Flame,
+  TrendingUp,
+  RefreshCw,
+  Dumbbell,
+  MapPin,
+  Camera,
+} from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { ActivityColumnChart } from '@/app/dashboard/components/activity-column-chart';
 import { CelebrationAnimation } from '@/components/celebration-animation';
@@ -16,11 +25,16 @@ import { ErrorAlert } from '@/components/ui/error-alert';
 import { Progress } from '@/components/ui/progress';
 import { useMovinEarn } from '@/lib/hooks/useMovinEarn';
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
-import { fetchActivities, addActivities } from '@/lib/redux/slices/activityDataSlice';
+import {
+  fetchActivities,
+  addActivities,
+  updateActivityData,
+} from '@/lib/redux/slices/activityDataSlice';
 import { resetJointTracking } from '@/lib/redux/slices/jointTrackingSlice';
 import { fetchProfile, updateProfile } from '@/lib/redux/slices/profileSlice';
 import { showSuccessToast, showInfoToast } from '@/lib/redux/slices/toastSlice';
 import type { RootState } from '@/lib/redux/store';
+import { IActivity } from '@/lib/supabase/activities';
 import {
   formatDistance,
   formatDuration,
@@ -30,6 +44,8 @@ import {
   mapActivitiesToMonthly,
   mapActivitiesToYearly,
   mapRouteToActivity,
+  findExistingStepsActivity,
+  mergeStepsActivities,
   type DailyActivity,
   type Workout,
   type TimeRangeData,
@@ -38,6 +54,7 @@ import {
 import { ActivityDashboardSkeleton } from './activity-dashboard-skeleton';
 import { RouteTrackingModal, type RouteData } from './route-tracking-modal';
 import { RouteTypeModal } from './route-type-modal';
+import { ScreenshotImportModal } from './screenshot-import-modal';
 
 const container = {
   hidden: { opacity: 0 },
@@ -61,6 +78,7 @@ export function MovinDashboard() {
   const [isRouteTypeModalOpen, setIsRouteTypeModalOpen] = useState(false);
   const [isRouteModalOpen, setIsRouteModalOpen] = useState(false);
   const [isJointTrackingSelected, setIsJointTrackingSelected] = useState(false);
+  const [isScreenshotImportModalOpen, setIsScreenshotImportModalOpen] = useState(false);
   const [showStepsCelebration, setShowStepsCelebration] = useState(false);
   const [showStreakCelebration, setShowStreakCelebration] = useState(false);
   const [streakMilestone, setStreakMilestone] = useState(0);
@@ -286,6 +304,20 @@ export function MovinDashboard() {
     setIsRouteTypeModalOpen(true);
   };
 
+  // Handle opening the screenshot import modal
+  const handleOpenScreenshotImport = () => {
+    if (!isPremiumUser) {
+      dispatch(
+        showInfoToast({
+          title: 'Premium Feature',
+          description: 'Screenshot import is only available for premium subscribers.',
+        }),
+      );
+      return;
+    }
+    setIsScreenshotImportModalOpen(true);
+  };
+
   // Handle selecting single route tracking
   const handleSelectSingleTracking = () => {
     setIsRouteTypeModalOpen(false);
@@ -304,6 +336,63 @@ export function MovinDashboard() {
   const handleCloseRouteModal = () => {
     setIsRouteModalOpen(false);
     dispatch(resetJointTracking());
+  };
+
+  // Handle saving imported activity from screenshot
+  const handleSaveImportedActivity = async (activityData: Partial<IActivity>) => {
+    if (!addressLower) {
+      return;
+    }
+
+    try {
+      // Add the user's address to the activity data (already processed by mapScreenshotToActivity)
+      const activityWithAddress = { ...activityData, address: addressLower };
+
+      // Check if this is a Steps activity and if there's an existing one for today
+      const isStepsActivity = activityWithAddress.name === 'Steps';
+
+      if (isStepsActivity) {
+        const today = new Date();
+        const existingStepsActivity = findExistingStepsActivity(activities, today);
+
+        if (existingStepsActivity) {
+          // Merge with existing Steps activity
+          const mergedActivity = mergeStepsActivities(existingStepsActivity, activityWithAddress);
+
+          // Update the existing activity
+          await dispatch(updateActivityData(mergedActivity)).unwrap();
+
+          dispatch(
+            showSuccessToast({
+              title: 'Steps Activity Updated',
+              description: `Your daily steps have been updated to ${mergedActivity.total_steps?.toLocaleString()} steps.`,
+            }),
+          );
+          return;
+        }
+      }
+
+      // For new activities or non-Steps activities, add as new
+      await dispatch(
+        addActivities({ address: addressLower, activityData: [activityWithAddress] }),
+      ).unwrap();
+
+      dispatch(
+        showSuccessToast({
+          title: 'Activity Imported Successfully',
+          description: `${activityWithAddress.name} activity has been added to your profile.`,
+        }),
+      );
+    } catch (error) {
+      dispatch(
+        showInfoToast({
+          title: 'Failed to Import Activity',
+          description: 'Please try again later.',
+        }),
+      );
+      // Log the error for debugging
+      console.error('Failed to save imported activity:', error);
+    }
   };
 
   const handleCloseStepsCelebration = useCallback(() => {
@@ -475,18 +564,36 @@ export function MovinDashboard() {
         <motion.div className="space-y-4" variants={item}>
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-medium">Today&apos;s Workouts</h2>
-            <Button
-              onClick={handleOpenRouteTracking}
-              size="sm"
-              disabled={!isPremiumUser}
-              aria-label={isPremiumUser ? 'Track Route' : 'Track Route - Premium feature only'}
-              className={`${
-                isPremiumUser ? 'bg-blue-500 hover:bg-blue-600' : 'bg-gray-500 cursor-not-allowed'
-              }`}
-            >
-              <MapPin className="h-4 w-4 mr-2" />
-              Track Route
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                onClick={handleOpenScreenshotImport}
+                size="sm"
+                disabled={!isPremiumUser}
+                aria-label={
+                  isPremiumUser ? 'Import Activity' : 'Import Activity - Premium feature only'
+                }
+                className={`${
+                  isPremiumUser
+                    ? 'bg-purple-500 hover:bg-purple-600'
+                    : 'bg-gray-500 cursor-not-allowed'
+                }`}
+              >
+                <Camera className="h-4 w-4 mr-2" />
+                Import Activity
+              </Button>
+              <Button
+                onClick={handleOpenRouteTracking}
+                size="sm"
+                disabled={!isPremiumUser}
+                aria-label={isPremiumUser ? 'Track Route' : 'Track Route - Premium feature only'}
+                className={`${
+                  isPremiumUser ? 'bg-blue-500 hover:bg-blue-600' : 'bg-gray-500 cursor-not-allowed'
+                }`}
+              >
+                <MapPin className="h-4 w-4 mr-2" />
+                Track Route
+              </Button>
+            </div>
           </div>
           <Card className={isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}>
             <CardContent className="p-6">
@@ -570,6 +677,14 @@ export function MovinDashboard() {
         onClose={handleCloseRouteModal}
         onSaveRoute={handleSaveRoute}
         isJointTracking={isJointTrackingSelected}
+      />
+
+      {/* Screenshot Import Modal */}
+      <ScreenshotImportModal
+        isOpen={isScreenshotImportModalOpen}
+        onClose={() => setIsScreenshotImportModalOpen(false)}
+        onSaveActivity={handleSaveImportedActivity}
+        userAddress={addressLower || ''}
       />
 
       {/* Steps Goal Celebration */}

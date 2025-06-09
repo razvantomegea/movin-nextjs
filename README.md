@@ -5,6 +5,8 @@ A fitness tracking app with rewards, built with Next.js.
 ## Features
 
 - Track steps, workouts, and fitness goals
+- Import activities from screenshots using AI
+- Route tracking with GPS
 - Earn rewards for completing activities
 - Dark/Light theme support
 - Interactive animations and celebrations
@@ -46,6 +48,7 @@ NEXT_PUBLIC_REOWN_PROJECT_ID=your_reown_project_id
 NEXT_PUBLIC_INFURA_ID=your_infura_id
 NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your_google_maps_api_key
 NEXT_PUBLIC_JWT_SECRET=your_jwt_secret_key
+NEXT_PUBLIC_GOOGLE_AI_API_KEY=your_google_ai_api_key
 \`\`\`
 
 **AdSense Setup:**
@@ -57,6 +60,20 @@ NEXT_PUBLIC_JWT_SECRET=your_jwt_secret_key
   3. Get your Publisher ID (NEXT_PUBLIC_ADSENSE_CLIENT_ID)
   4. Create an ad unit and get the Slot ID (NEXT_PUBLIC_ADSENSE_SLOT_ID)
 - If these variables are not set, no ads will be displayed
+
+**Screenshot Import Setup:**
+
+The app includes an AI-powered screenshot import feature that allows users to import activities from fitness app screenshots:
+
+- To enable this feature, you need a Google AI API key:
+  1. Go to [Google AI Studio](https://aistudio.google.com/)
+  2. Create an API key for the Gemini API
+  3. Add it to your `.env.local` file as `NEXT_PUBLIC_GOOGLE_AI_API_KEY`
+- The feature uses Google's Gemini 1.5 Flash model to analyze screenshots
+- Supports screenshots from fitness apps and smartwatches
+- Automatically extracts: activity type, duration, distance, calories, steps, heart rate
+- Validates that the activity is from today and timing is consistent
+- Premium feature only
 
 ### Development
 

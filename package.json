@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@emotion/is-prop-valid": "latest",
+    "@google/generative-ai": "^0.24.1",
     "@googlemaps/js-api-loader": "latest",
     "@hookform/resolvers": "3.9.1",
     "@radix-ui/react-accordion": "1.2.2",

@@ -13,10 +13,6 @@ import { getFormattedStakes } from '@/utils/staking/getFormattedStakes';
 const CONTRACT_ADDRESS = '0x865E693ebd875eD997BeEc565CFfBbE687Ee5776';
 
 // Constants for max values
-const MAX_DAILY_STEPS = 30000;
-const MAX_DAILY_METS = 500;
-const STEPS_THRESHOLD = 10000;
-const METS_THRESHOLD = 10;
 const MAX_STEPS_PER_MINUTE = 300;
 const MAX_METS_PER_MINUTE = 5;
 const REWARDS_PERCENTAGE_FEE = 1;
@@ -354,13 +350,9 @@ export function useMovinEarn() {
   /**
    * Gets the constants for maximum daily steps and METs
    */
-  const getMaxDailySteps = (): number => MAX_DAILY_STEPS;
-  const getMaxDailyMets = (): number => MAX_DAILY_METS;
-  const getStepsThreshold = (): number => STEPS_THRESHOLD;
-  const getMetsThreshold = (): number => METS_THRESHOLD;
+
   const getMaxStepsPerMinute = (): number => MAX_STEPS_PER_MINUTE;
   const getMaxMetsPerMinute = (): number => MAX_METS_PER_MINUTE;
-  const getRewardsPercentageFee = (): number => REWARDS_PERCENTAGE_FEE;
 
   /**
    * Gets the reward halving timestamp
@@ -459,7 +451,7 @@ export function useMovinEarn() {
       },
     });
 
-    const rewardsPercentageFee = getRewardsPercentageFee();
+    const rewardsPercentageFee = REWARDS_PERCENTAGE_FEE;
 
     return {
       ...result,
@@ -830,10 +822,6 @@ export function useMovinEarn() {
   return {
     // Utility functions
     getContractAddress,
-    getMaxDailySteps,
-    getMaxDailyMets,
-    getStepsThreshold,
-    getMetsThreshold,
     getMaxStepsPerMinute,
     getMaxMetsPerMinute,
 

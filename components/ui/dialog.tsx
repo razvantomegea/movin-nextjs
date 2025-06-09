@@ -3,7 +3,7 @@
 import { forwardRef, ComponentRef, ComponentPropsWithoutRef, HTMLAttributes } from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 
-import { cn } from '@/utils';
+import { cn } from '@/lib/cn';
 
 const Dialog = DialogPrimitive.Root;
 

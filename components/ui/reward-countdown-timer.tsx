@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Clock, AlertCircle } from 'lucide-react';
-import { cn } from '@/utils';
+import { cn } from '@/lib/cn';
 
 interface RewardCountdownTimerProps {
   expirationTimestamp: number | null; // Unix timestamp in seconds
