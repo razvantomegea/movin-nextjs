@@ -424,7 +424,7 @@ export function EnergyPage() {
                       </div>
                       <div className="grid grid-cols-3 gap-2 mt-3">
                         <div className="text-center p-1 bg-blue-500/10 rounded">
-                          <div className="text-xs text-gray-500">Carbohydrates</div>
+                          <div className="text-xs text-gray-500">Carbs</div>
                           <div className="font-medium">{meal.carbohydrates}g</div>
                         </div>
                         <div className="text-center p-1 bg-yellow-500/10 rounded">

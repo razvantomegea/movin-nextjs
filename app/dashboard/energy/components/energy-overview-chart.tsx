@@ -96,7 +96,7 @@ export function EnergyOverviewChart({
       case 'calories':
         return 'Calories (kcal)';
       case 'carbohydrates':
-        return 'Carbohydrates (g)';
+        return 'Carbs (g)';
       case 'fats':
         return 'Fats (g)';
       case 'protein':
@@ -139,7 +139,7 @@ export function EnergyOverviewChart({
           >
             <TabsList className="grid grid-cols-4 w-full sm:w-auto">
               <TabsTrigger value="calories">Calories</TabsTrigger>
-              <TabsTrigger value="carbohydrates">Carbohydrates</TabsTrigger>
+              <TabsTrigger value="carbohydrates">Carbs</TabsTrigger>
               <TabsTrigger value="fats">Fats</TabsTrigger>
               <TabsTrigger value="protein">Protein</TabsTrigger>
             </TabsList>
@@ -252,7 +252,7 @@ export function EnergyOverviewChart({
         <div className="mt-6 text-center">
           <div className="text-sm text-gray-500">
             {metric === 'calories' && 'Total Calories'}
-            {metric === 'carbohydrates' && 'Total Carbohydrates'}
+            {metric === 'carbohydrates' && 'Total Carbs'}
             {metric === 'fats' && 'Total Fats'}
             {metric === 'protein' && 'Total Protein'}
           </div>

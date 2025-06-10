@@ -307,7 +307,7 @@ export function MealDetectionResultsModal({
   );
 
   // Handler for ingredient carbohydrates change
-  const handleIngredientCarbohydratesChange = useCallback(
+  const handleIngredientCarbsChange = useCallback(
     (ingredientId: string, value: string) => {
       handleEditIngredient(ingredientId, 'carbohydrates', value);
     },
@@ -515,16 +515,13 @@ export function MealDetectionResultsModal({
                                       isDark ? 'text-gray-400' : 'text-gray-500'
                                     }`}
                                   >
-                                    Carbohydrates (g)
+                                    Carbs (g)
                                   </label>
                                   <Input
                                     type="number"
                                     value={ingredient.carbohydrates}
                                     onChange={(e) =>
-                                      handleIngredientCarbohydratesChange(
-                                        ingredient.id,
-                                        e.target.value,
-                                      )
+                                      handleIngredientCarbsChange(ingredient.id, e.target.value)
                                     }
                                     className="h-8"
                                   />
@@ -607,7 +604,7 @@ export function MealDetectionResultsModal({
                                       isDark ? 'text-gray-400' : 'text-gray-500'
                                     }`}
                                   >
-                                    Carbohydrates
+                                    Carbs
                                   </div>
                                   <div className="font-medium">{ingredient.carbohydrates}g</div>
                                 </div>
@@ -664,7 +661,7 @@ export function MealDetectionResultsModal({
                           {Math.round(detectedMeal.carbohydrates)}
                         </div>
                         <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                          Carbohydrates (g)
+                          Carbs (g)
                         </div>
                       </div>
                       <div className="text-center">
