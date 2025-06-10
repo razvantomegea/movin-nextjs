@@ -1,8 +1,11 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Trash2, Download, Upload, Shield, Crown, ExternalLink, Bell } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,9 +13,6 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useMovinEarn } from '@/lib/hooks/useMovinEarn';
 import usePushNotifications from '@/lib/hooks/usePushNotifications';
-import { useState, useEffect } from 'react';
-import { toast } from 'sonner';
-import dynamic from 'next/dynamic';
 
 // Dynamically import PWA test panel to avoid SSR issues
 const PWATestPanel = dynamic(() => import('@/components/ui/PWATestPanel'), {
@@ -393,7 +393,7 @@ export function SettingsPage() {
             <CardContent className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label>Version</Label>
-                <span className="text-sm">1.3.1</span>
+                <span className="text-sm">1.4.0</span>
               </div>
               <div className="flex items-center justify-between">
                 <Label>Build</Label>
