@@ -440,7 +440,7 @@ export function EnergyPage() {
 
                 <div className="ml-6">
                   <CircularProgress
-                    value={(dailyCalories.consumed / dailyCalories.goal) * 100}
+                    value={Math.round((dailyCalories.consumed / dailyCalories.goal) * 100)}
                     size={100}
                     strokeWidth={8}
                   />

@@ -38,6 +38,8 @@ export function MealDetectionResultsModal({
   const [editedMealName, setEditedMealName] = useState('');
   const [editMode, setEditMode] = useState(false);
   const [editingIngredientId, setEditingIngredientId] = useState<string | null>(null);
+  const [originalIngredientName, setOriginalIngredientName] = useState<string>('');
+  const [isAnalyzingIngredient, setIsAnalyzingIngredient] = useState(false);
   const [saveToMealLibrary, setSaveToMealLibrary] = useState(false);
 
   const isDark = resolvedTheme === 'dark';
@@ -97,9 +99,87 @@ export function MealDetectionResultsModal({
   }, [onClose]);
 
   // Handler for saving ingredient edit
-  const handleSaveIngredientEdit = useCallback(() => {
+  const handleSaveIngredientEdit = useCallback(async () => {
+    if (!detectedMeal || !editingIngredientId) return;
+
+    const currentIngredient = detectedMeal.ingredients.find(
+      (ingredient) => ingredient.id === editingIngredientId,
+    );
+
+    if (!currentIngredient) return;
+
+    // Check if the ingredient name has changed
+    const nameChanged = currentIngredient.name !== originalIngredientName;
+
+    if (nameChanged && currentIngredient.name.trim()) {
+      setIsAnalyzingIngredient(true);
+
+      try {
+        // Call the ingredient analysis API
+        const response = await fetch('/api/analyze-ingredient', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ ingredientName: currentIngredient.name }),
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          // Update the ingredient with the new nutritional data from the API
+          const updatedIngredients = detectedMeal.ingredients.map((ingredient) => {
+            if (ingredient.id === editingIngredientId) {
+              return {
+                ...ingredient,
+                name: data.data.name, // Use the cleaned name from API
+                calories: data.data.calories,
+                carbohydrates: data.data.carbohydrates,
+                fats: data.data.fats,
+                protein: data.data.protein,
+              };
+            }
+            return ingredient;
+          });
+
+          const totals = calculateTotals(updatedIngredients);
+
+          setDetectedMeal({
+            ...detectedMeal,
+            ingredients: updatedIngredients,
+            ...totals,
+          });
+
+          dispatch(
+            showSuccessToast({
+              title: 'Ingredient Updated',
+              description: `${data.data.name} nutritional information has been updated`,
+            }),
+          );
+        } else {
+          dispatch(
+            showErrorToast({
+              title: 'Analysis Failed',
+              description: data.error || 'Failed to analyze ingredient',
+            }),
+          );
+        }
+      } catch (error) {
+        console.error('Error analyzing ingredient:', error);
+        dispatch(
+          showErrorToast({
+            title: 'Analysis Error',
+            description: 'An error occurred while analyzing the ingredient',
+          }),
+        );
+      } finally {
+        setIsAnalyzingIngredient(false);
+      }
+    }
+
     setEditingIngredientId(null);
-  }, []);
+    setOriginalIngredientName('');
+  }, [detectedMeal, editingIngredientId, originalIngredientName, dispatch]);
 
   // Analyze meal when modal opens
   useEffect(() => {
@@ -284,9 +364,19 @@ export function MealDetectionResultsModal({
   );
 
   // Handler for editing ingredient in edit mode
-  const handleIngredientEditClick = useCallback((ingredientId: string) => {
-    setEditingIngredientId(ingredientId);
-  }, []);
+  const handleIngredientEditClick = useCallback(
+    (ingredientId: string) => {
+      if (!detectedMeal) return;
+
+      const ingredient = detectedMeal.ingredients.find((ing) => ing.id === ingredientId);
+      if (ingredient) {
+        setOriginalIngredientName(ingredient.name);
+      }
+
+      setEditingIngredientId(ingredientId);
+    },
+    [detectedMeal],
+  );
 
   // Handler for removing ingredient
   const handleRemoveIngredientClick = useCallback(
@@ -474,7 +564,13 @@ export function MealDetectionResultsModal({
                           key={ingredient.id}
                           className={`p-3 rounded-lg transition-all duration-200 ${
                             isDark ? 'bg-gray-800' : 'bg-gray-50'
-                          } ${editingIngredientId === ingredient.id ? 'ring-2 ring-blue-500' : ''}`}
+                          } ${
+                            editingIngredientId === ingredient.id ? 'ring-2 ring-blue-500' : ''
+                          } ${
+                            isAnalyzingIngredient && editingIngredientId === ingredient.id
+                              ? 'opacity-75'
+                              : ''
+                          }`}
                         >
                           {editingIngredientId === ingredient.id ? (
                             <div className="space-y-3">
@@ -486,17 +582,32 @@ export function MealDetectionResultsModal({
                                   }
                                   className="flex-1"
                                   placeholder="Ingredient name"
+                                  disabled={isAnalyzingIngredient}
                                 />
                                 <Button
                                   variant="ghost"
                                   size="sm"
                                   onClick={handleSaveIngredientEdit}
+                                  disabled={isAnalyzingIngredient}
                                   className="ml-2"
                                 >
-                                  <Save className="h-4 w-4" />
+                                  {isAnalyzingIngredient ? (
+                                    <div className="w-4 h-4 border-2 border-t-blue-500 border-b-blue-700 rounded-full animate-spin" />
+                                  ) : (
+                                    <Save className="h-4 w-4" />
+                                  )}
                                   <span className="sr-only">Save</span>
                                 </Button>
                               </div>
+                              {isAnalyzingIngredient && editingIngredientId === ingredient.id && (
+                                <div
+                                  className={`text-xs ${
+                                    isDark ? 'text-blue-400' : 'text-blue-600'
+                                  } font-medium`}
+                                >
+                                  Analyzing ingredient and updating nutrition data...
+                                </div>
+                              )}
                               <div className="grid grid-cols-4 gap-2">
                                 <div>
                                   <label
