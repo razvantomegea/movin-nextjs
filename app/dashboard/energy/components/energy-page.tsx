@@ -333,7 +333,7 @@ export function EnergyPage() {
                         {dailyNutrition?.carbohydrates.toFixed(1) || '0.0'}g
                       </span>
                       <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                        carbohydrates
+                        carbs
                       </span>
                     </motion.div>
 
