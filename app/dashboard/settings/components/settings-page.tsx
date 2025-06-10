@@ -1,8 +1,10 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Trash2, Download, Upload, Shield, Crown, ExternalLink } from 'lucide-react';
+import { Trash2, Download, Upload, Shield, Crown, ExternalLink, Bell } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import InstallPWA from '@/components/install-pwa';
+import PushManager from '@/components/push-manager';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -83,7 +85,7 @@ export function SettingsPage() {
           </Card>
         </motion.div>
 
-        {/* <motion.div variants={item}>
+        <motion.div variants={item}>
           <Card>
             <CardHeader>
               <CardTitle>Notifications</CardTitle>
@@ -94,70 +96,17 @@ export function SettingsPage() {
                 <div className="space-y-0.5">
                   <Label className="flex items-center">
                     <Bell className="h-4 w-4 mr-2 text-blue-500" />
-                    Enable Notifications
+                    Push Notifications
                   </Label>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Receive updates about your activity
+                    Receive updates about your activity and achievements
                   </p>
                 </div>
-                <Switch checked={notificationsEnabled} onCheckedChange={setNotificationsEnabled} />
+                <PushManager />
               </div>
-
-              {notificationsEnabled && (
-                <div className="pt-2 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <Label>Daily Reminders</Label>
-                    <Switch defaultChecked />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <Label>Goal Achievements</Label>
-                    <Switch defaultChecked />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <Label>Reward Updates</Label>
-                    <Switch defaultChecked />
-                  </div>
-                </div>
-              )}
             </CardContent>
           </Card>
         </motion.div>
-
-        <motion.div variants={item}>
-          <Card>
-            <CardHeader>
-              <CardTitle>Fitness Goals</CardTitle>
-              <CardDescription>Set your daily fitness targets</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label>Daily Step Goal: {stepGoal.toLocaleString()} steps</Label>
-                </div>
-                <Slider
-                  value={[stepGoal]}
-                  min={1000}
-                  max={20000}
-                  step={500}
-                  onValueChange={(value) => setStepGoal(value[0])}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Distance Unit</Label>
-                <Select value={distanceUnit} onValueChange={setDistanceUnit}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select unit" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="km">Kilometers (km)</SelectItem>
-                    <SelectItem value="mi">Miles (mi)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div> */}
 
         <motion.div variants={item}>
           <Card>
@@ -342,14 +291,29 @@ export function SettingsPage() {
               <CardTitle>App Information</CardTitle>
               <CardDescription>Details about your app</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-2">
+            <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <Label>Version</Label>
-                <span className="text-sm">1.3.1</span>
+                <span className="text-sm">1.4.1</span>
               </div>
               <div className="flex items-center justify-between">
                 <Label>Build</Label>
                 <span className="text-sm">2025.06.10</span>
+              </div>
+
+              <hr className="my-4" />
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label className="flex items-center">
+                    <Download className="h-4 w-4 mr-2 text-blue-500" />
+                    Install PWA
+                  </Label>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Add Movin to your home screen for quick access
+                  </p>
+                </div>
+                <InstallPWA showInstalledState={true} />
               </div>
             </CardContent>
           </Card>

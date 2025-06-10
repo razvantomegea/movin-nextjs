@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTheme } from 'next-themes';
+import InstallPWA from '@/components/install-pwa';
 import { Button } from '@/components/ui/button';
 import { useMovinEarn } from '@/lib/hooks/useMovinEarn';
 import { updateProfile } from '@/lib/supabase/profile';
@@ -136,6 +137,13 @@ function ConnectPageContent() {
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-gray-950 dark:to-gray-900 px-4 py-8 text-gray-900 dark:text-white transition-colors duration-300">
+      <InstallPWA
+        variant="banner"
+        showBanner={true}
+        showButton={false}
+        onInstall={() => console.log('App installed successfully')}
+        onDismiss={() => console.log('Install banner dismissed')}
+      />
       {/* <div className="absolute top-4 right-4 z-10">
         <ThemeToggle />
       </div> */}
@@ -226,7 +234,7 @@ function ConnectPageContent() {
               transition={{ delay: 0.4, duration: 0.5 }}
               className="text-lg text-gray-700 dark:text-blue-100"
             >
-              It all starts with one step
+              Your effort counts
             </motion.p>
           </div>
 
@@ -287,7 +295,7 @@ function ConnectPageContent() {
               scale: Math.random() * 0.5 + 0.5,
             }}
             animate={{
-              y: [null, Math.random() * -30 - 10, undefined],
+              y: [0, Math.random() * -30 - 10, 0],
               opacity: [0.3, 0.8, 0.3],
             }}
             transition={{
@@ -311,7 +319,7 @@ function ConnectPageContent() {
         transition={{ delay: 0.8, duration: 0.5 }}
         className="absolute bottom-4"
       >
-        <p className="text-gray-400 dark:text-blue-200/50 text-xs text-center">v1.3.1</p>
+        <p className="text-gray-400 dark:text-blue-200/50 text-xs text-center">v1.4.1</p>
       </motion.div>
     </div>
   );
@@ -366,7 +374,7 @@ function ConnectPageFallback() {
               Movin
             </h1>
 
-            <p className="text-lg text-gray-700 dark:text-blue-100">It all starts with one step</p>
+            <p className="text-lg text-gray-700 dark:text-blue-100">Your effort counts</p>
           </div>
 
           {/* Loading Button Section */}
@@ -381,7 +389,7 @@ function ConnectPageFallback() {
 
       {/* Version at bottom of page */}
       <div className="absolute bottom-4">
-        <p className="text-gray-400 dark:text-blue-200/50 text-xs text-center">v1.3.1</p>
+        <p className="text-gray-400 dark:text-blue-200/50 text-xs text-center">v1.4.1</p>
       </div>
     </div>
   );

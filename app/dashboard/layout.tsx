@@ -13,7 +13,7 @@ import { AdSenseBanner } from '@/components/ui/adsense-banner';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
 import { useMovinEarn } from '@/lib/hooks/useMovinEarn';
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
 import { fetchProfile } from '@/lib/redux/slices/profileSlice';
@@ -187,6 +187,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   side="right"
                   className="z-50 w-full sm:w-[350px] md:w-[400px] bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 p-0 text-gray-900 dark:text-white"
                 >
+                  <SheetTitle className="sr-only">Menu</SheetTitle>
                   <div className="flex flex-col h-full">
                     <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
                       <h2 className="text-xl font-semibold">Menu</h2>

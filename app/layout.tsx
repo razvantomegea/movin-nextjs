@@ -14,9 +14,22 @@ import { ReduxProvider } from '@/lib/redux/provider';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Movin App',
-  description: 'Move to earn app',
+  title: 'Movin',
+  description: 'Your effort counts',
   generator: 'v0.dev',
+  manifest: '/manifest',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'Movin',
+  },
+};
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+  themeColor: '#111827',
 };
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
@@ -25,6 +38,10 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="Movin" />
+        <link rel="apple-touch-icon" href="/icons/icon-192.webp" />
         {adsenseClientId && (
           <Script
             async
