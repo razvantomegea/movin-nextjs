@@ -1,31 +1,36 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-// Global singleton instance - only one client per browser context
-let globalSupabaseInstance: SupabaseClient | null = null;
+// Singleton instance for the browser client
+let browserClientInstance: SupabaseClient | null = null;
 
-// Ensure we only create one instance across the entire application
-function getGlobalSupabaseClient(): SupabaseClient {
+// Client-side Supabase client for browser usage - singleton implementation
+// Store the current auth token used to create the instance
+let currentAuthToken: string | null = null;
+
+export function createSupabaseClientBrowser() {
+  // Extract current token
+  let authToken = '';
+  if (typeof document !== 'undefined') {
+    const match = document.cookie.match(/supabase-auth-token=([^;]+)/);
+    if (match && match[1]) {
+      try {
+        authToken = decodeURIComponent(match[1]);
+      } catch (e) {
+        console.error('Error decoding auth token from cookies:', e);
+      }
+    }
+  }
+
   // Return existing instance if available
-  if (globalSupabaseInstance) {
-    return globalSupabaseInstance;
+  if (browserClientInstance && currentAuthToken === authToken) {
+    return browserClientInstance;
   }
 
-  // Only run on client side
-  if (typeof window === 'undefined') {
-    throw new Error('This function should only be called on the client side');
-  }
+  // Update the stored token
+  currentAuthToken = authToken;
 
-  // Debug logging in development
-  if (process.env.NODE_ENV === 'development') {
-    console.log('Creating new Supabase client instance');
-    // Import debug function only in development to avoid bundle bloat
-    import('./debug').then(({ trackClientCreation }) => {
-      trackClientCreation();
-    });
-  }
-
-  // Create a new instance only if none exists
-  globalSupabaseInstance = createClient(
+  // Create a new instance if none exists
+  browserClientInstance = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
@@ -33,62 +38,65 @@ function getGlobalSupabaseClient(): SupabaseClient {
         persistSession: true,
         autoRefreshToken: true,
         detectSessionInUrl: true,
-        storageKey: 'movin-auth', // Use a unique storage key for your app
-        flowType: 'pkce', // Use PKCE flow for better security
       },
       global: {
+        // Get any existing bearer token from cookie
         headers: {
-          'X-Client-Info': 'movin-nextjs@1.0.0',
+          Authorization: authToken ? `Bearer ${authToken}` : '',
         },
       },
     },
   );
 
-  // Debug logging in development
-  if (process.env.NODE_ENV === 'development') {
-    console.log('Supabase client created successfully');
-  }
-
-  return globalSupabaseInstance;
+  return browserClientInstance;
 }
 
-// Browser client - uses the global singleton
-export function createSupabaseClientBrowser() {
-  return getGlobalSupabaseClient();
-}
+// Singleton instance for the authenticated client
+let authenticatedClientInstance: SupabaseClient | null = null;
 
-// Legacy function for backward compatibility - updated to use modern auth pattern
+// Store the token used to create the instance
+let currentToken: string | null = null;
+
 export function getClient() {
-  // Use the same global client but ensure we have an authenticated session
-  const client = getGlobalSupabaseClient();
-
-  // Check if we have an active session
-  const session = client.auth.getSession();
-  if (!session) {
-    // For explicit token usage (legacy method), try to get from localStorage
-    const token = typeof localStorage !== 'undefined' ? localStorage.getItem('auth_token') : null;
-    if (!token) {
-      throw new Error('No auth token - user must be logged in');
-    }
-
-    // If we have a stored token but no session, the token might be outdated
-    // In this case, recommend using the modern auth flow instead
-    console.warn(
-      'Using legacy auth token. Consider migrating to Supabase auth session management.',
-    );
+  // For explicit token usage (legacy method)
+  const token = typeof localStorage !== 'undefined' ? localStorage.getItem('auth_token') : null;
+  if (!token) {
+    // Reset singleton if no token
+    authenticatedClientInstance = null;
+    currentToken = null;
+    throw new Error('No auth token');
   }
 
-  return client;
+  // Check if we already have a client with this token
+  if (authenticatedClientInstance && currentToken === token) {
+    return authenticatedClientInstance;
+  }
+
+  // Update the stored token
+  currentToken = token;
+
+  // Create a new authenticated client
+  authenticatedClientInstance = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      global: { headers: { Authorization: `Bearer ${token}` } },
+      auth: { persistSession: false },
+    },
+  );
+
+  return authenticatedClientInstance;
 }
 
 // Helper function to check if client is initialized (for debugging)
 export function isClientInitialized(): boolean {
-  return globalSupabaseInstance !== null;
+  return browserClientInstance !== null || authenticatedClientInstance !== null;
 }
 
 // Helper function to reset client (for testing/debugging only)
 export function resetClient(): void {
   if (process.env.NODE_ENV === 'development') {
-    globalSupabaseInstance = null;
+    browserClientInstance = null;
+    authenticatedClientInstance = null;
   }
 }

@@ -17,35 +17,47 @@ export default function PushManager({ onSubscriptionChange }: PushManagerProps) 
   const { toast } = useToast();
 
   useEffect(() => {
-    // Check if notifications and service workers are supported
+    // Enhanced browser compatibility checks
     const supported =
-      'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+      'serviceWorker' in navigator &&
+      'PushManager' in window &&
+      'Notification' in window &&
+      'showNotification' in ServiceWorkerRegistration.prototype;
 
     setIsSupported(supported);
     setPermission(Notification.permission);
 
     if (supported) {
+      const checkExistingSubscription = async () => {
+        try {
+          const registration = await navigator.serviceWorker.ready;
+          const existingSubscription = await registration.pushManager.getSubscription();
+
+          if (existingSubscription) {
+            setSubscription(existingSubscription);
+            onSubscriptionChange?.(existingSubscription);
+          }
+        } catch (error) {
+          console.error('Error checking subscription:', error);
+        }
+      };
+
       checkExistingSubscription();
     }
-  }, []);
+  }, [onSubscriptionChange]);
 
-  const checkExistingSubscription = async () => {
+  const registerServiceWorker = async () => {
     try {
-      const registration = await navigator.serviceWorker.ready;
-      const existingSubscription = await registration.pushManager.getSubscription();
-
-      if (existingSubscription) {
-        setSubscription(existingSubscription);
-        onSubscriptionChange?.(existingSubscription);
-      }
+      await navigator.serviceWorker.register('/service-worker.js');
     } catch (error) {
-      console.error('Error checking subscription:', error);
+      console.error('Service Worker registration failed:', error);
+      throw error;
     }
   };
 
   const urlBase64ToUint8Array = (base64String: string) => {
-    if (!base64String) {
-      throw new Error('VAPID public key is required but not provided');
+    if (!base64String?.trim()) {
+      throw new Error('Invalid VAPID public key');
     }
 
     const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
@@ -71,11 +83,24 @@ export default function PushManager({ onSubscriptionChange }: PushManagerProps) 
     }
 
     setLoading(true);
+    let createdSubscription: PushSubscription | null = null;
 
     try {
+      // Register service worker first - Critical addition
+      await registerServiceWorker();
+
       // Request permission
       const permission = await Notification.requestPermission();
       setPermission(permission);
+
+      if (permission === 'denied') {
+        toast({
+          title: 'Permission Blocked',
+          description: 'Please enable notifications in your browser settings and try again.',
+          variant: 'destructive',
+        });
+        return;
+      }
 
       if (permission !== 'granted') {
         toast({
@@ -92,7 +117,7 @@ export default function PushManager({ onSubscriptionChange }: PushManagerProps) 
       // Check if VAPID key is configured
       const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
 
-      if (!vapidPublicKey) {
+      if (!vapidPublicKey?.trim()) {
         toast({
           title: 'Configuration Error',
           description: 'Push notifications are not properly configured. Please contact support.',
@@ -102,13 +127,13 @@ export default function PushManager({ onSubscriptionChange }: PushManagerProps) 
         return;
       }
 
-      const subscription = await registration.pushManager.subscribe({
+      createdSubscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
       });
 
-      setSubscription(subscription);
-      onSubscriptionChange?.(subscription);
+      setSubscription(createdSubscription);
+      onSubscriptionChange?.(createdSubscription);
 
       // Send subscription to your server
       const response = await fetch('/api/push/subscribe', {
@@ -117,7 +142,7 @@ export default function PushManager({ onSubscriptionChange }: PushManagerProps) 
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          subscription: subscription.toJSON(),
+          subscription: createdSubscription.toJSON(),
         }),
       });
 
@@ -132,13 +157,26 @@ export default function PushManager({ onSubscriptionChange }: PushManagerProps) 
     } catch (error) {
       console.error('Subscription failed:', error);
 
+      // Cleanup failed subscription
+      if (createdSubscription) {
+        try {
+          await createdSubscription.unsubscribe();
+          setSubscription(null);
+          onSubscriptionChange?.(null);
+        } catch (cleanupError) {
+          console.warn('Failed to cleanup subscription:', cleanupError);
+        }
+      }
+
       let errorMessage = 'Unable to enable push notifications. Please try again.';
 
       if (error instanceof Error) {
-        if (error.message.includes('VAPID')) {
+        if (error.message.includes('VAPID') || error.message.includes('Invalid')) {
           errorMessage = 'Push notifications are not properly configured.';
         } else if (error.message.includes('not supported')) {
           errorMessage = 'Push notifications are not supported on this device.';
+        } else if (error.message.includes('aborted') || error.message.includes('Service Worker')) {
+          errorMessage = 'Failed to register service worker. Check console for details.';
         }
       }
 

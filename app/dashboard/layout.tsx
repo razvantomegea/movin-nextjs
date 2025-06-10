@@ -17,7 +17,6 @@ import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/s
 import { useMovinEarn } from '@/lib/hooks/useMovinEarn';
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
 import { fetchProfile } from '@/lib/redux/slices/profileSlice';
-import { forceLogout } from '@/utils/auth';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -105,10 +104,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     router.push(path);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     setIsSheetOpen(false);
-    disconnect();
-    forceLogout();
+    await disconnect();
+    router.push('/');
   };
 
   const content = (
