@@ -58,7 +58,7 @@ export async function insertMeal({
 
   const dataToInsert = {
     ...mealData,
-    address, // Ensure address is always set
+    address: address.toLowerCase(), // normalise for consistency
     log_date: mealData.log_date || new Date().toISOString().split('T')[0],
   };
   delete dataToInsert.id;
