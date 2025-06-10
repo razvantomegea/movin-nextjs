@@ -98,35 +98,10 @@ export default function InstallPWA({
       const promptEvent = e as BeforeInstallPromptEvent;
       setDeferredPrompt(promptEvent);
 
-      // Automatically trigger install prompt for supported browsers
+      // Show banner when install prompt is available (don't auto-trigger)
       if (!isIOS && !isPWA && variant === 'banner') {
-        try {
-          // Small delay to ensure the event is properly handled
-          setTimeout(async () => {
-            try {
-              await promptEvent.prompt();
-              const { outcome } = await promptEvent.userChoice;
-
-              if (outcome === 'accepted') {
-                setDeferredPrompt(null);
-                setShowBanner(false);
-                onInstall?.();
-                console.log('PWA installed automatically');
-              } else {
-                // If user dismisses, show the banner as fallback
-                setShowBanner(true);
-                console.log('User dismissed auto-install, showing banner');
-              }
-            } catch (promptError) {
-              console.error('Prompt failed:', promptError);
-              setShowBanner(true);
-            }
-          }, 500);
-        } catch (error) {
-          console.error('Auto-installation setup failed:', error);
-          // Fallback to showing banner
-          setShowBanner(true);
-        }
+        setShowBanner(true);
+        console.log('Install prompt available, showing banner');
       } else if (isIOS && variant === 'banner') {
         // For iOS, show the banner with manual instructions
         setShowBanner(true);
