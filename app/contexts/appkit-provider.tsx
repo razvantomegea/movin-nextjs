@@ -11,7 +11,7 @@ const queryClient = new QueryClient();
 
 const metadata = {
   name: 'Movin',
-  description: 'Earn while you burn',
+  description: 'Your effort counts',
   url: 'https://app.getmovin.ai', // Must match your deployed domain
   icons: [
     '/icons/icon-only.png',

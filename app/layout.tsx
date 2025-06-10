@@ -1,13 +1,14 @@
 import type { ReactNode } from 'react';
 import './globals.css';
 import { Analytics } from '@vercel/analytics/next';
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import Script from 'next/script';
 import AppkitProvider from '@/app/contexts/appkit-provider';
 import { GoogleMapsProvider } from '@/app/contexts/google-maps-provider';
 import { ThemeProvider } from '@/app/contexts/theme-provider';
 import { FloatingBugReportButton } from '@/components/feedback';
+import ClientPWAHandler from '@/components/ui/ClientPWAHandler';
 import { ReduxToaster } from '@/components/ui/redux-toaster';
 import { ReduxProvider } from '@/lib/redux/provider';
 
@@ -17,6 +18,20 @@ export const metadata: Metadata = {
   title: 'Movin App',
   description: 'Move to earn app',
   generator: 'v0.dev',
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Movin',
+  },
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  themeColor: '#000000',
 };
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
@@ -33,12 +48,16 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
             strategy="afterInteractive"
           />
         )}
+        <link rel="apple-touch-icon" href="/icons/icon-192.webp" />
       </head>
       <body className={inter.className}>
         <ReduxProvider>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
             <GoogleMapsProvider>
-              <AppkitProvider>{children}</AppkitProvider>
+              <AppkitProvider>
+                {children}
+                <ClientPWAHandler />
+              </AppkitProvider>
               <ReduxToaster />
               <FloatingBugReportButton />
               <Analytics />

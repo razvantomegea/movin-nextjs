@@ -1,13 +1,23 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Trash2, Download, Upload, Shield, Crown, ExternalLink } from 'lucide-react';
+import { Trash2, Download, Upload, Shield, Crown, ExternalLink, Bell } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { useMovinEarn } from '@/lib/hooks/useMovinEarn';
+import usePushNotifications from '@/lib/hooks/usePushNotifications';
+import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
+import dynamic from 'next/dynamic';
+
+// Dynamically import PWA test panel to avoid SSR issues
+const PWATestPanel = dynamic(() => import('@/components/ui/PWATestPanel'), {
+  ssr: false,
+});
 
 const container = {
   hidden: { opacity: 0 },
@@ -29,6 +39,54 @@ export function SettingsPage() {
   const { usePremiumStatus } = useMovinEarn();
   const { isPremiumActive } = usePremiumStatus();
   const isPremium = isPremiumActive();
+
+  // Push notification state
+  const {
+    isSupported: isPushSupported,
+    permissionState,
+    subscription,
+    isSubscribing,
+    isVapidConfigured,
+    subscribe,
+    unsubscribe,
+  } = usePushNotifications();
+
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [dailyReminders, setDailyReminders] = useState(true);
+  const [goalAchievements, setGoalAchievements] = useState(true);
+  const [rewardUpdates, setRewardUpdates] = useState(true);
+  const [showPWATestPanel, setShowPWATestPanel] = useState(false);
+
+  // Update notifications enabled state when subscription changes
+  useEffect(() => {
+    setNotificationsEnabled(Boolean(subscription));
+  }, [subscription]);
+
+  // Handle notification toggle
+  const handleNotificationToggle = async (enabled: boolean) => {
+    if (enabled) {
+      const success = await subscribe();
+      if (success) {
+        setNotificationsEnabled(true);
+        toast.success('Notifications enabled successfully');
+      } else {
+        setNotificationsEnabled(false);
+        toast.error('Failed to enable notifications');
+      }
+    } else {
+      const success = await unsubscribe();
+      if (success) {
+        setNotificationsEnabled(false);
+        toast.success('Notifications disabled successfully');
+      } else {
+        toast.error('Failed to disable notifications');
+      }
+    }
+  };
+
+  // Check if notifications can be enabled
+  const canEnableNotifications =
+    isPushSupported && isVapidConfigured && permissionState !== 'denied';
 
   return (
     <motion.div className="p-4" initial="hidden" animate="show" variants={container}>
@@ -83,7 +141,7 @@ export function SettingsPage() {
           </Card>
         </motion.div>
 
-        {/* <motion.div variants={item}>
+        <motion.div variants={item}>
           <Card>
             <CardHeader>
               <CardTitle>Notifications</CardTitle>
@@ -94,28 +152,39 @@ export function SettingsPage() {
                 <div className="space-y-0.5">
                   <Label className="flex items-center">
                     <Bell className="h-4 w-4 mr-2 text-blue-500" />
-                    Enable Notifications
+                    Enable Push Notifications
                   </Label>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Receive updates about your activity
+                    Receive updates about your activity and achievements
                   </p>
+                  {!canEnableNotifications && (
+                    <p className="text-sm text-destructive">
+                      {!isPushSupported && 'Push notifications not supported in this browser'}
+                      {!isVapidConfigured && 'Push notifications not configured on server'}
+                      {permissionState === 'denied' && 'Notifications blocked in browser settings'}
+                    </p>
+                  )}
                 </div>
-                <Switch checked={notificationsEnabled} onCheckedChange={setNotificationsEnabled} />
+                <Switch
+                  checked={notificationsEnabled}
+                  onCheckedChange={handleNotificationToggle}
+                  disabled={!canEnableNotifications || isSubscribing}
+                />
               </div>
 
               {notificationsEnabled && (
                 <div className="pt-2 space-y-4">
                   <div className="flex items-center justify-between">
                     <Label>Daily Reminders</Label>
-                    <Switch defaultChecked />
+                    <Switch checked={dailyReminders} onCheckedChange={setDailyReminders} />
                   </div>
                   <div className="flex items-center justify-between">
                     <Label>Goal Achievements</Label>
-                    <Switch defaultChecked />
+                    <Switch checked={goalAchievements} onCheckedChange={setGoalAchievements} />
                   </div>
                   <div className="flex items-center justify-between">
                     <Label>Reward Updates</Label>
-                    <Switch defaultChecked />
+                    <Switch checked={rewardUpdates} onCheckedChange={setRewardUpdates} />
                   </div>
                 </div>
               )}
@@ -123,41 +192,35 @@ export function SettingsPage() {
           </Card>
         </motion.div>
 
-        <motion.div variants={item}>
-          <Card>
-            <CardHeader>
-              <CardTitle>Fitness Goals</CardTitle>
-              <CardDescription>Set your daily fitness targets</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label>Daily Step Goal: {stepGoal.toLocaleString()} steps</Label>
-                </div>
-                <Slider
-                  value={[stepGoal]}
-                  min={1000}
-                  max={20000}
-                  step={500}
-                  onValueChange={(value) => setStepGoal(value[0])}
-                />
-              </div>
+        {/* PWA Test Panel - Only show in development or for testing */}
+        {(process.env.NODE_ENV === 'development' || showPWATestPanel) && (
+          <motion.div variants={item}>
+            <PWATestPanel />
+          </motion.div>
+        )}
 
-              <div className="space-y-2">
-                <Label>Distance Unit</Label>
-                <Select value={distanceUnit} onValueChange={setDistanceUnit}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select unit" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="km">Kilometers (km)</SelectItem>
-                    <SelectItem value="mi">Miles (mi)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div> */}
+        {/* PWA Test Panel Toggle for production */}
+        {process.env.NODE_ENV !== 'development' && (
+          <motion.div variants={item}>
+            <Card>
+              <CardHeader>
+                <CardTitle>Developer Tools</CardTitle>
+                <CardDescription>Advanced settings for testing</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>PWA Test Panel</Label>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      Show advanced PWA testing features
+                    </p>
+                  </div>
+                  <Switch checked={showPWATestPanel} onCheckedChange={setShowPWATestPanel} />
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
 
         <motion.div variants={item}>
           <Card>
@@ -166,32 +229,6 @@ export function SettingsPage() {
               <CardDescription>Manage your data and privacy settings</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label className="flex items-center">
-                    <RefreshCw className="h-4 w-4 mr-2 text-blue-500" />
-                    Background Sync
-                  </Label>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Sync data when app is closed
-                  </p>
-                </div>
-                <Switch checked={backgroundSync} onCheckedChange={setBackgroundSync} />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label className="flex items-center">
-                    <Shield className="h-4 w-4 mr-2 text-blue-500" />
-                    Data Collection
-                  </Label>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Help improve the app with usage data
-                  </p>
-                </div>
-                <Switch checked={dataCollection} onCheckedChange={setDataCollection} />
-              </div> */}
-
               <div className="pt-2 space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
