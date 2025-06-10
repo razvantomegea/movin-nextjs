@@ -83,12 +83,15 @@ export async function POST(request: Request) {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Store the subscription in the database
+    // For testing purposes, use a default address if none provided
+    const address = (body.address || body.userId || 'test-address-' + Date.now()).toLowerCase();
+
     const { error } = await supabase.from('push_subscriptions').upsert(
       {
         endpoint: subscription.endpoint,
         p256dh: subscription.keys.p256dh,
         auth: subscription.keys.auth,
-        user_id: body.userId || null, // If you have user authentication
+        address: address,
         created_at: new Date().toISOString(),
       },
       { onConflict: 'endpoint' },

@@ -51,48 +51,45 @@ export function SettingsPage() {
     unsubscribe,
   } = usePushNotifications();
 
-  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [dailyReminders, setDailyReminders] = useState(true);
   const [goalAchievements, setGoalAchievements] = useState(true);
   const [rewardUpdates, setRewardUpdates] = useState(true);
   const [showPWATestPanel, setShowPWATestPanel] = useState(false);
 
-  // Update notifications enabled state when subscription changes
+  // Compute notifications enabled state from subscription - no local state needed
+  const notificationsEnabled = Boolean(subscription);
+
+  // Debug log when subscription changes
   useEffect(() => {
-    const isEnabled = Boolean(subscription);
-    console.log('Subscription state changed:', { subscription: !!subscription, isEnabled });
-    setNotificationsEnabled(isEnabled);
-  }, [subscription]);
+    console.log('Subscription state changed:', {
+      subscription: !!subscription,
+      notificationsEnabled,
+      permissionState,
+    });
+  }, [subscription, notificationsEnabled, permissionState]);
 
   // Handle notification toggle
   const handleNotificationToggle = async (enabled: boolean) => {
     console.log('Notification toggle triggered:', { enabled, currentSubscription: !!subscription });
 
     if (enabled) {
-      setNotificationsEnabled(true); // Optimistically set to true for better UX
       const success = await subscribe();
       console.log('Subscribe result:', success);
 
       if (success) {
         toast.success('Notifications enabled successfully');
-        // Don't manually set state here, let the useEffect handle it based on subscription
       } else {
         console.error('Failed to subscribe to notifications');
-        setNotificationsEnabled(false); // Reset on failure
         toast.error('Failed to enable notifications. Please try again.');
       }
     } else {
-      setNotificationsEnabled(false); // Optimistically set to false
       const success = await unsubscribe();
       console.log('Unsubscribe result:', success);
 
       if (success) {
         toast.success('Notifications disabled successfully');
-        // Don't manually set state here, let the useEffect handle it based on subscription
       } else {
         console.error('Failed to unsubscribe from notifications');
-        // Reset to previous state if unsubscribe failed
-        setNotificationsEnabled(Boolean(subscription));
         toast.error('Failed to disable notifications. Please try again.');
       }
     }

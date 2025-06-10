@@ -31,7 +31,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { title, message, userId, tag, url } = body;
+    const { title, message, address, tag, url } = body;
 
     if (!title || !message) {
       return NextResponse.json({ error: 'Title and message are required' }, { status: 400 });
@@ -67,9 +67,9 @@ export async function POST(request: Request) {
     // Query to get subscriptions
     let query = supabase.from('push_subscriptions').select('*');
 
-    // If userId is provided, filter by user
-    if (userId) {
-      query = query.eq('user_id', userId);
+    // If address is provided, filter by user (using address field)
+    if (address) {
+      query = query.eq('address', address.toLowerCase());
     }
 
     const { data: subscriptions, error } = await query;
@@ -80,7 +80,14 @@ export async function POST(request: Request) {
     }
 
     if (!subscriptions || subscriptions.length === 0) {
-      return NextResponse.json({ message: 'No subscriptions found' }, { status: 404 });
+      console.log('No subscriptions found in database');
+      return NextResponse.json(
+        {
+          message: 'No subscriptions found',
+          error: 'No active push subscriptions available',
+        },
+        { status: 404 },
+      );
     }
 
     // Prepare notification payload

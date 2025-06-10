@@ -138,7 +138,7 @@ export default function PWATestPanel() {
       if (success) {
         toast.success('Test notification sent! Check your browser notifications.');
       } else {
-        toast.error('Failed to send test notification. Please check server configuration.');
+        toast.error('Failed to send test notification. Check console for details.');
       }
     } catch (error) {
       toast.error('Push notification test failed');

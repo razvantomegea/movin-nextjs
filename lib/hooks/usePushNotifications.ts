@@ -105,7 +105,7 @@ export default function usePushNotifications() {
 
   // Subscribe to push notifications
   const subscribe = useCallback(
-    async (userId?: string): Promise<boolean> => {
+    async (address?: string): Promise<boolean> => {
       if (!isSupported) {
         setError('Push notifications are not supported');
         return false;
@@ -150,7 +150,7 @@ export default function usePushNotifications() {
               },
               body: JSON.stringify({
                 subscription: currentSubscription,
-                userId,
+                address: address?.toLowerCase(),
               }),
             });
           } catch (serverError) {
@@ -191,7 +191,7 @@ export default function usePushNotifications() {
           },
           body: JSON.stringify({
             subscription: currentSubscription,
-            userId,
+            address: address?.toLowerCase(),
           }),
         });
 
@@ -251,11 +251,20 @@ export default function usePushNotifications() {
 
   // Send a test notification (for testing purposes)
   const sendTestNotification = useCallback(async (): Promise<boolean> => {
-    if (!isSupported || !subscription) {
+    if (!isSupported) {
+      console.error('Push notifications not supported');
+      setError('Push notifications not supported');
+      return false;
+    }
+
+    if (!subscription) {
+      console.error('No active subscription found');
+      setError('No active subscription found');
       return false;
     }
 
     try {
+      console.log('Sending test notification...');
       const response = await fetch('/api/push/send', {
         method: 'POST',
         headers: {
@@ -269,10 +278,27 @@ export default function usePushNotifications() {
         }),
       });
 
-      return response.ok;
+      const responseData = await response.json();
+      console.log('Test notification response:', {
+        ok: response.ok,
+        status: response.status,
+        data: responseData,
+      });
+
+      if (response.ok) {
+        return true;
+      } else {
+        console.error('Test notification failed:', responseData);
+        setError(`Test notification failed: ${responseData.error || 'Unknown error'}`);
+        return false;
+      }
     } catch (error) {
       console.error('Error sending test notification:', error);
-      setError('Failed to send test notification');
+      setError(
+        `Failed to send test notification: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`,
+      );
       return false;
     }
   }, [isSupported, subscription]);
