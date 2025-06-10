@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { useMovinEarn } from '@/lib/hooks/useMovinEarn';
 import { updateProfile } from '@/lib/supabase/profile';
 import { getProfile } from '@/lib/supabase/profile';
+import InstallPWA from '@/components/install-pwa';
 
 function ConnectPageContent() {
   const router = useRouter();
@@ -136,6 +137,7 @@ function ConnectPageContent() {
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-gray-950 dark:to-gray-900 px-4 py-8 text-gray-900 dark:text-white transition-colors duration-300">
+      <InstallPWA variant="banner" showBanner={true} />
       {/* <div className="absolute top-4 right-4 z-10">
         <ThemeToggle />
       </div> */}

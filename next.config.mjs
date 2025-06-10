@@ -1,4 +1,13 @@
 import { withSentryConfig } from '@sentry/nextjs';
+import withPWA from 'next-pwa';
+
+const withPWAConfig = withPWA({
+  dest: 'public',
+  disable: process.env.NODE_ENV === 'development',
+  register: true,
+  skipWaiting: true,
+});
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -11,9 +20,20 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  headers: async () => [
+    {
+      source: '/:all*(svg|jpg|png|ico)',
+      headers: [
+        {
+          key: 'Cache-Control',
+          value: 'public, max-age=31536000, immutable',
+        }
+      ],
+    },
+  ],
 };
 
-export default withSentryConfig(nextConfig, {
+export default withSentryConfig(withPWAConfig(nextConfig), {
   // For all available options, see:
   // https://www.npmjs.com/package/@sentry/webpack-plugin#options
 
