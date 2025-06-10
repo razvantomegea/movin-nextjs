@@ -367,14 +367,14 @@ export function MovinDashboard() {
 
       dispatch(
         showSuccessToast({
-          title: 'Activity Imported Successfully',
-          description: `${activityWithAddress.name} activity has been added to your profile.`,
+          title: 'Workout Imported Successfully',
+          description: `${activityWithAddress.name} workout has been added to your profile.`,
         }),
       );
     } catch (error) {
       dispatch(
         showInfoToast({
-          title: 'Failed to Import Activity',
+          title: 'Failed to Import Workout',
           description: 'Please try again later.',
         }),
       );
@@ -556,11 +556,11 @@ export function MovinDashboard() {
               <Button
                 onClick={handleOpenScreenshotImport}
                 size="sm"
-                aria-label="Import Activity"
+                aria-label="Import Workout"
                 className="bg-purple-500 hover:bg-purple-600"
               >
                 <Upload className="h-4 w-4 mr-2" />
-                Import Activity
+                Import Workout
               </Button>
               <Button
                 onClick={handleOpenRouteTracking}
@@ -581,6 +581,10 @@ export function MovinDashboard() {
                 <div className="text-center py-8 text-gray-500">
                   <Dumbbell className="h-12 w-12 mx-auto mb-4 text-gray-400" />
                   <p>No workouts recorded today</p>
+                  <Button variant="outline" className="mt-4" onClick={handleOpenScreenshotImport}>
+                    <Upload className="h-4 w-4 mr-2" />
+                    Import Workout
+                  </Button>
                 </div>
               ) : (
                 <div className="space-y-4">

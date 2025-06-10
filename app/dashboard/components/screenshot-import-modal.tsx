@@ -224,7 +224,7 @@ export function ScreenshotImportModal({
               }`}
             >
               <div>
-                <h2 className="text-xl font-bold">Import Activity from Screenshot</h2>
+                <h2 className="text-xl font-bold">Import Workout from Screenshot</h2>
                 <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'} mt-1`}>
                   Upload a screenshot of your fitness app or smartwatch
                 </p>
@@ -243,14 +243,14 @@ export function ScreenshotImportModal({
                   <strong>For best results, ensure your screenshot clearly shows:</strong>
                   <ul className="list-disc list-inside mt-2 space-y-1 text-sm">
                     <li>Device time at the top of the screen</li>
-                    <li>Activity completion time</li>
-                    <li>Activity name</li>
-                    <li>Calories burned</li>
+                    <li>Completion time or &quot;Today&quot; for steps</li>
+                    <li>Workout name or &quot;Steps&quot; for steps</li>
+                    <li>Calories burned (if available)</li>
                     <li>Steps count and distance (if available)</li>
                     <li>Heart rate data (if available)</li>
                   </ul>
                   <p className="mt-2 text-sm font-medium">
-                    The activity must be from today and completed before the current device time.
+                    The workout must be from today and completed before the current device time.
                   </p>
                 </AlertDescription>
               </Alert>

@@ -7,7 +7,7 @@ export async function exportUserData({
 }: {
   address: string;
   client?: SupabaseClient;
-}): Promise<any> {
+}): Promise<unknown> {
   if (!address) {
     throw new Error('Address is required to export data');
   }
@@ -31,7 +31,7 @@ export async function importUserData({
   client,
 }: {
   address: string;
-  data: any;
+  data: unknown;
   client?: SupabaseClient;
 }): Promise<void> {
   if (!address) {
