@@ -8,8 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { useAppDispatch } from '@/lib/redux/hooks';
-import { addEnergyEntry } from '@/lib/redux/slices/energyDataSlice';
-import { addMealToLibrary } from '@/lib/redux/slices/mealsSlice';
+import { addEnergyEntry, fetchEnergyData } from '@/lib/redux/slices/energyDataSlice';
+import { addMealToLibrary, fetchRecentMeals } from '@/lib/redux/slices/mealsSlice';
 import { showSuccessToast, showErrorToast } from '@/lib/redux/slices/toastSlice';
 import {
   Ingredient,
@@ -172,7 +172,6 @@ export function MealDetectionResultsModal({
   // Handle adding a new ingredient
   const handleAddIngredient = useCallback(() => {
     if (!detectedMeal) {
-      console.log('No detected meal found');
       return;
     }
 
@@ -194,7 +193,6 @@ export function MealDetectionResultsModal({
       ...totals,
     };
 
-    console.log('Setting new detected meal:', updatedMeal); // Debug log
     setDetectedMeal(updatedMeal);
 
     // Set this new ingredient to edit mode
@@ -237,12 +235,21 @@ export function MealDetectionResultsModal({
       };
 
       // Save to energy log
-      await dispatch(addEnergyEntry({ address, energyData: energyEntryData })).unwrap();
+      await dispatch(
+        addEnergyEntry({ address: address.toLowerCase(), energyData: energyEntryData }),
+      ).unwrap();
 
       // Optionally save to meals library for quick access
       if (saveToMealLibrary) {
-        await dispatch(addMealToLibrary({ address, mealData: energyEntryData })).unwrap();
+        await dispatch(
+          addMealToLibrary({ address: address.toLowerCase(), mealData: energyEntryData }),
+        ).unwrap();
+        // Also refetch meals to get latest from server
+        dispatch(fetchRecentMeals(address.toLowerCase()));
       }
+
+      // Refetch energy data to get the latest entries from the server
+      dispatch(fetchEnergyData(address.toLowerCase()));
 
       dispatch(
         showSuccessToast({
@@ -271,7 +278,6 @@ export function MealDetectionResultsModal({
     (e: React.MouseEvent<HTMLButtonElement>) => {
       e.preventDefault();
       e.stopPropagation();
-      console.log('Add button clicked'); // Debug log
       handleAddIngredient();
     },
     [handleAddIngredient],

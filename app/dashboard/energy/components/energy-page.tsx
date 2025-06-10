@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAppKitAccount } from '@reown/appkit/react';
 import { motion } from 'framer-motion';
 import { Bolt, Flame, Clock, Plus, RefreshCw } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { CameraModal } from '@/components/camera-modal';
+import { CelebrationAnimation } from '@/components/celebration-animation';
 import { CircularProgress } from '@/components/circular-progress';
 import ErrorBoundary from '@/components/error-boundary';
 import { MealLoggingTypeModal } from '@/components/meal-logging-type-modal';
@@ -19,11 +20,13 @@ import { ErrorAlert } from '@/components/ui/error-alert';
 import { Progress } from '@/components/ui/progress';
 import { useMovinEarn } from '@/lib/hooks/useMovinEarn';
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
+import { fetchActivities } from '@/lib/redux/slices/activityDataSlice';
 import {
   fetchEnergyData,
   resetEnergyError,
   addEnergyEntry,
 } from '@/lib/redux/slices/energyDataSlice';
+import { fetchProfile, updateProfile } from '@/lib/redux/slices/profileSlice';
 import { showSuccessToast, showInfoToast } from '@/lib/redux/slices/toastSlice';
 import { IMeal } from '@/lib/supabase/meals';
 import {
@@ -66,6 +69,8 @@ export function EnergyPage() {
   const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
   const [isMealResultsModalOpen, setIsMealResultsModalOpen] = useState(false);
   const [capturedImageData, setCapturedImageData] = useState<string | null>(null);
+  const [showStreakCelebration, setShowStreakCelebration] = useState(false);
+  const [streakMilestone, setStreakMilestone] = useState(0);
   const dispatch = useAppDispatch();
   const { address } = useAppKitAccount();
   const addressLower = useMemo(() => address?.toLowerCase(), [address]);
@@ -78,6 +83,8 @@ export function EnergyPage() {
 
   // Get energy data from Redux store
   const { energyEntries, isLoading, error } = useAppSelector((state) => state.energyData);
+  const { profile } = useAppSelector((state) => state.profile);
+  const { activities } = useAppSelector((state) => state.activityData);
 
   // Memoize derived data using energy mappers
   const dailyNutrition: DailyNutrition | null = useMemo(() => {
@@ -126,11 +133,78 @@ export function EnergyPage() {
   useEffect(() => {
     if (isPremium && addressLower) {
       dispatch(fetchEnergyData(addressLower));
+      dispatch(fetchProfile(addressLower));
+      dispatch(fetchActivities(addressLower));
     } else if (!isPremium) {
       // Show premium modal for non-premium users
       setIsPremiumModalOpen(true);
     }
   }, [dispatch, isPremium, addressLower]);
+
+  const isYesterday = useCallback((date: Date) => {
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    return (
+      date.getDate() === yesterday.getDate() &&
+      date.getMonth() === yesterday.getMonth() &&
+      date.getFullYear() === yesterday.getFullYear()
+    );
+  }, []);
+
+  const updateStreakCount = useCallback(() => {
+    if (!addressLower || !profile || (!activities && !energyEntries)) return;
+
+    if (profile.last_streak_update) {
+      const lastUpdate = new Date(profile.last_streak_update);
+      const today = new Date();
+      if (
+        lastUpdate.getDate() === today.getDate() &&
+        lastUpdate.getMonth() === today.getMonth() &&
+        lastUpdate.getFullYear() === today.getFullYear()
+      ) {
+        return;
+      }
+    }
+
+    const hasActivityYesterday = (activities || []).some((activity) =>
+      isYesterday(new Date(activity.start_date)),
+    );
+    const hasMealYesterday = (energyEntries || []).some((entry) =>
+      // Handle YYYY-MM-DD date format from energy log
+      isYesterday(new Date(`${entry.log_date}T00:00:00`)),
+    );
+    const hasEventYesterday = hasActivityYesterday || hasMealYesterday;
+
+    if (hasEventYesterday) {
+      const newStreakDays = (profile.streak_days || 0) + 1;
+      dispatch(
+        updateProfile({
+          address: addressLower,
+          profileData: {
+            streak_days: newStreakDays,
+            last_streak_update: new Date().toISOString(),
+          },
+        }),
+      );
+      const milestones = [7, 30, 100, 365];
+      if (milestones.includes(newStreakDays)) {
+        setStreakMilestone(newStreakDays);
+        setShowStreakCelebration(true);
+      }
+    } else {
+      dispatch(
+        updateProfile({
+          address: addressLower,
+          profileData: {
+            streak_days: 1,
+            last_streak_update: new Date().toISOString(),
+          },
+        }),
+      );
+    }
+  }, [addressLower, profile, activities, energyEntries, dispatch, isYesterday]);
 
   const handleRefresh = async () => {
     if (!addressLower) return;
@@ -156,80 +230,89 @@ export function EnergyPage() {
     }
   };
 
-  const handleOpenMealLogging = () => {
+  const handleOpenMealLogging = useCallback(() => {
     setIsMealLoggingTypeModalOpen(true);
-  };
+  }, []);
 
-  const handleSelectCamera = () => {
+  const handleSelectCamera = useCallback(() => {
     setIsMealLoggingTypeModalOpen(false);
     setIsCameraModalOpen(true);
-  };
+  }, []);
 
-  const handleSelectText = () => {
+  const handleSelectText = useCallback(() => {
     setIsMealLoggingTypeModalOpen(false);
     setIsTextMealModalOpen(true);
-  };
+  }, []);
 
-  const handleSelectSearch = () => {
+  const handleSelectSearch = useCallback(() => {
     setIsMealLoggingTypeModalOpen(false);
     setIsMealSearchModalOpen(true);
-  };
+  }, []);
 
-  const handleCameraCapture = async (imageData: string) => {
+  const handleCameraCapture = useCallback(async (imageData: string) => {
     // Store the captured image data and show the meal detection results modal
     setCapturedImageData(imageData);
     setIsMealResultsModalOpen(true);
-  };
+  }, []);
 
-  const handleTextMealAnalyze = async (description: string) => {
+  const handleTextMealAnalyze = useCallback(async (description: string) => {
     // This function is for backward compatibility
     // The actual meal saving is handled in the MealDetectionResultsModal
     console.log('Meal described:', description);
-  };
+  }, []);
 
-  const handleMealSelected = async (meal: IMeal) => {
-    if (!addressLower) return;
+  const handleMealSelected = useCallback(
+    async (meal: IMeal) => {
+      if (!addressLower) return;
 
-    try {
-      // Create energy entry data from selected meal
-      const energyEntryData = {
-        address: addressLower,
-        meal_name: meal.meal_name,
-        calories: meal.calories,
-        protein: meal.protein,
-        carbohydrates: meal.carbohydrates,
-        fats: meal.fats,
-        log_date: new Date().toISOString().split('T')[0],
-      };
+      try {
+        // Create energy entry data from selected meal
+        const energyEntryData = {
+          address: addressLower,
+          meal_name: meal.meal_name,
+          calories: meal.calories,
+          protein: meal.protein,
+          carbohydrates: meal.carbohydrates,
+          fats: meal.fats,
+          log_date: new Date().toISOString().split('T')[0],
+        };
 
-      // Add the meal to energy log
-      await dispatch(
-        addEnergyEntry({ address: addressLower, energyData: energyEntryData }),
-      ).unwrap();
+        // Add the meal to energy log
+        await dispatch(
+          addEnergyEntry({ address: addressLower, energyData: energyEntryData }),
+        ).unwrap();
 
-      dispatch(
-        showSuccessToast({
-          title: 'Meal Added',
-          description: `${meal.meal_name} has been added to your log`,
-        }),
-      );
-    } catch (error) {
-      console.error('Failed to add meal:', error);
-      dispatch(
-        showInfoToast({
-          title: 'Save Failed',
-          description: 'Failed to save meal to your log',
-        }),
-      );
-    }
-  };
+        updateStreakCount();
 
-  const handleRetryLoadEnergy = () => {
+        dispatch(
+          showSuccessToast({
+            title: 'Meal Added',
+            description: `${meal.meal_name} has been added to your log`,
+          }),
+        );
+      } catch (error) {
+        console.error('Failed to add meal:', error);
+        dispatch(
+          showInfoToast({
+            title: 'Save Failed',
+            description: 'Failed to save meal to your log',
+          }),
+        );
+      }
+    },
+    [addressLower, dispatch, updateStreakCount],
+  );
+
+  const handleRetryLoadEnergy = useCallback(() => {
     if (!addressLower) return;
 
     dispatch(resetEnergyError());
     dispatch(fetchEnergyData(addressLower));
-  };
+  }, [addressLower, dispatch]);
+
+  const handleCloseStreakCelebration = useCallback(() => {
+    setShowStreakCelebration(false);
+  }, []);
 
   // Render the energy content
   const renderEnergyContent = () => {
@@ -525,6 +608,16 @@ export function EnergyPage() {
           sourceType="camera"
         />
       )}
+
+      <CelebrationAnimation
+        isOpen={showStreakCelebration}
+        onClose={handleCloseStreakCelebration}
+        achievementType="streak"
+        achievementValue={`${streakMilestone} days`}
+        achievementTitle="Streak Milestone"
+        description={`Congratulations on maintaining a ${streakMilestone}-day activity streak!`}
+        showReward={false}
+      />
     </>
   );
 }

@@ -29,7 +29,7 @@ export async function getRecentMeals({
   const { data, error } = await client
     .from('meals')
     .select()
-    .eq('address', address)
+    .eq('address', address.toLowerCase())
     .order('created_at', { ascending: false })
     .limit(limit);
 
@@ -65,11 +65,20 @@ export async function insertMeal({
   delete dataToInsert.created_at;
   delete dataToInsert.updated_at;
 
-  const { data, error } = await client.from('meals').insert(dataToInsert).select().single();
+  const { error } = await client.from('meals').insert(dataToInsert);
+
   if (error) {
     throw error;
   }
-  return data;
+
+  // Since we can't get the inserted row back due to RLS, we'll return an optimistic response.
+  // The caller should ideally refetch data to get the real server-generated values.
+  return {
+    ...dataToInsert,
+    id: `temp-${Date.now()}`, // Temporary ID
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  } as IMeal;
 }
 
 export async function searchMealsByName({
@@ -90,7 +99,7 @@ export async function searchMealsByName({
   const { data, error } = await client
     .from('meals')
     .select()
-    .eq('address', address)
+    .eq('address', address.toLowerCase())
     .ilike('meal_name', `%${searchTerm}%`)
     .order('created_at', { ascending: false })
     .limit(limit);
@@ -118,7 +127,11 @@ export async function deleteMeal({
     throw new Error('Address is required to delete meal');
   }
 
-  const { error } = await client.from('meals').delete().eq('id', id).eq('address', address);
+  const { error } = await client
+    .from('meals')
+    .delete()
+    .eq('id', id)
+    .eq('address', address.toLowerCase());
 
   if (error) {
     throw error;

@@ -345,7 +345,7 @@ export function SettingsPage() {
             <CardContent className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label>Version</Label>
-                <span className="text-sm">1.3.0</span>
+                <span className="text-sm">1.3.1</span>
               </div>
               <div className="flex items-center justify-between">
                 <Label>Build</Label>

@@ -31,6 +31,7 @@ import {
   addActivities,
   updateActivityData,
 } from '@/lib/redux/slices/activityDataSlice';
+import { fetchEnergyData } from '@/lib/redux/slices/energyDataSlice';
 import { resetJointTracking } from '@/lib/redux/slices/jointTrackingSlice';
 import { fetchProfile, updateProfile } from '@/lib/redux/slices/profileSlice';
 import { showSuccessToast, showInfoToast } from '@/lib/redux/slices/toastSlice';
@@ -96,6 +97,7 @@ export function MovinDashboard() {
   const isPremiumUser = isPremiumActive();
 
   const { activities, isLoading, error } = useAppSelector((state: RootState) => state.activityData);
+  const { energyEntries } = useAppSelector((state: RootState) => state.energyData);
   const { profile } = useAppSelector((state: RootState) => state.profile);
 
   // Memoize derived data
@@ -147,7 +149,7 @@ export function MovinDashboard() {
 
   // Function to update streak based on activity patterns
   const updateStreakCount = useCallback(() => {
-    if (!addressLower || !profile || activities.length === 0) return;
+    if (!addressLower || !profile || (!activities && !energyEntries)) return;
 
     // Check if streak was already updated today
     if (profile.last_streak_update) {
@@ -164,32 +166,39 @@ export function MovinDashboard() {
       }
     }
 
-    // Sort activities by date (newest first)
-    const sortedActivities = [...activities].sort((a, b) => {
-      return new Date(b.start_date).getTime() - new Date(a.start_date).getTime();
-    });
-
-    // Check if there are activities today
-    const hasActivityToday = sortedActivities.some((activity) => {
-      const activityDate = new Date(activity.start_date);
+    const isToday = (date: Date) => {
       const today = new Date();
       return (
-        activityDate.getDate() === today.getDate() &&
-        activityDate.getMonth() === today.getMonth() &&
-        activityDate.getFullYear() === today.getFullYear()
+        date.getDate() === today.getDate() &&
+        date.getMonth() === today.getMonth() &&
+        date.getFullYear() === today.getFullYear()
       );
+    };
+
+    // Check if there are activities today
+    const hasActivityToday = (activities || []).some((activity) => {
+      return isToday(new Date(activity.start_date));
+    });
+
+    const hasMealToday = (energyEntries || []).some((entry) => {
+      return isToday(new Date(`${entry.log_date}T00:00:00`));
     });
 
     // If no activity today, do nothing
-    if (!hasActivityToday) return;
+    if (!hasActivityToday && !hasMealToday) return;
 
     // Check if there was activity yesterday
-    const hasActivityYesterday = sortedActivities.some((activity) => {
+    const hasActivityYesterday = (activities || []).some((activity) => {
       return isYesterday(new Date(activity.start_date));
     });
 
+    const hasMealYesterday = (energyEntries || []).some((entry) =>
+      isYesterday(new Date(`${entry.log_date}T00:00:00`)),
+    );
+    const hasEventYesterday = hasActivityYesterday || hasMealYesterday;
+
     // Update streak count
-    if (hasActivityYesterday) {
+    if (hasEventYesterday) {
       // Increment streak
       const newStreakDays = (profile.streak_days || 0) + 1;
       dispatch(
@@ -220,14 +229,14 @@ export function MovinDashboard() {
         }),
       );
     }
-  }, [addressLower, profile, activities, dispatch, isYesterday]);
+  }, [addressLower, profile, activities, energyEntries, dispatch, isYesterday]);
 
   // Update streak when activities are loaded
   useEffect(() => {
-    if (!isLoading && !refreshing && activities.length > 0 && profile) {
+    if (!isLoading && !refreshing && (activities || energyEntries) && profile) {
       updateStreakCount();
     }
-  }, [isLoading, refreshing, activities, profile, updateStreakCount]);
+  }, [isLoading, refreshing, activities, energyEntries, profile, updateStreakCount]);
 
   const handleRefresh = useCallback(async () => {
     if (!addressLower) {
@@ -237,6 +246,7 @@ export function MovinDashboard() {
     setRefreshing(true);
     await dispatch(fetchActivities(addressLower)).unwrap();
     await dispatch(fetchProfile(addressLower)).unwrap();
+    await dispatch(fetchEnergyData(addressLower)).unwrap();
     setRefreshing(false);
   }, [addressLower, dispatch]);
 
@@ -661,14 +671,6 @@ export function MovinDashboard() {
         onClose={handleCloseRouteModal}
         onSaveRoute={handleSaveRoute}
         isJointTracking={isJointTrackingSelected}
-      />
-
-      {/* Screenshot Import Modal */}
-      <ScreenshotImportModal
-        isOpen={isScreenshotImportModalOpen}
-        onClose={() => setIsScreenshotImportModalOpen(false)}
-        onSaveActivity={handleSaveImportedActivity}
-        userAddress={addressLower || ''}
       />
 
       {/* Screenshot Import Modal */}

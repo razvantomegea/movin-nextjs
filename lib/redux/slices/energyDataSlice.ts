@@ -21,7 +21,7 @@ export const fetchEnergyData = createAsyncThunk<
   { rejectValue: string } // ThunkApiConfig
 >('energyData/fetchEnergyData', async (address, { rejectWithValue }) => {
   try {
-    const energyEntries = await getEnergyEntries({ address });
+    const energyEntries = await getEnergyEntries({ address: address.toLowerCase() });
     return energyEntries;
   } catch (error) {
     return rejectWithValue(error instanceof Error ? error.message : 'Failed to fetch energy data');
@@ -39,7 +39,7 @@ export const addEnergyEntry = createAsyncThunk(
       if (!address) {
         throw new Error('Address is required to add energy entry');
       }
-      const newEntry = await insertEnergyEntry({ address, energyData });
+      const newEntry = await insertEnergyEntry({ address: address.toLowerCase(), energyData });
       return newEntry;
     } catch (error) {
       return rejectWithValue(error instanceof Error ? error.message : 'Failed to add energy entry');

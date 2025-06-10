@@ -27,7 +27,7 @@ export async function getEnergyEntries({
   const { data, error } = await client
     .from('energy')
     .select()
-    .eq('address', address)
+    .eq('address', address.toLowerCase())
     .order('log_date', { ascending: false });
 
   if (error) {
@@ -55,18 +55,27 @@ export async function insertEnergyEntry({
 
   const dataToInsert = {
     ...energyData,
-    address, // Ensure address is always set
+    address: address.toLowerCase(),
     log_date: energyData.log_date || new Date().toISOString().split('T')[0],
   };
   delete dataToInsert.id;
   delete dataToInsert.created_at;
   delete dataToInsert.updated_at;
 
-  const { data, error } = await client.from('energy').insert(dataToInsert).select().single();
+  const { error } = await client.from('energy').insert(dataToInsert);
+
   if (error) {
     throw error;
   }
-  return data;
+
+  // Since we can't get the inserted row back due to RLS, we'll return an optimistic response.
+  // The caller should ideally refetch data to get the real server-generated values.
+  return {
+    ...dataToInsert,
+    id: `temp-${Date.now()}`, // Temporary ID
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  } as IEnergy;
 }
 
 export async function updateEnergyEntry({
@@ -95,7 +104,7 @@ export async function updateEnergyEntry({
     .from('energy')
     .update(updateFields)
     .eq('id', id)
-    .eq('address', address) // Ensure user can only update their own entries
+    .eq('address', address.toLowerCase()) // Ensure user can only update their own entries
     .select()
     .single();
 
@@ -124,7 +133,7 @@ export async function getEnergyEntriesByDateRange({
   const { data, error } = await client
     .from('energy')
     .select()
-    .eq('address', address)
+    .eq('address', address.toLowerCase())
     .gte('log_date', startDate)
     .lte('log_date', endDate)
     .order('log_date', { ascending: false });
