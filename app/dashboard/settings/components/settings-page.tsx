@@ -88,31 +88,6 @@ export function SettingsPage() {
         <motion.div variants={item}>
           <Card>
             <CardHeader>
-              <CardTitle>App Installation</CardTitle>
-              <CardDescription>
-                Install Movin on your device for the best experience
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label className="flex items-center">
-                    <Download className="h-4 w-4 mr-2 text-blue-500" />
-                    Install PWA
-                  </Label>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Add Movin to your home screen for quick access
-                  </p>
-                </div>
-                <InstallPWA showInstalledState={true} />
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        <motion.div variants={item}>
-          <Card>
-            <CardHeader>
               <CardTitle>Notifications</CardTitle>
               <CardDescription>Manage your notification preferences</CardDescription>
             </CardHeader>
@@ -316,7 +291,7 @@ export function SettingsPage() {
               <CardTitle>App Information</CardTitle>
               <CardDescription>Details about your app</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-2">
+            <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <Label>Version</Label>
                 <span className="text-sm">1.3.1</span>
@@ -324,6 +299,21 @@ export function SettingsPage() {
               <div className="flex items-center justify-between">
                 <Label>Build</Label>
                 <span className="text-sm">2025.06.10</span>
+              </div>
+
+              <hr className="my-4" />
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label className="flex items-center">
+                    <Download className="h-4 w-4 mr-2 text-blue-500" />
+                    Install PWA
+                  </Label>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Add Movin to your home screen for quick access
+                  </p>
+                </div>
+                <InstallPWA showInstalledState={true} />
               </div>
             </CardContent>
           </Card>

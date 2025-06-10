@@ -49,15 +49,54 @@ export default function InstallPWA({
     // Ensure we're on the client side
     if (typeof window === 'undefined') return;
 
-    // Check if running as standalone app
-    const isStandaloneApp =
-      window.matchMedia('(display-mode: standalone)').matches ||
-      (window.navigator as any).standalone === true;
-    setIsStandalone(isStandaloneApp);
+    // Enhanced PWA detection for better reliability
+    const checkIfPWA = () => {
+      // Method 1: Check display mode (most reliable for modern browsers)
+      const isDisplayModeStandalone = window.matchMedia('(display-mode: standalone)').matches;
+
+      // Method 2: iOS Safari specific check
+      const isIOSStandalone = (window.navigator as any).standalone === true;
+
+      // Method 3: Check if launched from home screen (Android Chrome)
+      const isMinimalUI = window.matchMedia('(display-mode: minimal-ui)').matches;
+
+      // Method 4: Check window.navigator.userAgent for 'wv' (WebView)
+      const isWebView = /wv/i.test(navigator.userAgent);
+
+      // Method 5: Check for referrer (PWAs often have empty or same-origin referrer)
+      const isFromHomeScreen =
+        !document.referrer || document.referrer.includes(window.location.origin);
+
+      // Method 6: Check window size ratios (PWAs often have different ratios)
+      const hasFullscreenRatio = window.outerHeight === window.innerHeight;
+
+      // Combine all checks for better accuracy
+      return (
+        isDisplayModeStandalone ||
+        isIOSStandalone ||
+        isMinimalUI ||
+        (isWebView && isFromHomeScreen) ||
+        (hasFullscreenRatio && isFromHomeScreen && !window.opener)
+      );
+    };
+
+    const isPWA = checkIfPWA();
+    setIsStandalone(isPWA);
 
     // Detect iOS
     const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
     setIsIOS(iOS);
+
+    // Add debug logging to help troubleshoot
+    console.log('PWA Detection Results:', {
+      displayModeStandalone: window.matchMedia('(display-mode: standalone)').matches,
+      iOSStandalone: (window.navigator as any).standalone === true,
+      minimalUI: window.matchMedia('(display-mode: minimal-ui)').matches,
+      isWebView: /wv/i.test(navigator.userAgent),
+      referrer: document.referrer,
+      windowRatio: window.outerHeight === window.innerHeight,
+      finalResult: isPWA,
+    });
 
     // Handle beforeinstallprompt event
     const handler = async (e: Event) => {
@@ -66,7 +105,7 @@ export default function InstallPWA({
       setDeferredPrompt(promptEvent);
 
       // Automatically trigger install prompt for supported browsers
-      if (!iOS && !isStandaloneApp && variant === 'banner') {
+      if (!iOS && !isPWA && variant === 'banner') {
         try {
           // Small delay to ensure the event is properly handled
           setTimeout(async () => {
@@ -103,15 +142,30 @@ export default function InstallPWA({
 
     window.addEventListener('beforeinstallprompt', handler);
 
+    // Listen for display mode changes to reactively update PWA status
+    const displayModeQuery = window.matchMedia('(display-mode: standalone)');
+    const minimalUIQuery = window.matchMedia('(display-mode: minimal-ui)');
+
+    const handleDisplayModeChange = () => {
+      const newPWAStatus = checkIfPWA();
+      setIsStandalone(newPWAStatus);
+      console.log('Display mode changed, new PWA status:', newPWAStatus);
+    };
+
+    displayModeQuery.addEventListener('change', handleDisplayModeChange);
+    minimalUIQuery.addEventListener('change', handleDisplayModeChange);
+
     // Hide banner if already installed
-    if (isStandaloneApp) {
+    if (isPWA) {
       setShowBanner(false);
     }
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handler);
+      displayModeQuery.removeEventListener('change', handleDisplayModeChange);
+      minimalUIQuery.removeEventListener('change', handleDisplayModeChange);
     };
-  }, [isIOS, isStandalone, variant, onInstall]);
+  }, [variant, onInstall]);
 
   const handleInstall = async () => {
     if (!deferredPrompt) {
