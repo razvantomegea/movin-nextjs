@@ -1,12 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { toast } from 'sonner';
-import useOfflineSync from '@/lib/hooks/useOfflineSync';
-import usePushNotifications from '@/lib/hooks/usePushNotifications';
 import {
   Wifi,
   WifiOff,
@@ -18,10 +12,27 @@ import {
   XCircle,
   AlertCircle,
 } from 'lucide-react';
+import { toast } from 'sonner';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import useOfflineSync from '@/lib/hooks/useOfflineSync';
+import usePushNotifications from '@/lib/hooks/usePushNotifications';
+
+// Interface for the install prompt event
+interface BeforeInstallPromptEvent extends Event {
+  prompt(): Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
+
+// Extend Navigator interface to include standalone property for iOS
+interface NavigatorWithStandalone extends Navigator {
+  standalone?: boolean;
+}
 
 export default function PWATestPanel() {
   const [isInstallable, setIsInstallable] = useState(false);
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);
 
   // Offline sync hook
@@ -42,7 +53,7 @@ export default function PWATestPanel() {
     const checkInstallStatus = () => {
       if (
         window.matchMedia('(display-mode: standalone)').matches ||
-        (window.navigator as any)?.standalone === true
+        (window.navigator as NavigatorWithStandalone)?.standalone === true
       ) {
         setIsInstalled(true);
       }
@@ -53,7 +64,7 @@ export default function PWATestPanel() {
     // Listen for install prompt
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
-      setDeferredPrompt(e);
+      setDeferredPrompt(e as BeforeInstallPromptEvent);
       setIsInstallable(true);
     };
 
@@ -144,7 +155,7 @@ export default function PWATestPanel() {
   const getWarningIcon = () => <AlertCircle className="h-4 w-4 text-yellow-500" />;
 
   return (
-    <Card className="w-full max-w-2xl">
+    <Card className="w-full">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Smartphone className="h-5 w-5" />

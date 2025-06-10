@@ -4,43 +4,20 @@ CREATE TABLE IF NOT EXISTS public.push_subscriptions (
     endpoint TEXT NOT NULL UNIQUE,
     p256dh TEXT NOT NULL,
     auth TEXT NOT NULL,
-    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    address TEXT NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
+
+    -- Foreign key to profiles table
+    CONSTRAINT fk_push_subscriptions_profile
+      FOREIGN KEY (address)
+      REFERENCES profiles(address)
+      ON DELETE CASCADE
 );
 
--- Add RLS policies
-ALTER TABLE public.push_subscriptions ENABLE ROW LEVEL SECURITY;
-
--- Create RLS policies
-CREATE POLICY "Users can view their own push subscriptions"
-    ON public.push_subscriptions
-    FOR SELECT
-    USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can insert their own push subscriptions"
-    ON public.push_subscriptions
-    FOR INSERT
-    WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "Users can update their own push subscriptions"
-    ON public.push_subscriptions
-    FOR UPDATE
-    USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can delete their own push subscriptions"
-    ON public.push_subscriptions
-    FOR DELETE
-    USING (auth.uid() = user_id);
-
--- Service roles can manage all subscriptions
-CREATE POLICY "Service role can manage all push subscriptions"
-    ON public.push_subscriptions
-    USING (auth.jwt() ->> 'role' = 'service_role');
-
 -- Create index for faster lookups
-CREATE INDEX IF NOT EXISTS push_subscriptions_user_id_idx ON public.push_subscriptions (user_id);
-CREATE INDEX IF NOT EXISTS push_subscriptions_endpoint_idx ON public.push_subscriptions (endpoint);
+CREATE INDEX IF NOT EXISTS push_subscriptions_address_idx ON push_subscriptions(address);
+CREATE INDEX IF NOT EXISTS push_subscriptions_endpoint_idx ON push_subscriptions(endpoint);
 
 -- Trigger to update updated_at on change
 CREATE OR REPLACE FUNCTION update_modified_column()
@@ -54,4 +31,37 @@ $$ language 'plpgsql';
 CREATE TRIGGER update_push_subscriptions_updated_at
 BEFORE UPDATE ON public.push_subscriptions
 FOR EACH ROW
-EXECUTE FUNCTION update_modified_column(); 
+EXECUTE FUNCTION update_modified_column();
+
+-- Add RLS policies
+ALTER TABLE public.push_subscriptions ENABLE ROW LEVEL SECURITY;
+
+-- Allow users to view and modify only their own push subscriptions
+-- SELECT Policy
+CREATE POLICY "Allow address-based select"
+ON push_subscriptions
+FOR SELECT
+TO authenticated
+USING ( (auth.jwt() ->> 'sub') = address );
+
+-- INSERT Policy
+CREATE POLICY "Allow address-based insert"
+ON push_subscriptions
+FOR INSERT
+TO authenticated
+WITH CHECK ( (auth.jwt() ->> 'sub') = address );
+
+-- UPDATE Policy
+CREATE POLICY "Allow address-based update"
+ON push_subscriptions
+FOR UPDATE
+TO authenticated
+USING ( (auth.jwt() ->> 'sub') = address )
+WITH CHECK ( (auth.jwt() ->> 'sub') = address );
+
+-- DELETE Policy
+CREATE POLICY "Allow address-based delete"
+ON push_subscriptions
+FOR DELETE
+TO authenticated
+USING ( (auth.jwt() ->> 'sub') = address ); 

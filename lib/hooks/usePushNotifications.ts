@@ -124,8 +124,27 @@ export default function usePushNotifications() {
         let currentSubscription = await registration.pushManager.getSubscription();
 
         if (currentSubscription) {
+          console.log('Already subscribed to push notifications');
           setSubscription(currentSubscription);
           setIsSubscribing(false);
+
+          // Still try to update server in case it wasn't saved before
+          try {
+            await fetch('/api/push/subscribe', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                subscription: currentSubscription,
+                userId,
+              }),
+            });
+          } catch (serverError) {
+            console.warn('Failed to update subscription on server:', serverError);
+            // Don't fail the whole process if server update fails
+          }
+
           return true;
         }
 
@@ -138,12 +157,17 @@ export default function usePushNotifications() {
           return false;
         }
 
+        console.log('Creating new push subscription...');
+
         // Subscribe to push notifications
         currentSubscription = await registration.pushManager.subscribe({
           userVisibleOnly: true,
           applicationServerKey: urlBase64ToUint8Array(publicKey),
         });
 
+        console.log('Push subscription created successfully');
+
+        // Update local state immediately
         setSubscription(currentSubscription);
 
         // Send subscription to server
@@ -159,15 +183,23 @@ export default function usePushNotifications() {
         });
 
         if (!response.ok) {
-          throw new Error('Failed to save subscription on server');
+          const errorText = await response.text();
+          throw new Error(`Failed to save subscription on server: ${errorText}`);
         }
 
+        console.log('Push subscription saved to server successfully');
         setIsSubscribing(false);
         return true;
       } catch (error) {
         console.error('Error subscribing to push notifications:', error);
-        setError('Failed to subscribe to push notifications');
+        setError(
+          `Failed to subscribe to push notifications: ${
+            error instanceof Error ? error.message : 'Unknown error'
+          }`,
+        );
         setIsSubscribing(false);
+        // Reset subscription state on error
+        setSubscription(null);
         return false;
       }
     },

@@ -29,8 +29,9 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
+  // Allow zoom for accessibility (recommended)
+  maximumScale: 5,
+  userScalable: true,
   themeColor: '#000000',
 };
 
@@ -48,7 +49,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
             strategy="afterInteractive"
           />
         )}
-        <link rel="apple-touch-icon" href="/icons/icon-192.webp" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-180.png" />
       </head>
       <body className={inter.className}>
         <ReduxProvider>

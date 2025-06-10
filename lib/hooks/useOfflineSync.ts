@@ -6,8 +6,25 @@ import { useState, useEffect, useCallback } from 'react';
 interface OfflineItem {
   id: string;
   type: string;
-  data: any;
+  data: unknown;
   timestamp: number;
+}
+
+// Interface for sync result
+interface SyncResult {
+  status: 'fulfilled' | 'rejected';
+  value?: {
+    success: boolean;
+    id: string;
+    type: string;
+    error?: string;
+  };
+  reason?: string;
+}
+
+// Interface for sync response
+interface SyncResponse {
+  results: SyncResult[];
 }
 
 // IndexedDB configuration
@@ -21,95 +38,6 @@ export default function useOfflineSync() {
   );
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
   const [db, setDb] = useState<IDBDatabase | null>(null);
-
-  // Initialize IndexedDB
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    const request = indexedDB.open(DB_NAME, DB_VERSION);
-
-    request.onerror = (event) => {
-      console.error('IndexedDB error:', event);
-    };
-
-    request.onsuccess = (event) => {
-      const db = (event.target as IDBOpenDBRequest).result;
-      setDb(db);
-    };
-
-    request.onupgradeneeded = (event) => {
-      const db = (event.target as IDBOpenDBRequest).result;
-
-      // Create object store for offline data
-      if (!db.objectStoreNames.contains(STORE_NAME)) {
-        db.createObjectStore(STORE_NAME, { keyPath: 'id' });
-      }
-    };
-
-    // Setup online/offline listeners
-    const handleOnline = () => {
-      setIsOnline(true);
-      syncData();
-    };
-
-    const handleOffline = () => {
-      setIsOnline(false);
-    };
-
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-
-      // Close the database connection when component unmounts
-      if (db) {
-        db.close();
-      }
-    };
-  }, []);
-
-  // Add item to offline storage
-  const addOfflineItem = useCallback(
-    async (type: string, data: any): Promise<string> => {
-      if (!db) {
-        throw new Error('Database not initialized');
-      }
-
-      const id = crypto.randomUUID();
-      const item: OfflineItem = {
-        id,
-        type,
-        data,
-        timestamp: Date.now(),
-      };
-
-      return new Promise((resolve, reject) => {
-        const transaction = db.transaction([STORE_NAME], 'readwrite');
-        const store = transaction.objectStore(STORE_NAME);
-        const request = store.add(item);
-
-        request.onsuccess = () => {
-          resolve(id);
-
-          // If online, try to sync immediately
-          if (isOnline && 'serviceWorker' in navigator) {
-            navigator.serviceWorker.ready.then((registration) => {
-              registration.sync.register('sync-data').catch((error) => {
-                console.error('Background sync registration failed:', error);
-              });
-            });
-          }
-        };
-
-        request.onerror = () => {
-          reject(new Error('Failed to store offline data'));
-        };
-      });
-    },
-    [db, isOnline],
-  );
 
   // Get all offline items
   const getOfflineItems = useCallback(async (): Promise<OfflineItem[]> => {
@@ -159,7 +87,6 @@ export default function useOfflineSync() {
     [db],
   );
 
-  // Synchronize data with the server
   const syncData = useCallback(async (): Promise<boolean> => {
     if (!isOnline || isSyncing || !db) {
       return false;
@@ -187,12 +114,12 @@ export default function useOfflineSync() {
         throw new Error('Sync failed');
       }
 
-      const result = await response.json();
+      const result = (await response.json()) as SyncResponse;
 
       // Get IDs of successfully synced items
       const syncedIds = result.results
-        .filter((r: any) => r.status === 'fulfilled' && r.value && r.value.success)
-        .map((r: any) => r.value.id);
+        .filter((r) => r.status === 'fulfilled' && r.value && r.value.success)
+        .map((r) => r.value!.id);
 
       // Remove synced items from IndexedDB
       await removeOfflineItems(syncedIds);
@@ -205,6 +132,95 @@ export default function useOfflineSync() {
       return false;
     }
   }, [db, isOnline, isSyncing, getOfflineItems, removeOfflineItems]);
+
+  // Initialize IndexedDB
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+    request.onerror = (event) => {
+      console.error('IndexedDB error:', event);
+    };
+
+    request.onsuccess = (event) => {
+      const upgradedDb = (event.target as IDBOpenDBRequest).result;
+      setDb(upgradedDb);
+    };
+
+    request.onupgradeneeded = (event) => {
+      const db = (event.target as IDBOpenDBRequest).result;
+
+      // Create object store for offline data
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+      }
+    };
+
+    // Setup online/offline listeners
+    const handleOnline = () => {
+      setIsOnline(true);
+      syncData();
+    };
+
+    const handleOffline = () => {
+      setIsOnline(false);
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+
+      // Close the database connection when component unmounts
+      if (db) {
+        db.close();
+      }
+    };
+  }, [db, syncData]);
+
+  // Add item to offline storage
+  const addOfflineItem = useCallback(
+    async (type: string, data: unknown): Promise<string> => {
+      if (!db) {
+        throw new Error('Database not initialized');
+      }
+
+      const id = crypto.randomUUID();
+      const item: OfflineItem = {
+        id,
+        type,
+        data,
+        timestamp: Date.now(),
+      };
+
+      return new Promise((resolve, reject) => {
+        const transaction = db.transaction([STORE_NAME], 'readwrite');
+        const store = transaction.objectStore(STORE_NAME);
+        const request = store.add(item);
+
+        request.onsuccess = () => {
+          resolve(id);
+
+          // If online, try to sync immediately
+          if (isOnline && 'serviceWorker' in navigator) {
+            navigator.serviceWorker.ready.then((registration) => {
+              registration.sync.register('sync-data').catch((error) => {
+                console.error('Background sync registration failed:', error);
+              });
+            });
+          }
+        };
+
+        request.onerror = () => {
+          reject(new Error('Failed to store offline data'));
+        };
+      });
+    },
+    [db, isOnline],
+  );
 
   return {
     isOnline,

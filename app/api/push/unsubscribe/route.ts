@@ -1,18 +1,43 @@
-import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { endpoint } = body;
 
-    if (!endpoint) {
-      return NextResponse.json({ error: 'Subscription endpoint is required' }, { status: 400 });
+    if (!endpoint || typeof endpoint !== 'string' || endpoint.trim() === '') {
+      return NextResponse.json(
+        { error: 'Valid subscription endpoint is required' },
+        { status: 400 },
+      );
+    }
+
+    // Validate environment variables
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || supabaseUrl.trim() === '') {
+      console.error('NEXT_PUBLIC_SUPABASE_URL environment variable is not defined or empty');
+      return NextResponse.json(
+        {
+          error: 'Server configuration error: Supabase URL not configured',
+        },
+        { status: 500 },
+      );
+    }
+
+    if (!supabaseKey || supabaseKey.trim() === '') {
+      console.error('SUPABASE_SERVICE_ROLE_KEY environment variable is not defined or empty');
+      return NextResponse.json(
+        {
+          error: 'Server configuration error: Supabase service key not configured',
+        },
+        { status: 500 },
+      );
     }
 
     // Initialize Supabase client
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Remove the subscription from the database

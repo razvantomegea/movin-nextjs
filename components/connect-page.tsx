@@ -226,7 +226,7 @@ function ConnectPageContent() {
               transition={{ delay: 0.4, duration: 0.5 }}
               className="text-lg text-gray-700 dark:text-blue-100"
             >
-              It all starts with one step
+              Your effort counts
             </motion.p>
           </div>
 

@@ -59,27 +59,41 @@ export function SettingsPage() {
 
   // Update notifications enabled state when subscription changes
   useEffect(() => {
-    setNotificationsEnabled(Boolean(subscription));
+    const isEnabled = Boolean(subscription);
+    console.log('Subscription state changed:', { subscription: !!subscription, isEnabled });
+    setNotificationsEnabled(isEnabled);
   }, [subscription]);
 
   // Handle notification toggle
   const handleNotificationToggle = async (enabled: boolean) => {
+    console.log('Notification toggle triggered:', { enabled, currentSubscription: !!subscription });
+
     if (enabled) {
+      setNotificationsEnabled(true); // Optimistically set to true for better UX
       const success = await subscribe();
+      console.log('Subscribe result:', success);
+
       if (success) {
-        setNotificationsEnabled(true);
         toast.success('Notifications enabled successfully');
+        // Don't manually set state here, let the useEffect handle it based on subscription
       } else {
-        setNotificationsEnabled(false);
-        toast.error('Failed to enable notifications');
+        console.error('Failed to subscribe to notifications');
+        setNotificationsEnabled(false); // Reset on failure
+        toast.error('Failed to enable notifications. Please try again.');
       }
     } else {
+      setNotificationsEnabled(false); // Optimistically set to false
       const success = await unsubscribe();
+      console.log('Unsubscribe result:', success);
+
       if (success) {
-        setNotificationsEnabled(false);
         toast.success('Notifications disabled successfully');
+        // Don't manually set state here, let the useEffect handle it based on subscription
       } else {
-        toast.error('Failed to disable notifications');
+        console.error('Failed to unsubscribe from notifications');
+        // Reset to previous state if unsubscribe failed
+        setNotificationsEnabled(Boolean(subscription));
+        toast.error('Failed to disable notifications. Please try again.');
       }
     }
   };

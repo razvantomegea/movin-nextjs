@@ -5,12 +5,16 @@ import webpush from 'web-push';
 // Check if VAPID keys are available
 const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
 const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
-const vapidMailto = process.env.VAPID_MAILTO || 'mailto:example@example.com';
+const vapidMailto = process.env.VAPID_MAILTO || 'contact@example.com';
 
 // Only set VAPID details if all keys are available
 if (vapidPublicKey && vapidPrivateKey) {
   try {
-    webpush.setVapidDetails(vapidMailto, vapidPublicKey, vapidPrivateKey);
+    webpush.setVapidDetails(
+      vapidMailto.startsWith('mailto:') ? vapidMailto : `mailto:${vapidMailto}`,
+      vapidPublicKey,
+      vapidPrivateKey,
+    );
   } catch (error) {
     console.error('Failed to set VAPID details:', error);
   }
@@ -33,9 +37,31 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Title and message are required' }, { status: 400 });
     }
 
+    // Validate environment variables
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || supabaseUrl.trim() === '') {
+      console.error('NEXT_PUBLIC_SUPABASE_URL environment variable is not defined or empty');
+      return NextResponse.json(
+        {
+          error: 'Server configuration error: Supabase URL not configured',
+        },
+        { status: 500 },
+      );
+    }
+
+    if (!supabaseKey || supabaseKey.trim() === '') {
+      console.error('SUPABASE_SERVICE_ROLE_KEY environment variable is not defined or empty');
+      return NextResponse.json(
+        {
+          error: 'Server configuration error: Supabase service key not configured',
+        },
+        { status: 500 },
+      );
+    }
+
     // Initialize Supabase client
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Query to get subscriptions
