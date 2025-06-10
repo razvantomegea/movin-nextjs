@@ -2,16 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Download, X, Smartphone, Share, Plus, MoreHorizontal } from 'lucide-react';
+import { Download, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import InstallInstructionsDialog from './install-instructions-dialog';
 
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[];
@@ -215,84 +209,6 @@ export default function InstallPWA({
     </Button>
   );
 
-  const ManualInstructionsDialog = () => (
-    <Dialog open={showInstructions} onOpenChange={setShowInstructions}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Smartphone className="h-5 w-5" />
-            Add to Home Screen
-          </DialogTitle>
-          <DialogDescription>
-            Follow these steps to install the app on your device
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-4">
-          {isIOS ? (
-            <>
-              <div className="flex items-start gap-3 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
-                <Share className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="font-medium text-sm">Step 1</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Tap the Share button at the bottom of your Safari browser
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
-                <Plus className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="font-medium text-sm">Step 2</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Scroll down and tap &quot;Add to Home Screen&quot;
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
-                <Download className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="font-medium text-sm">Step 3</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Tap &quot;Add&quot; to install the app on your home screen
-                  </p>
-                </div>
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="flex items-start gap-3 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
-                <MoreHorizontal className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="font-medium text-sm">Step 1</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Tap the menu button (⋮) in your browser
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
-                <Download className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="font-medium text-sm">Step 2</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Look for &quot;Add to Home screen&quot; or &quot;Install app&quot; option
-                  </p>
-                </div>
-              </div>
-            </>
-          )}
-        </div>
-
-        <Button onClick={() => setShowInstructions(false)} className="w-full">
-          Got it
-        </Button>
-      </DialogContent>
-    </Dialog>
-  );
-
   if (variant === 'banner' && showBannerState) {
     return (
       <>
@@ -349,13 +265,13 @@ export default function InstallPWA({
             </div>
           </motion.div>
         </AnimatePresence>
-        <ManualInstructionsDialog />
+        <InstallInstructionsDialog open={showInstructions} onOpenChange={setShowInstructions} />
       </>
     );
   }
 
   if (variant === 'banner') {
-    return <ManualInstructionsDialog />;
+    return <InstallInstructionsDialog open={showInstructions} onOpenChange={setShowInstructions} />;
   }
 
   if (variant === 'card') {
@@ -373,7 +289,7 @@ export default function InstallPWA({
             <InstallButton />
           </CardContent>
         </Card>
-        <ManualInstructionsDialog />
+        <InstallInstructionsDialog open={showInstructions} onOpenChange={setShowInstructions} />
       </>
     );
   }
@@ -383,7 +299,7 @@ export default function InstallPWA({
     return (
       <>
         <InstallButton />
-        <ManualInstructionsDialog />
+        <InstallInstructionsDialog open={showInstructions} onOpenChange={setShowInstructions} />
       </>
     );
   }
