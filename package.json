@@ -1,6 +1,6 @@
 {
   "name": "movin",
-  "description": "Movin app",
+  "description": "Movin - Your effort counts",
   "author": "Razvan Tomegea",
   "license": "MIT",
   "homepage": "https://app.getmovin.ai",
@@ -8,7 +8,7 @@
     "type": "git",
     "url": "https://github.com/razvantomegea/movin-nextjs"
   },
-  "version": "1.3.1",
+  "version": "1.4.1",
   "private": true,
   "scripts": {
     "dev": "next dev",
