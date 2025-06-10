@@ -31,16 +31,10 @@ import {
   addActivities,
   updateActivityData,
 } from '@/lib/redux/slices/activityDataSlice';
-import {
-  fetchActivities,
-  addActivities,
-  updateActivityData,
-} from '@/lib/redux/slices/activityDataSlice';
 import { resetJointTracking } from '@/lib/redux/slices/jointTrackingSlice';
 import { fetchProfile, updateProfile } from '@/lib/redux/slices/profileSlice';
 import { showSuccessToast, showInfoToast } from '@/lib/redux/slices/toastSlice';
 import type { RootState } from '@/lib/redux/store';
-import { IActivity } from '@/lib/supabase/activities';
 import { IActivity } from '@/lib/supabase/activities';
 import {
   formatDistance,
@@ -53,8 +47,6 @@ import {
   mapRouteToActivity,
   findExistingStepsActivity,
   mergeStepsActivities,
-  findExistingStepsActivity,
-  mergeStepsActivities,
   type DailyActivity,
   type Workout,
   type TimeRangeData,
@@ -63,7 +55,6 @@ import {
 import { ActivityDashboardSkeleton } from './activity-dashboard-skeleton';
 import { RouteTrackingModal, type RouteData } from './route-tracking-modal';
 import { RouteTypeModal } from './route-type-modal';
-import { ScreenshotImportModal } from './screenshot-import-modal';
 import { ScreenshotImportModal } from './screenshot-import-modal';
 
 const container = {
