@@ -25,13 +25,7 @@ const metadata = {
   ],
 };
 
-// Initialize AppKit only if we have a valid project ID
-if (!projectId) {
-  console.error('AppKit Initialization Error: Project ID is missing.');
-  console.error('Please ensure NEXT_PUBLIC_REOWN_PROJECT_ID is set in your .env.local file');
-} else {
-  console.log('Initializing AppKit with project ID:', projectId);
-
+if (projectId) {
   try {
     createAppKit({
       adapters: [wagmiAdapter],

@@ -393,8 +393,8 @@ export function EnergyPage() {
                       whileHover={{ scale: 1.05 }}
                       transition={{ type: 'spring', stiffness: 400, damping: 10 }}
                     >
-                      <div className="bg-blue-500/10 p-2 rounded-full mb-2">
-                        <Bolt className="h-4 w-4 text-blue-500" />
+                      <div className="bg-green-500/10 p-2 rounded-full mb-2">
+                        <Bolt className="h-4 w-4 text-green-500" />
                       </div>
                       <span className="text-sm font-medium">
                         {dailyNutrition?.protein.toFixed(1) || '0.0'}g
@@ -409,8 +409,8 @@ export function EnergyPage() {
                       whileHover={{ scale: 1.05 }}
                       transition={{ type: 'spring', stiffness: 400, damping: 10 }}
                     >
-                      <div className="bg-blue-500/10 p-2 rounded-full mb-2">
-                        <Bolt className="h-4 w-4 text-blue-500" />
+                      <div className="bg-sky-500/10 p-2 rounded-full mb-2">
+                        <Bolt className="h-4 w-4 text-sky-500" />
                       </div>
                       <span className="text-sm font-medium">
                         {dailyNutrition?.carbohydrates.toFixed(1) || '0.0'}g
@@ -425,8 +425,8 @@ export function EnergyPage() {
                       whileHover={{ scale: 1.05 }}
                       transition={{ type: 'spring', stiffness: 400, damping: 10 }}
                     >
-                      <div className="bg-blue-500/10 p-2 rounded-full mb-2">
-                        <Bolt className="h-4 w-4 text-blue-500" />
+                      <div className="bg-yellow-500/10 p-2 rounded-full mb-2">
+                        <Bolt className="h-4 w-4 text-yellow-500" />
                       </div>
                       <span className="text-sm font-medium">
                         {dailyNutrition?.fats.toFixed(1) || '0.0'}g
@@ -506,7 +506,7 @@ export function EnergyPage() {
                         <span className="font-bold text-blue-500">{meal.calories} kcal</span>
                       </div>
                       <div className="grid grid-cols-3 gap-2 mt-3">
-                        <div className="text-center p-1 bg-blue-500/10 rounded">
+                        <div className="text-center p-1 bg-sky-500/10 rounded">
                           <div className="text-xs text-gray-500">Carbs</div>
                           <div className="font-medium">{meal.carbohydrates}g</div>
                         </div>
