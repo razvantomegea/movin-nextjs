@@ -1,22 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { NextRequest, NextResponse } from 'next/server';
 
-// Define the structure for meal analysis response
-interface MealAnalysisResult {
-  mealName: string;
-  calories: number;
-  protein: number;
-  carbohydrates: number;
-  fats: number;
-  ingredients: Array<{
-    name: string;
-    calories: number;
-    protein: number;
-    carbohydrates: number;
-    fats: number;
-  }>;
-}
-
 export async function POST(request: NextRequest) {
   try {
     // Check if API key is available

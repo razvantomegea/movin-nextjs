@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Search, Clock, Heart, Star, Calendar, Loader2 } from 'lucide-react';
+import { X, Search, Clock, Calendar, Loader2 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useDispatch, useSelector } from 'react-redux';
 import { Badge } from '@/components/ui/badge';

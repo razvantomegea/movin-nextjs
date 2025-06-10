@@ -1,33 +1,12 @@
 'use client';
 
-import { useState } from 'react';
-
 import { motion } from 'framer-motion';
-import {
-  Bell,
-  Trash2,
-  Download,
-  Upload,
-  RefreshCw,
-  Shield,
-  Smartphone,
-  Crown,
-  ExternalLink,
-} from 'lucide-react';
+import { Trash2, Download, Upload, Shield, Crown, ExternalLink } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Slider } from '@/components/ui/slider';
-import { Switch } from '@/components/ui/switch';
 import { useMovinEarn } from '@/lib/hooks/useMovinEarn';
 
 const container = {
@@ -50,11 +29,6 @@ export function SettingsPage() {
   const { usePremiumStatus } = useMovinEarn();
   const { isPremiumActive } = usePremiumStatus();
   const isPremium = isPremiumActive();
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-  const [backgroundSync, setBackgroundSync] = useState(true);
-  const [dataCollection, setDataCollection] = useState(true);
-  const [stepGoal, setStepGoal] = useState(10000);
-  const [distanceUnit, setDistanceUnit] = useState('km');
 
   return (
     <motion.div className="p-4" initial="hidden" animate="show" variants={container}>

@@ -28,7 +28,7 @@ export function captureErrorWithContext(
   error: unknown,
   context?: {
     user?: { id?: string; address?: string };
-    extra?: Record<string, any>;
+    extra?: Record<string, unknown>;
     tags?: Record<string, string>;
     level?: 'fatal' | 'error' | 'warning' | 'info' | 'debug';
   },

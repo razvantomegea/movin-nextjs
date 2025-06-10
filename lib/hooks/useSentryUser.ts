@@ -2,8 +2,8 @@
 
 import { useEffect } from 'react';
 import { useAppKitAccount } from '@reown/appkit/react';
-import { setSentryUser, clearSentryUser, addUserActionBreadcrumb } from '@/lib/sentry';
 import { useAppSelector } from '@/lib/redux/hooks';
+import { setSentryUser, clearSentryUser, addUserActionBreadcrumb } from '@/lib/sentry';
 
 /**
  * Hook to automatically manage Sentry user context based on wallet connection

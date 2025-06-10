@@ -3,7 +3,6 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useAppKit, useAppKitAccount } from '@reown/appkit/react';
 import { motion } from 'framer-motion';
-import { Wallet } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTheme } from 'next-themes';

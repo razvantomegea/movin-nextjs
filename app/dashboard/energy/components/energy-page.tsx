@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useAppKitAccount } from '@reown/appkit/react';
 import { motion } from 'framer-motion';
-import { Bolt, Flame, Clock, Camera, Plus, RefreshCw, PenTool } from 'lucide-react';
+import { Bolt, Flame, Clock, Plus, RefreshCw } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { CameraModal } from '@/components/camera-modal';
 import { CircularProgress } from '@/components/circular-progress';
@@ -24,7 +24,6 @@ import {
   resetEnergyError,
   addEnergyEntry,
 } from '@/lib/redux/slices/energyDataSlice';
-import { addMealToLibrary } from '@/lib/redux/slices/mealsSlice';
 import { showSuccessToast, showInfoToast } from '@/lib/redux/slices/toastSlice';
 import { IMeal } from '@/lib/supabase/meals';
 import {

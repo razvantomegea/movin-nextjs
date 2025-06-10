@@ -47,8 +47,7 @@ export default function ExportDataPage() {
       dispatch(
         showErrorToast({
           title: 'Export Failed',
-          description:
-            error instanceof Error ? error.message : 'An unknown error occurred.',
+          description: error instanceof Error ? error.message : 'An unknown error occurred.',
         }),
       );
     } finally {

@@ -407,7 +407,7 @@ export function useMovinEarn() {
         captureBlockchainError(
           err instanceof Error
             ? err
-            : new Error(String((err as any)?.message || 'Unknown blockchain error')),
+            : new Error(String((err as unknown as Error)?.message || 'Unknown blockchain error')),
           hash,
           CONTRACT_ADDRESS,
           address,

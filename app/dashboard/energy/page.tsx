@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useMovinEarn } from '@/lib/hooks/useMovinEarn';
 import { PremiumUpgradeModal } from '@/components/premium-upgrade-modal';
+import { useMovinEarn } from '@/lib/hooks/useMovinEarn';
 import { EnergyPage } from './components/energy-page';
 
 export default function Energy() {

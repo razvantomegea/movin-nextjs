@@ -1,10 +1,8 @@
-import type React from 'react';
+import type { ReactNode } from 'react';
 import './globals.css';
 import { Analytics } from '@vercel/analytics/next';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
-import { headers } from 'next/headers';
-
 import Script from 'next/script';
 import AppkitProvider from '@/app/contexts/appkit-provider';
 import { GoogleMapsProvider } from '@/app/contexts/google-maps-provider';
@@ -21,7 +19,7 @@ export const metadata: Metadata = {
   generator: 'v0.dev',
 };
 
-export default async function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: ReactNode }) {
   const adsenseClientId = process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID;
 
   return (

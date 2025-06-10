@@ -64,7 +64,7 @@ export function MealLoggingTypeModal({
             {/* Content */}
             <div className="p-6 space-y-4">
               <p className={`text-center ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                Choose how you'd like to log your meal
+                Choose how you&apos;d like to log your meal
               </p>
 
               <div className="space-y-3">
@@ -150,7 +150,7 @@ export function MealLoggingTypeModal({
                         <div className="flex-1">
                           <h3 className="font-semibold">Search Recent Meals</h3>
                           <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                            Find and reuse meals you've logged before
+                            Find and reuse meals you&apos;ve logged before
                           </p>
                         </div>
                       </div>
