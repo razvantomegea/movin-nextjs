@@ -139,7 +139,7 @@ function ConnectPageContent() {
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-gray-950 dark:to-gray-900 px-4 py-8 text-gray-900 dark:text-white transition-colors duration-300">
       <InstallPWA
         variant="banner"
-        showBanner={false}
+        showBanner={true}
         showButton={false}
         onInstall={() => console.log('App installed successfully')}
         onDismiss={() => console.log('Install banner dismissed')}

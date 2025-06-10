@@ -105,7 +105,7 @@ export default function InstallPWA({
       setDeferredPrompt(promptEvent);
 
       // Automatically trigger install prompt for supported browsers
-      if (!iOS && !isPWA && variant === 'banner') {
+      if (!isIOS && !isPWA && variant === 'banner') {
         try {
           // Small delay to ensure the event is properly handled
           setTimeout(async () => {
@@ -133,7 +133,7 @@ export default function InstallPWA({
           // Fallback to showing banner
           setShowBanner(true);
         }
-      } else if (iOS && variant === 'banner') {
+      } else if (isIOS && variant === 'banner') {
         // For iOS, show the banner with manual instructions
         setShowBanner(true);
         console.log('iOS detected, showing manual install banner');
@@ -158,6 +158,10 @@ export default function InstallPWA({
     // Hide banner if already installed
     if (isPWA) {
       setShowBanner(false);
+    } else if (isIOS && variant === 'banner' && showBanner) {
+      // Show banner immediately for iOS Safari since it doesn't fire beforeinstallprompt
+      setShowBanner(true);
+      console.log('iOS detected, showing install banner');
     }
 
     return () => {
@@ -165,7 +169,7 @@ export default function InstallPWA({
       displayModeQuery.removeEventListener('change', handleDisplayModeChange);
       minimalUIQuery.removeEventListener('change', handleDisplayModeChange);
     };
-  }, [variant, onInstall]);
+  }, [variant, onInstall, isIOS, showBanner]);
 
   const handleInstall = async () => {
     if (!deferredPrompt) {
