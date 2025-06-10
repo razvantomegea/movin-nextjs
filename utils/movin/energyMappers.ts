@@ -40,14 +40,6 @@ export interface TodaysMeal {
   protein: number;
 }
 
-export type MealType = 'breakfast' | 'lunch' | 'dinner';
-
-export interface MealsByType {
-  breakfast: TodaysMeal[];
-  lunch: TodaysMeal[];
-  dinner: TodaysMeal[];
-}
-
 export const mapEnergyToDaily = (energyEntries: IEnergy[], date: Date): DailyNutrition => {
   const targetDateStr = date.toLocaleDateString('en-US', {
     month: 'short',
@@ -211,51 +203,4 @@ export const mapEnergyToTodaysMeals = (
 // Helper function to get today's date as string
 export const getTodayDateString = (): string => {
   return new Date().toISOString().split('T')[0];
-};
-
-// Helper function to determine meal type based on time
-export const getMealTypeByTime = (timeString: string): MealType => {
-  // Parse the time string (format: "10:30 AM" or "2:30 PM")
-  const time = new Date(`1970-01-01 ${timeString}`);
-  const hour = time.getHours();
-
-  // Breakfast: 1 AM to 11 AM (1-11)
-  if (hour >= 1 && hour <= 11) {
-    return 'breakfast';
-  }
-  // Lunch: 12 PM to 5 PM (12-17)
-  else if (hour >= 12 && hour <= 17) {
-    return 'lunch';
-  }
-  // Dinner: 6 PM to 0 AM (18-23, 0)
-  else {
-    return 'dinner';
-  }
-};
-
-// Helper function to group today's meals by meal type
-export const groupMealsByType = (meals: TodaysMeal[]): MealsByType => {
-  return meals.reduce<MealsByType>(
-    (acc, meal) => {
-      const mealType = getMealTypeByTime(meal.time);
-      acc[mealType].push(meal);
-      return acc;
-    },
-    {
-      breakfast: [],
-      lunch: [],
-      dinner: [],
-    },
-  );
-};
-
-// Helper function to get calories by meal type
-export const getCaloriesByMealType = (meals: TodaysMeal[]): Record<MealType, number> => {
-  const groupedMeals = groupMealsByType(meals);
-
-  return {
-    breakfast: groupedMeals.breakfast.reduce((sum, meal) => sum + meal.calories, 0),
-    lunch: groupedMeals.lunch.reduce((sum, meal) => sum + meal.calories, 0),
-    dinner: groupedMeals.dinner.reduce((sum, meal) => sum + meal.calories, 0),
-  };
 };

@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useAppKitAccount } from '@reown/appkit/react';
 import { motion } from 'framer-motion';
-import { Bolt, Flame, Clock, Utensils, Camera, Plus, RefreshCw, PenTool } from 'lucide-react';
+import { Bolt, Flame, Clock, Camera, Plus, RefreshCw, PenTool } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { CameraModal } from '@/components/camera-modal';
 import { CircularProgress } from '@/components/circular-progress';
@@ -33,11 +33,9 @@ import {
   mapEnergyToMonthly,
   mapEnergyToYearly,
   mapEnergyToTodaysMeals,
-  getCaloriesByMealType,
   type DailyNutrition,
   type NutritionTimeRangeData,
   type TodaysMeal,
-  type MealType,
 } from '@/utils/movin/energyMappers';
 import { EnergyOverviewChart } from './energy-overview-chart';
 import { EnergyPageSkeleton } from './energy-page-skeleton';
@@ -113,24 +111,17 @@ export function EnergyPage() {
         consumed: 0,
         goal: 2000,
         remaining: 2000,
-        breakfast: 0,
-        lunch: 0,
-        dinner: 0,
       };
     }
 
     const goal = 2000; // Default goal, could be made configurable
-    const caloriesByMealType = getCaloriesByMealType(todaysMeals);
 
     return {
       consumed: dailyNutrition.calories,
       goal,
       remaining: Math.max(0, goal - dailyNutrition.calories),
-      breakfast: caloriesByMealType.breakfast,
-      lunch: caloriesByMealType.lunch,
-      dinner: caloriesByMealType.dinner,
     };
-  }, [dailyNutrition, todaysMeals]);
+  }, [dailyNutrition]);
 
   // Fetch data when component mounts (only for premium users)
   useEffect(() => {
@@ -281,8 +272,11 @@ export function EnergyPage() {
                   <div className="bg-blue-500/20 p-2 rounded-full mr-3">
                     <Flame className="h-5 w-5 text-blue-500" />
                   </div>
-                  <span className="text-sm font-medium">Today&apos;s Calories</span>
+                  <span className="text-sm font-medium">Today&apos;s Energy</span>
                 </div>
+                <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                  {dailyNutrition ? dailyNutrition.date : new Date().toLocaleDateString()}
+                </span>
               </div>
 
               <div className="flex items-center justify-between">
@@ -311,7 +305,7 @@ export function EnergyPage() {
                     />
                   </motion.div>
 
-                  <div className="grid grid-cols-4 gap-4 mt-6">
+                  <div className="grid grid-cols-3 gap-4 mt-6">
                     <motion.div
                       className="flex flex-col items-center"
                       whileHover={{ scale: 1.05 }}
@@ -320,9 +314,11 @@ export function EnergyPage() {
                       <div className="bg-blue-500/10 p-2 rounded-full mb-2">
                         <Bolt className="h-4 w-4 text-blue-500" />
                       </div>
-                      <span className="text-sm font-medium">{dailyCalories.remaining}</span>
+                      <span className="text-sm font-medium">
+                        {dailyNutrition?.protein.toFixed(1) || '0.0'}g
+                      </span>
                       <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                        remaining
+                        protein
                       </span>
                     </motion.div>
 
@@ -331,12 +327,14 @@ export function EnergyPage() {
                       whileHover={{ scale: 1.05 }}
                       transition={{ type: 'spring', stiffness: 400, damping: 10 }}
                     >
-                      <div className="bg-green-500/10 p-2 rounded-full mb-2">
-                        <Utensils className="h-4 w-4 text-green-500" />
+                      <div className="bg-blue-500/10 p-2 rounded-full mb-2">
+                        <Bolt className="h-4 w-4 text-blue-500" />
                       </div>
-                      <span className="text-sm font-medium">{dailyCalories.breakfast}</span>
+                      <span className="text-sm font-medium">
+                        {dailyNutrition?.carbohydrates.toFixed(1) || '0.0'}g
+                      </span>
                       <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                        breakfast
+                        carbohydrates
                       </span>
                     </motion.div>
 
@@ -345,26 +343,14 @@ export function EnergyPage() {
                       whileHover={{ scale: 1.05 }}
                       transition={{ type: 'spring', stiffness: 400, damping: 10 }}
                     >
-                      <div className="bg-orange-500/10 p-2 rounded-full mb-2">
-                        <Utensils className="h-4 w-4 text-orange-500" />
+                      <div className="bg-blue-500/10 p-2 rounded-full mb-2">
+                        <Bolt className="h-4 w-4 text-blue-500" />
                       </div>
-                      <span className="text-sm font-medium">{dailyCalories.lunch}</span>
-                      <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                        lunch
+                      <span className="text-sm font-medium">
+                        {dailyNutrition?.fats.toFixed(1) || '0.0'}g
                       </span>
-                    </motion.div>
-
-                    <motion.div
-                      className="flex flex-col items-center"
-                      whileHover={{ scale: 1.05 }}
-                      transition={{ type: 'spring', stiffness: 400, damping: 10 }}
-                    >
-                      <div className="bg-purple-500/10 p-2 rounded-full mb-2">
-                        <Utensils className="h-4 w-4 text-purple-500" />
-                      </div>
-                      <span className="text-sm font-medium">{dailyCalories.dinner}</span>
                       <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                        dinner
+                        fats
                       </span>
                     </motion.div>
                   </div>
@@ -410,7 +396,7 @@ export function EnergyPage() {
             <CardContent className="p-6">
               {todaysMeals.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
-                  <Utensils className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                  <Flame className="h-12 w-12 mx-auto mb-4 text-gray-400" />
                   <p>No meals recorded today</p>
                   <Button variant="outline" className="mt-4" onClick={handleOpenMealLogging}>
                     <Plus className="h-4 w-4 mr-2" />

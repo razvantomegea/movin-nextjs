@@ -34,7 +34,7 @@ export function ProfileTabs({ profile, activities = [] }: ProfileTabsProps) {
         />
       </TabsContent>
       <TabsContent value="stats" className="mt-4">
-        <ProfileStats profile={profile} activities={activities} />
+        <ProfileStats activities={activities} />
       </TabsContent>
     </Tabs>
   );

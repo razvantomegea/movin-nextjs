@@ -109,7 +109,7 @@ export function SettingsPage() {
           </Card>
         </motion.div>
 
-        <motion.div variants={item}>
+        {/* <motion.div variants={item}>
           <Card>
             <CardHeader>
               <CardTitle>Notifications</CardTitle>
@@ -183,7 +183,7 @@ export function SettingsPage() {
               </div>
             </CardContent>
           </Card>
-        </motion.div>
+        </motion.div> */}
 
         <motion.div variants={item}>
           <Card>
@@ -192,7 +192,7 @@ export function SettingsPage() {
               <CardDescription>Manage your data and privacy settings</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
+              {/* <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <Label className="flex items-center">
                     <RefreshCw className="h-4 w-4 mr-2 text-blue-500" />
@@ -216,7 +216,7 @@ export function SettingsPage() {
                   </p>
                 </div>
                 <Switch checked={dataCollection} onCheckedChange={setDataCollection} />
-              </div>
+              </div> */}
 
               <div className="pt-2 space-y-4">
                 <div className="flex items-center justify-between">

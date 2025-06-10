@@ -8,6 +8,8 @@ export interface UserDataSummary {
     activity_rewards: number;
     user_badges: number;
     staking: number;
+    meals: number;
+    energy: number;
     total_rewards: number;
     total_staked: number;
   };
@@ -22,6 +24,8 @@ export interface DeleteResult {
     activity_rewards: number;
     user_badges: number;
     staking: number;
+    meals: number;
+    energy: number;
     profile: number;
   };
 }
@@ -79,6 +83,8 @@ export async function getUserDataSummary({
             activity_rewards: 0,
             user_badges: 0,
             staking: 0,
+            meals: 0,
+            energy: 0,
             total_rewards: 0,
             total_staked: 0,
           },
@@ -86,21 +92,27 @@ export async function getUserDataSummary({
       }
 
       // Get counts for each table
-      const [activitiesRes, rewardsRes, badgesRes, stakingRes] = await Promise.all([
-        client
-          .from('activities')
-          .select('id', { count: 'exact', head: true })
-          .eq('address', address),
-        client
-          .from('activity_rewards')
-          .select('id', { count: 'exact', head: true })
-          .eq('address', address),
-        client
-          .from('user_badges')
-          .select('id', { count: 'exact', head: true })
-          .eq('address', address),
-        client.from('staking').select('id', { count: 'exact', head: true }).eq('address', address),
-      ]);
+      const [activitiesRes, rewardsRes, badgesRes, stakingRes, mealsRes, energyRes] =
+        await Promise.all([
+          client
+            .from('activities')
+            .select('id', { count: 'exact', head: true })
+            .eq('address', address),
+          client
+            .from('activity_rewards')
+            .select('id', { count: 'exact', head: true })
+            .eq('address', address),
+          client
+            .from('user_badges')
+            .select('id', { count: 'exact', head: true })
+            .eq('address', address),
+          client
+            .from('staking')
+            .select('id', { count: 'exact', head: true })
+            .eq('address', address),
+          client.from('meals').select('id', { count: 'exact', head: true }).eq('address', address),
+          client.from('energy').select('id', { count: 'exact', head: true }).eq('address', address),
+        ]);
 
       // Get reward totals
       const { data: rewardData } = await client
@@ -124,6 +136,8 @@ export async function getUserDataSummary({
           activity_rewards: rewardsRes.count || 0,
           user_badges: badgesRes.count || 0,
           staking: stakingRes.count || 0,
+          meals: mealsRes.count || 0,
+          energy: energyRes.count || 0,
           total_rewards: totalRewards,
           total_staked: totalStaked,
         },
@@ -185,6 +199,8 @@ export async function deleteAllUserData({
             activity_rewards: 0,
             user_badges: 0,
             staking: 0,
+            meals: 0,
+            energy: 0,
             profile: 0,
           },
         };
@@ -215,6 +231,8 @@ export async function deleteAllUserData({
             DELETE FROM activity_rewards WHERE address = '${address}';
             DELETE FROM user_badges WHERE address = '${address}';
             DELETE FROM staking WHERE address = '${address}';
+            DELETE FROM meals WHERE address = '${address}';
+            DELETE FROM energy WHERE address = '${address}';
             DELETE FROM profiles WHERE address = '${address}';
             COMMIT;
           `,
@@ -229,6 +247,8 @@ export async function deleteAllUserData({
           await client.from('activity_rewards').delete().eq('address', address);
           await client.from('user_badges').delete().eq('address', address);
           await client.from('staking').delete().eq('address', address);
+          await client.from('meals').delete().eq('address', address);
+          await client.from('energy').delete().eq('address', address);
           await client.from('profiles').delete().eq('address', address);
         }
       }
@@ -241,6 +261,8 @@ export async function deleteAllUserData({
           activity_rewards: summary.summary.activity_rewards,
           user_badges: summary.summary.user_badges,
           staking: summary.summary.staking,
+          meals: summary.summary.meals,
+          energy: summary.summary.energy,
           profile: 1,
         },
       };
@@ -253,6 +275,8 @@ export async function deleteAllUserData({
           activity_rewards: 0,
           user_badges: 0,
           staking: 0,
+          meals: 0,
+          energy: 0,
           profile: 0,
         },
       };
@@ -280,6 +304,13 @@ export async function userHasData({
     return false;
   }
 
-  const { activities, activity_rewards, user_badges, staking } = summary.summary;
-  return activities > 0 || activity_rewards > 0 || user_badges > 0 || staking > 0;
+  const { activities, activity_rewards, user_badges, staking, meals, energy } = summary.summary;
+  return (
+    activities > 0 ||
+    activity_rewards > 0 ||
+    user_badges > 0 ||
+    staking > 0 ||
+    meals > 0 ||
+    energy > 0
+  );
 }

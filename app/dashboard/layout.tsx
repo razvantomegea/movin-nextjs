@@ -4,13 +4,14 @@ import type React from 'react';
 
 import { useEffect, useMemo, useState } from 'react';
 import { useAppKitAccount, useDisconnect } from '@reown/appkit/react';
-import { Activity, Gift, Menu, Settings, User, X, Crown, Bolt } from 'lucide-react';
+import { Activity, Gift, Menu, Settings, User, X, Crown, Bolt, Flame } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAccount } from 'wagmi';
 import { AdSenseBanner } from '@/components/ui/adsense-banner';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useMovinEarn } from '@/lib/hooks/useMovinEarn';
@@ -111,7 +112,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   };
 
   const content = (
-    <div className="flex flex-col min-h-screen">
+    <div
+      className="flex flex-col min-h-screen"
+      style={{ '--wui-spacing-xs': '0px' } as React.CSSProperties}
+    >
       {/* Header */}
       <header className="glass-effect sticky top-0 z-10 p-4 flex items-center justify-between border-b dark:border-gray-800 border-gray-200">
         <div className="flex items-center">
@@ -119,7 +123,19 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           <span className="font-bold text-lg">Movin</span>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          {/* Streak Display */}
+          {profile && (
+            <Badge
+              variant="secondary"
+              className="flex items-center gap-1 h-8 px-2 bg-gradient-to-r from-orange-500/20 to-red-500/20 border-orange-500/30 text-orange-600 dark:text-orange-400 hover:from-orange-500/30 hover:to-red-500/30 transition-all duration-200 cursor-pointer"
+              onClick={() => router.push('/dashboard/profile')}
+            >
+              <Flame className="h-3 w-3 text-orange-500 animate-pulse" />
+              <span className="font-semibold">{profile.streak_days}</span>
+              <span className="hidden sm:inline">day{profile.streak_days !== 1 ? 's' : ''}</span>
+            </Badge>
+          )}
           {/* <PremiumBadge /> */}
           {/* <ThemeToggle /> */}
           <Link href="/dashboard/profile">
@@ -133,7 +149,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               </AvatarFallback>
             </Avatar>
           </Link>
-          <appkit-button />
+
+          <appkit-button size="sm" balance="hide" />
         </div>
       </header>
 

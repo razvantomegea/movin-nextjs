@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAppKitAccount } from '@reown/appkit/react';
-import { Flame, Lock, Plus, RefreshCw } from 'lucide-react';
+import { CircleDollarSign, Lock, Plus, RefreshCw } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { CelebrationAnimation } from '@/components/celebration-animation';
 import { TransactionConfirmationModal } from '@/components/transaction-confirmation-modal';
@@ -431,7 +431,7 @@ export function StakingRewards({ refreshing, onDataLoaded }: StakingRewardsProps
 
             <div className="flex flex-col items-center mb-8">
               <div className="flex items-center mb-2">
-                <Flame className="h-6 w-6 text-blue-400 mr-2" />
+                <CircleDollarSign className="h-6 w-6 text-blue-400 mr-2" />
                 <span className="text-4xl font-bold text-blue-400">{formattedTotalRewards}</span>
                 <span className="text-xl ml-2 text-gray-400">{displayTokenSymbol}</span>
               </div>

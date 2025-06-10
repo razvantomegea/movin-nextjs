@@ -13,6 +13,8 @@ DECLARE
   rewards_count INTEGER;
   badges_count INTEGER;
   stakes_count INTEGER;
+  meals_count INTEGER;
+  energy_count INTEGER;
   total_rewards DECIMAL;
   total_staked DECIMAL;
   profile_exists BOOLEAN;
@@ -32,6 +34,8 @@ BEGIN
   SELECT COUNT(*) INTO rewards_count FROM activity_rewards WHERE address = user_address;
   SELECT COUNT(*) INTO badges_count FROM user_badges WHERE address = user_address;
   SELECT COUNT(*) INTO stakes_count FROM staking WHERE address = user_address;
+  SELECT COUNT(*) INTO meals_count FROM meals WHERE address = user_address;
+  SELECT COUNT(*) INTO energy_count FROM energy WHERE address = user_address;
   
   -- Calculate totals
   SELECT COALESCE(SUM(rewards), 0) INTO total_rewards FROM activity_rewards WHERE address = user_address;
@@ -43,6 +47,8 @@ BEGIN
     'activity_rewards', rewards_count,
     'user_badges', badges_count,
     'staking', stakes_count,
+    'meals', meals_count,
+    'energy', energy_count,
     'total_rewards', total_rewards,
     'total_staked', total_staked
   );
@@ -71,6 +77,8 @@ DECLARE
   rewards_count INTEGER;
   badges_count INTEGER;
   stakes_count INTEGER;
+  meals_count INTEGER;
+  energy_count INTEGER;
   profile_exists BOOLEAN;
   current_user_address TEXT;
 BEGIN
@@ -101,6 +109,8 @@ BEGIN
   SELECT COUNT(*) INTO rewards_count FROM activity_rewards WHERE address = user_address;
   SELECT COUNT(*) INTO badges_count FROM user_badges WHERE address = user_address;
   SELECT COUNT(*) INTO stakes_count FROM staking WHERE address = user_address;
+  SELECT COUNT(*) INTO meals_count FROM meals WHERE address = user_address;
+  SELECT COUNT(*) INTO energy_count FROM energy WHERE address = user_address;
 
   -- Delete all user data (order matters for foreign key constraints)
   -- Delete dependent records first, then the profile
@@ -108,6 +118,8 @@ BEGIN
   DELETE FROM activity_rewards WHERE address = user_address;
   DELETE FROM user_badges WHERE address = user_address;
   DELETE FROM staking WHERE address = user_address;
+  DELETE FROM meals WHERE address = user_address;
+  DELETE FROM energy WHERE address = user_address;
   DELETE FROM profiles WHERE address = user_address;
 
   -- Build the response with deletion counts
@@ -116,6 +128,8 @@ BEGIN
     'activity_rewards', rewards_count,
     'user_badges', badges_count,
     'staking', stakes_count,
+    'meals', meals_count,
+    'energy', energy_count,
     'profile', 1
   );
 

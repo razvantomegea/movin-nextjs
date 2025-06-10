@@ -3,15 +3,13 @@
 import { useMemo } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { IActivity } from '@/lib/supabase/activities';
-import { IProfile } from '@/lib/supabase/profile';
 import { formatDistance } from '@/utils';
 
 interface ProfileStatsProps {
-  profile: IProfile;
   activities?: IActivity[];
 }
 
-export function ProfileStats({ profile, activities = [] }: ProfileStatsProps) {
+export function ProfileStats({ activities = [] }: ProfileStatsProps) {
   const stats = useMemo(() => {
     // Calculate total steps
     const totalSteps = activities.reduce((sum, activity) => {
@@ -77,11 +75,6 @@ export function ProfileStats({ profile, activities = [] }: ProfileStatsProps) {
                 {stats.totalCalories > 0 ? stats.totalCalories.toLocaleString() : 'No data yet'}
               </div>
             </div>
-          </div>
-
-          <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg">
-            <div className="text-sm text-gray-500 dark:text-gray-400">Best Streak</div>
-            <div className="text-2xl font-bold">{profile.streak_days} days</div>
           </div>
         </div>
       </CardContent>
