@@ -7,7 +7,7 @@ import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useAppDispatch } from '@/lib/redux/hooks';
-import { showSuccessToast, showErrorToast } from '@/lib/redux/slices/toastSlice';
+import { showSuccessToast } from '@/lib/redux/slices/toastSlice';
 
 interface TransactionConfirmationModalProps {
   isOpen: boolean;
@@ -51,17 +51,6 @@ export function TransactionConfirmationModal({
     onSuccess();
   }, [dispatch, onSuccess, rewardAmount, successTitle, successDescription]);
 
-  // Handle fail button click
-  const handleFail = useCallback(() => {
-    dispatch(
-      showErrorToast({
-        title: 'Transaction Failed',
-        description: 'Failed to claim rewards. Please try again later.',
-      }),
-    );
-    onFail();
-  }, [dispatch, onFail]);
-
   // Set up the timer when the modal opens
   useEffect(() => {
     if (isOpen) {
@@ -76,14 +65,14 @@ export function TransactionConfirmationModal({
         // If timer reaches 0, auto-fail
         if (secondsLeft === 0) {
           clearInterval(interval);
-          handleFail();
+          onFail();
         }
       }, 1000);
 
       // Clean up the interval when the modal closes
       return () => clearInterval(interval);
     }
-  }, [isOpen, handleFail, timeLeft]);
+  }, [isOpen, onFail, timeLeft]);
 
   // Format the time left as MM:SS
   const formatTimeLeft = () => {
@@ -219,7 +208,7 @@ export function TransactionConfirmationModal({
                   disabled={timeLeft > 0}
                   variant="outline"
                   className="border-red-500 text-red-500 hover:bg-red-500/10"
-                  onClick={handleFail}
+                  onClick={onFail}
                 >
                   <XCircle className="h-5 w-5 mr-2" />
                   No Transaction Received

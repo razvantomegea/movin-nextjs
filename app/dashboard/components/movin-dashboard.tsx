@@ -11,7 +11,7 @@ import {
   RefreshCw,
   Dumbbell,
   MapPin,
-  Camera,
+  Upload,
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { ActivityColumnChart } from '@/app/dashboard/components/activity-column-chart';
@@ -559,7 +559,7 @@ export function MovinDashboard() {
                 aria-label="Import Activity"
                 className="bg-purple-500 hover:bg-purple-600"
               >
-                <Camera className="h-4 w-4 mr-2" />
+                <Upload className="h-4 w-4 mr-2" />
                 Import Activity
               </Button>
               <Button

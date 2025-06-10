@@ -6,6 +6,7 @@ import { X, User, Users, MapPin, Search, UserPlus, Check, Clock } from 'lucide-r
 import { useTheme } from 'next-themes';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { useMovinEarn } from '@/lib/hooks/useMovinEarn';
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
 import {
@@ -96,35 +97,66 @@ export function RouteTypeModal({
     <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
       <h3 className="text-lg sm:text-xl font-semibold text-center mb-4">Choose Tracking Mode</h3>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Button
-          onClick={onSelectSingle}
-          variant="outline"
-          className={`h-auto min-h-[120px] sm:min-h-[140px] py-6 px-4 flex flex-col items-center justify-center space-y-3 ${
-            isDark ? 'hover:bg-gray-800' : 'hover:bg-gray-100'
-          }`}
+      <div className="space-y-3">
+        {/* Single Tracking Option */}
+        <motion.div
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          transition={{ type: 'spring', stiffness: 400, damping: 17 }}
         >
-          <User className="h-10 w-10 text-blue-500 flex-shrink-0" />
-          <div className="text-center w-full space-y-2">
-            <div className="font-medium text-base">Single</div>
-            <p className="text-sm text-gray-500 leading-relaxed">Track your route individually</p>
-          </div>
-        </Button>
+          <Card
+            className={`cursor-pointer transition-colors ${
+              isDark
+                ? 'bg-gray-800 hover:bg-gray-700 border-gray-700'
+                : 'bg-gray-50 hover:bg-gray-100 border-gray-200'
+            }`}
+            onClick={onSelectSingle}
+          >
+            <CardContent className="p-4">
+              <div className="flex items-center space-x-4">
+                <div className="bg-blue-500/20 p-3 rounded-full">
+                  <User className="h-6 w-6 text-blue-500" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold">Single</h3>
+                  <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                    Track your route individually
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
 
-        <Button
-          variant="outline"
-          disabled
-          className={`h-auto min-h-[120px] sm:min-h-[140px] py-6 px-4 flex flex-col items-center justify-center space-y-3 opacity-70 ${
-            isDark ? 'hover:bg-gray-800' : 'hover:bg-gray-100'
-          }`}
+        {/* Joint Tracking Option */}
+        <motion.div
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          transition={{ type: 'spring', stiffness: 400, damping: 17 }}
         >
-          <Users className="h-10 w-10 text-green-500 flex-shrink-0" />
-          <div className="text-center w-full space-y-2">
-            <div className="font-medium text-base">Joint</div>
-            <p className="text-sm text-gray-500 leading-relaxed">Track with friends nearby</p>
-            <p className="text-sm font-medium text-amber-500">Coming Soon</p>
-          </div>
-        </Button>
+          <Card
+            className={`cursor-pointer transition-colors opacity-70 ${
+              isDark
+                ? 'bg-gray-800 hover:bg-gray-700 border-gray-700'
+                : 'bg-gray-50 hover:bg-gray-100 border-gray-200'
+            }`}
+          >
+            <CardContent className="p-4">
+              <div className="flex items-center space-x-4">
+                <div className="bg-green-500/20 p-3 rounded-full">
+                  <Users className="h-6 w-6 text-green-500" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold">Joint</h3>
+                  <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                    Track with friends nearby
+                  </p>
+                  <p className="text-sm font-medium text-amber-500 mt-1">Coming Soon</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
       </div>
     </div>
   );

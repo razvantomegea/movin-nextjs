@@ -5,62 +5,22 @@ import { X, Edit2, Plus, Trash2, Save, ArrowRight, BookOpen } from 'lucide-react
 import Image from 'next/image';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
 import { useAppDispatch } from '@/lib/redux/hooks';
 import { addEnergyEntry } from '@/lib/redux/slices/energyDataSlice';
 import { addMealToLibrary } from '@/lib/redux/slices/mealsSlice';
 import { showSuccessToast, showErrorToast } from '@/lib/redux/slices/toastSlice';
+import {
+  Ingredient,
+  DetectedMeal,
+  MealDetectionResultsModalProps,
+  ApiMealData,
+  mapApiResponseToDetectedMeal,
+  calculateTotals,
+  generateUniqueIngredientId,
+} from '@/utils/energy/mealHelpers';
 import { getTodayDateString } from '@/utils/movin/energyMappers';
-
-// Define types for our component
-interface Ingredient {
-  id: string;
-  name: string;
-  calories: number;
-  carbs: number;
-  fats: number;
-  protein: number;
-}
-
-interface DetectedMeal {
-  mealName: string;
-  ingredients: Ingredient[];
-  calories: number;
-  carbohydrates: number;
-  fats: number;
-  protein: number;
-}
-
-interface MealDetectionResultsModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  imageData?: string | null;
-  mealData?: any;
-  sourceType?: 'camera' | 'text';
-  originalDescription?: string;
-}
-
-// Function to map API response to our component structure
-const mapApiResponseToDetectedMeal = (apiData: any): DetectedMeal => {
-  const mappedIngredients = apiData.ingredients.map((ingredient: any, index: number) => ({
-    id: (index + 1).toString(),
-    name: ingredient.name,
-    calories: ingredient.calories,
-    carbs: ingredient.carbohydrates,
-    fats: ingredient.fats,
-    protein: ingredient.protein,
-  }));
-
-  return {
-    mealName: apiData.mealName,
-    ingredients: mappedIngredients,
-    calories: apiData.calories,
-    carbohydrates: apiData.carbohydrates,
-    fats: apiData.fats,
-    protein: apiData.protein,
-  };
-};
 
 export function MealDetectionResultsModal({
   isOpen,
@@ -83,7 +43,7 @@ export function MealDetectionResultsModal({
   const isDark = resolvedTheme === 'dark';
 
   // Handler for API response success
-  const handleAnalysisSuccess = useCallback((data: any) => {
+  const handleAnalysisSuccess = useCallback((data: ApiMealData) => {
     const mappedMeal = mapApiResponseToDetectedMeal(data);
     setDetectedMeal(mappedMeal);
     setEditedMealName(mappedMeal.mealName);
@@ -181,52 +141,43 @@ export function MealDetectionResultsModal({
     handleAnalysisComplete,
   ]);
 
-  // Calculate totals based on current ingredients
-  const calculateTotals = (ingredients: Ingredient[]) => {
-    return ingredients.reduce(
-      (acc, ingredient) => {
-        return {
-          calories: acc.calories + ingredient.calories,
-          carbohydrates: acc.carbohydrates + ingredient.carbs,
-          fats: acc.fats + ingredient.fats,
-          protein: acc.protein + ingredient.protein,
-        };
-      },
-      { calories: 0, carbohydrates: 0, fats: 0, protein: 0 },
-    );
-  };
-
   // Handle editing an ingredient
-  const handleEditIngredient = (id: string, field: keyof Ingredient, value: string) => {
-    if (!detectedMeal) return;
+  const handleEditIngredient = useCallback(
+    (id: string, field: keyof Ingredient, value: string) => {
+      if (!detectedMeal) return;
 
-    const updatedIngredients = detectedMeal.ingredients.map((ingredient) => {
-      if (ingredient.id === id) {
-        if (field === 'name') {
-          return { ...ingredient, [field]: value };
-        } else {
-          // Convert string to number for numeric fields
-          return { ...ingredient, [field]: Number.parseFloat(value) || 0 };
+      const updatedIngredients = detectedMeal.ingredients.map((ingredient) => {
+        if (ingredient.id === id) {
+          if (field === 'name') {
+            return { ...ingredient, [field]: value };
+          } else {
+            // Convert string to number for numeric fields
+            return { ...ingredient, [field]: Number.parseFloat(value) || 0 };
+          }
         }
-      }
-      return ingredient;
-    });
+        return ingredient;
+      });
 
-    const totals = calculateTotals(updatedIngredients);
+      const totals = calculateTotals(updatedIngredients);
 
-    setDetectedMeal({
-      ...detectedMeal,
-      ingredients: updatedIngredients,
-      ...totals,
-    });
-  };
+      setDetectedMeal({
+        ...detectedMeal,
+        ingredients: updatedIngredients,
+        ...totals,
+      });
+    },
+    [detectedMeal],
+  );
 
   // Handle adding a new ingredient
-  const handleAddIngredient = () => {
-    if (!detectedMeal) return;
+  const handleAddIngredient = useCallback(() => {
+    if (!detectedMeal) {
+      console.log('No detected meal found');
+      return;
+    }
 
     const newIngredient: Ingredient = {
-      id: Date.now().toString(),
+      id: generateUniqueIngredientId(),
       name: 'New Ingredient',
       calories: 0,
       carbs: 0,
@@ -237,31 +188,37 @@ export function MealDetectionResultsModal({
     const updatedIngredients = [...detectedMeal.ingredients, newIngredient];
     const totals = calculateTotals(updatedIngredients);
 
-    setDetectedMeal({
+    const updatedMeal = {
       ...detectedMeal,
       ingredients: updatedIngredients,
       ...totals,
-    });
+    };
+
+    console.log('Setting new detected meal:', updatedMeal); // Debug log
+    setDetectedMeal(updatedMeal);
 
     // Set this new ingredient to edit mode
     setEditingIngredientId(newIngredient.id);
-  };
+  }, [detectedMeal]);
 
   // Handle removing an ingredient
-  const handleRemoveIngredient = (id: string) => {
-    if (!detectedMeal) return;
+  const handleRemoveIngredient = useCallback(
+    (id: string) => {
+      if (!detectedMeal) return;
 
-    const updatedIngredients = detectedMeal.ingredients.filter(
-      (ingredient) => ingredient.id !== id,
-    );
-    const totals = calculateTotals(updatedIngredients);
+      const updatedIngredients = detectedMeal.ingredients.filter(
+        (ingredient) => ingredient.id !== id,
+      );
+      const totals = calculateTotals(updatedIngredients);
 
-    setDetectedMeal({
-      ...detectedMeal,
-      ingredients: updatedIngredients,
-      ...totals,
-    });
-  };
+      setDetectedMeal({
+        ...detectedMeal,
+        ingredients: updatedIngredients,
+        ...totals,
+      });
+    },
+    [detectedMeal],
+  );
 
   // Handle saving the meal
   const handleSaveMeal = async () => {
@@ -307,6 +264,76 @@ export function MealDetectionResultsModal({
       );
     }
   };
+
+  // Additional UI callback handlers
+  // Handler for adding ingredient button click with event handling
+  const handleAddIngredientClick = useCallback(
+    (e: React.MouseEvent<HTMLButtonElement>) => {
+      e.preventDefault();
+      e.stopPropagation();
+      console.log('Add button clicked'); // Debug log
+      handleAddIngredient();
+    },
+    [handleAddIngredient],
+  );
+
+  // Handler for editing ingredient in edit mode
+  const handleIngredientEditClick = useCallback((ingredientId: string) => {
+    setEditingIngredientId(ingredientId);
+  }, []);
+
+  // Handler for removing ingredient
+  const handleRemoveIngredientClick = useCallback(
+    (ingredientId: string) => {
+      handleRemoveIngredient(ingredientId);
+    },
+    [handleRemoveIngredient],
+  );
+
+  // Handler for ingredient name change
+  const handleIngredientNameChange = useCallback(
+    (ingredientId: string, value: string) => {
+      handleEditIngredient(ingredientId, 'name', value);
+    },
+    [handleEditIngredient],
+  );
+
+  // Handler for ingredient calories change
+  const handleIngredientCaloriesChange = useCallback(
+    (ingredientId: string, value: string) => {
+      handleEditIngredient(ingredientId, 'calories', value);
+    },
+    [handleEditIngredient],
+  );
+
+  // Handler for ingredient carbs change
+  const handleIngredientCarbsChange = useCallback(
+    (ingredientId: string, value: string) => {
+      handleEditIngredient(ingredientId, 'carbs', value);
+    },
+    [handleEditIngredient],
+  );
+
+  // Handler for ingredient fats change
+  const handleIngredientFatsChange = useCallback(
+    (ingredientId: string, value: string) => {
+      handleEditIngredient(ingredientId, 'fats', value);
+    },
+    [handleEditIngredient],
+  );
+
+  // Handler for ingredient protein change
+  const handleIngredientProteinChange = useCallback(
+    (ingredientId: string, value: string) => {
+      handleEditIngredient(ingredientId, 'protein', value);
+    },
+    [handleEditIngredient],
+  );
+
+  // Handler for save to meal library checkbox change
+  const handleSaveToMealLibraryChange = useCallback((checked: boolean) => {
+    setSaveToMealLibrary(checked);
+  }, []);
 
   return (
     <AnimatePresence>
@@ -426,11 +453,12 @@ export function MealDetectionResultsModal({
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={handleAddIngredient}
-                        className="text-blue-500 border-blue-500"
+                        onClick={handleAddIngredientClick}
+                        className="text-blue-500 border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                        type="button"
                       >
                         <Plus className="h-4 w-4 mr-1" />
-                        Add
+                        Add Ingredient
                       </Button>
                     </div>
 
@@ -448,7 +476,7 @@ export function MealDetectionResultsModal({
                                 <Input
                                   value={ingredient.name}
                                   onChange={(e) =>
-                                    handleEditIngredient(ingredient.id, 'name', e.target.value)
+                                    handleIngredientNameChange(ingredient.id, e.target.value)
                                   }
                                   className="flex-1"
                                   placeholder="Ingredient name"
@@ -476,11 +504,7 @@ export function MealDetectionResultsModal({
                                     type="number"
                                     value={ingredient.calories}
                                     onChange={(e) =>
-                                      handleEditIngredient(
-                                        ingredient.id,
-                                        'calories',
-                                        e.target.value,
-                                      )
+                                      handleIngredientCaloriesChange(ingredient.id, e.target.value)
                                     }
                                     className="h-8"
                                   />
@@ -497,7 +521,7 @@ export function MealDetectionResultsModal({
                                     type="number"
                                     value={ingredient.carbs}
                                     onChange={(e) =>
-                                      handleEditIngredient(ingredient.id, 'carbs', e.target.value)
+                                      handleIngredientCarbsChange(ingredient.id, e.target.value)
                                     }
                                     className="h-8"
                                   />
@@ -514,7 +538,7 @@ export function MealDetectionResultsModal({
                                     type="number"
                                     value={ingredient.fats}
                                     onChange={(e) =>
-                                      handleEditIngredient(ingredient.id, 'fats', e.target.value)
+                                      handleIngredientFatsChange(ingredient.id, e.target.value)
                                     }
                                     className="h-8"
                                   />
@@ -531,7 +555,7 @@ export function MealDetectionResultsModal({
                                     type="number"
                                     value={ingredient.protein}
                                     onChange={(e) =>
-                                      handleEditIngredient(ingredient.id, 'protein', e.target.value)
+                                      handleIngredientProteinChange(ingredient.id, e.target.value)
                                     }
                                     className="h-8"
                                   />
@@ -546,7 +570,7 @@ export function MealDetectionResultsModal({
                                   <Button
                                     variant="ghost"
                                     size="sm"
-                                    onClick={() => setEditingIngredientId(ingredient.id)}
+                                    onClick={() => handleIngredientEditClick(ingredient.id)}
                                     className="h-7 w-7 p-0"
                                   >
                                     <Edit2 className="h-3.5 w-3.5" />
@@ -555,7 +579,7 @@ export function MealDetectionResultsModal({
                                   <Button
                                     variant="ghost"
                                     size="sm"
-                                    onClick={() => handleRemoveIngredient(ingredient.id)}
+                                    onClick={() => handleRemoveIngredientClick(ingredient.id)}
                                     className="h-7 w-7 p-0 text-red-500 hover:text-red-600"
                                   >
                                     <Trash2 className="h-3.5 w-3.5" />
@@ -678,7 +702,7 @@ export function MealDetectionResultsModal({
                   <Checkbox
                     id="save-to-library"
                     checked={saveToMealLibrary}
-                    onCheckedChange={(checked) => setSaveToMealLibrary(checked as boolean)}
+                    onCheckedChange={(checked) => handleSaveToMealLibraryChange(checked as boolean)}
                     className="h-4 w-4"
                   />
                   <label
@@ -692,8 +716,8 @@ export function MealDetectionResultsModal({
                   </label>
                 </div>
                 <p className={`text-xs mt-1 ml-7 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-                  Your meal will always be saved to today's energy log. Check this to also save it
-                  to your meal library for easy reuse.
+                  Your meal will always be saved to today&apos;s energy log. Check this to also save
+                  it to your meal library for easy reuse.
                 </p>
               </div>
 

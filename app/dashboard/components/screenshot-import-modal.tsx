@@ -142,21 +142,17 @@ export function ScreenshotImportModal({
 
       const { data: extractedData } = await response.json();
 
-      console.log('extractedData', extractedData);
-
       if (!extractedData.isValidScreenshot) {
         setError('This image does not appear to be a valid fitness app or smartwatch screenshot.');
         return;
       }
 
       if (!extractedData.isValidTiming) {
-        // Allow "Today" for Steps or Walking activities
-        const isStepsOrWalking =
-          extractedData.name.toLowerCase().includes('steps') ||
-          extractedData.name.toLowerCase().includes('walking');
+        // Allow "Today" for Steps activities
+        const isSteps = extractedData.name.toLowerCase().includes('steps');
         const isTodayTime = extractedData.activityTime.toLowerCase() === 'today';
 
-        if (!(isStepsOrWalking && isTodayTime)) {
+        if (!(isSteps && isTodayTime)) {
           setError(
             'The activity time in the screenshot is invalid. Please ensure the activity was completed today and the timestamp is visible, or shows "Today" for steps/walking activities.',
           );
@@ -215,7 +211,7 @@ export function ScreenshotImportModal({
           <motion.div
             className={`relative w-full max-w-2xl max-h-[90vh] overflow-hidden rounded-xl shadow-xl ${
               isDark ? 'bg-gray-900' : 'bg-white'
-            }`}
+            } flex flex-col`}
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.95, opacity: 0 }}
@@ -239,7 +235,7 @@ export function ScreenshotImportModal({
             </div>
 
             {/* Content */}
-            <div className="p-6 max-h-[calc(90vh-140px)] overflow-y-auto">
+            <div className="flex-1 p-6 overflow-y-auto min-h-0">
               {/* Instructions */}
               <Alert className="mb-6">
                 <AlertTriangle className="h-4 w-4" />
@@ -314,26 +310,6 @@ export function ScreenshotImportModal({
                           />
                         </div>
                       )}
-
-                      <div className="flex justify-center">
-                        <Button
-                          onClick={processScreenshot}
-                          disabled={isProcessing}
-                          className="bg-green-500 hover:bg-green-600"
-                        >
-                          {isProcessing ? (
-                            <>
-                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                              Analyzing...
-                            </>
-                          ) : (
-                            <>
-                              <CheckCircle className="h-4 w-4 mr-2" />
-                              Analyze Screenshot
-                            </>
-                          )}
-                        </Button>
-                      </div>
                     </CardContent>
                   </Card>
 
@@ -387,17 +363,50 @@ export function ScreenshotImportModal({
                             </div>
                           )}
                         </div>
-
-                        <div className="flex justify-end mt-4">
-                          <Button onClick={handleSave} className="bg-blue-500 hover:bg-blue-600">
-                            Save Activity
-                          </Button>
-                        </div>
                       </CardContent>
                     </Card>
                   )}
                 </div>
               )}
+            </div>
+
+            {/* Footer */}
+            <div
+              className={`flex-shrink-0 p-6 border-t ${
+                isDark ? 'border-gray-800' : 'border-gray-200'
+              }`}
+            >
+              <div className="flex justify-between">
+                <Button variant="outline" onClick={handleClose}>
+                  Cancel
+                </Button>
+                <div className="flex space-x-3">
+                  {!extractedData && (
+                    <Button
+                      onClick={processScreenshot}
+                      disabled={isProcessing || !file}
+                      className="bg-green-500 hover:bg-green-600 disabled:opacity-50"
+                    >
+                      {isProcessing ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Analyzing...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle className="h-4 w-4 mr-2" />
+                          Analyze Screenshot
+                        </>
+                      )}
+                    </Button>
+                  )}
+                  {extractedData && (
+                    <Button onClick={handleSave} className="bg-blue-500 hover:bg-blue-600">
+                      Save Activity
+                    </Button>
+                  )}
+                </div>
+              </div>
             </div>
           </motion.div>
         </motion.div>

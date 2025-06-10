@@ -253,7 +253,7 @@ export function MealSearchModal({
                     {getEmptyStateMessage()}
                   </h3>
                   <p
-                    className={`text-sm text-center ${isDark ? 'text-gray-500' : 'text-gray-500'}`}
+                    className={`text-sm text-center ${isDark ? 'text-gray-400' : 'text-gray-500'}`}
                   >
                     {getEmptyStateDescription()}
                   </p>

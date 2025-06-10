@@ -277,28 +277,39 @@ export function StakeModal({ isOpen, onClose }: StakeModalProps) {
 
   // Handle approval or staking failure - these will be called by the TransactionConfirmationModal
   const handleTransactionFail = useCallback(() => {
-    if (isApprovalModalOpen && approvalError && isProcessing) {
+    // Handle approval modal failure
+    if (isApprovalModalOpen) {
       setIsApprovalModalOpen(false);
-      dispatch(
-        showErrorToast({
-          title: 'Approval Failed',
-          description: mapError(approvalError),
-        }),
-      );
-
+      setIsApprovalNeeded(false);
       setIsProcessing(false);
-    } else if (isStakeModalOpen && stakeError && isProcessing) {
-      setIsStakeModalOpen(false);
-      dispatch(
-        showErrorToast({
-          title: 'Staking Failed',
-          description: mapError(stakeError),
-        }),
-      );
 
-      setIsProcessing(false);
+      // Only show error toast if there's an actual error, not just manual closure
+      if (approvalError) {
+        dispatch(
+          showErrorToast({
+            title: 'Approval Failed',
+            description: mapError(approvalError),
+          }),
+        );
+      }
     }
-  }, [isApprovalModalOpen, isStakeModalOpen, approvalError, stakeError, dispatch, isProcessing]);
+
+    // Handle staking modal failure
+    if (isStakeModalOpen) {
+      setIsStakeModalOpen(false);
+      setIsProcessing(false);
+
+      // Only show error toast if there's an actual error, not just manual closure
+      if (stakeError) {
+        dispatch(
+          showErrorToast({
+            title: 'Staking Failed',
+            description: mapError(stakeError),
+          }),
+        );
+      }
+    }
+  }, [isApprovalModalOpen, isStakeModalOpen, approvalError, stakeError, dispatch]);
 
   // Handle the initial stake button click
   const handleStake = useCallback(async () => {
@@ -625,6 +636,7 @@ export function StakeModal({ isOpen, onClose }: StakeModalProps) {
         onClose={() => {
           setIsApprovalModalOpen(false);
           setIsProcessing(false);
+          setIsApprovalNeeded(false);
         }}
         onSuccess={handleApprovalSuccess}
         onFail={handleTransactionFail}
