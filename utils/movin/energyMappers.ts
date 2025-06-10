@@ -35,7 +35,7 @@ export interface TodaysMeal {
   name: string;
   time: string;
   calories: number;
-  carbs: number;
+  carbohydrates: number;
   fats: number;
   protein: number;
 }
@@ -194,7 +194,7 @@ export const mapEnergyToTodaysMeals = (
         minute: '2-digit',
       }),
       calories: entry.calories || 0,
-      carbs: entry.carbohydrates || 0,
+      carbohydrates: entry.carbohydrates || 0,
       fats: entry.fats || 0,
       protein: entry.protein || 0,
     }));

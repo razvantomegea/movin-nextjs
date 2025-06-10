@@ -20,7 +20,7 @@ export interface Ingredient {
   id: string;
   name: string;
   calories: number;
-  carbs: number;
+  carbohydrates: number;
   fats: number;
   protein: number;
 }
@@ -38,7 +38,7 @@ export interface MealDetectionResultsModalProps {
   isOpen: boolean;
   onClose: () => void;
   imageData?: string | null;
-  mealData?: any;
+  mealData?: DetectedMeal | ApiMealData;
   sourceType?: 'camera' | 'text';
   originalDescription?: string;
 }
@@ -49,11 +49,11 @@ export interface MealDetectionResultsModalProps {
  * @returns Formatted DetectedMeal object
  */
 export function mapApiResponseToDetectedMeal(apiData: ApiMealData): DetectedMeal {
-  const mappedIngredients = apiData.ingredients.map((ingredient: ApiIngredient, index: number) => ({
-    id: (index + 1).toString(),
+  const mappedIngredients = apiData.ingredients.map((ingredient: ApiIngredient) => ({
+    id: `ingredient_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`,
     name: ingredient.name,
     calories: ingredient.calories,
-    carbs: ingredient.carbohydrates,
+    carbohydrates: ingredient.carbohydrates,
     fats: ingredient.fats,
     protein: ingredient.protein,
   }));
@@ -78,7 +78,7 @@ export function calculateTotals(ingredients: Ingredient[]) {
     (acc, ingredient) => {
       return {
         calories: acc.calories + ingredient.calories,
-        carbohydrates: acc.carbohydrates + ingredient.carbs,
+        carbohydrates: acc.carbohydrates + ingredient.carbohydrates,
         fats: acc.fats + ingredient.fats,
         protein: acc.protein + ingredient.protein,
       };
@@ -92,5 +92,5 @@ export function calculateTotals(ingredients: Ingredient[]) {
  * @returns A unique identifier string for new ingredients
  */
 export function generateUniqueIngredientId(): string {
-  return `ingredient_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  return `ingredient_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
 }

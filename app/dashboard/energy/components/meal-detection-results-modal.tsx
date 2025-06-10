@@ -180,7 +180,7 @@ export function MealDetectionResultsModal({
       id: generateUniqueIngredientId(),
       name: 'New Ingredient',
       calories: 0,
-      carbs: 0,
+      carbohydrates: 0,
       fats: 0,
       protein: 0,
     };
@@ -306,10 +306,10 @@ export function MealDetectionResultsModal({
     [handleEditIngredient],
   );
 
-  // Handler for ingredient carbs change
-  const handleIngredientCarbsChange = useCallback(
+  // Handler for ingredient carbohydrates change
+  const handleIngredientCarbohydratesChange = useCallback(
     (ingredientId: string, value: string) => {
-      handleEditIngredient(ingredientId, 'carbs', value);
+      handleEditIngredient(ingredientId, 'carbohydrates', value);
     },
     [handleEditIngredient],
   );
@@ -515,13 +515,16 @@ export function MealDetectionResultsModal({
                                       isDark ? 'text-gray-400' : 'text-gray-500'
                                     }`}
                                   >
-                                    Carbs (g)
+                                    Carbohydrates (g)
                                   </label>
                                   <Input
                                     type="number"
-                                    value={ingredient.carbs}
+                                    value={ingredient.carbohydrates}
                                     onChange={(e) =>
-                                      handleIngredientCarbsChange(ingredient.id, e.target.value)
+                                      handleIngredientCarbohydratesChange(
+                                        ingredient.id,
+                                        e.target.value,
+                                      )
                                     }
                                     className="h-8"
                                   />
@@ -604,9 +607,9 @@ export function MealDetectionResultsModal({
                                       isDark ? 'text-gray-400' : 'text-gray-500'
                                     }`}
                                   >
-                                    Carbs
+                                    Carbohydrates
                                   </div>
-                                  <div className="font-medium">{ingredient.carbs}g</div>
+                                  <div className="font-medium">{ingredient.carbohydrates}g</div>
                                 </div>
                                 <div className="text-center p-1 bg-yellow-500/10 rounded">
                                   <div
@@ -661,7 +664,7 @@ export function MealDetectionResultsModal({
                           {Math.round(detectedMeal.carbohydrates)}
                         </div>
                         <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                          Carbs (g)
+                          Carbohydrates (g)
                         </div>
                       </div>
                       <div className="text-center">

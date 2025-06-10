@@ -153,6 +153,33 @@ export async function getUserDataSummary({
 }
 
 /**
+ * Delete an avatar from storage
+ * @param avatarUrl - The public URL of the avatar
+ * @param client - Supabase client
+ */
+export async function deleteAvatar({
+  avatarUrl,
+  client,
+}: {
+  avatarUrl: string;
+  client?: SupabaseClient;
+}) {
+  if (!client) {
+    client = getClient();
+  }
+  try {
+    const filePath = new URL(avatarUrl).pathname.split('/avatars/')[1];
+    if (filePath) {
+      const { error } = await client.storage.from('avatars').remove([filePath]);
+      if (error) throw error;
+    }
+  } catch (error) {
+    console.error('Failed to delete avatar:', error);
+    // We don't rethrow, as we want to proceed with deleting the rest of the data
+  }
+}
+
+/**
  * Delete all user data from the database
  * This will permanently remove all data associated with the user's address
  */
@@ -172,6 +199,17 @@ export async function deleteAllUserData({
   }
 
   try {
+    // First, fetch the profile to get the avatar URL for deletion
+    const { data: profile } = await client
+      .from('profiles')
+      .select('avatar_url')
+      .eq('address', address)
+      .single();
+
+    if (profile?.avatar_url) {
+      await deleteAvatar({ avatarUrl: profile.avatar_url, client });
+    }
+
     // Try using the SQL function first
     const { data, error } = await client.rpc('delete_all_user_data', {
       user_address: address,
