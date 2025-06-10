@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import NextError from 'next/error';
-import { captureErrorWithContext } from '@/lib/sentry';
 import { BugReportButton } from '@/components/feedback/BugReportButton';
+import { captureErrorWithContext } from '@/lib/sentry';
 
 export default function GlobalError({ error }: { error: Error & { digest?: string } }) {
   const [eventId, setEventId] = useState<string>();

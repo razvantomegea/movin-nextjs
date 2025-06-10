@@ -60,14 +60,8 @@ if (!projectId) {
   }
 }
 
-export default function AppkitProvider({
-  children,
-  cookies,
-}: {
-  children: ReactNode;
-  cookies: string | null;
-}) {
-  const initialState = cookieToInitialState(wagmiAdapter.wagmiConfig as Config, cookies);
+export default function AppkitProvider({ children }: { children: ReactNode }) {
+  const initialState = cookieToInitialState(wagmiAdapter.wagmiConfig as Config, '');
 
   return (
     <WagmiProvider config={wagmiAdapter.wagmiConfig as Config} initialState={initialState}>

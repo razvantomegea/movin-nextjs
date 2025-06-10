@@ -1,3 +1,5 @@
+import * as Sentry from '@sentry/nextjs';
+
 // Centralized Sentry configuration
 export const SENTRY_CONFIG = {
   dsn:
@@ -21,7 +23,7 @@ export const SENTRY_CONFIG = {
     replaysOnErrorSampleRate: 1.0,
 
     // Browser-specific integrations
-    beforeSend: (event: any) => {
+    beforeSend: (event: Sentry.Event) => {
       // Filter out non-error events in production
       if (process.env.NODE_ENV === 'production' && event.level !== 'error') {
         return null;
@@ -33,7 +35,7 @@ export const SENTRY_CONFIG = {
   // Server-specific configuration
   server: {
     // Server-specific settings
-    beforeSend: (event: any) => {
+    beforeSend: (event: Sentry.Event) => {
       // Log server errors for debugging
       if (process.env.NODE_ENV === 'development') {
         console.error('Sentry Server Error:', event);
@@ -45,7 +47,7 @@ export const SENTRY_CONFIG = {
   // Edge-specific configuration
   edge: {
     // Edge runtime specific settings
-    beforeSend: (event: any) => {
+    beforeSend: (event: Sentry.Event) => {
       // Edge runtime error handling
       return event;
     },

@@ -90,6 +90,19 @@ export function ScreenshotImportModal({
     [handleFileSelect],
   );
 
+  // Handler for click to choose file
+  const handleChooseFileClick = useCallback(() => {
+    fileInputRef.current?.click();
+  }, []);
+
+  // Handler for removing selected file
+  const handleRemoveFile = useCallback(() => {
+    setFile(null);
+    setPreview(null);
+    setExtractedData(null);
+    setError(null);
+  }, []);
+
   const processScreenshot = async () => {
     if (!file) return;
 
@@ -129,21 +142,17 @@ export function ScreenshotImportModal({
 
       const { data: extractedData } = await response.json();
 
-      console.log('extractedData', extractedData);
-
       if (!extractedData.isValidScreenshot) {
         setError('This image does not appear to be a valid fitness app or smartwatch screenshot.');
         return;
       }
 
       if (!extractedData.isValidTiming) {
-        // Allow "Today" for Steps or Walking activities
-        const isStepsOrWalking =
-          extractedData.name.toLowerCase().includes('steps') ||
-          extractedData.name.toLowerCase().includes('walking');
+        // Allow "Today" for Steps activities
+        const isSteps = extractedData.name.toLowerCase().includes('steps');
         const isTodayTime = extractedData.activityTime.toLowerCase() === 'today';
 
-        if (!(isStepsOrWalking && isTodayTime)) {
+        if (!(isSteps && isTodayTime)) {
           setError(
             'The activity time in the screenshot is invalid. Please ensure the activity was completed today and the timestamp is visible, or shows "Today" for steps/walking activities.',
           );
@@ -202,7 +211,7 @@ export function ScreenshotImportModal({
           <motion.div
             className={`relative w-full max-w-2xl max-h-[90vh] overflow-hidden rounded-xl shadow-xl ${
               isDark ? 'bg-gray-900' : 'bg-white'
-            }`}
+            } flex flex-col`}
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.95, opacity: 0 }}
@@ -215,7 +224,7 @@ export function ScreenshotImportModal({
               }`}
             >
               <div>
-                <h2 className="text-xl font-bold">Import Activity from Screenshot</h2>
+                <h2 className="text-xl font-bold">Import Workout from Screenshot</h2>
                 <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'} mt-1`}>
                   Upload a screenshot of your fitness app or smartwatch
                 </p>
@@ -226,7 +235,7 @@ export function ScreenshotImportModal({
             </div>
 
             {/* Content */}
-            <div className="p-6 max-h-[calc(90vh-140px)] overflow-y-auto">
+            <div className="flex-1 p-6 overflow-y-auto min-h-0">
               {/* Instructions */}
               <Alert className="mb-6">
                 <AlertTriangle className="h-4 w-4" />
@@ -234,14 +243,14 @@ export function ScreenshotImportModal({
                   <strong>For best results, ensure your screenshot clearly shows:</strong>
                   <ul className="list-disc list-inside mt-2 space-y-1 text-sm">
                     <li>Device time at the top of the screen</li>
-                    <li>Activity completion time</li>
-                    <li>Activity name</li>
-                    <li>Calories burned</li>
+                    <li>Completion time or &quot;Today&quot; for steps</li>
+                    <li>Workout name or &quot;Steps&quot; for steps</li>
+                    <li>Calories burned (if available)</li>
                     <li>Steps count and distance (if available)</li>
                     <li>Heart rate data (if available)</li>
                   </ul>
                   <p className="mt-2 text-sm font-medium">
-                    The activity must be from today and completed before the current device time.
+                    The workout must be from today and completed before the current device time.
                   </p>
                 </AlertDescription>
               </Alert>
@@ -270,10 +279,7 @@ export function ScreenshotImportModal({
                     onChange={handleFileInput}
                     className="hidden"
                   />
-                  <Button
-                    className="bg-blue-500 hover:bg-blue-600"
-                    onClick={() => fileInputRef.current?.click()}
-                  >
+                  <Button className="bg-blue-500 hover:bg-blue-600" onClick={handleChooseFileClick}>
                     <ImageIcon className="h-4 w-4 mr-2" />
                     Choose File
                   </Button>
@@ -287,16 +293,7 @@ export function ScreenshotImportModal({
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between mb-3">
                         <span className="text-sm font-medium">Selected Image</span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setFile(null);
-                            setPreview(null);
-                            setExtractedData(null);
-                            setError(null);
-                          }}
-                        >
+                        <Button variant="ghost" size="sm" onClick={handleRemoveFile}>
                           <X className="h-4 w-4" />
                         </Button>
                       </div>
@@ -313,26 +310,6 @@ export function ScreenshotImportModal({
                           />
                         </div>
                       )}
-
-                      <div className="flex justify-center">
-                        <Button
-                          onClick={processScreenshot}
-                          disabled={isProcessing}
-                          className="bg-green-500 hover:bg-green-600"
-                        >
-                          {isProcessing ? (
-                            <>
-                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                              Analyzing...
-                            </>
-                          ) : (
-                            <>
-                              <CheckCircle className="h-4 w-4 mr-2" />
-                              Analyze Screenshot
-                            </>
-                          )}
-                        </Button>
-                      </div>
                     </CardContent>
                   </Card>
 
@@ -386,17 +363,50 @@ export function ScreenshotImportModal({
                             </div>
                           )}
                         </div>
-
-                        <div className="flex justify-end mt-4">
-                          <Button onClick={handleSave} className="bg-blue-500 hover:bg-blue-600">
-                            Save Activity
-                          </Button>
-                        </div>
                       </CardContent>
                     </Card>
                   )}
                 </div>
               )}
+            </div>
+
+            {/* Footer */}
+            <div
+              className={`flex-shrink-0 p-6 border-t ${
+                isDark ? 'border-gray-800' : 'border-gray-200'
+              }`}
+            >
+              <div className="flex justify-between">
+                <Button variant="outline" onClick={handleClose}>
+                  Cancel
+                </Button>
+                <div className="flex space-x-3">
+                  {!extractedData && (
+                    <Button
+                      onClick={processScreenshot}
+                      disabled={isProcessing || !file}
+                      className="bg-green-500 hover:bg-green-600 disabled:opacity-50"
+                    >
+                      {isProcessing ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Analyzing...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle className="h-4 w-4 mr-2" />
+                          Analyze Screenshot
+                        </>
+                      )}
+                    </Button>
+                  )}
+                  {extractedData && (
+                    <Button onClick={handleSave} className="bg-blue-500 hover:bg-blue-600">
+                      Save Activity
+                    </Button>
+                  )}
+                </div>
+              </div>
             </div>
           </motion.div>
         </motion.div>

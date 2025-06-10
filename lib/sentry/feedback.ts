@@ -112,7 +112,7 @@ export function showFeedbackForError(
   context?: {
     component?: string;
     action?: string;
-    additionalData?: Record<string, any>;
+    additionalData?: Record<string, unknown>;
   },
 ) {
   // Capture the error first and get the event ID

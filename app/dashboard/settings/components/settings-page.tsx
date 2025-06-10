@@ -1,33 +1,12 @@
 'use client';
 
-import { useState } from 'react';
-
 import { motion } from 'framer-motion';
-import {
-  Bell,
-  Trash2,
-  Download,
-  Upload,
-  RefreshCw,
-  Shield,
-  Smartphone,
-  Crown,
-  ExternalLink,
-} from 'lucide-react';
+import { Trash2, Download, Upload, Shield, Crown, ExternalLink } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Slider } from '@/components/ui/slider';
-import { Switch } from '@/components/ui/switch';
 import { useMovinEarn } from '@/lib/hooks/useMovinEarn';
 
 const container = {
@@ -50,11 +29,6 @@ export function SettingsPage() {
   const { usePremiumStatus } = useMovinEarn();
   const { isPremiumActive } = usePremiumStatus();
   const isPremium = isPremiumActive();
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-  const [backgroundSync, setBackgroundSync] = useState(true);
-  const [dataCollection, setDataCollection] = useState(true);
-  const [stepGoal, setStepGoal] = useState(10000);
-  const [distanceUnit, setDistanceUnit] = useState('km');
 
   return (
     <motion.div className="p-4" initial="hidden" animate="show" variants={container}>
@@ -109,7 +83,7 @@ export function SettingsPage() {
           </Card>
         </motion.div>
 
-        <motion.div variants={item}>
+        {/* <motion.div variants={item}>
           <Card>
             <CardHeader>
               <CardTitle>Notifications</CardTitle>
@@ -183,7 +157,7 @@ export function SettingsPage() {
               </div>
             </CardContent>
           </Card>
-        </motion.div>
+        </motion.div> */}
 
         <motion.div variants={item}>
           <Card>
@@ -192,7 +166,7 @@ export function SettingsPage() {
               <CardDescription>Manage your data and privacy settings</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
+              {/* <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <Label className="flex items-center">
                     <RefreshCw className="h-4 w-4 mr-2 text-blue-500" />
@@ -216,7 +190,7 @@ export function SettingsPage() {
                   </p>
                 </div>
                 <Switch checked={dataCollection} onCheckedChange={setDataCollection} />
-              </div>
+              </div> */}
 
               <div className="pt-2 space-y-4">
                 <div className="flex items-center justify-between">
@@ -229,7 +203,12 @@ export function SettingsPage() {
                       Download all your activity data
                     </p>
                   </div>
-                  <Button variant="outline" size="sm">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => router.push('/dashboard/settings/export-data')}
+                  >
+                    <Download className="h-4 w-4 mr-2" />
                     Export
                   </Button>
                 </div>
@@ -244,7 +223,12 @@ export function SettingsPage() {
                       Upload previously exported data
                     </p>
                   </div>
-                  <Button variant="outline" size="sm">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => router.push('/dashboard/settings/import-data')}
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
                     Import
                   </Button>
                 </div>
@@ -361,23 +345,11 @@ export function SettingsPage() {
             <CardContent className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label>Version</Label>
-                <span className="text-sm">1.2.1</span>
+                <span className="text-sm">1.3.0</span>
               </div>
               <div className="flex items-center justify-between">
                 <Label>Build</Label>
-                <span className="text-sm">2025.06.05</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <Label>Device</Label>
-                <span className="text-sm flex items-center">
-                  <Smartphone className="h-3 w-3 mr-1" />
-                  Web App
-                </span>
-              </div>
-              <div className="pt-2">
-                <Button variant="outline" className="w-full" size="sm">
-                  Check for Updates
-                </Button>
+                <span className="text-sm">2025.06.10</span>
               </div>
             </CardContent>
           </Card>

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useCallback } from 'react';
 import { useAppKitAccount } from '@reown/appkit/react';
-import { Users, Copy, RefreshCw, Share2 } from 'lucide-react';
+import { Users, Copy, RefreshCw, Share2, CircleDollarSign } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -181,6 +181,7 @@ export function ReferralRewards({ refreshing, onDataLoaded }: ReferralRewardsPro
             <span className="text-sm text-gray-400">Total referrals</span>
 
             <div className="flex items-center mt-4">
+              <CircleDollarSign className="h-4 w-4 mr-2 text-blue-400" />
               <span className="text-2xl font-bold text-blue-400">{totalRewards.toFixed(1)}</span>
               <span className="text-sm ml-1 text-gray-400">MVN earned</span>
             </div>
@@ -192,11 +193,11 @@ export function ReferralRewards({ refreshing, onDataLoaded }: ReferralRewardsPro
         <h2 className="text-lg font-medium">Your Referral Link</h2>
         <Card className="bg-gray-100 dark:bg-gray-900 border-gray-300 dark:border-gray-800">
           <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="font-mono text-lg font-medium bg-gray-800 p-2 rounded flex-1 text-center overflow-hidden text-ellipsis">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="font-mono text-lg font-medium bg-gray-800 p-2 rounded-lg text-left break-all w-full md:w-auto md:flex-1">
                 {referralLink}
               </div>
-              <div className="ml-3 flex space-x-2">
+              <div className="flex w-full md:w-auto justify-center gap-2">
                 <Button
                   variant="outline"
                   size="sm"

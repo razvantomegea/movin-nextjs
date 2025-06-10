@@ -1,7 +1,16 @@
 'use client';
 
 import { useState } from 'react';
-import { Camera, Edit, Trophy, Flame, Activity, Loader2, Star } from 'lucide-react';
+import {
+  Camera,
+  Edit,
+  Trophy,
+  Flame,
+  Activity,
+  Loader2,
+  Star,
+  CircleDollarSign,
+} from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -120,7 +129,7 @@ export function ProfileHeader({
                 {profile.streak_days} Day Streak
               </Badge>
               <Badge variant="secondary" className="flex items-center">
-                <Activity className="h-3 w-3 mr-1 text-blue-500" />
+                <CircleDollarSign className="h-3 w-3 mr-1 text-blue-500" />
                 {balance}
               </Badge>
               <Badge variant="secondary" className="flex items-center">

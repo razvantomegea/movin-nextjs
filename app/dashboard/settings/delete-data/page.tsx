@@ -216,6 +216,14 @@ export default function DeleteDataPage() {
                   <span>Staking Records:</span>
                   <Badge variant="outline">{dataSummary.summary.staking}</Badge>
                 </div>
+                <div className="flex justify-between">
+                  <span>Meals Logged:</span>
+                  <Badge variant="outline">{dataSummary.summary.meals}</Badge>
+                </div>
+                <div className="flex justify-between">
+                  <span>Energy Entries:</span>
+                  <Badge variant="outline">{dataSummary.summary.energy}</Badge>
+                </div>
               </div>
 
               <div className="pt-4 border-t">
@@ -253,8 +261,8 @@ export default function DeleteDataPage() {
                       }
                     />
                     <Label htmlFor="understand" className="text-sm leading-5">
-                      I understand that all my activities, badges, rewards, and staking data will be
-                      permanently deleted
+                      I understand that all my data (activities, badges, rewards, meals, energy,
+                      profile, and staking) will be permanently deleted
                     </Label>
                   </div>
 
@@ -416,6 +424,8 @@ export default function DeleteDataPage() {
                         <div>Badges: {deleteResult.deleted_counts.user_badges}</div>
                         <div>Rewards: {deleteResult.deleted_counts.activity_rewards}</div>
                         <div>Stakes: {deleteResult.deleted_counts.staking}</div>
+                        <div>Meals: {deleteResult.deleted_counts.meals}</div>
+                        <div>Energy: {deleteResult.deleted_counts.energy}</div>
                       </div>
                     </div>
                   </>

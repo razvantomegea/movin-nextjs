@@ -8,15 +8,15 @@ import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid } fro
 import { Card, CardContent } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import type { EnergyData } from '@/lib/redux/slices/energyDataSlice';
+import { NutritionTimeRangeData } from '@/utils/movin/energyMappers';
 
 interface EnergyOverviewChartProps {
-  weeklyData: EnergyData[];
-  monthlyData: EnergyData[];
-  yearlyData: EnergyData[];
+  weeklyData: NutritionTimeRangeData[];
+  monthlyData: NutritionTimeRangeData[];
+  yearlyData: NutritionTimeRangeData[];
 }
 
-type MetricType = 'calories' | 'carbs' | 'fats' | 'protein';
+type MetricType = 'calories' | 'carbohydrates' | 'fats' | 'protein';
 
 export function EnergyOverviewChart({
   weeklyData,
@@ -47,7 +47,7 @@ export function EnergyOverviewChart({
     switch (metric) {
       case 'calories':
         return 'kcal';
-      case 'carbs':
+      case 'carbohydrates':
       case 'fats':
       case 'protein':
         return 'g';
@@ -61,7 +61,7 @@ export function EnergyOverviewChart({
     switch (metric) {
       case 'calories':
         return value.toLocaleString();
-      case 'carbs':
+      case 'carbohydrates':
       case 'fats':
       case 'protein':
         return value.toLocaleString();
@@ -79,7 +79,7 @@ export function EnergyOverviewChart({
     switch (metric) {
       case 'calories':
         return isDark ? '#3b82f6' : '#2563eb'; // blue
-      case 'carbs':
+      case 'carbohydrates':
         return isDark ? '#60a5fa' : '#3b82f6'; // lighter blue
       case 'fats':
         return isDark ? '#facc15' : '#eab308'; // yellow
@@ -95,7 +95,7 @@ export function EnergyOverviewChart({
     switch (metric) {
       case 'calories':
         return 'Calories (kcal)';
-      case 'carbs':
+      case 'carbohydrates':
         return 'Carbohydrates (g)';
       case 'fats':
         return 'Fats (g)';
@@ -139,7 +139,7 @@ export function EnergyOverviewChart({
           >
             <TabsList className="grid grid-cols-4 w-full sm:w-auto">
               <TabsTrigger value="calories">Calories</TabsTrigger>
-              <TabsTrigger value="carbs">Carbs</TabsTrigger>
+              <TabsTrigger value="carbohydrates">Carbohydrates</TabsTrigger>
               <TabsTrigger value="fats">Fats</TabsTrigger>
               <TabsTrigger value="protein">Protein</TabsTrigger>
             </TabsList>
@@ -252,7 +252,7 @@ export function EnergyOverviewChart({
         <div className="mt-6 text-center">
           <div className="text-sm text-gray-500">
             {metric === 'calories' && 'Total Calories'}
-            {metric === 'carbs' && 'Total Carbohydrates'}
+            {metric === 'carbohydrates' && 'Total Carbohydrates'}
             {metric === 'fats' && 'Total Fats'}
             {metric === 'protein' && 'Total Protein'}
           </div>

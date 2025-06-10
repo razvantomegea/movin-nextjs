@@ -1,251 +1,186 @@
-'use client';
-
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useAppKitAccount } from '@reown/appkit/react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Edit2, Plus, Trash2, Save, ArrowRight } from 'lucide-react';
+import { X, Edit2, Plus, Trash2, Save, ArrowRight, BookOpen } from 'lucide-react';
 import Image from 'next/image';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { useAppDispatch } from '@/lib/redux/hooks';
-import { addMeal } from '@/lib/redux/slices/energyDataSlice';
-import { showSuccessToast } from '@/lib/redux/slices/toastSlice';
-
-// Define types for our component
-interface Ingredient {
-  id: string;
-  name: string;
-  calories: number;
-  carbs: number;
-  fats: number;
-  protein: number;
-}
-
-interface DetectedMeal {
-  name: string;
-  ingredients: Ingredient[];
-  totalCalories: number;
-  totalCarbs: number;
-  totalFats: number;
-  totalProtein: number;
-}
-
-interface MealDetectionResultsModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  imageData: string | null;
-}
-
-// Sample data for detected meals
-const sampleDetectedMeals: DetectedMeal[] = [
-  {
-    name: 'Chicken Salad with Avocado',
-    ingredients: [
-      {
-        id: '1',
-        name: 'Grilled Chicken Breast',
-        calories: 165,
-        carbs: 0,
-        fats: 3.6,
-        protein: 31,
-      },
-      {
-        id: '2',
-        name: 'Mixed Greens',
-        calories: 15,
-        carbs: 3,
-        fats: 0,
-        protein: 1,
-      },
-      {
-        id: '3',
-        name: 'Avocado',
-        calories: 160,
-        carbs: 8,
-        fats: 15,
-        protein: 2,
-      },
-      {
-        id: '4',
-        name: 'Olive Oil Dressing',
-        calories: 120,
-        carbs: 0,
-        fats: 14,
-        protein: 0,
-      },
-    ],
-    totalCalories: 460,
-    totalCarbs: 11,
-    totalFats: 32.6,
-    totalProtein: 34,
-  },
-  {
-    name: 'Fruit and Yogurt Bowl',
-    ingredients: [
-      {
-        id: '1',
-        name: 'Greek Yogurt',
-        calories: 100,
-        carbs: 6,
-        fats: 0,
-        protein: 18,
-      },
-      {
-        id: '2',
-        name: 'Strawberries',
-        calories: 50,
-        carbs: 12,
-        fats: 0,
-        protein: 1,
-      },
-      {
-        id: '3',
-        name: 'Blueberries',
-        calories: 40,
-        carbs: 10,
-        fats: 0,
-        protein: 0.5,
-      },
-      {
-        id: '4',
-        name: 'Honey',
-        calories: 60,
-        carbs: 17,
-        fats: 0,
-        protein: 0,
-      },
-    ],
-    totalCalories: 250,
-    totalCarbs: 45,
-    totalFats: 0,
-    totalProtein: 19.5,
-  },
-  {
-    name: 'Salmon with Vegetables',
-    ingredients: [
-      {
-        id: '1',
-        name: 'Grilled Salmon',
-        calories: 206,
-        carbs: 0,
-        fats: 12,
-        protein: 22,
-      },
-      {
-        id: '2',
-        name: 'Broccoli',
-        calories: 55,
-        carbs: 11,
-        fats: 0.5,
-        protein: 3.7,
-      },
-      {
-        id: '3',
-        name: 'Sweet Potato',
-        calories: 112,
-        carbs: 26,
-        fats: 0.1,
-        protein: 2,
-      },
-      {
-        id: '4',
-        name: 'Olive Oil',
-        calories: 40,
-        carbs: 0,
-        fats: 4.5,
-        protein: 0,
-      },
-    ],
-    totalCalories: 413,
-    totalCarbs: 37,
-    totalFats: 17.1,
-    totalProtein: 27.7,
-  },
-];
+import { addEnergyEntry } from '@/lib/redux/slices/energyDataSlice';
+import { addMealToLibrary } from '@/lib/redux/slices/mealsSlice';
+import { showSuccessToast, showErrorToast } from '@/lib/redux/slices/toastSlice';
+import {
+  Ingredient,
+  DetectedMeal,
+  MealDetectionResultsModalProps,
+  ApiMealData,
+  mapApiResponseToDetectedMeal,
+  calculateTotals,
+  generateUniqueIngredientId,
+} from '@/utils/energy/mealHelpers';
+import { getTodayDateString } from '@/utils/movin/energyMappers';
 
 export function MealDetectionResultsModal({
   isOpen,
   onClose,
   imageData,
+  mealData,
+  sourceType = 'camera',
+  originalDescription,
 }: MealDetectionResultsModalProps) {
-  const { resolvedTheme } = useTheme();
-  const isDark = resolvedTheme === 'dark';
   const dispatch = useAppDispatch();
-
-  // State for the detected meal
-  const [isLoading, setIsLoading] = useState(true);
+  const { resolvedTheme } = useTheme();
+  const { address } = useAppKitAccount();
   const [detectedMeal, setDetectedMeal] = useState<DetectedMeal | null>(null);
-  const [editMode, setEditMode] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [editedMealName, setEditedMealName] = useState('');
+  const [editMode, setEditMode] = useState(false);
   const [editingIngredientId, setEditingIngredientId] = useState<string | null>(null);
+  const [saveToMealLibrary, setSaveToMealLibrary] = useState(false);
 
-  // Simulate meal detection when the modal opens
+  const isDark = resolvedTheme === 'dark';
+
+  // Handler for API response success
+  const handleAnalysisSuccess = useCallback((data: ApiMealData) => {
+    const mappedMeal = mapApiResponseToDetectedMeal(data);
+    setDetectedMeal(mappedMeal);
+    setEditedMealName(mappedMeal.mealName);
+  }, []);
+
+  // Handler for API response error
+  const handleAnalysisError = useCallback(
+    (error: unknown) => {
+      console.error('Error analyzing meal:', error);
+      dispatch(
+        showErrorToast({
+          title: 'Analysis Error',
+          description: 'An error occurred while analyzing the meal',
+        }),
+      );
+    },
+    [dispatch],
+  );
+
+  // Handler for API response failure
+  const handleAnalysisFailure = useCallback(
+    (errorMessage: string) => {
+      dispatch(
+        showErrorToast({
+          title: 'Analysis Failed',
+          description: errorMessage || 'Failed to analyze meal image',
+        }),
+      );
+    },
+    [dispatch],
+  );
+
+  // Handler for API completion
+  const handleAnalysisComplete = useCallback(() => {
+    setIsLoading(false);
+  }, []);
+
+  // Handler for editing meal name input
+  const handleMealNameChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setEditedMealName(e.target.value);
+  }, []);
+
+  // Handler for toggling edit mode
+  const handleToggleEditMode = useCallback(() => {
+    setEditMode(!editMode);
+  }, [editMode]);
+
+  // Handler for backdrop click to close modal
+  const handleBackdropClick = useCallback(() => {
+    onClose();
+  }, [onClose]);
+
+  // Handler for saving ingredient edit
+  const handleSaveIngredientEdit = useCallback(() => {
+    setEditingIngredientId(null);
+  }, []);
+
+  // Analyze meal when modal opens
   useEffect(() => {
-    if (isOpen && imageData) {
-      setIsLoading(true);
-      // Simulate API call delay
-      const timer = setTimeout(() => {
-        // Randomly select one of the sample meals
-        const randomMeal =
-          sampleDetectedMeals[Math.floor(Math.random() * sampleDetectedMeals.length)];
-        setDetectedMeal(randomMeal);
-        setEditedMealName(randomMeal.name);
-        setIsLoading(false);
-      }, 2000);
+    if (isOpen) {
+      if (sourceType === 'text' && mealData) {
+        // For text-based analysis, use the provided mealData directly
+        handleAnalysisSuccess(mealData);
+      } else if (sourceType === 'camera' && imageData) {
+        setIsLoading(true);
 
-      return () => clearTimeout(timer);
+        // Call the meal analysis API for image
+        fetch('/api/analyze-meal', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ imageData }),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.success) {
+              handleAnalysisSuccess(data.data);
+            } else {
+              handleAnalysisFailure(data.error);
+            }
+          })
+          .catch(handleAnalysisError)
+          .finally(handleAnalysisComplete);
+      }
     }
-  }, [isOpen, imageData]);
-
-  // Calculate totals based on current ingredients
-  const calculateTotals = (ingredients: Ingredient[]) => {
-    return ingredients.reduce(
-      (acc, ingredient) => {
-        return {
-          totalCalories: acc.totalCalories + ingredient.calories,
-          totalCarbs: acc.totalCarbs + ingredient.carbs,
-          totalFats: acc.totalFats + ingredient.fats,
-          totalProtein: acc.totalProtein + ingredient.protein,
-        };
-      },
-      { totalCalories: 0, totalCarbs: 0, totalFats: 0, totalProtein: 0 },
-    );
-  };
+  }, [
+    isOpen,
+    imageData,
+    mealData,
+    sourceType,
+    handleAnalysisSuccess,
+    handleAnalysisFailure,
+    handleAnalysisError,
+    handleAnalysisComplete,
+  ]);
 
   // Handle editing an ingredient
-  const handleEditIngredient = (id: string, field: keyof Ingredient, value: string) => {
-    if (!detectedMeal) return;
+  const handleEditIngredient = useCallback(
+    (id: string, field: keyof Ingredient, value: string) => {
+      if (!detectedMeal) return;
 
-    const updatedIngredients = detectedMeal.ingredients.map((ingredient) => {
-      if (ingredient.id === id) {
-        if (field === 'name') {
-          return { ...ingredient, [field]: value };
-        } else {
-          // Convert string to number for numeric fields
-          return { ...ingredient, [field]: Number.parseFloat(value) || 0 };
+      const updatedIngredients = detectedMeal.ingredients.map((ingredient) => {
+        if (ingredient.id === id) {
+          if (field === 'name') {
+            return { ...ingredient, [field]: value };
+          } else {
+            // Convert string to number for numeric fields
+            return { ...ingredient, [field]: Number.parseFloat(value) || 0 };
+          }
         }
-      }
-      return ingredient;
-    });
+        return ingredient;
+      });
 
-    const totals = calculateTotals(updatedIngredients);
+      const totals = calculateTotals(updatedIngredients);
 
-    setDetectedMeal({
-      ...detectedMeal,
-      ingredients: updatedIngredients,
-      ...totals,
-    });
-  };
+      setDetectedMeal({
+        ...detectedMeal,
+        ingredients: updatedIngredients,
+        ...totals,
+      });
+    },
+    [detectedMeal],
+  );
 
   // Handle adding a new ingredient
-  const handleAddIngredient = () => {
-    if (!detectedMeal) return;
+  const handleAddIngredient = useCallback(() => {
+    if (!detectedMeal) {
+      console.log('No detected meal found');
+      return;
+    }
 
     const newIngredient: Ingredient = {
-      id: Date.now().toString(),
+      id: generateUniqueIngredientId(),
       name: 'New Ingredient',
       calories: 0,
-      carbs: 0,
+      carbohydrates: 0,
       fats: 0,
       protein: 0,
     };
@@ -253,74 +188,158 @@ export function MealDetectionResultsModal({
     const updatedIngredients = [...detectedMeal.ingredients, newIngredient];
     const totals = calculateTotals(updatedIngredients);
 
-    setDetectedMeal({
+    const updatedMeal = {
       ...detectedMeal,
       ingredients: updatedIngredients,
       ...totals,
-    });
+    };
+
+    console.log('Setting new detected meal:', updatedMeal); // Debug log
+    setDetectedMeal(updatedMeal);
 
     // Set this new ingredient to edit mode
     setEditingIngredientId(newIngredient.id);
-  };
+  }, [detectedMeal]);
 
   // Handle removing an ingredient
-  const handleRemoveIngredient = (id: string) => {
-    if (!detectedMeal) return;
+  const handleRemoveIngredient = useCallback(
+    (id: string) => {
+      if (!detectedMeal) return;
 
-    const updatedIngredients = detectedMeal.ingredients.filter(
-      (ingredient) => ingredient.id !== id,
-    );
-    const totals = calculateTotals(updatedIngredients);
+      const updatedIngredients = detectedMeal.ingredients.filter(
+        (ingredient) => ingredient.id !== id,
+      );
+      const totals = calculateTotals(updatedIngredients);
 
-    setDetectedMeal({
-      ...detectedMeal,
-      ingredients: updatedIngredients,
-      ...totals,
-    });
-  };
+      setDetectedMeal({
+        ...detectedMeal,
+        ingredients: updatedIngredients,
+        ...totals,
+      });
+    },
+    [detectedMeal],
+  );
 
   // Handle saving the meal
-  const handleSaveMeal = () => {
-    if (!detectedMeal) return;
+  const handleSaveMeal = async () => {
+    if (!detectedMeal || !address) return;
 
-    // Create a new meal with the current time
-    const currentTime = new Date().toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: 'numeric',
-      hour12: true,
-    });
+    try {
+      // Create energy entry data
+      const energyEntryData = {
+        address,
+        meal_name: editedMealName || detectedMeal.mealName,
+        calories: detectedMeal.calories,
+        protein: detectedMeal.protein,
+        carbohydrates: detectedMeal.carbohydrates,
+        fats: detectedMeal.fats,
+        log_date: getTodayDateString(),
+      };
 
-    const newMeal = {
-      name: editedMealName || detectedMeal.name,
-      time: currentTime,
-      calories: detectedMeal.totalCalories,
-      carbs: detectedMeal.totalCarbs,
-      fats: detectedMeal.totalFats,
-      protein: detectedMeal.totalProtein,
-    };
+      // Save to energy log
+      await dispatch(addEnergyEntry({ address, energyData: energyEntryData })).unwrap();
 
-    // Dispatch action to add the meal
-    dispatch(addMeal(newMeal))
-      .unwrap()
-      .then(() => {
-        dispatch(
-          showSuccessToast({
-            title: 'Meal Added',
-            description: 'Your meal has been added to your log',
-          }),
-        );
-        onClose();
-      })
-      .catch((error) => {
-        console.error('Failed to add meal:', error);
-      });
+      // Optionally save to meals library for quick access
+      if (saveToMealLibrary) {
+        await dispatch(addMealToLibrary({ address, mealData: energyEntryData })).unwrap();
+      }
+
+      dispatch(
+        showSuccessToast({
+          title: 'Meal Added',
+          description: saveToMealLibrary
+            ? 'Your meal has been added to your log and saved to your meal library'
+            : 'Your meal has been added to your log',
+        }),
+      );
+
+      onClose();
+    } catch (error) {
+      console.error('Failed to add meal:', error);
+      dispatch(
+        showErrorToast({
+          title: 'Save Failed',
+          description: 'Failed to save meal to your log',
+        }),
+      );
+    }
   };
+
+  // Additional UI callback handlers
+  // Handler for adding ingredient button click with event handling
+  const handleAddIngredientClick = useCallback(
+    (e: React.MouseEvent<HTMLButtonElement>) => {
+      e.preventDefault();
+      e.stopPropagation();
+      console.log('Add button clicked'); // Debug log
+      handleAddIngredient();
+    },
+    [handleAddIngredient],
+  );
+
+  // Handler for editing ingredient in edit mode
+  const handleIngredientEditClick = useCallback((ingredientId: string) => {
+    setEditingIngredientId(ingredientId);
+  }, []);
+
+  // Handler for removing ingredient
+  const handleRemoveIngredientClick = useCallback(
+    (ingredientId: string) => {
+      handleRemoveIngredient(ingredientId);
+    },
+    [handleRemoveIngredient],
+  );
+
+  // Handler for ingredient name change
+  const handleIngredientNameChange = useCallback(
+    (ingredientId: string, value: string) => {
+      handleEditIngredient(ingredientId, 'name', value);
+    },
+    [handleEditIngredient],
+  );
+
+  // Handler for ingredient calories change
+  const handleIngredientCaloriesChange = useCallback(
+    (ingredientId: string, value: string) => {
+      handleEditIngredient(ingredientId, 'calories', value);
+    },
+    [handleEditIngredient],
+  );
+
+  // Handler for ingredient carbohydrates change
+  const handleIngredientCarbohydratesChange = useCallback(
+    (ingredientId: string, value: string) => {
+      handleEditIngredient(ingredientId, 'carbohydrates', value);
+    },
+    [handleEditIngredient],
+  );
+
+  // Handler for ingredient fats change
+  const handleIngredientFatsChange = useCallback(
+    (ingredientId: string, value: string) => {
+      handleEditIngredient(ingredientId, 'fats', value);
+    },
+    [handleEditIngredient],
+  );
+
+  // Handler for ingredient protein change
+  const handleIngredientProteinChange = useCallback(
+    (ingredientId: string, value: string) => {
+      handleEditIngredient(ingredientId, 'protein', value);
+    },
+    [handleEditIngredient],
+  );
+
+  // Handler for save to meal library checkbox change
+  const handleSaveToMealLibraryChange = useCallback((checked: boolean) => {
+    setSaveToMealLibrary(checked);
+  }, []);
 
   return (
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -330,13 +349,13 @@ export function MealDetectionResultsModal({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={onClose}
+            onClick={handleBackdropClick}
           />
 
           <motion.div
-            className={`relative w-full h-full sm:max-w-2xl sm:h-auto sm:max-h-[90vh] sm:rounded-xl overflow-hidden ${
+            className={`relative w-full max-w-2xl max-h-[90vh] overflow-hidden rounded-xl shadow-xl ${
               isDark ? 'bg-gray-900' : 'bg-white'
-            } shadow-xl`}
+            } flex flex-col`}
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.95, opacity: 0 }}
@@ -344,30 +363,35 @@ export function MealDetectionResultsModal({
           >
             {/* Header */}
             <div
-              className={`sticky top-0 z-10 flex items-center justify-between p-4 border-b ${
-                isDark ? 'border-gray-800 bg-gray-900' : 'border-gray-200 bg-white'
+              className={`flex items-center justify-between p-6 border-b ${
+                isDark ? 'border-gray-800' : 'border-gray-200'
               }`}
             >
-              <h2 className="text-xl font-bold">Meal Detection Results</h2>
+              <div>
+                <h2 className="text-xl font-bold">Meal Detection Results</h2>
+                <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'} mt-1`}>
+                  Review and edit the detected ingredients and nutrition information
+                </p>
+              </div>
               <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full">
                 <X className="h-5 w-5" />
               </Button>
             </div>
 
             {/* Content */}
-            <div className="overflow-y-auto p-4 max-h-[calc(100vh-8rem)] sm:max-h-[70vh]">
+            <div className="flex-1 p-6 overflow-y-auto min-h-0">
               {isLoading ? (
                 <div className="flex flex-col items-center justify-center py-12">
                   <div className="w-16 h-16 border-4 border-t-blue-500 border-b-blue-700 rounded-full animate-spin mb-4"></div>
                   <p className="text-lg font-medium">Analyzing your meal...</p>
-                  <p className="text-sm text-gray-500 mt-2">
+                  <p className={`text-sm mt-2 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                     Our AI is identifying ingredients and calculating nutrition information
                   </p>
                 </div>
               ) : detectedMeal ? (
                 <div className="space-y-6">
-                  {/* Meal Image */}
-                  {imageData && (
+                  {/* Meal Image or Description */}
+                  {sourceType === 'camera' && imageData && (
                     <div className="relative rounded-lg overflow-hidden h-48 bg-gray-200">
                       <Image
                         src={imageData || '/placeholder.svg'}
@@ -380,22 +404,41 @@ export function MealDetectionResultsModal({
                     </div>
                   )}
 
+                  {sourceType === 'text' && originalDescription && (
+                    <div
+                      className={`p-4 rounded-lg border-2 border-dashed ${
+                        isDark ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-300'
+                      }`}
+                    >
+                      <h4
+                        className={`font-medium mb-2 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}
+                      >
+                        Original Description:
+                      </h4>
+                      <p className={`italic ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
+                        &quot;{originalDescription}&quot;
+                      </p>
+                    </div>
+                  )}
+
                   {/* Meal Name */}
                   <div className="flex items-center justify-between">
                     {editMode ? (
                       <Input
                         value={editedMealName}
-                        onChange={(e) => setEditedMealName(e.target.value)}
+                        onChange={handleMealNameChange}
                         className="text-lg font-bold"
                         placeholder="Enter meal name"
                       />
                     ) : (
-                      <h3 className="text-lg font-bold">{editedMealName || detectedMeal.name}</h3>
+                      <h3 className="text-lg font-bold">
+                        {editedMealName || detectedMeal.mealName}
+                      </h3>
                     )}
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => setEditMode(!editMode)}
+                      onClick={handleToggleEditMode}
                       className="ml-2"
                     >
                       <Edit2 className="h-4 w-4" />
@@ -410,11 +453,12 @@ export function MealDetectionResultsModal({
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={handleAddIngredient}
-                        className="text-blue-500 border-blue-500"
+                        onClick={handleAddIngredientClick}
+                        className="text-blue-500 border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                        type="button"
                       >
                         <Plus className="h-4 w-4 mr-1" />
-                        Add
+                        Add Ingredient
                       </Button>
                     </div>
 
@@ -422,11 +466,9 @@ export function MealDetectionResultsModal({
                       {detectedMeal.ingredients.map((ingredient) => (
                         <div
                           key={ingredient.id}
-                          className={`p-3 rounded-lg ${
-                            isDark ? 'bg-gray-800' : 'bg-gray-100'
-                          } transition-all duration-200 ${
-                            editingIngredientId === ingredient.id ? 'ring-2 ring-blue-500' : ''
-                          }`}
+                          className={`p-3 rounded-lg transition-all duration-200 ${
+                            isDark ? 'bg-gray-800' : 'bg-gray-50'
+                          } ${editingIngredientId === ingredient.id ? 'ring-2 ring-blue-500' : ''}`}
                         >
                           {editingIngredientId === ingredient.id ? (
                             <div className="space-y-3">
@@ -434,7 +476,7 @@ export function MealDetectionResultsModal({
                                 <Input
                                   value={ingredient.name}
                                   onChange={(e) =>
-                                    handleEditIngredient(ingredient.id, 'name', e.target.value)
+                                    handleIngredientNameChange(ingredient.id, e.target.value)
                                   }
                                   className="flex-1"
                                   placeholder="Ingredient name"
@@ -442,25 +484,45 @@ export function MealDetectionResultsModal({
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() => setEditingIngredientId(null)}
+                                  onClick={handleSaveIngredientEdit}
                                   className="ml-2"
                                 >
                                   <Save className="h-4 w-4" />
                                   <span className="sr-only">Save</span>
                                 </Button>
                               </div>
-                              <div className="grid grid-cols-3 gap-2">
+                              <div className="grid grid-cols-4 gap-2">
                                 <div>
-                                  <label className="text-xs text-gray-500 mb-1 block">
+                                  <label
+                                    className={`text-xs mb-1 block ${
+                                      isDark ? 'text-gray-400' : 'text-gray-500'
+                                    }`}
+                                  >
                                     Calories
                                   </label>
                                   <Input
                                     type="number"
                                     value={ingredient.calories}
                                     onChange={(e) =>
-                                      handleEditIngredient(
+                                      handleIngredientCaloriesChange(ingredient.id, e.target.value)
+                                    }
+                                    className="h-8"
+                                  />
+                                </div>
+                                <div>
+                                  <label
+                                    className={`text-xs mb-1 block ${
+                                      isDark ? 'text-gray-400' : 'text-gray-500'
+                                    }`}
+                                  >
+                                    Carbohydrates (g)
+                                  </label>
+                                  <Input
+                                    type="number"
+                                    value={ingredient.carbohydrates}
+                                    onChange={(e) =>
+                                      handleIngredientCarbohydratesChange(
                                         ingredient.id,
-                                        'calories',
                                         e.target.value,
                                       )
                                     }
@@ -468,40 +530,35 @@ export function MealDetectionResultsModal({
                                   />
                                 </div>
                                 <div>
-                                  <label className="text-xs text-gray-500 mb-1 block">
-                                    Carbs (g)
-                                  </label>
-                                  <Input
-                                    type="number"
-                                    value={ingredient.carbs}
-                                    onChange={(e) =>
-                                      handleEditIngredient(ingredient.id, 'carbs', e.target.value)
-                                    }
-                                    className="h-8"
-                                  />
-                                </div>
-                                <div>
-                                  <label className="text-xs text-gray-500 mb-1 block">
+                                  <label
+                                    className={`text-xs mb-1 block ${
+                                      isDark ? 'text-gray-400' : 'text-gray-500'
+                                    }`}
+                                  >
                                     Fats (g)
                                   </label>
                                   <Input
                                     type="number"
                                     value={ingredient.fats}
                                     onChange={(e) =>
-                                      handleEditIngredient(ingredient.id, 'fats', e.target.value)
+                                      handleIngredientFatsChange(ingredient.id, e.target.value)
                                     }
                                     className="h-8"
                                   />
                                 </div>
                                 <div>
-                                  <label className="text-xs text-gray-500 mb-1 block">
+                                  <label
+                                    className={`text-xs mb-1 block ${
+                                      isDark ? 'text-gray-400' : 'text-gray-500'
+                                    }`}
+                                  >
                                     Protein (g)
                                   </label>
                                   <Input
                                     type="number"
                                     value={ingredient.protein}
                                     onChange={(e) =>
-                                      handleEditIngredient(ingredient.id, 'protein', e.target.value)
+                                      handleIngredientProteinChange(ingredient.id, e.target.value)
                                     }
                                     className="h-8"
                                   />
@@ -516,7 +573,7 @@ export function MealDetectionResultsModal({
                                   <Button
                                     variant="ghost"
                                     size="sm"
-                                    onClick={() => setEditingIngredientId(ingredient.id)}
+                                    onClick={() => handleIngredientEditClick(ingredient.id)}
                                     className="h-7 w-7 p-0"
                                   >
                                     <Edit2 className="h-3.5 w-3.5" />
@@ -525,7 +582,7 @@ export function MealDetectionResultsModal({
                                   <Button
                                     variant="ghost"
                                     size="sm"
-                                    onClick={() => handleRemoveIngredient(ingredient.id)}
+                                    onClick={() => handleRemoveIngredientClick(ingredient.id)}
                                     className="h-7 w-7 p-0 text-red-500 hover:text-red-600"
                                   >
                                     <Trash2 className="h-3.5 w-3.5" />
@@ -535,19 +592,43 @@ export function MealDetectionResultsModal({
                               </div>
                               <div className="grid grid-cols-4 gap-2 text-sm">
                                 <div className="text-center p-1 bg-blue-500/10 rounded">
-                                  <div className="text-xs text-gray-500">Calories</div>
+                                  <div
+                                    className={`text-xs ${
+                                      isDark ? 'text-gray-400' : 'text-gray-500'
+                                    }`}
+                                  >
+                                    Calories
+                                  </div>
                                   <div className="font-medium">{ingredient.calories}</div>
                                 </div>
                                 <div className="text-center p-1 bg-blue-500/10 rounded">
-                                  <div className="text-xs text-gray-500">Carbs</div>
-                                  <div className="font-medium">{ingredient.carbs}g</div>
+                                  <div
+                                    className={`text-xs ${
+                                      isDark ? 'text-gray-400' : 'text-gray-500'
+                                    }`}
+                                  >
+                                    Carbohydrates
+                                  </div>
+                                  <div className="font-medium">{ingredient.carbohydrates}g</div>
                                 </div>
                                 <div className="text-center p-1 bg-yellow-500/10 rounded">
-                                  <div className="text-xs text-gray-500">Fats</div>
+                                  <div
+                                    className={`text-xs ${
+                                      isDark ? 'text-gray-400' : 'text-gray-500'
+                                    }`}
+                                  >
+                                    Fats
+                                  </div>
                                   <div className="font-medium">{ingredient.fats}g</div>
                                 </div>
                                 <div className="text-center p-1 bg-green-500/10 rounded">
-                                  <div className="text-xs text-gray-500">Protein</div>
+                                  <div
+                                    className={`text-xs ${
+                                      isDark ? 'text-gray-400' : 'text-gray-500'
+                                    }`}
+                                  >
+                                    Protein
+                                  </div>
                                   <div className="font-medium">{ingredient.protein}g</div>
                                 </div>
                               </div>
@@ -572,27 +653,31 @@ export function MealDetectionResultsModal({
                     <div className="grid grid-cols-4 gap-4">
                       <div className="text-center">
                         <div className="text-2xl font-bold">
-                          {Math.round(detectedMeal.totalCalories)}
+                          {Math.round(detectedMeal.calories)}
                         </div>
-                        <div className="text-xs text-gray-500">Calories</div>
+                        <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                          Calories
+                        </div>
                       </div>
                       <div className="text-center">
                         <div className="text-2xl font-bold">
-                          {Math.round(detectedMeal.totalCarbs)}
+                          {Math.round(detectedMeal.carbohydrates)}
                         </div>
-                        <div className="text-xs text-gray-500">Carbs (g)</div>
+                        <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                          Carbohydrates (g)
+                        </div>
                       </div>
                       <div className="text-center">
-                        <div className="text-2xl font-bold">
-                          {Math.round(detectedMeal.totalFats)}
+                        <div className="text-2xl font-bold">{Math.round(detectedMeal.fats)}</div>
+                        <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                          Fats (g)
                         </div>
-                        <div className="text-xs text-gray-500">Fats (g)</div>
                       </div>
                       <div className="text-center">
-                        <div className="text-2xl font-bold">
-                          {Math.round(detectedMeal.totalProtein)}
+                        <div className="text-2xl font-bold">{Math.round(detectedMeal.protein)}</div>
+                        <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                          Protein (g)
                         </div>
-                        <div className="text-xs text-gray-500">Protein (g)</div>
                       </div>
                     </div>
                   </div>
@@ -600,7 +685,7 @@ export function MealDetectionResultsModal({
               ) : (
                 <div className="flex flex-col items-center justify-center py-12">
                   <p className="text-lg font-medium text-red-500">Failed to detect meal</p>
-                  <p className="text-sm text-gray-500 mt-2">
+                  <p className={`text-sm mt-2 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                     We couldn&apos;t analyze your meal. Please try taking another photo with better
                     lighting.
                   </p>
@@ -610,10 +695,36 @@ export function MealDetectionResultsModal({
 
             {/* Footer */}
             <div
-              className={`sticky bottom-0 p-4 border-t ${
-                isDark ? 'border-gray-800 bg-gray-900' : 'border-gray-200 bg-white'
+              className={`flex-shrink-0 p-6 border-t ${
+                isDark ? 'border-gray-800' : 'border-gray-200'
               }`}
             >
+              {/* Save Options */}
+              <div className="mb-4">
+                <div className="flex items-center space-x-3">
+                  <Checkbox
+                    id="save-to-library"
+                    checked={saveToMealLibrary}
+                    onCheckedChange={(checked) => handleSaveToMealLibraryChange(checked as boolean)}
+                    className="h-4 w-4"
+                  />
+                  <label
+                    htmlFor="save-to-library"
+                    className={`text-sm font-medium cursor-pointer flex items-center space-x-2 ${
+                      isDark ? 'text-gray-300' : 'text-gray-700'
+                    }`}
+                  >
+                    <BookOpen className="h-4 w-4" />
+                    <span>Save to meal library for quick access later</span>
+                  </label>
+                </div>
+                <p className={`text-xs mt-1 ml-7 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                  Your meal will always be saved to today&apos;s energy log. Check this to also save
+                  it to your meal library for easy reuse.
+                </p>
+              </div>
+
+              {/* Action Buttons */}
               <div className="flex justify-between">
                 <Button variant="outline" onClick={onClose}>
                   Cancel
@@ -628,9 +739,6 @@ export function MealDetectionResultsModal({
                 </Button>
               </div>
             </div>
-
-            {/* Mobile-only bottom padding for safe area */}
-            <div className="h-8 sm:hidden"></div>
           </motion.div>
         </motion.div>
       )}

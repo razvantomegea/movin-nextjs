@@ -10,3 +10,4 @@ export * from './movin/processStepsActivity';
 export * from './date';
 export * from './badges/badgeChecker';
 export * from './badges/badgeManager';
+export * from './energy/mealHelpers';

@@ -69,7 +69,7 @@ export function useBugReport() {
         component?: string;
         action?: string;
         showDialog?: boolean;
-        additionalData?: Record<string, any>;
+        additionalData?: Record<string, unknown>;
       },
     ) => {
       if (options?.showDialog) {
