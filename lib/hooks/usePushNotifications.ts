@@ -58,6 +58,19 @@ export default function usePushNotifications() {
     }
   }, [isSupported, getSubscription]);
 
+  // Update permission state when it changes
+  useEffect(() => {
+    if (isSupported) {
+      const updatePermissionState = () => {
+        setPermissionState(Notification.permission);
+      };
+
+      // Check permission state periodically in case it changes externally
+      const interval = setInterval(updatePermissionState, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [isSupported]);
+
   // Request permission for notifications
   const requestPermission = useCallback(async (): Promise<NotificationPermission> => {
     if (!isSupported) {

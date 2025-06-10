@@ -97,12 +97,15 @@ export default function PWATestPanel() {
   const testOfflineSync = async () => {
     try {
       const testData = {
-        type: 'test_activity',
-        timestamp: Date.now(),
-        message: `Test sync at ${new Date().toISOString()}`,
+        title: 'Test Activity',
+        description: `Test sync performed at ${new Date().toISOString()}`,
+        created_at: new Date().toISOString(),
+        calories_burned: 100,
+        duration_minutes: 30,
+        activity_type: 'test',
       };
 
-      const id = await addOfflineItem('test', testData);
+      const id = await addOfflineItem('activity', testData);
       toast.success(`Test data stored offline (ID: ${id.slice(0, 8)}...)`);
 
       if (isOnline) {
@@ -113,24 +116,33 @@ export default function PWATestPanel() {
       }
     } catch (error) {
       toast.error('Failed to store test data');
+      console.error('Offline sync test error:', error);
     }
   };
 
   // Test push notifications
   const testPushNotifications = async () => {
-    if (!subscription) {
-      const success = await subscribe();
-      if (!success) {
-        toast.error('Failed to subscribe to notifications');
-        return;
+    try {
+      if (!subscription) {
+        toast.info('Subscribing to notifications...');
+        const success = await subscribe();
+        if (!success) {
+          toast.error('Failed to subscribe to notifications');
+          return;
+        }
+        toast.success('Successfully subscribed to notifications');
       }
-    }
 
-    const success = await sendTestNotification();
-    if (success) {
-      toast.success('Test notification sent!');
-    } else {
-      toast.error('Failed to send test notification');
+      toast.info('Sending test notification...');
+      const success = await sendTestNotification();
+      if (success) {
+        toast.success('Test notification sent! Check your browser notifications.');
+      } else {
+        toast.error('Failed to send test notification. Please check server configuration.');
+      }
+    } catch (error) {
+      toast.error('Push notification test failed');
+      console.error('Push notification test error:', error);
     }
   };
 
@@ -230,7 +242,11 @@ export default function PWATestPanel() {
             <div className="flex items-center gap-2">
               {isVapidConfigured ? getStatusIcon(true) : getWarningIcon()}
               <span className="text-sm">Server Configuration</span>
-              {!isVapidConfigured && <Badge variant="secondary">VAPID Keys Missing</Badge>}
+              {!isVapidConfigured && (
+                <Badge variant="secondary">
+                  VAPID Keys Missing - Set NEXT_PUBLIC_VAPID_PUBLIC_KEY
+                </Badge>
+              )}
             </div>
             <div className="flex items-center gap-2">
               {getStatusIcon(permissionState === 'granted')}
@@ -278,6 +294,10 @@ export default function PWATestPanel() {
             {getStatusIcon('caches' in window)}
             <span className="text-sm">Cache API Support</span>
           </div>
+          <div className="flex items-center gap-2">
+            {getStatusIcon('indexedDB' in window)}
+            <span className="text-sm">IndexedDB Support</span>
+          </div>
         </div>
 
         {/* Overall Status */}
@@ -289,11 +309,13 @@ export default function PWATestPanel() {
                 [
                   isInstalled || isInstallable,
                   'serviceWorker' in navigator,
-                  isPushSupported,
+                  isPushSupported && isVapidConfigured,
                   'caches' in window,
+                  'indexedDB' in window,
+                  isOnline,
                 ].filter(Boolean).length
               }
-              /4
+              /6
             </Badge>
           </div>
         </div>
