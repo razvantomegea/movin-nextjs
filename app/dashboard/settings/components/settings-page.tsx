@@ -104,7 +104,7 @@ export function SettingsPage() {
                     Add Movin to your home screen for quick access
                   </p>
                 </div>
-                <InstallPWA />
+                <InstallPWA showInstalledState={true} />
               </div>
             </CardContent>
           </Card>

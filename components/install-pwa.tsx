@@ -25,6 +25,8 @@ interface BeforeInstallPromptEvent extends Event {
 interface InstallPWAProps {
   variant?: 'button' | 'banner' | 'card';
   showBanner?: boolean;
+  showButton?: boolean;
+  showInstalledState?: boolean;
   onInstall?: () => void;
   onDismiss?: () => void;
 }
@@ -32,6 +34,8 @@ interface InstallPWAProps {
 export default function InstallPWA({
   variant = 'button',
   showBanner = false,
+  showButton = true,
+  showInstalledState = false,
   onInstall,
   onDismiss,
 }: InstallPWAProps) {
@@ -42,6 +46,9 @@ export default function InstallPWA({
   const [showBannerState, setShowBanner] = useState(showBanner);
 
   useEffect(() => {
+    // Ensure we're on the client side
+    if (typeof window === 'undefined') return;
+
     // Check if running as standalone app
     const isStandaloneApp =
       window.matchMedia('(display-mode: standalone)').matches ||
@@ -53,9 +60,45 @@ export default function InstallPWA({
     setIsIOS(iOS);
 
     // Handle beforeinstallprompt event
-    const handler = (e: Event) => {
+    const handler = async (e: Event) => {
       e.preventDefault();
-      setDeferredPrompt(e as BeforeInstallPromptEvent);
+      const promptEvent = e as BeforeInstallPromptEvent;
+      setDeferredPrompt(promptEvent);
+
+      // Automatically trigger install prompt for supported browsers
+      if (!iOS && !isStandaloneApp && variant === 'banner') {
+        try {
+          // Small delay to ensure the event is properly handled
+          setTimeout(async () => {
+            try {
+              await promptEvent.prompt();
+              const { outcome } = await promptEvent.userChoice;
+
+              if (outcome === 'accepted') {
+                setDeferredPrompt(null);
+                setShowBanner(false);
+                onInstall?.();
+                console.log('PWA installed automatically');
+              } else {
+                // If user dismisses, show the banner as fallback
+                setShowBanner(true);
+                console.log('User dismissed auto-install, showing banner');
+              }
+            } catch (promptError) {
+              console.error('Prompt failed:', promptError);
+              setShowBanner(true);
+            }
+          }, 500);
+        } catch (error) {
+          console.error('Auto-installation setup failed:', error);
+          // Fallback to showing banner
+          setShowBanner(true);
+        }
+      } else if (iOS && variant === 'banner') {
+        // For iOS, show the banner with manual instructions
+        setShowBanner(true);
+        console.log('iOS detected, showing manual install banner');
+      }
     };
 
     window.addEventListener('beforeinstallprompt', handler);
@@ -68,7 +111,7 @@ export default function InstallPWA({
     return () => {
       window.removeEventListener('beforeinstallprompt', handler);
     };
-  }, []);
+  }, [isIOS, isStandalone, variant, onInstall]);
 
   const handleInstall = async () => {
     if (!deferredPrompt) {
@@ -97,8 +140,8 @@ export default function InstallPWA({
     onDismiss?.();
   };
 
-  // Don't show if already installed
-  if (isStandalone) {
+  // Don't show if already installed or if we're on the server
+  if ((isStandalone && !showInstalledState) || typeof window === 'undefined') {
     return null;
   }
 
@@ -107,9 +150,10 @@ export default function InstallPWA({
       onClick={handleInstall}
       className="flex items-center gap-2"
       variant={variant === 'banner' ? 'default' : 'outline'}
+      disabled={isStandalone && showInstalledState}
     >
       <Download className="h-4 w-4" />
-      Install App
+      {isStandalone && showInstalledState ? 'Installed' : 'Install App'}
     </Button>
   );
 
@@ -196,30 +240,52 @@ export default function InstallPWA({
       <>
         <AnimatePresence>
           <motion.div
-            initial={{ opacity: 0, y: -50 }}
+            initial={{ opacity: 0, y: -100 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -50 }}
-            className="fixed top-0 left-0 right-0 z-50 p-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg"
+            exit={{ opacity: 0, y: -100 }}
+            className="fixed top-4 left-4 right-4 z-50 max-w-md mx-auto"
           >
-            <div className="flex items-center justify-between max-w-md mx-auto">
-              <div className="flex items-center gap-3">
-                <Download className="h-5 w-5" />
-                <div>
-                  <p className="font-medium text-sm">Install Movin App</p>
-                  <p className="text-xs opacity-90">Get the full experience</p>
+            <div className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border border-blue-500/30 rounded-xl p-4 shadow-lg">
+              <div className="flex items-start justify-between">
+                <div className="flex-1 pr-3">
+                  <div className="flex items-center mb-2">
+                    <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center mr-3">
+                      <Download className="w-4 h-4 text-white" />
+                    </div>
+                    <h3 className="font-semibold text-gray-900 dark:text-white">
+                      Install Movin App
+                    </h3>
+                  </div>
+                  <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">
+                    Get the best experience with our native app. Install now for faster access and
+                    offline support.
+                  </p>
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={handleInstall}
+                      size="sm"
+                      className="bg-blue-500 hover:bg-blue-600 text-white"
+                    >
+                      <Download className="w-3 h-3 mr-1" />
+                      Install
+                    </Button>
+                    <Button
+                      onClick={handleDismiss}
+                      size="sm"
+                      variant="outline"
+                      className="text-gray-600 dark:text-gray-300"
+                    >
+                      Later
+                    </Button>
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button size="sm" variant="secondary" onClick={handleInstall} className="text-xs">
-                  Install
-                </Button>
                 <Button
+                  onClick={handleDismiss}
                   size="sm"
                   variant="ghost"
-                  onClick={handleDismiss}
-                  className="text-white hover:bg-white/20 p-1"
+                  className="p-1 h-6 w-6 text-gray-400 hover:text-gray-600"
                 >
-                  <X className="h-4 w-4" />
+                  <X className="w-4 h-4" />
                 </Button>
               </div>
             </div>
@@ -228,6 +294,10 @@ export default function InstallPWA({
         <ManualInstructionsDialog />
       </>
     );
+  }
+
+  if (variant === 'banner') {
+    return <ManualInstructionsDialog />;
   }
 
   if (variant === 'card') {
@@ -250,10 +320,15 @@ export default function InstallPWA({
     );
   }
 
-  return (
-    <>
-      <InstallButton />
-      <ManualInstructionsDialog />
-    </>
-  );
+  // Only show button if explicitly requested
+  if (showButton) {
+    return (
+      <>
+        <InstallButton />
+        <ManualInstructionsDialog />
+      </>
+    );
+  }
+
+  return null;
 }

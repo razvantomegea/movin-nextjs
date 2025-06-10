@@ -2,13 +2,13 @@ import { NextResponse } from 'next/server';
 
 export function GET() {
   return NextResponse.json({
-    name: 'Movin - Move to Earn',
+    name: 'Movin',
     short_name: 'Movin',
-    description: 'Track your fitness and earn rewards - It all starts with one step',
+    description: 'Your effort counts',
     start_url: '/',
     display: 'standalone',
-    background_color: '#ffffff',
-    theme_color: '#3b82f6',
+    background_color: '#111827',
+    theme_color: '#111827',
     orientation: 'portrait',
     scope: '/',
     icons: [
@@ -60,10 +60,24 @@ export function GET() {
         icons: [{ src: '/icons/icon-96.webp', sizes: '96x96' }],
       },
       {
-        name: 'Goals',
-        short_name: 'Goals',
-        description: 'Check your fitness goals',
-        url: '/dashboard/goals',
+        name: 'Rewards',
+        short_name: 'Rewards',
+        description: 'View your rewards and achievements',
+        url: '/dashboard/rewards',
+        icons: [{ src: '/icons/icon-96.webp', sizes: '96x96' }],
+      },
+      {
+        name: 'Profile',
+        short_name: 'Profile',
+        description: 'Manage your profile and view stats',
+        url: '/dashboard/profile',
+        icons: [{ src: '/icons/icon-96.webp', sizes: '96x96' }],
+      },
+      {
+        name: 'Settings',
+        short_name: 'Settings',
+        description: 'Configure app preferences',
+        url: '/dashboard/settings',
         icons: [{ src: '/icons/icon-96.webp', sizes: '96x96' }],
       },
     ],

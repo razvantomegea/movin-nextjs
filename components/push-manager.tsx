@@ -44,6 +44,10 @@ export default function PushManager({ onSubscriptionChange }: PushManagerProps) 
   };
 
   const urlBase64ToUint8Array = (base64String: string) => {
+    if (!base64String) {
+      throw new Error('VAPID public key is required but not provided');
+    }
+
     const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
     const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
 
@@ -85,8 +89,18 @@ export default function PushManager({ onSubscriptionChange }: PushManagerProps) 
       // Register service worker and get subscription
       const registration = await navigator.serviceWorker.ready;
 
-      // You'll need to set up VAPID keys for production
-      const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!;
+      // Check if VAPID key is configured
+      const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+
+      if (!vapidPublicKey) {
+        toast({
+          title: 'Configuration Error',
+          description: 'Push notifications are not properly configured. Please contact support.',
+          variant: 'destructive',
+        });
+        console.error('VAPID public key is not configured in environment variables');
+        return;
+      }
 
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
@@ -97,7 +111,7 @@ export default function PushManager({ onSubscriptionChange }: PushManagerProps) 
       onSubscriptionChange?.(subscription);
 
       // Send subscription to your server
-      await fetch('/api/push/subscribe', {
+      const response = await fetch('/api/push/subscribe', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -107,15 +121,30 @@ export default function PushManager({ onSubscriptionChange }: PushManagerProps) 
         }),
       });
 
+      if (!response.ok) {
+        throw new Error(`Failed to save subscription: ${response.status}`);
+      }
+
       toast({
         title: 'Notifications Enabled',
         description: "You'll now receive push notifications for important updates.",
       });
     } catch (error) {
       console.error('Subscription failed:', error);
+
+      let errorMessage = 'Unable to enable push notifications. Please try again.';
+
+      if (error instanceof Error) {
+        if (error.message.includes('VAPID')) {
+          errorMessage = 'Push notifications are not properly configured.';
+        } else if (error.message.includes('not supported')) {
+          errorMessage = 'Push notifications are not supported on this device.';
+        }
+      }
+
       toast({
         title: 'Subscription Failed',
-        description: 'Unable to enable push notifications. Please try again.',
+        description: errorMessage,
         variant: 'destructive',
       });
     } finally {
@@ -132,7 +161,7 @@ export default function PushManager({ onSubscriptionChange }: PushManagerProps) 
       await subscription.unsubscribe();
 
       // Remove subscription from your server
-      await fetch('/api/push/unsubscribe', {
+      const response = await fetch('/api/push/unsubscribe', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -141,6 +170,11 @@ export default function PushManager({ onSubscriptionChange }: PushManagerProps) 
           endpoint: subscription.endpoint,
         }),
       });
+
+      if (!response.ok) {
+        console.warn(`Failed to remove subscription from server: ${response.status}`);
+        // Continue with local cleanup even if server cleanup fails
+      }
 
       setSubscription(null);
       onSubscriptionChange?.(null);
