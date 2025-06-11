@@ -6,15 +6,14 @@ import { Download, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import InstallInstructionsDialog from './install-instructions-dialog';
-
-interface BeforeInstallPromptEvent extends Event {
-  readonly platforms: string[];
-  readonly userChoice: Promise<{
-    outcome: 'accepted' | 'dismissed';
-    platform: string;
-  }>;
-  prompt(): Promise<void>;
-}
+import { registerServiceWorker } from '@/utils/serviceWorker';
+import {
+  checkPWASupport,
+  setupInstallPromptListener,
+  installPWA,
+  onPWAInstalled,
+  type PWAInstallationSupport,
+} from '@/utils/pwa';
 
 interface InstallPWAProps {
   variant?: 'button' | 'banner' | 'card';
@@ -23,45 +22,8 @@ interface InstallPWAProps {
   showInstalledState?: boolean;
   onInstall?: () => void;
   onDismiss?: () => void;
-  forceShow?: boolean; // Debug prop to force show banner
+  forceShow?: boolean;
 }
-
-// Centralized service worker registration function
-const registerServiceWorkers = async () => {
-  console.log('Starting service worker registration...');
-
-  if (!('serviceWorker' in navigator)) {
-    console.warn('Service workers not supported');
-    return;
-  }
-
-  try {
-    // Use different service workers for development and production
-    const isDevelopment = process.env.NODE_ENV === 'development';
-    const swPath = isDevelopment ? '/sw-dev.js' : '/sw-custom.js';
-
-    console.log(
-      `Registering ${isDevelopment ? 'development' : 'production'} service worker:`,
-      swPath,
-    );
-
-    const registration = await navigator.serviceWorker.register(swPath, {
-      scope: '/',
-      updateViaCache: 'none',
-    });
-
-    console.log('Service worker registered successfully:', registration);
-
-    // Wait for the registration to be ready
-    await navigator.serviceWorker.ready;
-    console.log('Service worker is ready');
-
-    return registration;
-  } catch (error) {
-    console.error('Service worker registration failed:', error);
-    throw error;
-  }
-};
 
 export default function InstallPWA({
   variant = 'button',
@@ -72,181 +34,86 @@ export default function InstallPWA({
   onDismiss,
   forceShow = false,
 }: InstallPWAProps) {
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [pwaSupport, setPwaSupport] = useState<PWAInstallationSupport>({
+    canInstall: false,
+    isInstalled: false,
+    isIOS: false,
+    isStandalone: false,
+    hasInstallPrompt: false,
+    browserSupported: false,
+  });
   const [showInstructions, setShowInstructions] = useState(false);
-  const [isIOS, setIsIOS] = useState(false);
-  const [isStandalone, setIsStandalone] = useState(false);
   const [showBannerState, setShowBanner] = useState(showBanner);
   const [serviceWorkerReady, setServiceWorkerReady] = useState(false);
 
   useEffect(() => {
-    // Ensure we're on the client side
-    if (typeof window === 'undefined') return;
-
-    // Register service workers on component mount
-    const initServiceWorkers = async () => {
+    // Initialize service worker
+    const initServiceWorker = async () => {
       try {
-        await registerServiceWorkers();
+        await registerServiceWorker();
         setServiceWorkerReady(true);
       } catch (error) {
-        console.error('Failed to initialize service workers:', error);
+        console.error('Failed to register service worker:', error);
       }
     };
 
-    initServiceWorkers();
+    initServiceWorker();
 
-    // Enhanced PWA detection for better reliability
-    const checkIfPWA = () => {
-      // Method 1: Check display mode (most reliable for modern browsers)
-      const isDisplayModeStandalone = window.matchMedia('(display-mode: standalone)').matches;
+    // Set up PWA install prompt listener
+    const cleanupPromptListener = setupInstallPromptListener();
 
-      // Method 2: iOS Safari specific check
-      const isIOSStandalone = (window.navigator as any).standalone === true;
-
-      // Method 3: Check if launched from home screen (Android Chrome)
-      const isMinimalUI = window.matchMedia('(display-mode: minimal-ui)').matches;
-
-      // More conservative approach - only consider it a PWA if explicitly in standalone mode
-      const isPWAInstalled = isDisplayModeStandalone || isIOSStandalone || isMinimalUI;
-
-      // Debug logging for each check
-      console.log('PWA Detection Details:', {
-        isDisplayModeStandalone,
-        isIOSStandalone,
-        isMinimalUI,
-        finalResult: isPWAInstalled,
-        userAgent: navigator.userAgent.substring(0, 100) + '...',
-      });
-
-      return isPWAInstalled;
-    };
-
-    const isPWA = checkIfPWA();
-    setIsStandalone(isPWA);
-
-    // Detect iOS and other browser info
-    const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    const isDesktop = !iOS && !('ontouchstart' in window);
-    const isChrome = navigator.userAgent.includes('Chrome') && !navigator.userAgent.includes('Edg');
-    const isEdge = navigator.userAgent.includes('Edg');
-
-    setIsIOS(iOS);
-
-    // Add debug logging to help troubleshoot
-    console.log('PWA Detection Results:', {
-      displayModeStandalone: window.matchMedia('(display-mode: standalone)').matches,
-      iOSStandalone: (window.navigator as any).standalone === true,
-      minimalUI: window.matchMedia('(display-mode: minimal-ui)').matches,
-      finalIsPWA: isPWA,
-      variant,
-      showBanner,
-      isDesktop,
-      isChrome,
-      isEdge,
-      iOS,
+    // Set up PWA installation listener
+    const cleanupInstallListener = onPWAInstalled(() => {
+      console.log('PWA was installed, updating state');
+      setPwaSupport(checkPWASupport());
+      setShowBanner(false);
+      onInstall?.();
     });
 
-    // Handle beforeinstallprompt event
-    const handler = async (e: Event) => {
-      console.log('beforeinstallprompt event fired');
-      console.log('Current variant:', variant, 'isPWA:', isPWA);
-      const promptEvent = e as BeforeInstallPromptEvent;
+    // Check PWA support initially
+    setPwaSupport(checkPWASupport());
 
-      if (variant === 'banner' && !isPWA) {
-        // For banner variant, prevent default and show our custom banner
-        e.preventDefault();
-        setDeferredPrompt(promptEvent);
-        setShowBanner(true);
-        console.log('Install prompt available, showing custom banner');
-      } else if (variant === 'button' || variant === 'card') {
-        // For button/card variants, prevent default and store the prompt
-        e.preventDefault();
-        setDeferredPrompt(promptEvent);
-        console.log('Install prompt available, stored for button/card use');
-      } else {
-        // For development/testing, let's also handle the default case
-        console.log('Install prompt available, variant:', variant);
-        if (!isPWA) {
-          e.preventDefault();
-          setDeferredPrompt(promptEvent);
+    // Set up periodic checks for PWA support changes
+    const interval = setInterval(() => {
+      setPwaSupport(checkPWASupport());
+    }, 1000);
+
+    // Show banner logic
+    if (variant === 'banner') {
+      const support = checkPWASupport();
+      if (!support.isInstalled || forceShow) {
+        if (support.isIOS) {
+          // Show banner immediately for iOS
           setShowBanner(true);
-          console.log('Development mode: showing banner anyway');
+        } else {
+          // For other browsers, wait a bit for the beforeinstallprompt event
+          setTimeout(() => {
+            const currentSupport = checkPWASupport();
+            if (!currentSupport.isInstalled || forceShow) {
+              setShowBanner(true);
+            }
+          }, 2000);
         }
-      }
-    };
-
-    window.addEventListener('beforeinstallprompt', handler);
-
-    // Listen for display mode changes to reactively update PWA status
-    const displayModeQuery = window.matchMedia('(display-mode: standalone)');
-    const minimalUIQuery = window.matchMedia('(display-mode: minimal-ui)');
-
-    const handleDisplayModeChange = () => {
-      const newPWAStatus = checkIfPWA();
-      setIsStandalone(newPWAStatus);
-      console.log('Display mode changed, new PWA status:', newPWAStatus);
-
-      // Hide banner if PWA gets installed
-      if (newPWAStatus) {
-        setShowBanner(false);
-      }
-    };
-
-    displayModeQuery.addEventListener('change', handleDisplayModeChange);
-    minimalUIQuery.addEventListener('change', handleDisplayModeChange);
-
-    // Show banner logic based on platform and variant
-    if ((!isPWA || forceShow) && variant === 'banner') {
-      if (iOS) {
-        // For iOS, show banner immediately since it doesn't fire beforeinstallprompt
-        setShowBanner(true);
-        console.log('iOS detected, showing manual install banner');
-      } else if (isDesktop && (isChrome || isEdge)) {
-        // For Chrome/Edge desktop, show banner after a delay to allow beforeinstallprompt to fire
-        const timer = setTimeout(() => {
-          if (!deferredPrompt && (!isPWA || forceShow)) {
-            console.log(
-              'Chrome/Edge desktop detected, showing banner (no beforeinstallprompt received)',
-            );
-            setShowBanner(true);
-          }
-        }, 3000); // Wait 3 seconds for beforeinstallprompt
-
-        return () => {
-          clearTimeout(timer);
-          window.removeEventListener('beforeinstallprompt', handler);
-          displayModeQuery.removeEventListener('change', handleDisplayModeChange);
-          minimalUIQuery.removeEventListener('change', handleDisplayModeChange);
-        };
-      } else {
-        // For other browsers or development mode, show banner immediately
-        console.log('Other browser detected, showing banner immediately');
-        setShowBanner(true);
       }
     }
 
     return () => {
-      window.removeEventListener('beforeinstallprompt', handler);
-      displayModeQuery.removeEventListener('change', handleDisplayModeChange);
-      minimalUIQuery.removeEventListener('change', handleDisplayModeChange);
+      cleanupPromptListener();
+      cleanupInstallListener();
+      clearInterval(interval);
     };
-  }, [variant, onInstall, isIOS, showBanner, deferredPrompt, forceShow]);
+  }, [variant, onInstall, showBanner, forceShow]);
 
   const handleInstall = async () => {
-    if (!deferredPrompt) {
-      // Show manual instructions for iOS or unsupported browsers
-      setShowInstructions(true);
-      return;
-    }
-
     try {
-      await deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
+      const result = await installPWA();
 
-      if (outcome === 'accepted') {
-        setDeferredPrompt(null);
+      if (result.success) {
         setShowBanner(false);
         onInstall?.();
+      } else {
+        // Show manual instructions if automatic installation fails
+        setShowInstructions(true);
       }
     } catch (error) {
       console.error('Installation failed:', error);
@@ -259,8 +126,11 @@ export default function InstallPWA({
     onDismiss?.();
   };
 
-  // Don't show if already installed or if we're on the server
-  if ((isStandalone && !showInstalledState && !forceShow) || typeof window === 'undefined') {
+  // Don't show if already installed (unless forced or showing installed state)
+  if (
+    (pwaSupport.isInstalled && !showInstalledState && !forceShow) ||
+    typeof window === 'undefined'
+  ) {
     return null;
   }
 
@@ -269,10 +139,10 @@ export default function InstallPWA({
       onClick={handleInstall}
       className="flex items-center gap-2"
       variant={variant === 'banner' ? 'default' : 'outline'}
-      disabled={isStandalone && showInstalledState}
+      disabled={pwaSupport.isInstalled && showInstalledState}
     >
       <Download className="h-4 w-4" />
-      {isStandalone && showInstalledState ? 'Installed' : 'Install App'}
+      {pwaSupport.isInstalled && showInstalledState ? 'Installed' : 'Install App'}
     </Button>
   );
 
@@ -284,7 +154,12 @@ export default function InstallPWA({
             initial={{ opacity: 0, y: -100 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -100 }}
-            className="fixed top-4 left-4 right-4 z-50 max-w-md mx-auto"
+            className="fixed z-50 max-w-md mx-auto safe-top safe-left safe-right"
+            style={{
+              top: 'max(env(safe-area-inset-top), 1rem)',
+              left: 'max(env(safe-area-inset-left), 1rem)',
+              right: 'max(env(safe-area-inset-right), 1rem)',
+            }}
           >
             <div className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border border-blue-500/30 rounded-xl p-4 shadow-lg">
               <div className="flex items-start justify-between">

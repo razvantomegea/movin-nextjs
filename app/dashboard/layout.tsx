@@ -116,7 +116,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       style={{ '--wui-spacing-xs': '0px' } as React.CSSProperties}
     >
       {/* Header */}
-      <header className="glass-effect sticky top-0 z-10 p-4 flex items-center justify-between border-b dark:border-gray-800 border-gray-200">
+      <header className="glass-effect sticky top-0 z-10 pwa-header flex items-center justify-between border-b dark:border-gray-800 border-gray-200 safe-left safe-right">
         <div className="flex items-center">
           <Image src="/images/logo.png" alt="Movin Logo" width={28} height={28} className="mr-2" />
           <span className="font-bold text-lg">Movin</span>
@@ -155,16 +155,21 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
       {/* AdSense Banner - Only show for free users */}
       {!isPremium && (
-        <div className="w-full px-4 py-2 border-b border-gray-200 dark:border-gray-800">
+        <div className="w-full px-4 py-2 border-b border-gray-200 dark:border-gray-800 safe-left safe-right">
           <AdSenseBanner className="w-full max-w-full mx-auto" format="auto" responsive={true} />
         </div>
       )}
 
       {/* Main content */}
-      <main className="flex-1 pb-20">{children}</main>
+      <main
+        className="flex-1 safe-bottom"
+        style={{ paddingBottom: 'max(5rem, calc(env(safe-area-inset-bottom) + 5rem))' }}
+      >
+        {children}
+      </main>
 
       {/* Bottom navigation */}
-      <nav className="glass-effect fixed bottom-0 w-full border-t border-gray-800">
+      <nav className="glass-effect fixed bottom-0 w-full border-t border-gray-800 safe-bottom safe-left safe-right">
         <div className="flex items-center justify-around">
           {tabs.map((tab, index) =>
             tab.path === '#' ? (
@@ -184,7 +189,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 </SheetTrigger>
                 <SheetContent
                   side="right"
-                  className="z-50 w-full sm:w-[350px] md:w-[400px] bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 p-0 text-gray-900 dark:text-white"
+                  className="z-50 w-full sm:w-[350px] md:w-[400px] bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 p-0 text-gray-900 dark:text-white safe-area"
                 >
                   <SheetTitle className="sr-only">Menu</SheetTitle>
                   <div className="flex flex-col h-full">
