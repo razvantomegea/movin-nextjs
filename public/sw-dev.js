@@ -130,10 +130,13 @@ self.addEventListener('notificationclick', function(event) {
         const client = clientList[i];
         if (client.url.includes(self.location.origin) && 'focus' in client) {
           return client.focus().then(() => {
-            if ('navigate' in client) {
-              return client.navigate(urlToOpen);
-            }
-          });
+             if ('navigate' in client) {
+               return client.navigate(urlToOpen);
+            } else {
+              // Fallback: post message to client to navigate
+              client.postMessage({ type: 'navigate', url: urlToOpen });
+             }
+           });
         }
       }
       

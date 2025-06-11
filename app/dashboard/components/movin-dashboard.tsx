@@ -53,6 +53,11 @@ import {
   type TimeRangeData,
   getTodayDate,
 } from '@/utils';
+import {
+  sendStepsGoalNotification,
+  sendStreakMilestoneNotification,
+  sendWorkoutCompletionNotification,
+} from '@/utils/notifications/pushNotifications';
 import { ActivityDashboardSkeleton } from './activity-dashboard-skeleton';
 import { RouteTrackingModal, type RouteData } from './route-tracking-modal';
 import { RouteTypeModal } from './route-type-modal';
@@ -128,11 +133,22 @@ export function MovinDashboard() {
     const today = getTodayDate();
     const celebrationShown = localStorage.getItem(`steps-celebration-${today}`);
 
-    if (dailyActivity && dailyActivity.steps >= 10000 && !celebrationShown && !isLoading) {
+    if (
+      dailyActivity &&
+      dailyActivity.steps >= 10000 &&
+      !celebrationShown &&
+      !isLoading &&
+      addressLower
+    ) {
       setShowStepsCelebration(true);
       localStorage.setItem(`steps-celebration-${today}`, 'true');
+
+      // Send push notification in the background
+      sendStepsGoalNotification(addressLower, dailyActivity.steps).catch((error) => {
+        console.error('Failed to send steps goal notification:', error);
+      });
     }
-  }, [dailyActivity, isLoading]);
+  }, [dailyActivity, isLoading, addressLower]);
 
   // Function to check if the given date is yesterday
   const isYesterday = useCallback((date: Date) => {
@@ -216,6 +232,11 @@ export function MovinDashboard() {
       if (milestones.includes(newStreakDays)) {
         setStreakMilestone(newStreakDays);
         setShowStreakCelebration(true);
+
+        // Send push notification in the background
+        sendStreakMilestoneNotification(addressLower, newStreakDays).catch((error) => {
+          console.error('Failed to send streak milestone notification:', error);
+        });
       }
     } else {
       // Reset streak to 1 (since there's activity today)
@@ -285,6 +306,17 @@ export function MovinDashboard() {
           }`,
         }),
       );
+
+      // Send push notification in the background
+      const workoutType = routeData.isJoint ? 'Joint Route' : 'Route';
+      sendWorkoutCompletionNotification(
+        addressLower,
+        workoutType,
+        routeData.duration,
+        routeData.distance / 1000, // Convert meters to kilometers
+      ).catch((error) => {
+        console.error('Failed to send workout completion notification:', error);
+      });
 
       // Reset joint tracking state if it was a joint run
       if (routeData.isJoint) {
@@ -381,6 +413,20 @@ export function MovinDashboard() {
           description: `${activityWithAddress.name} workout has been added to your profile.`,
         }),
       );
+
+      // Send push notification in the background (only for non-Steps activities to avoid spam)
+      if (activityWithAddress.name !== 'Steps') {
+        sendWorkoutCompletionNotification(
+          addressLower,
+          activityWithAddress.name || 'Imported Workout',
+          activityWithAddress.duration || 0,
+          activityWithAddress.total_distance
+            ? activityWithAddress.total_distance / 1000
+            : undefined,
+        ).catch((error) => {
+          console.error('Failed to send workout completion notification:', error);
+        });
+      }
     } catch (error) {
       dispatch(
         showInfoToast({

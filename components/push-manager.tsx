@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Bell, BellOff } from 'lucide-react';
 import { useAppKitAccount } from '@reown/appkit/react';
+import { Bell, BellOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -45,8 +45,14 @@ export default function PushManager({ onSubscriptionChange }: PushManagerProps) 
         }
       };
 
-      // Check for existing subscription after a brief delay to ensure service worker is ready
-      setTimeout(checkExistingSubscription, 1000);
+      // Wait for service worker to be ready before checking subscription
+      navigator.serviceWorker.ready
+        .then(() => {
+          checkExistingSubscription();
+        })
+        .catch((error) => {
+          console.error('Service worker not ready:', error);
+        });
     }
   }, [onSubscriptionChange]);
 

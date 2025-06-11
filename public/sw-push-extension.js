@@ -46,7 +46,8 @@ self.addEventListener('notificationclick', function(event) {
   
   event.notification.close();
 
-  const urlToOpen = event.notification.data?.url || '/dashboard';
+  const rawUrl = event.notification.data?.url || '/dashboard';
+  const urlToOpen = rawUrl.startsWith('/') ? rawUrl : '/dashboard';
   
   event.waitUntil(
     clients.matchAll({

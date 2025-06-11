@@ -7,6 +7,8 @@ const withPWAConfig = withPWA({
   register: false,
   skipWaiting: true,
   dynamicStartUrl: false,
+  // Use custom service worker with push notification support
+  sw: 'sw-custom.js',
   buildExcludes: [/middleware-manifest\.json$/, /\.map$/],
   publicExcludes: ['!robots.txt', '!sitemap.xml'],
   ...(process.env.NODE_ENV === 'production' && {
@@ -62,6 +64,23 @@ const nextConfig = {
     },
     {
       source: '/sw.js',
+      headers: [
+        {
+          key: 'Content-Type',
+          value: 'application/javascript',
+        },
+        {
+          key: 'Cache-Control',
+          value: 'no-cache, no-store, must-revalidate',
+        },
+        {
+          key: 'Service-Worker-Allowed',
+          value: '/',
+        },
+      ],
+    },
+    {
+      source: '/sw-custom.js',
       headers: [
         {
           key: 'Content-Type',
