@@ -116,7 +116,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       style={{ '--wui-spacing-xs': '0px' } as React.CSSProperties}
     >
       {/* Header */}
-      <header className="glass-effect sticky top-0 z-10 pwa-header flex items-center justify-between border-b dark:border-gray-800 border-gray-200 safe-left safe-right">
+      <header className="glass-effect sticky top-0 z-10 pwa-header px-4 py-3 flex items-center justify-between border-b dark:border-gray-800 border-gray-200 safe-left safe-right">
         <div className="flex items-center">
           <Image src="/images/logo.png" alt="Movin Logo" width={28} height={28} className="mr-2" />
           <span className="font-bold text-lg">Movin</span>
