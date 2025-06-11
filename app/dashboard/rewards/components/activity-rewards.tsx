@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAppKitAccount } from '@reown/appkit/react';
-import { Flame, Award, RefreshCw } from 'lucide-react';
+import { CircleDollarSign, Award, RefreshCw } from 'lucide-react';
 
 import { CelebrationAnimation } from '@/components/celebration-animation';
 import { TransactionConfirmationModal } from '@/components/transaction-confirmation-modal';
@@ -339,7 +339,7 @@ export function ActivityRewards({ refreshing, onDataLoaded }: ActivityRewardsPro
 
           <div className="flex flex-col items-center mb-8">
             <div className="flex items-center mb-2">
-              <Flame className="h-6 w-6 text-blue-600 dark:text-blue-400 mr-2" />
+              <CircleDollarSign className="h-6 w-6 text-blue-600 dark:text-blue-400 mr-2" />
               <span className="text-4xl font-bold text-blue-600 dark:text-blue-400">
                 {totalRewards.toFixed(2)}
               </span>
