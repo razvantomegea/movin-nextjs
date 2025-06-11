@@ -1,31 +1,4 @@
 import { withSentryConfig } from '@sentry/nextjs';
-import withPWA from 'next-pwa';
-
-const withPWAConfig = withPWA({
-  dest: 'public',
-  disable: process.env.NODE_ENV === 'development',
-  register: false,
-  skipWaiting: true,
-  dynamicStartUrl: false,
-  // Use custom service worker with push notification support
-  sw: 'sw-custom.js',
-  buildExcludes: [/middleware-manifest\.json$/, /\.map$/],
-  publicExcludes: ['!robots.txt', '!sitemap.xml'],
-  ...(process.env.NODE_ENV === 'production' && {
-    runtimeCaching: [
-      {
-        urlPattern: /^https?.*/,
-        handler: 'NetworkFirst',
-        options: {
-          cacheName: 'offlineCache',
-          expiration: {
-            maxEntries: 200,
-          },
-        },
-      },
-    ],
-  }),
-});
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -80,7 +53,7 @@ const nextConfig = {
       ],
     },
     {
-      source: '/sw-custom.js',
+      source: '/sw-dev.js',
       headers: [
         {
           key: 'Content-Type',
@@ -99,7 +72,7 @@ const nextConfig = {
   ],
 };
 
-export default withSentryConfig(withPWAConfig(nextConfig), {
+export default withSentryConfig(nextConfig, {
   // For all available options, see:
   // https://www.npmjs.com/package/@sentry/webpack-plugin#options
 
