@@ -307,7 +307,7 @@ export function CameraModal({
             </div>
 
             {/* Camera View / Captured Image */}
-            <div className="relative aspect-[4/3] w-full bg-black">
+            <div className="relative w-full bg-black h-[65vh] sm:h-auto sm:aspect-[4/3]">
               {!capturedImage ? (
                 <>
                   <video
