@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Bell, BellOff } from 'lucide-react';
+import { useAppKitAccount } from '@reown/appkit/react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -14,6 +15,7 @@ export default function PushManager({ onSubscriptionChange }: PushManagerProps) 
   const [loading, setLoading] = useState(false);
   const [isSupported, setIsSupported] = useState(false);
   const [permission, setPermission] = useState<NotificationPermission>('default');
+  const { address, isConnected } = useAppKitAccount();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -30,6 +32,7 @@ export default function PushManager({ onSubscriptionChange }: PushManagerProps) 
     if (supported) {
       const checkExistingSubscription = async () => {
         try {
+          // Wait for service worker to be ready (registered by InstallPWA)
           const registration = await navigator.serviceWorker.ready;
           const existingSubscription = await registration.pushManager.getSubscription();
 
@@ -42,18 +45,10 @@ export default function PushManager({ onSubscriptionChange }: PushManagerProps) 
         }
       };
 
-      checkExistingSubscription();
+      // Check for existing subscription after a brief delay to ensure service worker is ready
+      setTimeout(checkExistingSubscription, 1000);
     }
   }, [onSubscriptionChange]);
-
-  const registerServiceWorker = async () => {
-    try {
-      await navigator.serviceWorker.register('/sw.js');
-    } catch (error) {
-      console.error('Service Worker registration failed:', error);
-      throw error;
-    }
-  };
 
   const urlBase64ToUint8Array = (base64String: string) => {
     if (!base64String?.trim()) {
@@ -82,13 +77,19 @@ export default function PushManager({ onSubscriptionChange }: PushManagerProps) 
       return;
     }
 
+    if (!isConnected || !address) {
+      toast({
+        title: 'Wallet Not Connected',
+        description: 'Please connect your wallet to enable push notifications.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setLoading(true);
     let createdSubscription: PushSubscription | null = null;
 
     try {
-      // Register service worker first - Critical addition
-      await registerServiceWorker();
-
       // Request permission
       const permission = await Notification.requestPermission();
       setPermission(permission);
@@ -111,8 +112,9 @@ export default function PushManager({ onSubscriptionChange }: PushManagerProps) 
         return;
       }
 
-      // Register service worker and get subscription
+      // Use the service worker registration (should already be ready from InstallPWA)
       const registration = await navigator.serviceWorker.ready;
+      console.log('Using service worker registration:', registration);
 
       // Check if VAPID key is configured
       const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
@@ -143,6 +145,7 @@ export default function PushManager({ onSubscriptionChange }: PushManagerProps) 
         },
         body: JSON.stringify({
           subscription: createdSubscription.toJSON(),
+          address: address.toLowerCase(),
         }),
       });
 
@@ -176,7 +179,7 @@ export default function PushManager({ onSubscriptionChange }: PushManagerProps) 
         } else if (error.message.includes('not supported')) {
           errorMessage = 'Push notifications are not supported on this device.';
         } else if (error.message.includes('aborted') || error.message.includes('Service Worker')) {
-          errorMessage = 'Failed to register service worker. Check console for details.';
+          errorMessage = 'Service worker not ready. Please try again in a moment.';
         }
       }
 

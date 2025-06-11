@@ -23,7 +23,45 @@ interface InstallPWAProps {
   showInstalledState?: boolean;
   onInstall?: () => void;
   onDismiss?: () => void;
+  forceShow?: boolean; // Debug prop to force show banner
 }
+
+// Centralized service worker registration function
+const registerServiceWorkers = async () => {
+  console.log('Starting service worker registration...');
+
+  if (!('serviceWorker' in navigator)) {
+    console.warn('Service workers not supported');
+    return;
+  }
+
+  try {
+    // Use different service workers for development and production
+    const isDevelopment = process.env.NODE_ENV === 'development';
+    const swPath = isDevelopment ? '/sw-dev.js' : '/sw-custom.js';
+
+    console.log(
+      `Registering ${isDevelopment ? 'development' : 'production'} service worker:`,
+      swPath,
+    );
+
+    const registration = await navigator.serviceWorker.register(swPath, {
+      scope: '/',
+      updateViaCache: 'none',
+    });
+
+    console.log('Service worker registered successfully:', registration);
+
+    // Wait for the registration to be ready
+    await navigator.serviceWorker.ready;
+    console.log('Service worker is ready');
+
+    return registration;
+  } catch (error) {
+    console.error('Service worker registration failed:', error);
+    throw error;
+  }
+};
 
 export default function InstallPWA({
   variant = 'button',
@@ -32,16 +70,30 @@ export default function InstallPWA({
   showInstalledState = false,
   onInstall,
   onDismiss,
+  forceShow = false,
 }: InstallPWAProps) {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showInstructions, setShowInstructions] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
   const [showBannerState, setShowBanner] = useState(showBanner);
+  const [serviceWorkerReady, setServiceWorkerReady] = useState(false);
 
   useEffect(() => {
     // Ensure we're on the client side
     if (typeof window === 'undefined') return;
+
+    // Register service workers on component mount
+    const initServiceWorkers = async () => {
+      try {
+        await registerServiceWorkers();
+        setServiceWorkerReady(true);
+      } catch (error) {
+        console.error('Failed to initialize service workers:', error);
+      }
+    };
+
+    initServiceWorkers();
 
     // Enhanced PWA detection for better reliability
     const checkIfPWA = () => {
@@ -54,31 +106,30 @@ export default function InstallPWA({
       // Method 3: Check if launched from home screen (Android Chrome)
       const isMinimalUI = window.matchMedia('(display-mode: minimal-ui)').matches;
 
-      // Method 4: Check window.navigator.userAgent for 'wv' (WebView)
-      const isWebView = /wv/i.test(navigator.userAgent);
+      // More conservative approach - only consider it a PWA if explicitly in standalone mode
+      const isPWAInstalled = isDisplayModeStandalone || isIOSStandalone || isMinimalUI;
 
-      // Method 5: Check for referrer (PWAs often have empty or same-origin referrer)
-      const isFromHomeScreen =
-        !document.referrer || document.referrer.includes(window.location.origin);
+      // Debug logging for each check
+      console.log('PWA Detection Details:', {
+        isDisplayModeStandalone,
+        isIOSStandalone,
+        isMinimalUI,
+        finalResult: isPWAInstalled,
+        userAgent: navigator.userAgent.substring(0, 100) + '...',
+      });
 
-      // Method 6: Check window size ratios (PWAs often have different ratios)
-      const hasFullscreenRatio = window.outerHeight === window.innerHeight;
-
-      // Combine all checks for better accuracy
-      return (
-        isDisplayModeStandalone ||
-        isIOSStandalone ||
-        isMinimalUI ||
-        (isWebView && isFromHomeScreen) ||
-        (hasFullscreenRatio && isFromHomeScreen && !window.opener)
-      );
+      return isPWAInstalled;
     };
 
     const isPWA = checkIfPWA();
     setIsStandalone(isPWA);
 
-    // Detect iOS
+    // Detect iOS and other browser info
     const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const isDesktop = !iOS && !('ontouchstart' in window);
+    const isChrome = navigator.userAgent.includes('Chrome') && !navigator.userAgent.includes('Edg');
+    const isEdge = navigator.userAgent.includes('Edg');
+
     setIsIOS(iOS);
 
     // Add debug logging to help troubleshoot
@@ -86,26 +137,41 @@ export default function InstallPWA({
       displayModeStandalone: window.matchMedia('(display-mode: standalone)').matches,
       iOSStandalone: (window.navigator as any).standalone === true,
       minimalUI: window.matchMedia('(display-mode: minimal-ui)').matches,
-      isWebView: /wv/i.test(navigator.userAgent),
-      referrer: document.referrer,
-      windowRatio: window.outerHeight === window.innerHeight,
-      finalResult: isPWA,
+      finalIsPWA: isPWA,
+      variant,
+      showBanner,
+      isDesktop,
+      isChrome,
+      isEdge,
+      iOS,
     });
 
     // Handle beforeinstallprompt event
     const handler = async (e: Event) => {
-      e.preventDefault();
+      console.log('beforeinstallprompt event fired');
+      console.log('Current variant:', variant, 'isPWA:', isPWA);
       const promptEvent = e as BeforeInstallPromptEvent;
-      setDeferredPrompt(promptEvent);
 
-      // Show banner when install prompt is available (don't auto-trigger)
-      if (!isIOS && !isPWA && variant === 'banner') {
+      if (variant === 'banner' && !isPWA) {
+        // For banner variant, prevent default and show our custom banner
+        e.preventDefault();
+        setDeferredPrompt(promptEvent);
         setShowBanner(true);
-        console.log('Install prompt available, showing banner');
-      } else if (isIOS && variant === 'banner') {
-        // For iOS, show the banner with manual instructions
-        setShowBanner(true);
-        console.log('iOS detected, showing manual install banner');
+        console.log('Install prompt available, showing custom banner');
+      } else if (variant === 'button' || variant === 'card') {
+        // For button/card variants, prevent default and store the prompt
+        e.preventDefault();
+        setDeferredPrompt(promptEvent);
+        console.log('Install prompt available, stored for button/card use');
+      } else {
+        // For development/testing, let's also handle the default case
+        console.log('Install prompt available, variant:', variant);
+        if (!isPWA) {
+          e.preventDefault();
+          setDeferredPrompt(promptEvent);
+          setShowBanner(true);
+          console.log('Development mode: showing banner anyway');
+        }
       }
     };
 
@@ -119,18 +185,44 @@ export default function InstallPWA({
       const newPWAStatus = checkIfPWA();
       setIsStandalone(newPWAStatus);
       console.log('Display mode changed, new PWA status:', newPWAStatus);
+
+      // Hide banner if PWA gets installed
+      if (newPWAStatus) {
+        setShowBanner(false);
+      }
     };
 
     displayModeQuery.addEventListener('change', handleDisplayModeChange);
     minimalUIQuery.addEventListener('change', handleDisplayModeChange);
 
-    // Hide banner if already installed
-    if (isPWA) {
-      setShowBanner(false);
-    } else if (isIOS && variant === 'banner' && showBanner) {
-      // Show banner immediately for iOS Safari since it doesn't fire beforeinstallprompt
-      setShowBanner(true);
-      console.log('iOS detected, showing install banner');
+    // Show banner logic based on platform and variant
+    if ((!isPWA || forceShow) && variant === 'banner') {
+      if (iOS) {
+        // For iOS, show banner immediately since it doesn't fire beforeinstallprompt
+        setShowBanner(true);
+        console.log('iOS detected, showing manual install banner');
+      } else if (isDesktop && (isChrome || isEdge)) {
+        // For Chrome/Edge desktop, show banner after a delay to allow beforeinstallprompt to fire
+        const timer = setTimeout(() => {
+          if (!deferredPrompt && (!isPWA || forceShow)) {
+            console.log(
+              'Chrome/Edge desktop detected, showing banner (no beforeinstallprompt received)',
+            );
+            setShowBanner(true);
+          }
+        }, 3000); // Wait 3 seconds for beforeinstallprompt
+
+        return () => {
+          clearTimeout(timer);
+          window.removeEventListener('beforeinstallprompt', handler);
+          displayModeQuery.removeEventListener('change', handleDisplayModeChange);
+          minimalUIQuery.removeEventListener('change', handleDisplayModeChange);
+        };
+      } else {
+        // For other browsers or development mode, show banner immediately
+        console.log('Other browser detected, showing banner immediately');
+        setShowBanner(true);
+      }
     }
 
     return () => {
@@ -138,7 +230,7 @@ export default function InstallPWA({
       displayModeQuery.removeEventListener('change', handleDisplayModeChange);
       minimalUIQuery.removeEventListener('change', handleDisplayModeChange);
     };
-  }, [variant, onInstall, isIOS, showBanner]);
+  }, [variant, onInstall, isIOS, showBanner, deferredPrompt, forceShow]);
 
   const handleInstall = async () => {
     if (!deferredPrompt) {
@@ -168,7 +260,7 @@ export default function InstallPWA({
   };
 
   // Don't show if already installed or if we're on the server
-  if ((isStandalone && !showInstalledState) || typeof window === 'undefined') {
+  if ((isStandalone && !showInstalledState && !forceShow) || typeof window === 'undefined') {
     return null;
   }
 

@@ -4,8 +4,25 @@ import withPWA from 'next-pwa';
 const withPWAConfig = withPWA({
   dest: 'public',
   disable: process.env.NODE_ENV === 'development',
-  register: true,
+  register: false,
   skipWaiting: true,
+  dynamicStartUrl: false,
+  buildExcludes: [/middleware-manifest\.json$/, /\.map$/],
+  publicExcludes: ['!robots.txt', '!sitemap.xml'],
+  ...(process.env.NODE_ENV === 'production' && {
+    runtimeCaching: [
+      {
+        urlPattern: /^https?.*/,
+        handler: 'NetworkFirst',
+        options: {
+          cacheName: 'offlineCache',
+          expiration: {
+            maxEntries: 200,
+          },
+        },
+      },
+    ],
+  }),
 });
 
 /** @type {import('next').NextConfig} */
@@ -27,7 +44,37 @@ const nextConfig = {
         {
           key: 'Cache-Control',
           value: 'public, max-age=31536000, immutable',
-        }
+        },
+      ],
+    },
+    {
+      source: '/manifest',
+      headers: [
+        {
+          key: 'Content-Type',
+          value: 'application/manifest+json',
+        },
+        {
+          key: 'Cache-Control',
+          value: 'public, max-age=86400',
+        },
+      ],
+    },
+    {
+      source: '/sw.js',
+      headers: [
+        {
+          key: 'Content-Type',
+          value: 'application/javascript',
+        },
+        {
+          key: 'Cache-Control',
+          value: 'no-cache, no-store, must-revalidate',
+        },
+        {
+          key: 'Service-Worker-Allowed',
+          value: '/',
+        },
       ],
     },
   ],

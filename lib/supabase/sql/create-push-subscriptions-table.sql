@@ -74,4 +74,12 @@ CREATE POLICY "Allow address-based delete"
 ON push_subscriptions
 FOR DELETE
 TO authenticated
-USING ( (auth.jwt() ->> 'sub') = address ); 
+USING ( (auth.jwt() ->> 'sub') = address );
+
+-- UPSERT Policy (ALL operations for upsert to work)
+CREATE POLICY "Allow address-based upsert"
+ON push_subscriptions
+FOR ALL
+TO authenticated
+USING ( (auth.jwt() ->> 'sub') = address )
+WITH CHECK ( (auth.jwt() ->> 'sub') = address ); 
