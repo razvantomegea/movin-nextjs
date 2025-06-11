@@ -38,7 +38,7 @@ export async function getUserPushSubscriptions({
   const { data, error } = await client
     .from('push_subscriptions')
     .select()
-    .eq('address', address)
+    .eq('address', address.toLowerCase())
     .eq('is_active', true)
     .order('created_at', { ascending: false });
 
@@ -65,7 +65,7 @@ export async function getAllUserPushSubscriptions({
   const { data, error } = await client
     .from('push_subscriptions')
     .select()
-    .eq('address', address)
+    .eq('address', address.toLowerCase())
     .order('created_at', { ascending: false });
 
   if (error) {
@@ -113,15 +113,39 @@ export async function upsertPushSubscription({
     is_active: true,
   };
 
-  // Use upsert to handle both insert and update cases
-  const { data, error } = await client
-    .from('push_subscriptions')
-    .upsert(dataToUpsert, {
-      onConflict: 'address, endpoint',
-      ignoreDuplicates: false,
-    })
-    .select()
-    .single();
+  // First, try to find existing subscription
+  const existingSubscription = await getPushSubscription({
+    address,
+    endpoint: subscriptionData.endpoint,
+    client,
+  });
+
+  let data;
+  let error;
+
+  if (existingSubscription) {
+    // Update existing subscription
+    const updateResult = await client
+      .from('push_subscriptions')
+      .update(dataToUpsert)
+      .eq('address', address.toLowerCase())
+      .eq('endpoint', subscriptionData.endpoint)
+      .select()
+      .single();
+
+    data = updateResult.data;
+    error = updateResult.error;
+  } else {
+    // Insert new subscription
+    const insertResult = await client
+      .from('push_subscriptions')
+      .insert(dataToUpsert)
+      .select()
+      .single();
+
+    data = insertResult.data;
+    error = insertResult.error;
+  }
 
   if (error) {
     throw error;

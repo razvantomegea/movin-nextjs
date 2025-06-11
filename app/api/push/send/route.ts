@@ -9,8 +9,13 @@ if (
   process.env.VAPID_PRIVATE_KEY &&
   process.env.VAPID_EMAIL
 ) {
+  // Ensure VAPID subject is properly formatted (must be URL or mailto: email)
+  const vapidSubject = process.env.VAPID_EMAIL.startsWith('mailto:')
+    ? process.env.VAPID_EMAIL
+    : `mailto:${process.env.VAPID_EMAIL}`;
+
   webpush.setVapidDetails(
-    process.env.VAPID_EMAIL,
+    vapidSubject,
     process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
     process.env.VAPID_PRIVATE_KEY,
   );

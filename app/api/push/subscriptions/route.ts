@@ -11,7 +11,7 @@ import {
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const address = searchParams.get('address');
+    const address = searchParams.get('address')?.toLowerCase();
     const includeInactive = searchParams.get('includeInactive') === 'true';
 
     if (!address) {
