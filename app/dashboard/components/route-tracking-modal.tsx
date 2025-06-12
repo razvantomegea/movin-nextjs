@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { GoogleMap, Marker, Polyline, InfoWindow } from '@react-google-maps/api';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Play, Pause, Save, RotateCw, MapPin, AlertTriangle, Users } from 'lucide-react';
+import { X, Play, Pause, Save, RotateCw, MapPin, AlertTriangle, Users, Car } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useGoogleMapsStatus } from '@/app/contexts/google-maps-provider';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -88,6 +88,11 @@ export function RouteTrackingModal({
     'prompt' | 'granted' | 'denied' | 'unknown'
   >('unknown');
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
+
+  // Speed validation state
+  const [speedValidationChecked, setSpeedValidationChecked] = useState(false);
+  const [showSpeedWarning, setShowSpeedWarning] = useState(false);
+  const [detectedSpeed, setDetectedSpeed] = useState<number>(0);
 
   // Simulated joint tracking state
   const [sarrahPosition, setSarrahPosition] = useState<google.maps.LatLngLiteral | null>(null);
@@ -258,6 +263,64 @@ export function RouteTrackingModal({
     return () => clearInterval(interval);
   }, [isTracking, startTime]);
 
+  // Stop tracking
+  const stopTracking = useCallback(() => {
+    if (watchIdRef.current) {
+      navigator.geolocation.clearWatch(watchIdRef.current);
+      watchIdRef.current = null;
+    }
+
+    setIsTracking(false);
+  }, []);
+
+  // Reset tracking
+  const resetTracking = useCallback(() => {
+    stopTracking();
+    setRoutePath([]);
+    setDistance(0);
+    setDuration(0);
+    setStartTime(null);
+    setSpeedValidationChecked(false);
+    setShowSpeedWarning(false);
+  }, [stopTracking]);
+
+  // Validate speed after 1 minute of tracking
+  const validateSpeed = useCallback(() => {
+    if (duration >= 60 && distance > 0) {
+      const currentSpeed = distance / duration; // meters per second
+      const speedKmh = currentSpeed * 3.6; // convert to km/h
+
+      // Maximum reasonable human running speed is about 36 km/h (10 m/s)
+      // Above this threshold suggests vehicle use (cycling, driving)
+      const MAX_HUMAN_SPEED_MS = 10; // 10 m/s = 36 km/h
+
+      if (currentSpeed > MAX_HUMAN_SPEED_MS) {
+        setDetectedSpeed(speedKmh);
+        setShowSpeedWarning(true);
+        // Automatically stop tracking when vehicle speed is detected
+        stopTracking();
+        resetTracking();
+      }
+
+      setSpeedValidationChecked(true);
+    }
+  }, [
+    duration,
+    distance,
+    stopTracking,
+    resetTracking,
+    setDetectedSpeed,
+    setShowSpeedWarning,
+    setSpeedValidationChecked,
+  ]);
+
+  // Trigger speed validation after 1 minute of tracking
+  useEffect(() => {
+    if (isTracking && duration >= 60 && !speedValidationChecked && distance > 0) {
+      validateSpeed();
+    }
+  }, [duration, distance, isTracking, speedValidationChecked, validateSpeed]);
+
   // Start tracking
   const startTracking = () => {
     if (permissionState !== 'granted') {
@@ -270,6 +333,8 @@ export function RouteTrackingModal({
     setDuration(0);
     setDistance(0);
     setRoutePath([]);
+    setSpeedValidationChecked(false);
+    setShowSpeedWarning(false);
 
     if (currentPosition) {
       setRoutePath([currentPosition]);
@@ -336,15 +401,6 @@ export function RouteTrackingModal({
     );
   };
 
-  // Stop tracking
-  const stopTracking = () => {
-    if (watchIdRef.current) {
-      navigator.geolocation.clearWatch(watchIdRef.current);
-      watchIdRef.current = null;
-    }
-    setIsTracking(false);
-  };
-
   // Save route
   const saveRoute = () => {
     if (!startTime || routePath.length < 2) return;
@@ -375,15 +431,6 @@ export function RouteTrackingModal({
 
     onSaveRoute(routeData);
     onClose();
-  };
-
-  // Reset tracking
-  const resetTracking = () => {
-    stopTracking();
-    setRoutePath([]);
-    setDistance(0);
-    setDuration(0);
-    setStartTime(null);
   };
 
   // Map load handler
@@ -472,6 +519,72 @@ export function RouteTrackingModal({
           Refresh Page
         </Button>
       </div>
+    );
+  };
+
+  // Render speed warning modal
+  const renderSpeedWarning = () => {
+    return (
+      <AnimatePresence>
+        {showSpeedWarning && (
+          <motion.div
+            className="fixed inset-0 z-60 flex items-center justify-center p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            />
+
+            <motion.div
+              className={`relative max-w-md w-full rounded-xl p-6 ${
+                isDark ? 'bg-gray-900 border border-gray-800' : 'bg-white border border-gray-200'
+              } shadow-xl`}
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+            >
+              <div className="flex items-center justify-center mb-4">
+                <Car className="h-12 w-12 text-amber-500" />
+              </div>
+
+              <h3 className="text-xl font-bold text-center mb-2">Vehicle Speed Detected</h3>
+
+              <p className="text-gray-500 dark:text-gray-400 text-center mb-4">
+                Your average speed of{' '}
+                <span className="font-semibold text-amber-500">
+                  {detectedSpeed.toFixed(1)} km/h
+                </span>{' '}
+                suggests you may be using a vehicle (cycling or driving).
+              </p>
+
+              <p className="text-sm text-gray-500 dark:text-gray-400 text-center mb-6">
+                Route tracking has been stopped to ensure accurate pedestrian activity recording.
+              </p>
+
+              <div className="flex flex-col gap-2">
+                <Button
+                  onClick={() => {
+                    setShowSpeedWarning(false);
+                    resetTracking();
+                  }}
+                  className="bg-blue-500 hover:bg-blue-600"
+                >
+                  Start New Walking/Running Session
+                </Button>
+
+                <Button variant="outline" onClick={() => setShowSpeedWarning(false)}>
+                  Dismiss
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     );
   };
 
@@ -762,6 +875,9 @@ export function RouteTrackingModal({
           </motion.div>
         </motion.div>
       )}
+
+      {/* Speed Warning Modal */}
+      {renderSpeedWarning()}
     </AnimatePresence>
   );
 }
