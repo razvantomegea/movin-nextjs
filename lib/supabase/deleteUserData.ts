@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/nextjs';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { getClient } from './createClient';
 
@@ -62,6 +63,7 @@ export async function getUserDataSummary({
   } catch (error) {
     // Fallback to direct queries if function doesn't exist
     console.warn('SQL function not found, using fallback queries:', error);
+    Sentry.captureException(error);
 
     try {
       // Check if profile exists
@@ -143,6 +145,7 @@ export async function getUserDataSummary({
         },
       };
     } catch (fallbackError) {
+      Sentry.captureException(fallbackError);
       throw new Error(
         `Failed to get user data summary: ${
           fallbackError instanceof Error ? fallbackError.message : 'Unknown error'
@@ -175,6 +178,7 @@ export async function deleteAvatar({
     }
   } catch (error) {
     console.error('Failed to delete avatar:', error);
+    Sentry.captureException(error);
     // We don't rethrow, as we want to proceed with deleting the rest of the data
   }
 }

@@ -41,7 +41,7 @@ export function useSentryUser() {
       // Cleanup on unmount
       clearSentryUser();
     };
-  }, [isConnected, address, profile?.username, profile?.email, profile?.is_premium]);
+  }, [isConnected, address, profile]);
 
   // Return current user state for debugging purposes
   return {

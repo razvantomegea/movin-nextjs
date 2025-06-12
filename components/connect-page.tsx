@@ -1,12 +1,14 @@
 'use client';
 
-import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useState, useEffect, useCallback, Suspense, useMemo } from 'react';
 import { useAppKit, useAppKitAccount } from '@reown/appkit/react';
+import * as Sentry from '@sentry/nextjs';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTheme } from 'next-themes';
+import { CelebrationAnimation } from '@/components/celebration-animation';
 import InstallPWA from '@/components/install-pwa';
 import { Button } from '@/components/ui/button';
 import { useMovinEarn } from '@/lib/hooks/useMovinEarn';
@@ -20,22 +22,31 @@ function ConnectPageContent() {
   const { open } = useAppKit();
   const { isConnected, address } = useAppKitAccount();
   const addressLower = address?.toLowerCase();
+  const [referrer, setReferrer] = useState<string | null>(null);
   const [connecting, setConnecting] = useState(isConnected);
   const [authError, setAuthError] = useState<string | null>(null);
-  const [referrer, setReferrer] = useState<string | null>(null);
   const [showReferralModal, setShowReferralModal] = useState(false);
-  const { useRegisterReferral } = useMovinEarn();
+  const [showCelebration, setShowCelebration] = useState(false);
+  const { useRegisterReferral, useReferralInfo } = useMovinEarn();
   const { registerReferral } = useRegisterReferral();
+
+  // Get referral info to check if user already has a referrer
+  const { formattedReferralInfo, isLoading: referralInfoLoading } = useReferralInfo();
+  const referralInfo = useMemo(() => formattedReferralInfo(), [formattedReferralInfo]);
+
+  // Validate Ethereum address
+  const isValidAddress = useCallback((address: string): boolean => {
+    return /^0x[a-fA-F0-9]{40}$/.test(address);
+  }, []);
 
   // Check for referral in URL
   useEffect(() => {
     const referralParam = searchParams.get('referral');
     if (referralParam && isValidAddress(referralParam)) {
-      setReferrer(referralParam);
       setShowReferralModal(true);
-      localStorage.setItem('referrer', referralParam);
+      setReferrer(referralParam);
     }
-  }, [searchParams]);
+  }, [searchParams, isValidAddress]);
 
   const handleConnect = useCallback(async () => {
     try {
@@ -53,7 +64,7 @@ function ConnectPageContent() {
 
   useEffect(() => {
     const authenticateWithSupabase = async () => {
-      if (isConnected && addressLower) {
+      if (isConnected && addressLower && !connecting) {
         try {
           // Call the API to generate JWT and authenticate with Supabase
           setConnecting(true);
@@ -95,31 +106,32 @@ function ConnectPageContent() {
               });
             }
 
-            // Register referral if one was provided
-            const storedReferrer = localStorage.getItem('referrer');
+            // Check if user already has a referrer before registering new referral
+            if (referrer && isValidAddress(referrer) && referrer.toLowerCase() !== addressLower) {
+              // Only register referral if user doesn't already have a referrer
+              const hasExistingReferrer =
+                referralInfo?.referrer &&
+                referralInfo.referrer !== '0x0000000000000000000000000000000000000000';
 
-            if (
-              storedReferrer &&
-              isValidAddress(storedReferrer) &&
-              storedReferrer.toLowerCase() !== addressLower
-            ) {
-              try {
-                await registerReferral(storedReferrer);
-                console.log('Referral registered successfully');
-              } catch (referralError) {
-                console.error('Failed to register referral:', referralError);
-                // Don't fail authentication if referral registration fails
+              if (!hasExistingReferrer && !referralInfoLoading) {
+                try {
+                  await registerReferral(referrer);
+                  setShowCelebration(true);
+                } catch (referralError) {
+                  console.error('Failed to register referral:', referralError);
+                  Sentry.captureException(referralError);
+                }
+              } else if (hasExistingReferrer) {
+                console.log('User already has a referrer, skipping referral registration');
               }
             }
           } catch (profileError) {
             console.error('Profile setup error:', profileError);
-            // Don't fail the authentication if profile creation fails
-            // Just log the error and continue
+            Sentry.captureException(profileError);
           }
 
           // Navigate to dashboard on successful authentication
           const navigateTimeout = setTimeout(() => {
-            localStorage.removeItem('referrer');
             router.push('/dashboard');
           }, 3000);
 
@@ -133,12 +145,17 @@ function ConnectPageContent() {
     };
 
     authenticateWithSupabase();
-  }, [isConnected, addressLower, router, registerReferral]);
-
-  // Validate Ethereum address
-  const isValidAddress = useCallback((address: string): boolean => {
-    return /^0x[a-fA-F0-9]{40}$/.test(address);
-  }, []);
+  }, [
+    isConnected,
+    addressLower,
+    router,
+    registerReferral,
+    isValidAddress,
+    referrer,
+    connecting,
+    referralInfo,
+    referralInfoLoading,
+  ]);
 
   const handleConnectWithReferral = useCallback(() => {
     handleDismissReferral();
@@ -151,6 +168,10 @@ function ConnectPageContent() {
 
   const handlePWADismiss = useCallback(() => {
     console.log('Install banner dismissed');
+  }, []);
+
+  const handleCelebrationClose = useCallback(() => {
+    setShowCelebration(false);
   }, []);
 
   const isDark = resolvedTheme === 'dark';
@@ -173,6 +194,19 @@ function ConnectPageContent() {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_60%,rgba(59,130,246,0.1)_0%,rgba(0,0,0,0)_60%)]"></div>
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-500/30 to-transparent"></div>
       </div>
+
+      {/* Celebration Animation */}
+      <CelebrationAnimation
+        isOpen={showCelebration}
+        onClose={handleCelebrationClose}
+        achievementType="steps"
+        achievementValue="1 MVN"
+        achievementTitle="Referral Bonus Claimed!"
+        description="Welcome bonus added to your account"
+        rewardAmount="1"
+        rewardCurrency="MVN"
+        showReward={true}
+      />
 
       {/* Referral Modal */}
       <AnimatePresence>
@@ -402,7 +436,7 @@ function ConnectPageContent() {
         transition={{ delay: 0.8, duration: 0.5 }}
         className="absolute bottom-4"
       >
-        <p className="text-gray-400 dark:text-blue-200/50 text-xs text-center">v1.4.4</p>
+        <p className="text-gray-400 dark:text-blue-200/50 text-xs text-center">v1.4.5</p>
       </motion.div>
     </div>
   );
@@ -472,7 +506,7 @@ function ConnectPageFallback() {
 
       {/* Version at bottom of page */}
       <div className="absolute bottom-4">
-        <p className="text-gray-400 dark:text-blue-200/50 text-xs text-center">v1.4.4</p>
+        <p className="text-gray-400 dark:text-blue-200/50 text-xs text-center">v1.4.5</p>
       </div>
     </div>
   );

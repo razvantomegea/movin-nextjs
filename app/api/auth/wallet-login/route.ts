@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/nextjs';
 import jwt from 'jsonwebtoken';
 import { NextResponse } from 'next/server';
 
@@ -46,6 +47,7 @@ export async function POST(request: Request) {
     return response;
   } catch (error) {
     console.error('Auth error:', error);
+    Sentry.captureException(error);
     return NextResponse.json({ error: 'Authentication failed' }, { status: 500 });
   }
 }

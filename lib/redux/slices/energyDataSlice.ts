@@ -1,4 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import * as Sentry from '@sentry/nextjs';
 import { IEnergy, getEnergyEntries, insertEnergyEntry } from '@/lib/supabase/energy';
 
 interface EnergyDataState {
@@ -24,6 +25,7 @@ export const fetchEnergyData = createAsyncThunk<
     const energyEntries = await getEnergyEntries({ address: address.toLowerCase() });
     return energyEntries;
   } catch (error) {
+    Sentry.captureException(error);
     return rejectWithValue(error instanceof Error ? error.message : 'Failed to fetch energy data');
   }
 });
@@ -42,6 +44,7 @@ export const addEnergyEntry = createAsyncThunk(
       const newEntry = await insertEnergyEntry({ address: address.toLowerCase(), energyData });
       return newEntry;
     } catch (error) {
+      Sentry.captureException(error);
       return rejectWithValue(error instanceof Error ? error.message : 'Failed to add energy entry');
     }
   },

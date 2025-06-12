@@ -1,4 +1,5 @@
 import { useAppKitAccount } from '@reown/appkit/react';
+import * as Sentry from '@sentry/nextjs';
 import { formatUnits, parseUnits } from 'viem';
 import { useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import movinEarnAbi from '@/lib/abi/movin-earn-abi.json';
@@ -285,7 +286,7 @@ export function useMovinEarn() {
           return false;
         }
 
-        writeContract({
+        await writeContract({
           address: CONTRACT_ADDRESS,
           abi: movinEarnAbi,
           functionName: 'registerReferral',
@@ -295,6 +296,7 @@ export function useMovinEarn() {
         return true;
       } catch (err) {
         const errorMessage = mapError(err);
+        Sentry.captureException(err);
         dispatch(
           showErrorToast({
             title: 'Error Registering Referral',
@@ -392,7 +394,7 @@ export function useMovinEarn() {
           mets: mets.toString(),
         });
 
-        writeContract({
+        await writeContract({
           address: CONTRACT_ADDRESS,
           abi: movinEarnAbi,
           functionName: 'recordActivity',
@@ -403,7 +405,6 @@ export function useMovinEarn() {
       } catch (err) {
         const errorMessage = mapError(err);
 
-        // Capture blockchain error with Sentry
         captureBlockchainError(
           err instanceof Error
             ? err
@@ -492,6 +493,7 @@ export function useMovinEarn() {
         return true;
       } catch (err) {
         const errorMessage = mapError(err);
+        Sentry.captureException(err);
         dispatch(
           showErrorToast({
             title: 'Error Claiming Staking Rewards',
@@ -540,6 +542,7 @@ export function useMovinEarn() {
         return true;
       } catch (err) {
         const errorMessage = mapError(err);
+        Sentry.captureException(err);
         dispatch(
           showErrorToast({
             title: 'Error Claiming All Staking Rewards',
@@ -593,6 +596,7 @@ export function useMovinEarn() {
         return true;
       } catch (err) {
         const errorMessage = mapError(err);
+        Sentry.captureException(err);
 
         dispatch(
           showErrorToast({
@@ -644,6 +648,7 @@ export function useMovinEarn() {
         return true;
       } catch (err) {
         const errorMessage = mapError(err);
+        Sentry.captureException(err);
         dispatch(
           showErrorToast({
             title: 'Error Unstaking Tokens',
@@ -695,6 +700,7 @@ export function useMovinEarn() {
         return true;
       } catch (err) {
         const errorMessage = mapError(err);
+        Sentry.captureException(err);
         dispatch(
           showErrorToast({
             title: 'Error Restaking Tokens',
@@ -799,6 +805,7 @@ export function useMovinEarn() {
         return true;
       } catch (err) {
         const errorMessage = mapError(err);
+        Sentry.captureException(err);
         dispatch(
           showErrorToast({
             title: 'Error Setting Premium Status',

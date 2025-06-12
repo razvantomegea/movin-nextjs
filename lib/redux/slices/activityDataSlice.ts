@@ -1,4 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import * as Sentry from '@sentry/nextjs';
 import {
   IActivity,
   getActivities,
@@ -28,6 +29,7 @@ export const fetchActivities = createAsyncThunk<
     const activities = await getActivities({ address });
     return activities;
   } catch (error) {
+    Sentry.captureException(error);
     return rejectWithValue(error instanceof Error ? error.message : 'Failed to fetch activities');
   }
 });
@@ -44,6 +46,7 @@ export const addActivities = createAsyncThunk(
       const newActivities = await insertActivities({ activityData: dataWithAddress });
       return newActivities;
     } catch (error) {
+      Sentry.captureException(error);
       return rejectWithValue(error instanceof Error ? error.message : 'Failed to add activities');
     }
   },
@@ -56,6 +59,7 @@ export const updateActivityData = createAsyncThunk(
       const updatedActivity = await updateActivity({ activityData });
       return updatedActivity;
     } catch (error) {
+      Sentry.captureException(error);
       return rejectWithValue(error instanceof Error ? error.message : 'Failed to update activity');
     }
   },

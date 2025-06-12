@@ -7,6 +7,7 @@ import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { ApiMealData } from '@/utils/energy/mealHelpers';
 import { MealDetectionResultsModal } from '../app/dashboard/energy/components/meal-detection-results-modal';
 
 interface TextMealModalProps {
@@ -21,7 +22,7 @@ export function TextMealModal({ isOpen, onClose, onAnalyze }: TextMealModalProps
   const [mealDescription, setMealDescription] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [mealData, setMealData] = useState<any>(null);
+  const [mealData, setMealData] = useState<ApiMealData | null>(null);
   const [showResults, setShowResults] = useState(false);
 
   const handleAnalyze = async () => {

@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import * as Sentry from '@sentry/nextjs';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
@@ -71,10 +72,12 @@ export async function POST(request: NextRequest) {
       });
     } catch (parseError) {
       console.error('Failed to parse AI response:', parseError);
+      Sentry.captureException(parseError);
       return NextResponse.json({ error: 'Failed to parse AI response' }, { status: 500 });
     }
   } catch (error) {
     console.error('Error analyzing ingredient:', error);
+    Sentry.captureException(error);
     return NextResponse.json(
       { error: 'Internal server error while analyzing ingredient' },
       { status: 500 },

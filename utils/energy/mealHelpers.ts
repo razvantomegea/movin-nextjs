@@ -38,7 +38,7 @@ export interface MealDetectionResultsModalProps {
   isOpen: boolean;
   onClose: () => void;
   imageData?: string | null;
-  mealData?: DetectedMeal | ApiMealData;
+  mealData: DetectedMeal | ApiMealData | null;
   sourceType?: 'camera' | 'text';
   originalDescription?: string;
 }

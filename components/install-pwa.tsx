@@ -5,8 +5,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Download, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import InstallInstructionsDialog from './install-instructions-dialog';
-import { registerServiceWorker } from '@/utils/serviceWorker';
 import {
   checkPWASupport,
   setupInstallPromptListener,
@@ -14,6 +12,8 @@ import {
   onPWAInstalled,
   type PWAInstallationSupport,
 } from '@/utils/pwa';
+import { registerServiceWorker } from '@/utils/serviceWorker';
+import InstallInstructionsDialog from './install-instructions-dialog';
 
 interface InstallPWAProps {
   variant?: 'button' | 'banner' | 'card';
@@ -44,14 +44,12 @@ export default function InstallPWA({
   });
   const [showInstructions, setShowInstructions] = useState(false);
   const [showBannerState, setShowBanner] = useState(showBanner);
-  const [serviceWorkerReady, setServiceWorkerReady] = useState(false);
 
   useEffect(() => {
     // Initialize service worker
     const initServiceWorker = async () => {
       try {
         await registerServiceWorker();
-        setServiceWorkerReady(true);
       } catch (error) {
         console.error('Failed to register service worker:', error);
       }

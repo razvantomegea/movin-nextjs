@@ -1,4 +1,5 @@
 import { createSlice, createAsyncThunk, type PayloadAction } from '@reduxjs/toolkit';
+import * as Sentry from '@sentry/nextjs';
 import { getProfile, IProfile, updateProfile as updateProfileDB } from '@/lib/supabase/profile';
 
 interface ProfileState {
@@ -24,6 +25,7 @@ export const fetchProfile = createAsyncThunk(
       const profile = await getProfile({ address });
       return profile;
     } catch (error) {
+      Sentry.captureException(error);
       return rejectWithValue('Failed to fetch profile data. Please try again.');
     }
   },
@@ -40,6 +42,7 @@ export const updateProfile = createAsyncThunk(
       const profile = await updateProfileDB({ address, profileData });
       return profile;
     } catch (error) {
+      Sentry.captureException(error);
       return rejectWithValue('Failed to update profile. Please try again.');
     }
   },

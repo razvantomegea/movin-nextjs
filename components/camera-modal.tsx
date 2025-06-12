@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
+import * as Sentry from '@sentry/nextjs';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Camera, RefreshCw, Check, AlertCircle } from 'lucide-react';
 import Image from 'next/image';
@@ -118,6 +119,7 @@ export function CameraModal({
           break;
         } catch (err) {
           console.warn('PWA Camera: Failed with constraint:', constraint, err);
+          Sentry.captureException(err);
           lastError = err as Error;
           continue;
         }
@@ -174,6 +176,7 @@ export function CameraModal({
       }
     } catch (err) {
       console.error('PWA Camera: Error accessing camera:', err);
+      Sentry.captureException(err);
       setIsInitializing(false);
 
       const error = err as Error;

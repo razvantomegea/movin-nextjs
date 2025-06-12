@@ -1,4 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import * as Sentry from '@sentry/nextjs';
 import { IMeal, getRecentMeals, insertMeal, searchMealsByName } from '@/lib/supabase/meals';
 
 interface MealsState {
@@ -23,6 +24,7 @@ export const fetchRecentMeals = createAsyncThunk(
       const meals = await getRecentMeals({ address });
       return meals;
     } catch (error) {
+      Sentry.captureException(error);
       return rejectWithValue(
         error instanceof Error ? error.message : 'Failed to fetch recent meals',
       );
@@ -44,6 +46,7 @@ export const addMealToLibrary = createAsyncThunk(
       const meal = await insertMeal({ address, mealData });
       return meal;
     } catch (error) {
+      Sentry.captureException(error);
       return rejectWithValue(
         error instanceof Error ? error.message : 'Failed to add meal to library',
       );
@@ -59,6 +62,7 @@ export const searchMeals = createAsyncThunk(
       const meals = await searchMealsByName({ address, searchTerm });
       return meals;
     } catch (error) {
+      Sentry.captureException(error);
       return rejectWithValue(error instanceof Error ? error.message : 'Failed to search meals');
     }
   },

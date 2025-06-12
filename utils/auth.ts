@@ -1,6 +1,7 @@
 /**
  * Authentication utilities for handling wallet disconnection and logout
  */
+import * as Sentry from '@sentry/nextjs';
 
 /**
  * Forces a logout by clearing all authentication data and redirecting to home
@@ -17,6 +18,7 @@ export function forceLogout(): void {
     window.location.href = '/';
   } catch (error) {
     console.error('Error during logout:', error);
+    Sentry.captureException(error);
     // Force redirect even if cleanup fails
     window.location.href = '/';
   }

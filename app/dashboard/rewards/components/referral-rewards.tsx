@@ -47,7 +47,7 @@ export function ReferralRewards({ refreshing, onDataLoaded }: ReferralRewardsPro
   const referralLink = useMemo(() => {
     if (!addressLower) return '';
 
-    const baseUrl = 'https://app.getmovin.ai';
+    const baseUrl = window.location.origin;
     return `${baseUrl}?referral=${addressLower}`;
   }, [addressLower]);
 
@@ -57,7 +57,7 @@ export function ReferralRewards({ refreshing, onDataLoaded }: ReferralRewardsPro
 
     return userReferrals.map((address, index) => ({
       id: index + 1,
-      name: `User ${index + 1}`,
+      address: address,
       status: 'Active' as const,
       reward: 1.0, // Default reward per referral - matches UI text
       date: new Date(Date.now() - index * 86400000).toLocaleDateString('en-US', {
@@ -251,10 +251,12 @@ export function ReferralRewards({ refreshing, onDataLoaded }: ReferralRewardsPro
                   >
                     <div className="flex items-center">
                       <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center mr-3">
-                        <span className="text-blue-400 font-medium">{item.name.charAt(0)}</span>
+                        <span className="text-blue-400 font-medium">{item.address.charAt(2)}</span>
                       </div>
                       <div>
-                        <div className="font-medium">{item.name}</div>
+                        <div className="font-medium font-mono text-sm">
+                          {`${item.address.slice(0, 6)}...${item.address.slice(-4)}`}
+                        </div>
                         <div className="text-xs text-gray-400">{item.date}</div>
                       </div>
                     </div>
