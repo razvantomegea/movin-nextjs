@@ -33,12 +33,12 @@ export async function POST(request: Request) {
     });
 
     // Set token in cookies for Supabase client to use
-    // Make the cookie accessible to client-side JavaScript for storage operations
+    // Cookie is httpOnly to prevent XSS attacks - use server-side endpoints for authenticated calls
     response.cookies.set({
       name: 'supabase-auth-token',
       value: token,
       maxAge: 60 * 60 * 24, // 1 day
-      httpOnly: false, // restrict JS access; proxy requests via server
+      httpOnly: true, // prevent XSS access; use server-side endpoints for authenticated calls
       path: '/',
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',

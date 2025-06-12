@@ -18,9 +18,9 @@ const initialState: ProfileState = {
 };
 
 // Async thunks
-export const fetchProfile = createAsyncThunk(
+export const fetchProfile = createAsyncThunk<IProfile | null, string, { rejectValue: string }>(
   'profile/fetchProfile',
-  async (address: string, { rejectWithValue }) => {
+  async (address, { rejectWithValue }) => {
     try {
       const profile = await getProfile({ address });
       return profile;

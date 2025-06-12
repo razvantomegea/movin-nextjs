@@ -16,19 +16,20 @@ const initialState: EnergyDataState = {
 };
 
 // Async thunk for fetching energy entries
-export const fetchEnergyData = createAsyncThunk<
-  IEnergy[], // Return type
-  string, // Argument (address)
-  { rejectValue: string } // ThunkApiConfig
->('energyData/fetchEnergyData', async (address, { rejectWithValue }) => {
-  try {
-    const energyEntries = await getEnergyEntries({ address: address.toLowerCase() });
-    return energyEntries;
-  } catch (error) {
-    Sentry.captureException(error);
-    return rejectWithValue(error instanceof Error ? error.message : 'Failed to fetch energy data');
-  }
-});
+export const fetchEnergyData = createAsyncThunk<IEnergy[], string, { rejectValue: string }>(
+  'energyData/fetchEnergyData',
+  async (address, { rejectWithValue }) => {
+    try {
+      const energyEntries = await getEnergyEntries({ address: address.toLowerCase() });
+      return energyEntries;
+    } catch (error) {
+      Sentry.captureException(error);
+      return rejectWithValue(
+        error instanceof Error ? error.message : 'Failed to fetch energy data',
+      );
+    }
+  },
+);
 
 // Async thunk for adding an energy entry (meal)
 export const addEnergyEntry = createAsyncThunk(

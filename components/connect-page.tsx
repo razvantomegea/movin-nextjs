@@ -115,8 +115,11 @@ function ConnectPageContent() {
 
               if (!hasExistingReferrer && !referralInfoLoading) {
                 try {
-                  await registerReferral(referrer);
-                  setShowCelebration(true);
+                  const referralSuccess = await registerReferral(referrer);
+
+                  if (referralSuccess) {
+                    setShowCelebration(true);
+                  }
                 } catch (referralError) {
                   console.error('Failed to register referral:', referralError);
                   Sentry.captureException(referralError);
