@@ -1,11 +1,11 @@
 import { useAppKitAccount } from '@reown/appkit/react';
-import * as Sentry from '@sentry/nextjs';
-import { formatUnits, parseUnits } from 'viem';
+import { formatUnits, parseUnits, keccak256, toBytes } from 'viem';
 import { useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import movinEarnAbi from '@/lib/abi/movin-earn-abi.json';
 import { useAppDispatch } from '@/lib/redux/hooks';
 import { showErrorToast } from '@/lib/redux/slices/toastSlice';
 import { captureBlockchainError, addUserActionBreadcrumb } from '@/lib/sentry';
+import { captureException } from '@/lib/sentry/client';
 import { forceLogout, isWalletConnected } from '@/utils/auth';
 import { mapError } from '@/utils/errors';
 import { getFormattedStakes } from '@/utils/staking/getFormattedStakes';
@@ -13,10 +13,25 @@ import { getFormattedStakes } from '@/utils/staking/getFormattedStakes';
 // MovinEarn contract address (Base network)
 const CONTRACT_ADDRESS = '0x865E693ebd875eD997BeEc565CFfBbE687Ee5776';
 
-// Constants for max values
+// Constants for max values from ABI
 const MAX_STEPS_PER_MINUTE = 300;
 const MAX_METS_PER_MINUTE = 5;
 const REWARDS_PERCENTAGE_FEE = 1;
+
+// Helper to check if we're in production
+const isProduction = process.env.NODE_ENV === 'production';
+
+// Signature utility types
+export interface ISignatureRequest {
+  caller: string;
+  selector: string;
+  nonce: number;
+  deadline: number;
+}
+
+export interface ISignatureResponse {
+  signature: string;
+}
 
 // Types
 export interface IUserActivity {
@@ -96,8 +111,44 @@ export interface IBaseRates {
 }
 
 /**
+ * Helper function to get function selector for EIP-712 signatures
+ * @param functionSignature The function signature string
+ * @returns The function selector
+ */
+const getFunctionSelector = (functionSignature: string): string => {
+  return keccak256(toBytes(functionSignature)).slice(0, 10);
+};
+
+/**
+ * Helper function to get signature from backend
+ * @param request The signature request parameters
+ * @returns The signature from the backend
+ */
+const getSignatureFromBackend = async (request: ISignatureRequest): Promise<string> => {
+  try {
+    const response = await fetch('/api/sign-function', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(request),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Signature request failed: ${response.statusText}`);
+    }
+
+    const data: ISignatureResponse = await response.json();
+    return data.signature;
+  } catch (error) {
+    console.error('Error getting signature from backend:', error);
+    throw new Error('Failed to get signature from backend');
+  }
+};
+
+/**
  * Hook for interacting with the MovinEarn contract
- * Provides methods for reading and writing to the contract
+ * Provides methods for reading and writing to the contract with signature support
  */
 export function useMovinEarn() {
   const dispatch = useAppDispatch();
@@ -123,6 +174,22 @@ export function useMovinEarn() {
       return false;
     }
     return true;
+  };
+
+  /**
+   * Gets the user's current nonce for signature verification
+   * @returns Hook result with nonce data
+   */
+  const useNonce = () => {
+    return useReadContract({
+      address: CONTRACT_ADDRESS,
+      abi: movinEarnAbi,
+      functionName: 'getNonce',
+      args: addressLower ? [addressLower] : undefined,
+      query: {
+        enabled: !!addressLower,
+      },
+    }) as { data: bigint | undefined; isLoading: boolean; error: Error | null };
   };
 
   /**
@@ -273,6 +340,7 @@ export function useMovinEarn() {
   const useRegisterReferral = () => {
     const { writeContract, data: hash, error: writeError, isPending } = useWriteContract();
     const { isLoading, isSuccess, error: waitError } = useWaitForTransactionReceipt({ hash });
+    const { data: nonce } = useNonce();
 
     /**
      * Registers a referral
@@ -286,17 +354,40 @@ export function useMovinEarn() {
           return false;
         }
 
+        if (!addressLower || !nonce) {
+          throw new Error('User address or nonce not available');
+        }
+
+        // Create deadline (24 hours from now)
+        const deadline = Math.floor(Date.now() / 1000) + 86400;
+
+        // Get function selector
+        const selector = getFunctionSelector('registerReferral(address,uint256,uint256,bytes)');
+
+        // Get signature from backend
+        const signature = await getSignatureFromBackend({
+          caller: addressLower,
+          selector,
+          nonce: Number(nonce),
+          deadline,
+        });
+
         await writeContract({
-          address: CONTRACT_ADDRESS,
+          address: CONTRACT_ADDRESS as `0x${string}`,
           abi: movinEarnAbi,
           functionName: 'registerReferral',
-          args: [referrerAddress],
+          args: [referrerAddress, nonce, deadline, signature],
         });
 
         return true;
       } catch (err) {
         const errorMessage = mapError(err);
-        Sentry.captureException(err);
+
+        // Only capture exceptions in production
+        if (isProduction) {
+          captureException(err);
+        }
+
         dispatch(
           showErrorToast({
             title: 'Error Registering Referral',
@@ -375,6 +466,7 @@ export function useMovinEarn() {
   const useRecordActivity = () => {
     const { writeContract, data: hash, error: writeError, isPending } = useWriteContract();
     const { isLoading, isSuccess, error: waitError } = useWaitForTransactionReceipt({ hash });
+    const { data: nonce } = useNonce();
 
     /**
      * Records activity
@@ -389,30 +481,56 @@ export function useMovinEarn() {
           return false;
         }
 
-        addUserActionBreadcrumb('Recording activity', 'blockchain', {
-          steps: steps.toString(),
-          mets: mets.toString(),
+        if (!addressLower || !nonce) {
+          throw new Error('User address or nonce not available');
+        }
+
+        // Only add breadcrumb in production
+        if (isProduction) {
+          addUserActionBreadcrumb('Recording activity', 'blockchain', {
+            steps: steps.toString(),
+            mets: mets.toString(),
+          });
+        }
+
+        // Create deadline (24 hours from now)
+        const deadline = Math.floor(Date.now() / 1000) + 86400;
+
+        // Get function selector
+        const selector = getFunctionSelector(
+          'recordActivity(address,uint256,uint256,uint256,uint256,bytes)',
+        );
+
+        // Get signature from backend
+        const signature = await getSignatureFromBackend({
+          caller: addressLower,
+          selector,
+          nonce: Number(nonce),
+          deadline,
         });
 
         await writeContract({
           address: CONTRACT_ADDRESS,
           abi: movinEarnAbi,
           functionName: 'recordActivity',
-          args: [addressLower, steps, mets],
+          args: [addressLower, steps, mets, nonce, deadline, signature],
         });
 
         return true;
       } catch (err) {
         const errorMessage = mapError(err);
 
-        captureBlockchainError(
-          err instanceof Error
-            ? err
-            : new Error(String((err as unknown as Error)?.message || 'Unknown blockchain error')),
-          hash,
-          CONTRACT_ADDRESS,
-          address,
-        );
+        // Only capture blockchain errors in production
+        if (isProduction) {
+          captureBlockchainError(
+            err instanceof Error
+              ? err
+              : new Error(String((err as unknown as Error)?.message || 'Unknown blockchain error')),
+            hash,
+            CONTRACT_ADDRESS,
+            address,
+          );
+        }
 
         dispatch(
           showErrorToast({
@@ -470,6 +588,7 @@ export function useMovinEarn() {
   const useClaimStakingRewards = () => {
     const { writeContract, data: hash, error: writeError, isPending } = useWriteContract();
     const { isLoading, isSuccess, error: waitError } = useWaitForTransactionReceipt({ hash });
+    const { data: nonce } = useNonce();
 
     /**
      * Claims staking rewards for a specific stake
@@ -483,17 +602,40 @@ export function useMovinEarn() {
           return false;
         }
 
+        if (!addressLower || !nonce) {
+          throw new Error('User address or nonce not available');
+        }
+
+        // Create deadline (24 hours from now)
+        const deadline = Math.floor(Date.now() / 1000) + 86400;
+
+        // Get function selector
+        const selector = getFunctionSelector('claimStakingRewards(uint256,uint256,uint256,bytes)');
+
+        // Get signature from backend
+        const signature = await getSignatureFromBackend({
+          caller: addressLower,
+          selector,
+          nonce: Number(nonce),
+          deadline,
+        });
+
         await writeContract({
           address: CONTRACT_ADDRESS,
           abi: movinEarnAbi,
           functionName: 'claimStakingRewards',
-          args: [stakeIndex],
+          args: [stakeIndex, nonce, deadline, signature],
         });
 
         return true;
       } catch (err) {
         const errorMessage = mapError(err);
-        Sentry.captureException(err);
+
+        // Only capture exceptions in production
+        if (isProduction) {
+          captureException(err);
+        }
+
         dispatch(
           showErrorToast({
             title: 'Error Claiming Staking Rewards',
@@ -521,6 +663,7 @@ export function useMovinEarn() {
   const useClaimAllStakingRewards = () => {
     const { writeContract, data: hash, error: writeError, isPending } = useWriteContract();
     const { isLoading, isSuccess, error: waitError } = useWaitForTransactionReceipt({ hash });
+    const { data: nonce } = useNonce();
 
     /**
      * Claims all staking rewards
@@ -533,16 +676,40 @@ export function useMovinEarn() {
           return false;
         }
 
+        if (!addressLower || !nonce) {
+          throw new Error('User address or nonce not available');
+        }
+
+        // Create deadline (24 hours from now)
+        const deadline = Math.floor(Date.now() / 1000) + 86400;
+
+        // Get function selector
+        const selector = getFunctionSelector('claimAllStakingRewards(uint256,uint256,bytes)');
+
+        // Get signature from backend
+        const signature = await getSignatureFromBackend({
+          caller: addressLower,
+          selector,
+          nonce: Number(nonce),
+          deadline,
+        });
+
         await writeContract({
           address: CONTRACT_ADDRESS,
           abi: movinEarnAbi,
           functionName: 'claimAllStakingRewards',
+          args: [nonce, deadline, signature],
         });
 
         return true;
       } catch (err) {
         const errorMessage = mapError(err);
-        Sentry.captureException(err);
+
+        // Only capture exceptions in production
+        if (isProduction) {
+          captureException(err);
+        }
+
         dispatch(
           showErrorToast({
             title: 'Error Claiming All Staking Rewards',
@@ -570,6 +737,7 @@ export function useMovinEarn() {
   const useStakeTokens = () => {
     const { writeContract, data: hash, error: writeError, isPending } = useWriteContract();
     const { isLoading, isSuccess, error: waitError } = useWaitForTransactionReceipt({ hash });
+    const { data: nonce } = useNonce();
 
     /**
      * Stakes tokens
@@ -584,19 +752,41 @@ export function useMovinEarn() {
           return false;
         }
 
+        if (!addressLower || !nonce) {
+          throw new Error('User address or nonce not available');
+        }
+
         const amountWei = parseUnits(amount, 18);
+
+        // Create deadline (24 hours from now)
+        const deadline = Math.floor(Date.now() / 1000) + 86400;
+
+        // Get function selector
+        const selector = getFunctionSelector('stakeTokens(uint256,uint256,uint256,uint256,bytes)');
+
+        // Get signature from backend
+        const signature = await getSignatureFromBackend({
+          caller: addressLower,
+          selector,
+          nonce: Number(nonce),
+          deadline,
+        });
 
         await writeContract({
           address: CONTRACT_ADDRESS,
           abi: movinEarnAbi,
           functionName: 'stakeTokens',
-          args: [amountWei, lockMonths],
+          args: [amountWei, lockMonths, nonce, deadline, signature],
         });
 
         return true;
       } catch (err) {
         const errorMessage = mapError(err);
-        Sentry.captureException(err);
+
+        // Only capture exceptions in production
+        if (isProduction) {
+          captureException(err);
+        }
 
         dispatch(
           showErrorToast({
@@ -625,6 +815,7 @@ export function useMovinEarn() {
   const useUnstake = () => {
     const { writeContract, data: hash, error: writeError, isPending } = useWriteContract();
     const { isLoading, isSuccess, error: waitError } = useWaitForTransactionReceipt({ hash });
+    const { data: nonce } = useNonce();
 
     /**
      * Unstakes tokens
@@ -638,17 +829,40 @@ export function useMovinEarn() {
           return false;
         }
 
+        if (!addressLower || !nonce) {
+          throw new Error('User address or nonce not available');
+        }
+
+        // Create deadline (24 hours from now)
+        const deadline = Math.floor(Date.now() / 1000) + 86400;
+
+        // Get function selector
+        const selector = getFunctionSelector('unstake(uint256,uint256,uint256,bytes)');
+
+        // Get signature from backend
+        const signature = await getSignatureFromBackend({
+          caller: addressLower,
+          selector,
+          nonce: Number(nonce),
+          deadline,
+        });
+
         await writeContract({
           address: CONTRACT_ADDRESS,
           abi: movinEarnAbi,
           functionName: 'unstake',
-          args: [stakeIndex],
+          args: [stakeIndex, nonce, deadline, signature],
         });
 
         return true;
       } catch (err) {
         const errorMessage = mapError(err);
-        Sentry.captureException(err);
+
+        // Only capture exceptions in production
+        if (isProduction) {
+          captureException(err);
+        }
+
         dispatch(
           showErrorToast({
             title: 'Error Unstaking Tokens',
@@ -676,6 +890,7 @@ export function useMovinEarn() {
   const useRestake = () => {
     const { writeContract, data: hash, error: writeError, isPending } = useWriteContract();
     const { isLoading, isSuccess, error: waitError } = useWaitForTransactionReceipt({ hash });
+    const { data: nonce } = useNonce();
 
     /**
      * Restakes tokens
@@ -690,17 +905,40 @@ export function useMovinEarn() {
           return false;
         }
 
+        if (!addressLower || !nonce) {
+          throw new Error('User address or nonce not available');
+        }
+
+        // Create deadline (24 hours from now)
+        const deadline = Math.floor(Date.now() / 1000) + 86400;
+
+        // Get function selector
+        const selector = getFunctionSelector('restake(uint256,uint256,uint256,uint256,bytes)');
+
+        // Get signature from backend
+        const signature = await getSignatureFromBackend({
+          caller: addressLower,
+          selector,
+          nonce: Number(nonce),
+          deadline,
+        });
+
         await writeContract({
           address: CONTRACT_ADDRESS,
           abi: movinEarnAbi,
           functionName: 'restake',
-          args: [stakeIndex, lockMonths],
+          args: [stakeIndex, lockMonths, nonce, deadline, signature],
         });
 
         return true;
       } catch (err) {
         const errorMessage = mapError(err);
-        Sentry.captureException(err);
+
+        // Only capture exceptions in production
+        if (isProduction) {
+          captureException(err);
+        }
+
         dispatch(
           showErrorToast({
             title: 'Error Restaking Tokens',
@@ -779,6 +1017,7 @@ export function useMovinEarn() {
   const useSetPremiumStatus = () => {
     const { writeContract, data: hash, error: writeError, isPending } = useWriteContract();
     const { isLoading, isSuccess, error: waitError } = useWaitForTransactionReceipt({ hash });
+    const { data: nonce } = useNonce();
 
     /**
      * Sets premium status
@@ -793,19 +1032,44 @@ export function useMovinEarn() {
           return false;
         }
 
+        if (!addressLower || !nonce) {
+          throw new Error('User address or nonce not available');
+        }
+
         const amountWei = parseUnits(amount, 18);
+
+        // Create deadline (24 hours from now)
+        const deadline = Math.floor(Date.now() / 1000) + 86400;
+
+        // Get function selector
+        const selector = getFunctionSelector(
+          'setPremiumStatus(bool,uint256,uint256,uint256,bytes)',
+        );
+
+        // Get signature from backend
+        const signature = await getSignatureFromBackend({
+          caller: addressLower,
+          selector,
+          nonce: Number(nonce),
+          deadline,
+        });
 
         await writeContract({
           address: CONTRACT_ADDRESS,
           abi: movinEarnAbi,
           functionName: 'setPremiumStatus',
-          args: [status, amountWei],
+          args: [status, amountWei, nonce, deadline, signature],
         });
 
         return true;
       } catch (err) {
         const errorMessage = mapError(err);
-        Sentry.captureException(err);
+
+        // Only capture exceptions in production
+        if (isProduction) {
+          captureException(err);
+        }
+
         dispatch(
           showErrorToast({
             title: 'Error Setting Premium Status',
@@ -818,6 +1082,84 @@ export function useMovinEarn() {
 
     return {
       setPremiumStatus,
+      hash,
+      error: writeError || waitError,
+      isPending,
+      isLoading,
+      isSuccess,
+    };
+  };
+
+  /**
+   * Hook to deposit tokens
+   * @returns Hook result with deposit function
+   */
+  const useDeposit = () => {
+    const { writeContract, data: hash, error: writeError, isPending } = useWriteContract();
+    const { isLoading, isSuccess, error: waitError } = useWaitForTransactionReceipt({ hash });
+    const { data: nonce } = useNonce();
+
+    /**
+     * Deposits tokens to the contract
+     * @param amount The amount to deposit in ether
+     * @returns A promise resolved when the transaction is initiated
+     */
+    const deposit = async (amount: string): Promise<boolean> => {
+      try {
+        // Check wallet connection before transaction
+        if (!checkWalletConnection()) {
+          return false;
+        }
+
+        if (!addressLower || !nonce) {
+          throw new Error('User address or nonce not available');
+        }
+
+        const amountWei = parseUnits(amount, 18);
+
+        // Create deadline (24 hours from now)
+        const deadline = Math.floor(Date.now() / 1000) + 86400;
+
+        // Get function selector
+        const selector = getFunctionSelector('deposit(uint256,uint256,uint256,bytes)');
+
+        // Get signature from backend
+        const signature = await getSignatureFromBackend({
+          caller: addressLower,
+          selector,
+          nonce: Number(nonce),
+          deadline,
+        });
+
+        await writeContract({
+          address: CONTRACT_ADDRESS,
+          abi: movinEarnAbi,
+          functionName: 'deposit',
+          args: [amountWei, nonce, deadline, signature],
+          value: amountWei, // ETH deposit
+        });
+
+        return true;
+      } catch (err) {
+        const errorMessage = mapError(err);
+
+        // Only capture exceptions in production
+        if (isProduction) {
+          captureException(err);
+        }
+
+        dispatch(
+          showErrorToast({
+            title: 'Error Depositing Tokens',
+            description: errorMessage,
+          }),
+        );
+        return false;
+      }
+    };
+
+    return {
+      deposit,
       hash,
       error: writeError || waitError,
       isPending,
@@ -839,6 +1181,7 @@ export function useMovinEarn() {
     useUserReferrals,
     useBaseRates,
     useRewardHalvingTimestamp,
+    useNonce,
 
     useUserStakes,
     usePremiumStatus,
@@ -852,5 +1195,6 @@ export function useMovinEarn() {
     useUnstake,
     useRestake,
     useSetPremiumStatus,
+    useDeposit,
   };
 }
