@@ -354,7 +354,7 @@ export function useMovinEarn() {
           return false;
         }
 
-        if (!addressLower || !nonce) {
+        if (!addressLower || nonce == null) {
           throw new Error('User address or nonce not available');
         }
 

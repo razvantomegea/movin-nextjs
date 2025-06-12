@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { signTypedData } from 'viem/accounts';
+import { privateKeyToAccount } from 'viem/accounts';
 
 // EIP-712 Domain
 const domain = {
@@ -65,6 +65,9 @@ export default async function handler(
       return res.status(500).json({ error: 'Server configuration error' });
     }
 
+    // Create account from private key
+    const account = privateKeyToAccount(ownerPrivateKey as `0x${string}`);
+
     // Create message for signing
     const message = {
       caller: caller as `0x${string}`,
@@ -73,13 +76,12 @@ export default async function handler(
       deadline: BigInt(deadline),
     };
 
-    // Sign the message
-    const signature = await signTypedData({
+    // Sign the message using the account's signTypedData method
+    const signature = await account.signTypedData({
       domain,
       types,
       primaryType: 'FunctionCall',
       message,
-      privateKey: ownerPrivateKey as `0x${string}`,
     });
 
     return res.status(200).json({ signature });
