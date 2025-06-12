@@ -55,9 +55,11 @@ export async function insertActivities({
   const activitiesToInsert = activityData.map(({ id, created_at, updated_at, ...rest }) => rest);
 
   const { data, error } = await client.from('activities').insert(activitiesToInsert).select();
+
   if (error) {
     throw error;
   }
+
   if (!data || data.length === 0) {
     throw new Error('Activity creation failed: No data returned');
   }
