@@ -311,7 +311,6 @@ export function RouteTrackingModal({
   }, [
     duration,
     distance,
-    stopTracking,
     resetTracking,
     setDetectedSpeed,
     setShowSpeedWarning,
