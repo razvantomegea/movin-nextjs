@@ -274,15 +274,20 @@ export function RouteTrackingModal({
   }, []);
 
   // Reset tracking
-  const resetTracking = useCallback(() => {
-    stopTracking();
-    setRoutePath([]);
-    setDistance(0);
-    setDuration(0);
-    setStartTime(null);
-    setSpeedValidationChecked(false);
-    setShowSpeedWarning(false);
-  }, [stopTracking]);
+  const resetTracking = useCallback(
+    (resetSpeedWarning: boolean = true) => {
+      stopTracking();
+      setRoutePath([]);
+      setDistance(0);
+      setDuration(0);
+      setStartTime(null);
+      setSpeedValidationChecked(false);
+      if (resetSpeedWarning) {
+        setShowSpeedWarning(false);
+      }
+    },
+    [stopTracking],
+  );
 
   // Validate speed after 1 minute of tracking
   const validateSpeed = useCallback(() => {
@@ -298,8 +303,7 @@ export function RouteTrackingModal({
         setDetectedSpeed(speedKmh);
         setShowSpeedWarning(true);
         // Automatically stop tracking when vehicle speed is detected
-        stopTracking();
-        resetTracking();
+        resetTracking(false);
       }
 
       setSpeedValidationChecked(true);
@@ -570,7 +574,7 @@ export function RouteTrackingModal({
                 <Button
                   onClick={() => {
                     setShowSpeedWarning(false);
-                    resetTracking();
+                    resetTracking(false);
                   }}
                   className="bg-blue-500 hover:bg-blue-600"
                 >
@@ -838,7 +842,7 @@ export function RouteTrackingModal({
                   <div className="flex justify-between items-center">
                     <Button
                       variant="outline"
-                      onClick={resetTracking}
+                      onClick={() => resetTracking()}
                       disabled={isTracking && routePath.length === 0}
                     >
                       <RotateCw className="h-4 w-4 mr-2" />
