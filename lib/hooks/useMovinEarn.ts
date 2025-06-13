@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useAppKitAccount } from '@reown/appkit/react';
 import * as Sentry from '@sentry/nextjs';
 import { formatUnits, parseUnits } from 'viem';
@@ -11,7 +12,7 @@ import { mapError } from '@/utils/errors';
 import { getFormattedStakes } from '@/utils/staking/getFormattedStakes';
 
 // MovinEarn contract address (Base network)
-const CONTRACT_ADDRESS = '0x865E693ebd875eD997BeEc565CFfBbE687Ee5776';
+const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_MOVIN_EARN_CONTRACT_ADDRESS as `0x${string}`;
 
 // Constants for max values
 const MAX_STEPS_PER_MINUTE = 300;
@@ -826,6 +827,59 @@ export function useMovinEarn() {
     };
   };
 
+  /**
+   * Hook to set transaction sync status by owner
+   * @returns Hook result with set transaction sync function
+   */
+  const useSetTransactionSyncByOwner = () => {
+    const [error, setError] = useState<Error | null>(null);
+    const [isPending, setIsPending] = useState(false);
+    const [isSuccess, setIsSuccess] = useState(false);
+
+    const setTransactionSync = async (user: string, status: boolean): Promise<boolean> => {
+      setIsPending(true);
+      setError(null);
+      setIsSuccess(false);
+
+      try {
+        const response = await fetch('/api/admin/set-transaction-sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user, status }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.message || 'API request failed');
+        }
+
+        setIsPending(false);
+        setIsSuccess(true);
+        return true;
+      } catch (err) {
+        const errorMessage = mapError(err);
+        Sentry.captureException(err);
+        setError(err as Error);
+        dispatch(
+          showErrorToast({
+            title: 'Error Setting Transaction Sync',
+            description: errorMessage,
+          }),
+        );
+        setIsPending(false);
+        return false;
+      }
+    };
+
+    return {
+      setTransactionSync,
+      error,
+      isPending,
+      isSuccess,
+    };
+  };
+
   return {
     // Utility functions
     getContractAddress,
@@ -852,5 +906,6 @@ export function useMovinEarn() {
     useUnstake,
     useRestake,
     useSetPremiumStatus,
+    useSetTransactionSyncByOwner,
   };
 }
