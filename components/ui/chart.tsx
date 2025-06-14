@@ -329,9 +329,6 @@ function getPayloadConfigFromPayload(config: ChartConfig, payload: unknown, key:
   return configLabelKey in config ? config[configLabelKey] : config[key as keyof typeof config];
 }
 
-// Import chart utilities from utils/charts
-import { formatTick, filterDataByTimeRange, getTickValues } from '@/utils/charts';
-
 export {
   ChartContainer,
   ChartTooltip,

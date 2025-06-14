@@ -274,16 +274,6 @@ export function useMovinEarn() {
   const useRegisterReferral = () => {
     const { writeContract, data: hash, error: writeError, isPending } = useWriteContract();
     const { isSuccess, error: waitError } = useWaitForTransactionReceipt({ hash });
-    const { setTransactionSync } = useSetTransactionSyncByOwner();
-    const [transactionSyncStatus, setTransactionSyncStatus] = useState(false);
-
-    // Set transaction sync to false when transaction completes or fails
-    useEffect(() => {
-      if ((isSuccess || waitError) && addressLower && transactionSyncStatus) {
-        setTransactionSync(addressLower, false);
-        setTransactionSyncStatus(false);
-      }
-    }, [isSuccess, waitError, setTransactionSync, transactionSyncStatus]);
 
     /**
      * Registers a referral
@@ -293,25 +283,6 @@ export function useMovinEarn() {
     const registerReferral = async (referrerAddress: string): Promise<boolean> => {
       if (!checkWalletConnection()) {
         return false;
-      }
-
-      try {
-        if (addressLower) {
-          await setTransactionSync(addressLower, true);
-          await sleep(1000);
-          setTransactionSyncStatus(true);
-        }
-      } catch (err) {
-        const errorMessage = mapError(err);
-        console.log('errorMessage', errorMessage);
-        captureBlockchainError(
-          err instanceof Error
-            ? err
-            : new Error(String((err as unknown as Error)?.message || 'Unknown blockchain error')),
-          hash,
-          CONTRACT_ADDRESS,
-          address,
-        );
       }
 
       try {
@@ -342,11 +313,6 @@ export function useMovinEarn() {
 
         if (errorMessage.includes('connected')) {
           forceLogout();
-        }
-
-        if (addressLower) {
-          setTransactionSync(addressLower, false);
-          setTransactionSyncStatus(false);
         }
 
         return false;
@@ -547,16 +513,6 @@ export function useMovinEarn() {
   const useClaimStakingRewards = () => {
     const { writeContract, data: hash, error: writeError, isPending } = useWriteContract();
     const { isSuccess, error: waitError } = useWaitForTransactionReceipt({ hash });
-    const { setTransactionSync } = useSetTransactionSyncByOwner();
-    const [transactionSyncStatus, setTransactionSyncStatus] = useState(false);
-
-    // Set transaction sync to false when transaction completes or fails
-    useEffect(() => {
-      if ((isSuccess || waitError) && addressLower && transactionSyncStatus) {
-        setTransactionSync(addressLower, false);
-        setTransactionSyncStatus(false);
-      }
-    }, [isSuccess, waitError, setTransactionSync, transactionSyncStatus]);
 
     /**
      * Claims staking rewards for a specific stake
@@ -566,25 +522,6 @@ export function useMovinEarn() {
     const claimStakingRewards = async (stakeIndex: number): Promise<boolean> => {
       if (!checkWalletConnection()) {
         return false;
-      }
-
-      try {
-        if (addressLower) {
-          await setTransactionSync(addressLower, true);
-          await sleep(1000);
-          setTransactionSyncStatus(true);
-        }
-      } catch (err) {
-        const errorMessage = mapError(err);
-        console.log('errorMessage', errorMessage);
-        captureBlockchainError(
-          err instanceof Error
-            ? err
-            : new Error(String((err as unknown as Error)?.message || 'Unknown blockchain error')),
-          hash,
-          CONTRACT_ADDRESS,
-          address,
-        );
       }
 
       try {
@@ -618,11 +555,6 @@ export function useMovinEarn() {
           forceLogout();
         }
 
-        if (addressLower) {
-          setTransactionSync(addressLower, false);
-          setTransactionSyncStatus(false);
-        }
-
         return false;
       }
     };
@@ -643,16 +575,6 @@ export function useMovinEarn() {
   const useClaimAllStakingRewards = () => {
     const { writeContract, data: hash, error: writeError, isPending } = useWriteContract();
     const { isSuccess, error: waitError } = useWaitForTransactionReceipt({ hash });
-    const { setTransactionSync } = useSetTransactionSyncByOwner();
-    const [transactionSyncStatus, setTransactionSyncStatus] = useState(false);
-
-    // Set transaction sync to false when transaction completes or fails
-    useEffect(() => {
-      if ((isSuccess || waitError) && addressLower && transactionSyncStatus) {
-        setTransactionSync(addressLower, false);
-        setTransactionSyncStatus(false);
-      }
-    }, [isSuccess, waitError, setTransactionSync, transactionSyncStatus]);
 
     /**
      * Claims all staking rewards
@@ -661,25 +583,6 @@ export function useMovinEarn() {
     const claimAllStakingRewards = async (): Promise<boolean> => {
       if (!checkWalletConnection()) {
         return false;
-      }
-
-      try {
-        if (addressLower) {
-          await setTransactionSync(addressLower, true);
-          await sleep(1000);
-          setTransactionSyncStatus(true);
-        }
-      } catch (err) {
-        const errorMessage = mapError(err);
-        console.log('errorMessage', errorMessage);
-        captureBlockchainError(
-          err instanceof Error
-            ? err
-            : new Error(String((err as unknown as Error)?.message || 'Unknown blockchain error')),
-          hash,
-          CONTRACT_ADDRESS,
-          address,
-        );
       }
 
       try {
@@ -711,11 +614,6 @@ export function useMovinEarn() {
           forceLogout();
         }
 
-        if (addressLower) {
-          setTransactionSync(addressLower, false);
-          setTransactionSyncStatus(false);
-        }
-
         return false;
       }
     };
@@ -736,16 +634,6 @@ export function useMovinEarn() {
   const useStakeTokens = () => {
     const { writeContract, data: hash, error: writeError, isPending } = useWriteContract();
     const { isSuccess, error: waitError } = useWaitForTransactionReceipt({ hash });
-    const { setTransactionSync } = useSetTransactionSyncByOwner();
-    const [transactionSyncStatus, setTransactionSyncStatus] = useState(false);
-
-    // Set transaction sync to false when transaction completes or fails
-    useEffect(() => {
-      if ((isSuccess || waitError) && addressLower && transactionSyncStatus) {
-        setTransactionSync(addressLower, false);
-        setTransactionSyncStatus(false);
-      }
-    }, [isSuccess, waitError, setTransactionSync, transactionSyncStatus]);
 
     /**
      * Stakes tokens
@@ -756,25 +644,6 @@ export function useMovinEarn() {
     const stakeTokens = async (amount: string, lockMonths: number): Promise<boolean> => {
       if (!checkWalletConnection()) {
         return false;
-      }
-
-      try {
-        if (addressLower) {
-          await setTransactionSync(addressLower, true);
-          await sleep(1000);
-          setTransactionSyncStatus(true);
-        }
-      } catch (err) {
-        const errorMessage = mapError(err);
-        console.log('errorMessage', errorMessage);
-        captureBlockchainError(
-          err instanceof Error
-            ? err
-            : new Error(String((err as unknown as Error)?.message || 'Unknown blockchain error')),
-          hash,
-          CONTRACT_ADDRESS,
-          address,
-        );
       }
 
       try {
@@ -810,11 +679,6 @@ export function useMovinEarn() {
           forceLogout();
         }
 
-        if (addressLower) {
-          setTransactionSync(addressLower, false);
-          setTransactionSyncStatus(false);
-        }
-
         return false;
       }
     };
@@ -835,16 +699,6 @@ export function useMovinEarn() {
   const useUnstake = () => {
     const { writeContract, data: hash, error: writeError, isPending } = useWriteContract();
     const { isSuccess, error: waitError } = useWaitForTransactionReceipt({ hash });
-    const { setTransactionSync } = useSetTransactionSyncByOwner();
-    const [transactionSyncStatus, setTransactionSyncStatus] = useState(false);
-
-    // Set transaction sync to false when transaction completes or fails
-    useEffect(() => {
-      if ((isSuccess || waitError) && addressLower && transactionSyncStatus) {
-        setTransactionSync(addressLower, false);
-        setTransactionSyncStatus(false);
-      }
-    }, [isSuccess, waitError, setTransactionSync, transactionSyncStatus]);
 
     /**
      * Unstakes tokens
@@ -854,25 +708,6 @@ export function useMovinEarn() {
     const unstake = async (stakeIndex: number): Promise<boolean> => {
       if (!checkWalletConnection()) {
         return false;
-      }
-
-      try {
-        if (addressLower) {
-          await setTransactionSync(addressLower, true);
-          await sleep(1000);
-          setTransactionSyncStatus(true);
-        }
-      } catch (err) {
-        const errorMessage = mapError(err);
-        console.log('errorMessage', errorMessage);
-        captureBlockchainError(
-          err instanceof Error
-            ? err
-            : new Error(String((err as unknown as Error)?.message || 'Unknown blockchain error')),
-          hash,
-          CONTRACT_ADDRESS,
-          address,
-        );
       }
 
       try {
@@ -905,11 +740,6 @@ export function useMovinEarn() {
           forceLogout();
         }
 
-        if (addressLower) {
-          setTransactionSync(addressLower, false);
-          setTransactionSyncStatus(false);
-        }
-
         return false;
       }
     };
@@ -930,16 +760,6 @@ export function useMovinEarn() {
   const useRestake = () => {
     const { writeContract, data: hash, error: writeError, isPending } = useWriteContract();
     const { isSuccess, error: waitError } = useWaitForTransactionReceipt({ hash });
-    const { setTransactionSync } = useSetTransactionSyncByOwner();
-    const [transactionSyncStatus, setTransactionSyncStatus] = useState(false);
-
-    // Set transaction sync to false when transaction completes or fails
-    useEffect(() => {
-      if ((isSuccess || waitError) && addressLower && transactionSyncStatus) {
-        setTransactionSync(addressLower, false);
-        setTransactionSyncStatus(false);
-      }
-    }, [isSuccess, waitError, setTransactionSync, transactionSyncStatus]);
 
     /**
      * Restakes tokens
@@ -950,25 +770,6 @@ export function useMovinEarn() {
     const restake = async (stakeIndex: number, lockMonths: number): Promise<boolean> => {
       if (!checkWalletConnection()) {
         return false;
-      }
-
-      try {
-        if (addressLower) {
-          await setTransactionSync(addressLower, true);
-          await sleep(1000);
-          setTransactionSyncStatus(true);
-        }
-      } catch (err) {
-        const errorMessage = mapError(err);
-        console.log('errorMessage', errorMessage);
-        captureBlockchainError(
-          err instanceof Error
-            ? err
-            : new Error(String((err as unknown as Error)?.message || 'Unknown blockchain error')),
-          hash,
-          CONTRACT_ADDRESS,
-          address,
-        );
       }
 
       try {
@@ -999,11 +800,6 @@ export function useMovinEarn() {
 
         if (errorMessage.includes('connected')) {
           forceLogout();
-        }
-
-        if (addressLower) {
-          setTransactionSync(addressLower, false);
-          setTransactionSyncStatus(false);
         }
 
         return false;

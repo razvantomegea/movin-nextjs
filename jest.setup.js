@@ -1,10 +1,11 @@
+/* eslint-env jest */
 // Import jest-dom testing library
 import '@testing-library/jest-dom';
 
 // Mock the matchMedia function for tests
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
-  value: jest.fn().mockImplementation(query => ({
+  value: jest.fn().mockImplementation((query) => ({
     matches: false,
     media: query,
     onchange: null,
@@ -16,8 +17,9 @@ Object.defineProperty(window, 'matchMedia', {
   })),
 });
 
-// Set up global date mock to have consistent dates in tests
-jest.spyOn(global.Date, 'now').mockImplementation(() => new Date('2023-06-15T12:00:00Z').valueOf());
+// Note: We've removed the global Date.now mock to avoid conflicts
+// with per-test date mocking. Individual tests should mock Date.now
+// when needed and clean up afterwards.
 
 // Mock the ResizeObserver API
 global.ResizeObserver = class ResizeObserver {
@@ -33,4 +35,4 @@ global.ResizeObserver = class ResizeObserver {
   disconnect() {
     return null;
   }
-}; 
+};

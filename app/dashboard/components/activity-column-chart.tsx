@@ -16,7 +16,6 @@ import {
   getActivityMetricLabel,
   getActivityChartColor,
   chartAnimationVariants,
-  createChartGradient,
 } from '@/utils/charts';
 import { TimeRangeData } from '@/utils/movin/activityMappers';
 

@@ -18,7 +18,10 @@ export function getActivityChartColor(isDark: boolean): string {
  * @param isDark Whether the theme is dark
  * @returns Color string for the chart
  */
-export function getNutritionChartColor(metric: string, isDark: boolean): string {
+export function getNutritionChartColor(
+  metric: 'calories' | 'carbohydrates' | 'fats' | 'protein',
+  isDark: boolean,
+): string {
   switch (metric) {
     case 'calories':
       return isDark ? '#3b82f6' : '#2563eb'; // blue

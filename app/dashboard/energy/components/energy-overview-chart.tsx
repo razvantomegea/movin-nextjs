@@ -7,6 +7,7 @@ import { useTheme } from 'next-themes';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { Card, CardContent } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   filterDataByTimeRange,
   getTickValues,
@@ -16,7 +17,6 @@ import {
   getNutritionChartColor,
   chartAnimationVariants,
 } from '@/utils/charts';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { NutritionTimeRangeData } from '@/utils/movin/energyMappers';
 
 interface EnergyOverviewChartProps {
@@ -55,7 +55,12 @@ export function EnergyOverviewChart({
   const filteredData = filterDataByTimeRange(data, timeRange);
   const tickValues = getTickValues(timeRange);
   const hasData = filteredData.length > 0;
-  const totalValue = hasData ? filteredData.reduce((sum, item) => sum + item[metric], 0) : 0;
+  const totalValue = hasData
+    ? filteredData.reduce(
+        (sum, item) => sum + (Number.isFinite(item[metric]) ? (item[metric] as number) : 0),
+        0,
+      )
+    : 0;
 
   return (
     <Card className={isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}>

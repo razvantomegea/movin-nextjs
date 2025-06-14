@@ -8,7 +8,8 @@
  * @param metric The metric type ('steps', 'calories', 'distance', 'duration')
  * @returns Formatted value as a string
  */
-export function formatActivityValue(value: number, metric: string): string {
+export type ActivityMetric = 'steps' | 'calories' | 'distance' | 'duration';
+export function formatActivityValue(value: number, metric: ActivityMetric): string {
   switch (metric) {
     case 'steps':
       return value.toLocaleString();

@@ -30,7 +30,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: 'Server configuration error' }, { status: 500 });
     }
 
-    const rpcUrl = `https://base-mainnet.infura.io/v3/${process.env.NEXT_PUBLIC_INFURA_ID}`;
+    const infuraId = process.env.NEXT_PUBLIC_INFURA_ID;
+
+    if (!infuraId) {
+      console.error('Infura ID is not set.');
+      return NextResponse.json({ message: 'Server configuration error' }, { status: 500 });
+    }
+
+    const rpcUrl = `https://base-mainnet.infura.io/v3/${infuraId}`;
 
     const client = createWalletClient({
       account: ownerAccount,
