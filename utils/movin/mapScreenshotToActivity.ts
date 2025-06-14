@@ -14,6 +14,7 @@ export interface ExtractedActivityData {
   };
   deviceTime: string;
   activityTime: string;
+  activityDate: string; // ISO date string (YYYY-MM-DD)
   isValidScreenshot: boolean;
   isValidTiming: boolean;
 }
@@ -28,9 +29,21 @@ export function mapScreenshotToActivity(
   extractedData: ExtractedActivityData,
   userAddress: string,
 ): Partial<IActivity> {
-  // Calculate start and end times based on current time and duration
-  const now = new Date();
-  const endTime = new Date(now);
+  // Use the extracted activity date if available, otherwise use today's date
+  const activityDate = extractedData.activityDate
+    ? new Date(extractedData.activityDate)
+    : new Date();
+
+  // Calculate end time as the activity date with current time
+  const endTime = new Date(activityDate);
+  // If it's today, use current time, otherwise use end of day
+  if (new Date().toDateString() === activityDate.toDateString()) {
+    endTime.setHours(new Date().getHours(), new Date().getMinutes(), new Date().getSeconds());
+  } else {
+    endTime.setHours(23, 59, 59);
+  }
+
+  // Calculate start time based on duration
   const startTime = new Date(endTime.getTime() - extractedData.duration * 1000);
 
   const baseActivity: Partial<IActivity> = {

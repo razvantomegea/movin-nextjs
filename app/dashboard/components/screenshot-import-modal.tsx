@@ -103,6 +103,22 @@ export function ScreenshotImportModal({
     setError(null);
   }, []);
 
+  // Helper function to check if date is today
+  const isToday = (dateStr: string): boolean => {
+    const today = new Date();
+    const date = new Date(dateStr);
+    return (
+      date.getDate() === today.getDate() &&
+      date.getMonth() === today.getMonth() &&
+      date.getFullYear() === today.getFullYear()
+    );
+  };
+
+  // Format date for display
+  const formatDate = (dateStr: string): string => {
+    return new Date(dateStr).toLocaleDateString();
+  };
+
   const processScreenshot = async () => {
     if (!file) return;
 
@@ -144,6 +160,22 @@ export function ScreenshotImportModal({
 
       if (!extractedData.isValidScreenshot) {
         setError('This image does not appear to be a valid fitness app or smartwatch screenshot.');
+        return;
+      }
+
+      // Check if activity has a valid date
+      const activityDate = extractedData.activityDate || '';
+
+      if (!activityDate) {
+        setError(
+          'Could not detect activity date from the screenshot. Please ensure the date is visible.',
+        );
+        return;
+      }
+
+      // Validate that the activity date is today
+      if (!isToday(activityDate)) {
+        setError("The activity date must be today. Only today's activities can be imported.");
         return;
       }
 
@@ -242,6 +274,7 @@ export function ScreenshotImportModal({
                 <AlertDescription>
                   <strong>For best results, ensure your screenshot clearly shows:</strong>
                   <ul className="list-disc list-inside mt-2 space-y-1 text-sm">
+                    <li>Activity date (must be today)</li>
                     <li>Device time at the top of the screen</li>
                     <li>Completion time or &quot;Today&quot; for steps</li>
                     <li>Workout name or &quot;Steps&quot; for steps</li>
@@ -250,7 +283,8 @@ export function ScreenshotImportModal({
                     <li>Heart rate data (if available)</li>
                   </ul>
                   <p className="mt-2 text-sm font-medium">
-                    The workout must be from today and completed before the current device time.
+                    Only activities from today will be accepted. The workout must be completed
+                    before the current device time.
                   </p>
                 </AlertDescription>
               </Alert>
@@ -330,6 +364,14 @@ export function ScreenshotImportModal({
                           <div>
                             <span className="font-medium">Activity:</span>
                             <span className="ml-2">{extractedData.name}</span>
+                          </div>
+                          <div>
+                            <span className="font-medium">Date:</span>
+                            <span className="ml-2">
+                              {extractedData.activityDate
+                                ? formatDate(extractedData.activityDate)
+                                : 'Today'}
+                            </span>
                           </div>
                           <div>
                             <span className="font-medium">Duration:</span>
