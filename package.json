@@ -15,7 +15,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "lint:fix": "next lint --fix"
+    "lint:fix": "next lint --fix",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
   },
   "dependencies": {
     "@emotion/is-prop-valid": "latest",
@@ -94,7 +97,9 @@
     "@eslint/css": "0.7.0",
     "@eslint/js": "9.26.0",
     "@eslint/json": "0.12.0",
+    "@testing-library/jest-dom": "^6.6.3",
     "@types/canvas-confetti": "1.9.0",
+    "@types/jest": "^29.5.14",
     "@types/node": "22.15.17",
     "@types/react": "19",
     "@types/react-dom": "19",
@@ -108,8 +113,11 @@
     "eslint-plugin-prettier": "5.0.0",
     "eslint-plugin-react": "7.37.5",
     "globals": "16.1.0",
+    "jest": "^30.0.0",
+    "jest-environment-jsdom": "^30.0.0",
     "postcss": "8",
     "tailwindcss": "3.4.17",
+    "ts-jest": "^29.4.0",
     "typescript": "5",
     "typescript-eslint": "8.32.1"
   }

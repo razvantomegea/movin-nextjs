@@ -14,6 +14,7 @@ export * from './energy/mealHelpers';
 export * from './notifications/testPushNotifications';
 export * from './pushNotifications';
 export * from './pwa';
+export * from './charts';
 
 // Export serviceWorker utilities with explicit names to avoid conflicts
 export {

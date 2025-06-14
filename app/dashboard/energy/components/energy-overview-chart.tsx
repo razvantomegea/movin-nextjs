@@ -7,6 +7,15 @@ import { useTheme } from 'next-themes';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { Card, CardContent } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
+import {
+  filterDataByTimeRange,
+  getTickValues,
+  formatNutritionValue,
+  getNutritionUnit,
+  getNutritionMetricLabel,
+  getNutritionChartColor,
+  chartAnimationVariants,
+} from '@/utils/charts';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { NutritionTimeRangeData } from '@/utils/movin/energyMappers';
 
@@ -42,90 +51,11 @@ export function EnergyOverviewChart({
     }
   };
 
-  // Get the unit for the selected metric
-  const getUnit = () => {
-    switch (metric) {
-      case 'calories':
-        return 'kcal';
-      case 'carbohydrates':
-      case 'fats':
-      case 'protein':
-        return 'g';
-      default:
-        return '';
-    }
-  };
-
-  // Format the value based on the metric
-  const formatValue = (value: number) => {
-    switch (metric) {
-      case 'calories':
-        return value.toLocaleString();
-      case 'carbohydrates':
-      case 'fats':
-      case 'protein':
-        return value.toLocaleString();
-      default:
-        return value.toString();
-    }
-  };
-
   const data = getData();
-  const hasData = data.length > 0;
-  const totalValue = hasData ? data.reduce((sum, item) => sum + item[metric], 0) : 0;
-
-  // Get the color for the chart based on the metric and theme
-  const getChartColor = () => {
-    switch (metric) {
-      case 'calories':
-        return isDark ? '#3b82f6' : '#2563eb'; // blue
-      case 'carbohydrates':
-        return isDark ? '#60a5fa' : '#3b82f6'; // lighter blue
-      case 'fats':
-        return isDark ? '#facc15' : '#eab308'; // yellow
-      case 'protein':
-        return isDark ? '#4ade80' : '#22c55e'; // green
-      default:
-        return isDark ? '#3b82f6' : '#2563eb';
-    }
-  };
-
-  // Get the label for the selected metric
-  const getMetricLabel = () => {
-    switch (metric) {
-      case 'calories':
-        return 'Calories (kcal)';
-      case 'carbohydrates':
-        return 'Carbs (g)';
-      case 'fats':
-        return 'Fats (g)';
-      case 'protein':
-        return 'Protein (g)';
-      default:
-        return '';
-    }
-  };
-
-  // Animation variants for chart transitions
-  const chartVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.5,
-        ease: 'easeOut',
-      },
-    },
-    exit: {
-      opacity: 0,
-      y: -20,
-      transition: {
-        duration: 0.3,
-        ease: 'easeIn',
-      },
-    },
-  };
+  const filteredData = filterDataByTimeRange(data, timeRange);
+  const tickValues = getTickValues(timeRange);
+  const hasData = filteredData.length > 0;
+  const totalValue = hasData ? filteredData.reduce((sum, item) => sum + item[metric], 0) : 0;
 
   return (
     <Card className={isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}>
@@ -170,7 +100,7 @@ export function EnergyOverviewChart({
             <AnimatePresence mode="wait">
               <motion.div
                 key={`${metric}-${timeRange}`}
-                variants={chartVariants}
+                variants={chartAnimationVariants}
                 initial="hidden"
                 animate="visible"
                 exit="exit"
@@ -179,14 +109,17 @@ export function EnergyOverviewChart({
                 <ChartContainer
                   config={{
                     [metric]: {
-                      label: getMetricLabel(),
-                      color: getChartColor(),
+                      label: getNutritionMetricLabel(metric),
+                      color: getNutritionChartColor(metric, isDark),
                     },
                   }}
                   className="h-full w-full"
                 >
                   <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                    <AreaChart
+                      data={filteredData}
+                      margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+                    >
                       <defs>
                         <linearGradient id="colorMetricDark" x1="0" y1="0" x2="0" y2="1">
                           <stop offset="0%" stopColor="#1f2937" stopOpacity={0.9} />
@@ -201,12 +134,12 @@ export function EnergyOverviewChart({
                         <linearGradient id="bgGradient" x1="0" y1="0" x2="0" y2="1">
                           <stop
                             offset="0%"
-                            stopColor={isDark ? getChartColor() : '#f3f4f6'}
+                            stopColor={isDark ? getNutritionChartColor(metric, isDark) : '#f3f4f6'}
                             stopOpacity={isDark ? 0.1 : 0.8}
                           />
                           <stop
                             offset="100%"
-                            stopColor={isDark ? getChartColor() : '#f9fafb'}
+                            stopColor={isDark ? getNutritionChartColor(metric, isDark) : '#f9fafb'}
                             stopOpacity={isDark ? 0.02 : 0.3}
                           />
                         </linearGradient>
@@ -222,22 +155,27 @@ export function EnergyOverviewChart({
                         tick={{ fontSize: 12 }}
                         tickLine={false}
                         axisLine={{ stroke: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)' }}
+                        ticks={tickValues}
                       />
                       <YAxis
                         tick={{ fontSize: 12 }}
                         tickLine={false}
                         axisLine={{ stroke: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)' }}
-                        tickFormatter={(value) => formatValue(value)}
+                        tickFormatter={(value) => formatNutritionValue(value, metric)}
                       />
                       <ChartTooltip content={<ChartTooltipContent />} />
                       <Area
                         type="monotone"
                         dataKey={metric}
-                        stroke={getChartColor()}
+                        stroke={getNutritionChartColor(metric, isDark)}
                         fillOpacity={0.8}
                         fill={isDark ? 'rgb(31 41 55 / 0.5)' : 'rgb(229 231 235 / 0.7)'}
                         strokeWidth={2.5}
-                        activeDot={{ r: 6, strokeWidth: 0, fill: getChartColor() }}
+                        activeDot={{
+                          r: 6,
+                          strokeWidth: 0,
+                          fill: getNutritionChartColor(metric, isDark),
+                        }}
                         animationDuration={1000}
                         isAnimationActive={true}
                       />
@@ -257,7 +195,7 @@ export function EnergyOverviewChart({
             {metric === 'protein' && 'Total Protein'}
           </div>
           <div className="text-xl font-bold">
-            {hasData ? formatValue(totalValue) : '0'} {getUnit()}
+            {hasData ? formatNutritionValue(totalValue, metric) : '0'} {getNutritionUnit(metric)}
           </div>
         </div>
       </CardContent>

@@ -13,9 +13,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: 'Missing user or status' }, { status: 400 });
     }
 
-    const contractAddress = process.env.NEXT_PUBLIC_MOVIN_EARN_CONTRACT_ADDRESS;
-    const ownerAddress = process.env.OWNER_ADDRESS;
-    const privateKey = process.env.OWNER_PRIVATE_KEY;
+    const contractAddress = process.env.NEXT_PUBLIC_MOVIN_EARN_CONTRACT_ADDRESS as `0x${string}`;
+    const ownerAddress = process.env.OWNER_ADDRESS as `0x${string}`;
+    const privateKey = process.env.OWNER_PRIVATE_KEY as `0x${string}`;
 
     if (!privateKey || !ownerAddress || !contractAddress) {
       console.error(
@@ -24,20 +24,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: 'Server configuration error' }, { status: 500 });
     }
 
-    const ownerAccount = privateKeyToAccount(`0x${privateKey}`);
+    const ownerAccount = privateKeyToAccount(privateKey);
     if (ownerAccount.address.toLowerCase() !== ownerAddress.toLowerCase()) {
       console.error('Owner private key does not match owner address.');
       return NextResponse.json({ message: 'Server configuration error' }, { status: 500 });
     }
 
+    const rpcUrl = `https://base-mainnet.infura.io/v3/${process.env.NEXT_PUBLIC_INFURA_ID}`;
+
     const client = createWalletClient({
       account: ownerAccount,
       chain: base,
-      transport: http(),
+      transport: http(rpcUrl),
     }).extend(publicActions);
 
     const { request } = await client.simulateContract({
-      address: contractAddress as `0x${string}`,
+      address: contractAddress,
       abi: movinEarnAbi,
       functionName: 'setTransactionSync',
       args: [user, status],
@@ -45,10 +47,14 @@ export async function POST(req: NextRequest) {
     });
 
     const hash = await client.writeContract(request);
+    await client.waitForTransactionReceipt({ hash });
 
     return NextResponse.json({ hash });
   } catch (error) {
-    console.error(error);
+    console.error('Transaction error:', error);
+    if (error instanceof Error) {
+      console.error('Contract call error:', error.cause);
+    }
     const errorMessage = mapError(error);
     return NextResponse.json({ message: errorMessage }, { status: 500 });
   }

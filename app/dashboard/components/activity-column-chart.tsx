@@ -8,6 +8,16 @@ import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid } fro
 import { Card, CardContent } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  filterDataByTimeRange,
+  getTickValues,
+  formatActivityValue,
+  getActivityUnit,
+  getActivityMetricLabel,
+  getActivityChartColor,
+  chartAnimationVariants,
+  createChartGradient,
+} from '@/utils/charts';
 import { TimeRangeData } from '@/utils/movin/activityMappers';
 
 interface ActivityColumnChartProps {
@@ -47,89 +57,17 @@ export function ActivityColumnChart({
     }
   };
 
-  // Get the unit for the selected metric
-  const getUnit = () => {
-    switch (metric) {
-      case 'steps':
-        return '';
-      case 'calories':
-        return 'kcal';
-      case 'distance':
-        return 'km';
-      case 'duration':
-        return 'min';
-      default:
-        return '';
-    }
-  };
-
-  // Format the value based on the metric
-  const formatValue = (value: number) => {
-    switch (metric) {
-      case 'steps':
-        return value.toLocaleString();
-      case 'calories':
-        return value.toLocaleString();
-      case 'distance':
-        return value.toFixed(1);
-      case 'duration':
-        return value.toString();
-      default:
-        return value.toString();
-    }
-  };
-
   const data = useMemo(getData, [timeRange, weeklyData, monthlyData, yearlyData]);
-  const hasData = data.length > 0;
+  const filteredData = useMemo(() => filterDataByTimeRange(data, timeRange), [data, timeRange]);
+  const tickValues = useMemo(() => getTickValues(timeRange), [timeRange]);
+  const hasData = filteredData.length > 0;
   const totalValue = hasData
-    ? data.reduce(
+    ? filteredData.reduce(
         (sum: number, item: TimeRangeData) =>
           sum + (Number.isFinite(item[metric]) ? (item[metric] as number) : 0),
         0,
       )
     : 0;
-
-  // Get the color for the chart based on the theme
-  const getChartColor = () => {
-    return isDark ? '#3b82f6' : '#2563eb';
-  };
-
-  // Get the label for the selected metric
-  const getMetricLabel = () => {
-    switch (metric) {
-      case 'steps':
-        return 'Steps';
-      case 'calories':
-        return 'Calories';
-      case 'distance':
-        return 'Distance (km)';
-      case 'duration':
-        return 'Duration (min)';
-      default:
-        return '';
-    }
-  };
-
-  // Animation variants for chart transitions
-  const chartVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.5,
-        ease: 'easeOut',
-      },
-    },
-    exit: {
-      opacity: 0,
-      y: -20,
-      transition: {
-        duration: 0.3,
-        ease: 'easeIn',
-      },
-    },
-  };
 
   return (
     <Card className={isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}>
@@ -183,7 +121,7 @@ export function ActivityColumnChart({
             <AnimatePresence mode="wait">
               <motion.div
                 key={`${metric}-${timeRange}`}
-                variants={chartVariants}
+                variants={chartAnimationVariants}
                 initial="hidden"
                 animate="visible"
                 exit="exit"
@@ -192,24 +130,27 @@ export function ActivityColumnChart({
                 <ChartContainer
                   config={{
                     [metric]: {
-                      label: getMetricLabel(),
-                      color: getChartColor(),
+                      label: getActivityMetricLabel(metric),
+                      color: getActivityChartColor(isDark),
                     },
                   }}
                   className="h-full w-full"
                 >
                   <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                    <AreaChart
+                      data={filteredData}
+                      margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+                    >
                       <defs>
                         <linearGradient id={uniqueBgGradientId} x1="0" y1="0" x2="0" y2="1">
                           <stop
                             offset="0%"
-                            stopColor={isDark ? getChartColor() : '#f3f4f6'}
+                            stopColor={isDark ? getActivityChartColor(isDark) : '#f3f4f6'}
                             stopOpacity={isDark ? 0.1 : 0.8}
                           />
                           <stop
                             offset="100%"
-                            stopColor={isDark ? getChartColor() : '#f9fafb'}
+                            stopColor={isDark ? getActivityChartColor(isDark) : '#f9fafb'}
                             stopOpacity={isDark ? 0.02 : 0.3}
                           />
                         </linearGradient>
@@ -232,22 +173,23 @@ export function ActivityColumnChart({
                         tick={{ fontSize: 12 }}
                         tickLine={false}
                         axisLine={{ stroke: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)' }}
+                        ticks={tickValues}
                       />
                       <YAxis
                         tick={{ fontSize: 12 }}
                         tickLine={false}
                         axisLine={{ stroke: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)' }}
-                        tickFormatter={(value) => formatValue(value)}
+                        tickFormatter={(value) => formatActivityValue(value, metric)}
                       />
                       <ChartTooltip content={<ChartTooltipContent />} />
                       <Area
                         type="monotone"
                         dataKey={metric}
-                        stroke={getChartColor()}
+                        stroke={getActivityChartColor(isDark)}
                         fillOpacity={0.8}
                         fill={isDark ? 'rgb(31 41 55 / 0.5)' : 'rgb(229 231 235 / 0.7)'}
                         strokeWidth={2.5}
-                        activeDot={{ r: 6, strokeWidth: 0, fill: getChartColor() }}
+                        activeDot={{ r: 6, strokeWidth: 0, fill: getActivityChartColor(isDark) }}
                         animationDuration={1000}
                         isAnimationActive={true}
                       />
@@ -267,8 +209,8 @@ export function ActivityColumnChart({
             {metric === 'duration' && 'Total Duration'}
           </div>
           <div className="text-xl font-bold">
-            {hasData ? formatValue(totalValue) : '0'}
-            {getUnit() && ` ${getUnit()}`}
+            {hasData ? formatActivityValue(totalValue, metric) : '0'}
+            {getActivityUnit(metric) && ` ${getActivityUnit(metric)}`}
           </div>
         </div>
       </CardContent>

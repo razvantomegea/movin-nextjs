@@ -1,14 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAppKitAccount } from '@reown/appkit/react';
-import * as Sentry from '@sentry/nextjs';
 import { formatUnits, parseUnits } from 'viem';
 import { useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import movinEarnAbi from '@/lib/abi/movin-earn-abi.json';
 import { useAppDispatch } from '@/lib/redux/hooks';
 import { showErrorToast } from '@/lib/redux/slices/toastSlice';
-import { captureBlockchainError, addUserActionBreadcrumb } from '@/lib/sentry';
+import { captureBlockchainError } from '@/lib/sentry';
 import { forceLogout, isWalletConnected } from '@/utils/auth';
 import { mapError } from '@/utils/errors';
+import { sleep } from '@/utils/sleep';
 import { getFormattedStakes } from '@/utils/staking/getFormattedStakes';
 
 // MovinEarn contract address (Base network)
@@ -273,7 +273,17 @@ export function useMovinEarn() {
    */
   const useRegisterReferral = () => {
     const { writeContract, data: hash, error: writeError, isPending } = useWriteContract();
-    const { isLoading, isSuccess, error: waitError } = useWaitForTransactionReceipt({ hash });
+    const { isSuccess, error: waitError } = useWaitForTransactionReceipt({ hash });
+    const { setTransactionSync } = useSetTransactionSyncByOwner();
+    const [transactionSyncStatus, setTransactionSyncStatus] = useState(false);
+
+    // Set transaction sync to false when transaction completes or fails
+    useEffect(() => {
+      if ((isSuccess || waitError) && addressLower && transactionSyncStatus) {
+        setTransactionSync(addressLower, false);
+        setTransactionSyncStatus(false);
+      }
+    }, [isSuccess, waitError, setTransactionSync, transactionSyncStatus]);
 
     /**
      * Registers a referral
@@ -281,12 +291,30 @@ export function useMovinEarn() {
      * @returns A promise resolved when the transaction is initiated
      */
     const registerReferral = async (referrerAddress: string): Promise<boolean> => {
-      try {
-        // Check wallet connection before transaction
-        if (!checkWalletConnection()) {
-          return false;
-        }
+      if (!checkWalletConnection()) {
+        return false;
+      }
 
+      try {
+        if (addressLower) {
+          await setTransactionSync(addressLower, true);
+          await sleep(1000);
+          setTransactionSyncStatus(true);
+        }
+      } catch (err) {
+        const errorMessage = mapError(err);
+        console.log('errorMessage', errorMessage);
+        captureBlockchainError(
+          err instanceof Error
+            ? err
+            : new Error(String((err as unknown as Error)?.message || 'Unknown blockchain error')),
+          hash,
+          CONTRACT_ADDRESS,
+          address,
+        );
+      }
+
+      try {
         await writeContract({
           address: CONTRACT_ADDRESS,
           abi: movinEarnAbi,
@@ -297,13 +325,30 @@ export function useMovinEarn() {
         return true;
       } catch (err) {
         const errorMessage = mapError(err);
-        Sentry.captureException(err);
+        captureBlockchainError(
+          err instanceof Error
+            ? err
+            : new Error(String((err as unknown as Error)?.message || 'Unknown blockchain error')),
+          hash,
+          CONTRACT_ADDRESS,
+          address,
+        );
         dispatch(
           showErrorToast({
             title: 'Error Registering Referral',
             description: errorMessage,
           }),
         );
+
+        if (errorMessage.includes('connected')) {
+          forceLogout();
+        }
+
+        if (addressLower) {
+          setTransactionSync(addressLower, false);
+          setTransactionSyncStatus(false);
+        }
+
         return false;
       }
     };
@@ -313,7 +358,6 @@ export function useMovinEarn() {
       hash,
       error: writeError || waitError,
       isPending,
-      isLoading,
       isSuccess,
     };
   };
@@ -375,7 +419,17 @@ export function useMovinEarn() {
    */
   const useRecordActivity = () => {
     const { writeContract, data: hash, error: writeError, isPending } = useWriteContract();
-    const { isLoading, isSuccess, error: waitError } = useWaitForTransactionReceipt({ hash });
+    const { isSuccess, error: waitError } = useWaitForTransactionReceipt({ hash });
+    const { setTransactionSync } = useSetTransactionSyncByOwner();
+    const [transactionSyncStatus, setTransactionSyncStatus] = useState(false);
+
+    // Set transaction sync to false when transaction completes or fails
+    useEffect(() => {
+      if ((isSuccess || waitError) && addressLower && transactionSyncStatus) {
+        setTransactionSync(addressLower, false);
+        setTransactionSyncStatus(false);
+      }
+    }, [isSuccess, waitError, setTransactionSync, transactionSyncStatus]);
 
     /**
      * Records activity
@@ -384,17 +438,30 @@ export function useMovinEarn() {
      * @returns A promise resolved when the transaction is initiated
      */
     const recordActivity = async (steps: number, mets: number): Promise<boolean> => {
+      if (!checkWalletConnection()) {
+        return false;
+      }
+
       try {
-        // Check wallet connection before transaction
-        if (!checkWalletConnection()) {
-          return false;
+        if (addressLower) {
+          await setTransactionSync(addressLower, true);
+          await sleep(1000);
+          setTransactionSyncStatus(true);
         }
+      } catch (err) {
+        const errorMessage = mapError(err);
+        console.log('errorMessage', errorMessage);
+        captureBlockchainError(
+          err instanceof Error
+            ? err
+            : new Error(String((err as unknown as Error)?.message || 'Unknown blockchain error')),
+          hash,
+          CONTRACT_ADDRESS,
+          address,
+        );
+      }
 
-        addUserActionBreadcrumb('Recording activity', 'blockchain', {
-          steps: steps.toString(),
-          mets: mets.toString(),
-        });
-
+      try {
         await writeContract({
           address: CONTRACT_ADDRESS,
           abi: movinEarnAbi,
@@ -421,6 +488,16 @@ export function useMovinEarn() {
             description: errorMessage,
           }),
         );
+
+        if (errorMessage.includes('connected')) {
+          forceLogout();
+        }
+
+        if (addressLower) {
+          setTransactionSync(addressLower, false);
+          setTransactionSyncStatus(false);
+        }
+
         return false;
       }
     };
@@ -430,7 +507,6 @@ export function useMovinEarn() {
       hash,
       error: writeError || waitError,
       isPending,
-      isLoading,
       isSuccess,
     };
   };
@@ -470,7 +546,17 @@ export function useMovinEarn() {
    */
   const useClaimStakingRewards = () => {
     const { writeContract, data: hash, error: writeError, isPending } = useWriteContract();
-    const { isLoading, isSuccess, error: waitError } = useWaitForTransactionReceipt({ hash });
+    const { isSuccess, error: waitError } = useWaitForTransactionReceipt({ hash });
+    const { setTransactionSync } = useSetTransactionSyncByOwner();
+    const [transactionSyncStatus, setTransactionSyncStatus] = useState(false);
+
+    // Set transaction sync to false when transaction completes or fails
+    useEffect(() => {
+      if ((isSuccess || waitError) && addressLower && transactionSyncStatus) {
+        setTransactionSync(addressLower, false);
+        setTransactionSyncStatus(false);
+      }
+    }, [isSuccess, waitError, setTransactionSync, transactionSyncStatus]);
 
     /**
      * Claims staking rewards for a specific stake
@@ -478,12 +564,30 @@ export function useMovinEarn() {
      * @returns A promise resolved when the transaction is initiated
      */
     const claimStakingRewards = async (stakeIndex: number): Promise<boolean> => {
-      try {
-        // Check wallet connection before transaction
-        if (!checkWalletConnection()) {
-          return false;
-        }
+      if (!checkWalletConnection()) {
+        return false;
+      }
 
+      try {
+        if (addressLower) {
+          await setTransactionSync(addressLower, true);
+          await sleep(1000);
+          setTransactionSyncStatus(true);
+        }
+      } catch (err) {
+        const errorMessage = mapError(err);
+        console.log('errorMessage', errorMessage);
+        captureBlockchainError(
+          err instanceof Error
+            ? err
+            : new Error(String((err as unknown as Error)?.message || 'Unknown blockchain error')),
+          hash,
+          CONTRACT_ADDRESS,
+          address,
+        );
+      }
+
+      try {
         await writeContract({
           address: CONTRACT_ADDRESS,
           abi: movinEarnAbi,
@@ -494,13 +598,31 @@ export function useMovinEarn() {
         return true;
       } catch (err) {
         const errorMessage = mapError(err);
-        Sentry.captureException(err);
+        captureBlockchainError(
+          err instanceof Error
+            ? err
+            : new Error(String((err as unknown as Error)?.message || 'Unknown blockchain error')),
+          hash,
+          CONTRACT_ADDRESS,
+          address,
+        );
+
         dispatch(
           showErrorToast({
             title: 'Error Claiming Staking Rewards',
             description: errorMessage,
           }),
         );
+
+        if (errorMessage.includes('connected')) {
+          forceLogout();
+        }
+
+        if (addressLower) {
+          setTransactionSync(addressLower, false);
+          setTransactionSyncStatus(false);
+        }
+
         return false;
       }
     };
@@ -510,7 +632,6 @@ export function useMovinEarn() {
       hash,
       error: writeError || waitError,
       isPending,
-      isLoading,
       isSuccess,
     };
   };
@@ -521,19 +642,47 @@ export function useMovinEarn() {
    */
   const useClaimAllStakingRewards = () => {
     const { writeContract, data: hash, error: writeError, isPending } = useWriteContract();
-    const { isLoading, isSuccess, error: waitError } = useWaitForTransactionReceipt({ hash });
+    const { isSuccess, error: waitError } = useWaitForTransactionReceipt({ hash });
+    const { setTransactionSync } = useSetTransactionSyncByOwner();
+    const [transactionSyncStatus, setTransactionSyncStatus] = useState(false);
+
+    // Set transaction sync to false when transaction completes or fails
+    useEffect(() => {
+      if ((isSuccess || waitError) && addressLower && transactionSyncStatus) {
+        setTransactionSync(addressLower, false);
+        setTransactionSyncStatus(false);
+      }
+    }, [isSuccess, waitError, setTransactionSync, transactionSyncStatus]);
 
     /**
      * Claims all staking rewards
      * @returns A promise resolved when the transaction is initiated
      */
     const claimAllStakingRewards = async (): Promise<boolean> => {
-      try {
-        // Check wallet connection before transaction
-        if (!checkWalletConnection()) {
-          return false;
-        }
+      if (!checkWalletConnection()) {
+        return false;
+      }
 
+      try {
+        if (addressLower) {
+          await setTransactionSync(addressLower, true);
+          await sleep(1000);
+          setTransactionSyncStatus(true);
+        }
+      } catch (err) {
+        const errorMessage = mapError(err);
+        console.log('errorMessage', errorMessage);
+        captureBlockchainError(
+          err instanceof Error
+            ? err
+            : new Error(String((err as unknown as Error)?.message || 'Unknown blockchain error')),
+          hash,
+          CONTRACT_ADDRESS,
+          address,
+        );
+      }
+
+      try {
         await writeContract({
           address: CONTRACT_ADDRESS,
           abi: movinEarnAbi,
@@ -543,13 +692,30 @@ export function useMovinEarn() {
         return true;
       } catch (err) {
         const errorMessage = mapError(err);
-        Sentry.captureException(err);
+        captureBlockchainError(
+          err instanceof Error
+            ? err
+            : new Error(String((err as unknown as Error)?.message || 'Unknown blockchain error')),
+          hash,
+          CONTRACT_ADDRESS,
+          address,
+        );
         dispatch(
           showErrorToast({
             title: 'Error Claiming All Staking Rewards',
             description: errorMessage,
           }),
         );
+
+        if (errorMessage.includes('connected')) {
+          forceLogout();
+        }
+
+        if (addressLower) {
+          setTransactionSync(addressLower, false);
+          setTransactionSyncStatus(false);
+        }
+
         return false;
       }
     };
@@ -559,7 +725,6 @@ export function useMovinEarn() {
       hash,
       error: writeError || waitError,
       isPending,
-      isLoading,
       isSuccess,
     };
   };
@@ -570,7 +735,17 @@ export function useMovinEarn() {
    */
   const useStakeTokens = () => {
     const { writeContract, data: hash, error: writeError, isPending } = useWriteContract();
-    const { isLoading, isSuccess, error: waitError } = useWaitForTransactionReceipt({ hash });
+    const { isSuccess, error: waitError } = useWaitForTransactionReceipt({ hash });
+    const { setTransactionSync } = useSetTransactionSyncByOwner();
+    const [transactionSyncStatus, setTransactionSyncStatus] = useState(false);
+
+    // Set transaction sync to false when transaction completes or fails
+    useEffect(() => {
+      if ((isSuccess || waitError) && addressLower && transactionSyncStatus) {
+        setTransactionSync(addressLower, false);
+        setTransactionSyncStatus(false);
+      }
+    }, [isSuccess, waitError, setTransactionSync, transactionSyncStatus]);
 
     /**
      * Stakes tokens
@@ -579,12 +754,30 @@ export function useMovinEarn() {
      * @returns A promise resolved when the transaction is initiated
      */
     const stakeTokens = async (amount: string, lockMonths: number): Promise<boolean> => {
-      try {
-        // Check wallet connection before transaction
-        if (!checkWalletConnection()) {
-          return false;
-        }
+      if (!checkWalletConnection()) {
+        return false;
+      }
 
+      try {
+        if (addressLower) {
+          await setTransactionSync(addressLower, true);
+          await sleep(1000);
+          setTransactionSyncStatus(true);
+        }
+      } catch (err) {
+        const errorMessage = mapError(err);
+        console.log('errorMessage', errorMessage);
+        captureBlockchainError(
+          err instanceof Error
+            ? err
+            : new Error(String((err as unknown as Error)?.message || 'Unknown blockchain error')),
+          hash,
+          CONTRACT_ADDRESS,
+          address,
+        );
+      }
+
+      try {
         const amountWei = parseUnits(amount, 18);
 
         await writeContract({
@@ -597,7 +790,14 @@ export function useMovinEarn() {
         return true;
       } catch (err) {
         const errorMessage = mapError(err);
-        Sentry.captureException(err);
+        captureBlockchainError(
+          err instanceof Error
+            ? err
+            : new Error(String((err as unknown as Error)?.message || 'Unknown blockchain error')),
+          hash,
+          CONTRACT_ADDRESS,
+          address,
+        );
 
         dispatch(
           showErrorToast({
@@ -605,6 +805,16 @@ export function useMovinEarn() {
             description: errorMessage,
           }),
         );
+
+        if (errorMessage.includes('connected')) {
+          forceLogout();
+        }
+
+        if (addressLower) {
+          setTransactionSync(addressLower, false);
+          setTransactionSyncStatus(false);
+        }
+
         return false;
       }
     };
@@ -614,7 +824,6 @@ export function useMovinEarn() {
       hash,
       error: writeError || waitError,
       isPending,
-      isLoading,
       isSuccess,
     };
   };
@@ -625,7 +834,17 @@ export function useMovinEarn() {
    */
   const useUnstake = () => {
     const { writeContract, data: hash, error: writeError, isPending } = useWriteContract();
-    const { isLoading, isSuccess, error: waitError } = useWaitForTransactionReceipt({ hash });
+    const { isSuccess, error: waitError } = useWaitForTransactionReceipt({ hash });
+    const { setTransactionSync } = useSetTransactionSyncByOwner();
+    const [transactionSyncStatus, setTransactionSyncStatus] = useState(false);
+
+    // Set transaction sync to false when transaction completes or fails
+    useEffect(() => {
+      if ((isSuccess || waitError) && addressLower && transactionSyncStatus) {
+        setTransactionSync(addressLower, false);
+        setTransactionSyncStatus(false);
+      }
+    }, [isSuccess, waitError, setTransactionSync, transactionSyncStatus]);
 
     /**
      * Unstakes tokens
@@ -633,12 +852,30 @@ export function useMovinEarn() {
      * @returns A promise resolved when the transaction is initiated
      */
     const unstake = async (stakeIndex: number): Promise<boolean> => {
-      try {
-        // Check wallet connection before transaction
-        if (!checkWalletConnection()) {
-          return false;
-        }
+      if (!checkWalletConnection()) {
+        return false;
+      }
 
+      try {
+        if (addressLower) {
+          await setTransactionSync(addressLower, true);
+          await sleep(1000);
+          setTransactionSyncStatus(true);
+        }
+      } catch (err) {
+        const errorMessage = mapError(err);
+        console.log('errorMessage', errorMessage);
+        captureBlockchainError(
+          err instanceof Error
+            ? err
+            : new Error(String((err as unknown as Error)?.message || 'Unknown blockchain error')),
+          hash,
+          CONTRACT_ADDRESS,
+          address,
+        );
+      }
+
+      try {
         await writeContract({
           address: CONTRACT_ADDRESS,
           abi: movinEarnAbi,
@@ -649,13 +886,30 @@ export function useMovinEarn() {
         return true;
       } catch (err) {
         const errorMessage = mapError(err);
-        Sentry.captureException(err);
+        captureBlockchainError(
+          err instanceof Error
+            ? err
+            : new Error(String((err as unknown as Error)?.message || 'Unknown blockchain error')),
+          hash,
+          CONTRACT_ADDRESS,
+          address,
+        );
         dispatch(
           showErrorToast({
             title: 'Error Unstaking Tokens',
             description: errorMessage,
           }),
         );
+
+        if (errorMessage.includes('connected')) {
+          forceLogout();
+        }
+
+        if (addressLower) {
+          setTransactionSync(addressLower, false);
+          setTransactionSyncStatus(false);
+        }
+
         return false;
       }
     };
@@ -665,7 +919,6 @@ export function useMovinEarn() {
       hash,
       error: writeError || waitError,
       isPending,
-      isLoading,
       isSuccess,
     };
   };
@@ -676,7 +929,17 @@ export function useMovinEarn() {
    */
   const useRestake = () => {
     const { writeContract, data: hash, error: writeError, isPending } = useWriteContract();
-    const { isLoading, isSuccess, error: waitError } = useWaitForTransactionReceipt({ hash });
+    const { isSuccess, error: waitError } = useWaitForTransactionReceipt({ hash });
+    const { setTransactionSync } = useSetTransactionSyncByOwner();
+    const [transactionSyncStatus, setTransactionSyncStatus] = useState(false);
+
+    // Set transaction sync to false when transaction completes or fails
+    useEffect(() => {
+      if ((isSuccess || waitError) && addressLower && transactionSyncStatus) {
+        setTransactionSync(addressLower, false);
+        setTransactionSyncStatus(false);
+      }
+    }, [isSuccess, waitError, setTransactionSync, transactionSyncStatus]);
 
     /**
      * Restakes tokens
@@ -685,12 +948,30 @@ export function useMovinEarn() {
      * @returns A promise resolved when the transaction is initiated
      */
     const restake = async (stakeIndex: number, lockMonths: number): Promise<boolean> => {
-      try {
-        // Check wallet connection before transaction
-        if (!checkWalletConnection()) {
-          return false;
-        }
+      if (!checkWalletConnection()) {
+        return false;
+      }
 
+      try {
+        if (addressLower) {
+          await setTransactionSync(addressLower, true);
+          await sleep(1000);
+          setTransactionSyncStatus(true);
+        }
+      } catch (err) {
+        const errorMessage = mapError(err);
+        console.log('errorMessage', errorMessage);
+        captureBlockchainError(
+          err instanceof Error
+            ? err
+            : new Error(String((err as unknown as Error)?.message || 'Unknown blockchain error')),
+          hash,
+          CONTRACT_ADDRESS,
+          address,
+        );
+      }
+
+      try {
         await writeContract({
           address: CONTRACT_ADDRESS,
           abi: movinEarnAbi,
@@ -701,13 +982,30 @@ export function useMovinEarn() {
         return true;
       } catch (err) {
         const errorMessage = mapError(err);
-        Sentry.captureException(err);
+        captureBlockchainError(
+          err instanceof Error
+            ? err
+            : new Error(String((err as unknown as Error)?.message || 'Unknown blockchain error')),
+          hash,
+          CONTRACT_ADDRESS,
+          address,
+        );
         dispatch(
           showErrorToast({
             title: 'Error Restaking Tokens',
             description: errorMessage,
           }),
         );
+
+        if (errorMessage.includes('connected')) {
+          forceLogout();
+        }
+
+        if (addressLower) {
+          setTransactionSync(addressLower, false);
+          setTransactionSyncStatus(false);
+        }
+
         return false;
       }
     };
@@ -717,7 +1015,6 @@ export function useMovinEarn() {
       hash,
       error: writeError || waitError,
       isPending,
-      isLoading,
       isSuccess,
     };
   };
@@ -779,7 +1076,17 @@ export function useMovinEarn() {
    */
   const useSetPremiumStatus = () => {
     const { writeContract, data: hash, error: writeError, isPending } = useWriteContract();
-    const { isLoading, isSuccess, error: waitError } = useWaitForTransactionReceipt({ hash });
+    const { isSuccess, error: waitError } = useWaitForTransactionReceipt({ hash });
+    const { setTransactionSync } = useSetTransactionSyncByOwner();
+    const [transactionSyncStatus, setTransactionSyncStatus] = useState(false);
+
+    // Set transaction sync to false when transaction completes or fails
+    useEffect(() => {
+      if ((isSuccess || waitError) && addressLower && transactionSyncStatus) {
+        setTransactionSync(addressLower, false);
+        setTransactionSyncStatus(false);
+      }
+    }, [isSuccess, waitError, setTransactionSync, transactionSyncStatus]);
 
     /**
      * Sets premium status
@@ -788,12 +1095,30 @@ export function useMovinEarn() {
      * @returns A promise resolved when the transaction is initiated
      */
     const setPremiumStatus = async (status: boolean, amount: string): Promise<boolean> => {
-      try {
-        // Check wallet connection before transaction
-        if (!checkWalletConnection()) {
-          return false;
-        }
+      if (!checkWalletConnection()) {
+        return false;
+      }
 
+      try {
+        if (addressLower) {
+          await setTransactionSync(addressLower, true);
+          await sleep(1000);
+          setTransactionSyncStatus(true);
+        }
+      } catch (err) {
+        const errorMessage = mapError(err);
+        console.log('errorMessage', errorMessage);
+        captureBlockchainError(
+          err instanceof Error
+            ? err
+            : new Error(String((err as unknown as Error)?.message || 'Unknown blockchain error')),
+          hash,
+          CONTRACT_ADDRESS,
+          address,
+        );
+      }
+
+      try {
         const amountWei = parseUnits(amount, 18);
 
         await writeContract({
@@ -806,13 +1131,30 @@ export function useMovinEarn() {
         return true;
       } catch (err) {
         const errorMessage = mapError(err);
-        Sentry.captureException(err);
+        captureBlockchainError(
+          err instanceof Error
+            ? err
+            : new Error(String((err as unknown as Error)?.message || 'Unknown blockchain error')),
+          hash,
+          CONTRACT_ADDRESS,
+          address,
+        );
         dispatch(
           showErrorToast({
             title: 'Error Setting Premium Status',
             description: errorMessage,
           }),
         );
+
+        if (errorMessage.includes('connected')) {
+          forceLogout();
+        }
+
+        if (addressLower) {
+          setTransactionSync(addressLower, false);
+          setTransactionSyncStatus(false);
+        }
+
         return false;
       }
     };
@@ -822,7 +1164,6 @@ export function useMovinEarn() {
       hash,
       error: writeError || waitError,
       isPending,
-      isLoading,
       isSuccess,
     };
   };
@@ -859,7 +1200,15 @@ export function useMovinEarn() {
         return true;
       } catch (err) {
         const errorMessage = mapError(err);
-        Sentry.captureException(err);
+        captureBlockchainError(
+          err instanceof Error
+            ? err
+            : new Error(String((err as unknown as Error)?.message || 'Unknown blockchain error')),
+          '',
+          CONTRACT_ADDRESS,
+          address,
+        );
+
         setError(err as Error);
         dispatch(
           showErrorToast({
