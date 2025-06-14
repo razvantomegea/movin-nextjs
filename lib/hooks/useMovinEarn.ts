@@ -873,16 +873,6 @@ export function useMovinEarn() {
   const useSetPremiumStatus = () => {
     const { writeContract, data: hash, error: writeError, isPending } = useWriteContract();
     const { isSuccess, error: waitError } = useWaitForTransactionReceipt({ hash });
-    const { setTransactionSync } = useSetTransactionSyncByOwner();
-    const [transactionSyncStatus, setTransactionSyncStatus] = useState(false);
-
-    // Set transaction sync to false when transaction completes or fails
-    useEffect(() => {
-      if ((isSuccess || waitError) && addressLower && transactionSyncStatus) {
-        setTransactionSync(addressLower, false);
-        setTransactionSyncStatus(false);
-      }
-    }, [isSuccess, waitError, setTransactionSync, transactionSyncStatus]);
 
     /**
      * Sets premium status
@@ -893,25 +883,6 @@ export function useMovinEarn() {
     const setPremiumStatus = async (status: boolean, amount: string): Promise<boolean> => {
       if (!checkWalletConnection()) {
         return false;
-      }
-
-      try {
-        if (addressLower) {
-          await setTransactionSync(addressLower, true);
-          await sleep(1000);
-          setTransactionSyncStatus(true);
-        }
-      } catch (err) {
-        const errorMessage = mapError(err);
-        console.log('errorMessage', errorMessage);
-        captureBlockchainError(
-          err instanceof Error
-            ? err
-            : new Error(String((err as unknown as Error)?.message || 'Unknown blockchain error')),
-          hash,
-          CONTRACT_ADDRESS,
-          address,
-        );
       }
 
       try {
@@ -944,11 +915,6 @@ export function useMovinEarn() {
 
         if (errorMessage.includes('connected')) {
           forceLogout();
-        }
-
-        if (addressLower) {
-          setTransactionSync(addressLower, false);
-          setTransactionSyncStatus(false);
         }
 
         return false;
