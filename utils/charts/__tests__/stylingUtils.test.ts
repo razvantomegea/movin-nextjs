@@ -5,6 +5,7 @@ import {
   chartAnimationVariants,
 } from '../stylingUtils';
 import { NutritionMetric } from '../formatUtils';
+import { easeOut, easeIn } from 'framer-motion';
 
 describe('stylingUtils', () => {
   describe('getActivityChartColor', () => {
@@ -113,7 +114,7 @@ describe('stylingUtils', () => {
         y: 0,
         transition: expect.objectContaining({
           duration: 0.5,
-          ease: 'easeOut',
+          ease: easeOut,
         }),
       });
     });
@@ -124,7 +125,7 @@ describe('stylingUtils', () => {
         y: -20,
         transition: expect.objectContaining({
           duration: 0.3,
-          ease: 'easeIn',
+          ease: easeIn,
         }),
       });
     });

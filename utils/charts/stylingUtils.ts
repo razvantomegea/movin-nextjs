@@ -2,6 +2,7 @@
  * Styling utility functions for charts
  */
 
+import { Easing, easeOut, easeIn } from 'framer-motion';
 import { NutritionMetric } from './formatUtils';
 
 /**
@@ -72,7 +73,7 @@ export const chartAnimationVariants = {
     y: 0,
     transition: {
       duration: 0.5,
-      ease: 'easeOut',
+      ease: easeOut,
     },
   },
   exit: {
@@ -80,7 +81,7 @@ export const chartAnimationVariants = {
     y: -20,
     transition: {
       duration: 0.3,
-      ease: 'easeIn',
+      ease: easeIn,
     },
   },
 };
