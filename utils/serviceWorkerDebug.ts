@@ -32,7 +32,7 @@ export async function getServiceWorkerStatus(): Promise<ServiceWorkerStatus> {
   try {
     // Get all registrations
     const registrations = await navigator.serviceWorker.getRegistrations();
-    status.registrations = registrations;
+    status.registrations = Array.from(registrations);
     status.registered = registrations.length > 0;
     status.active = registrations.some((reg) => reg.active);
 
@@ -106,10 +106,12 @@ export async function cleanupServiceWorkers(): Promise<number> {
     console.log(`Found ${registrations.length} service worker registrations, cleaning up...`);
 
     // Keep the most recent registration, unregister the rest
-    const sortedRegistrations = registrations.sort((a, b) => {
-      // Sort by scope length (more specific scopes first)
-      return b.scope.length - a.scope.length;
-    });
+    const sortedRegistrations = Array.from(registrations).sort(
+      (a: ServiceWorkerRegistration, b: ServiceWorkerRegistration) => {
+        // Sort by scope length (more specific scopes first)
+        return b.scope.length - a.scope.length;
+      },
+    );
 
     const keepRegistration = sortedRegistrations[0];
     const toUnregister = sortedRegistrations.slice(1);

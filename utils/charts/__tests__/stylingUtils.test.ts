@@ -4,6 +4,7 @@ import {
   createChartGradient,
   chartAnimationVariants,
 } from '../stylingUtils';
+import { NutritionMetric } from '../formatUtils';
 
 describe('stylingUtils', () => {
   describe('getActivityChartColor', () => {
@@ -35,7 +36,7 @@ describe('stylingUtils', () => {
       });
 
       it('should return default color for unknown metrics', () => {
-        expect(getNutritionChartColor('unknown', false)).toBe('#2563eb');
+        expect(getNutritionChartColor('unknown' as NutritionMetric, false)).toBe('#2563eb');
       });
     });
 
@@ -57,7 +58,7 @@ describe('stylingUtils', () => {
       });
 
       it('should return default color for unknown metrics', () => {
-        expect(getNutritionChartColor('unknown', true)).toBe('#3b82f6');
+        expect(getNutritionChartColor('unknown' as NutritionMetric, true)).toBe('#3b82f6');
       });
     });
   });

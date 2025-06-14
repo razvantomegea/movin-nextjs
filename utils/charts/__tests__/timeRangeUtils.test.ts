@@ -38,11 +38,12 @@ describe('timeRangeUtils', () => {
 
   beforeEach(() => {
     global.Date = class extends Date {
-      constructor(date) {
+      constructor(date?: string | number | Date) {
         if (date) {
-          return new originalDate(date);
+          super(date);
+        } else {
+          super(mockDate.getTime());
         }
-        return mockDate;
       }
     } as any;
 

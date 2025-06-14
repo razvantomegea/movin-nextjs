@@ -59,7 +59,6 @@ export function StakeModal({ isOpen, onClose }: StakeModalProps) {
   const {
     stakeTokens,
     isPending: isStaking,
-    isLoading: isStakeLoading,
     isSuccess: isStakeSuccess,
     error: stakeError,
   } = useStakeTokens();
@@ -117,10 +116,9 @@ export function StakeModal({ isOpen, onClose }: StakeModalProps) {
       Number.parseFloat(amount) > 0 &&
       Number.parseFloat(amount) <= Number.parseFloat(availableBalance) &&
       !isStaking &&
-      !isStakeLoading &&
       !isProcessing
     );
-  }, [amount, availableBalance, isStaking, isStakeLoading, isProcessing]);
+  }, [amount, availableBalance, isStaking, isProcessing]);
 
   // Handlers
   const handleAmountChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
@@ -619,7 +617,7 @@ export function StakeModal({ isOpen, onClose }: StakeModalProps) {
                   className="w-full py-6 text-lg bg-blue-500 hover:bg-blue-600"
                   disabled={!isFormValid}
                   onClick={handleStake}
-                  loading={isStaking || isStakeLoading || isProcessing}
+                  loading={isStaking || isProcessing}
                   loadingText="Processing..."
                 >
                   Stake {tokenSymbol}

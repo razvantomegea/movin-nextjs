@@ -165,8 +165,8 @@ export async function updateServiceWorker(): Promise<boolean> {
     }
 
     // Check for updates
-    const updatedRegistration = await registration.update();
-    return !!updatedRegistration.waiting;
+    await registration.update();
+    return !!registration.waiting;
   } catch (error) {
     console.error('[SW Utils] Error updating service worker:', error);
     return false;
@@ -184,9 +184,12 @@ export function onServiceWorkerUpdate(
   }
 
   const handleUpdate = (event: Event) => {
-    const registration = (event.target as ServiceWorker).registration;
-    if (registration && registration.waiting) {
-      callback(registration);
+    if (navigator.serviceWorker.controller && event.target) {
+      navigator.serviceWorker.ready.then((registration) => {
+        if (registration && registration.waiting) {
+          callback(registration);
+        }
+      });
     }
   };
 

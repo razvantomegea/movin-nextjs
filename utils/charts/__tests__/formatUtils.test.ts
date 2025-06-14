@@ -5,6 +5,8 @@ import {
   getNutritionUnit,
   getActivityMetricLabel,
   getNutritionMetricLabel,
+  ActivityMetric,
+  NutritionMetric,
 } from '../formatUtils';
 
 describe('formatUtils', () => {
@@ -30,7 +32,7 @@ describe('formatUtils', () => {
     });
 
     it('should handle unknown metric types', () => {
-      expect(formatActivityValue(1000, 'unknown')).toBe('1000');
+      expect(formatActivityValue(1000, 'unknown' as ActivityMetric)).toBe('1000');
     });
   });
 
@@ -56,7 +58,7 @@ describe('formatUtils', () => {
     });
 
     it('should handle unknown metric types', () => {
-      expect(formatNutritionValue(1000, 'unknown')).toBe('1000');
+      expect(formatNutritionValue(1000, 'unknown' as NutritionMetric)).toBe('1000');
     });
   });
 
@@ -78,7 +80,7 @@ describe('formatUtils', () => {
     });
 
     it('should return empty string for unknown metrics', () => {
-      expect(getActivityUnit('unknown')).toBe('');
+      expect(getActivityUnit('unknown' as ActivityMetric)).toBe('');
     });
   });
 
@@ -100,7 +102,7 @@ describe('formatUtils', () => {
     });
 
     it('should return empty string for unknown metrics', () => {
-      expect(getNutritionUnit('unknown')).toBe('');
+      expect(getNutritionUnit('unknown' as NutritionMetric)).toBe('');
     });
   });
 
@@ -122,7 +124,7 @@ describe('formatUtils', () => {
     });
 
     it('should return empty string for unknown metrics', () => {
-      expect(getActivityMetricLabel('unknown')).toBe('');
+      expect(getActivityMetricLabel('unknown' as ActivityMetric)).toBe('');
     });
   });
 
@@ -144,7 +146,7 @@ describe('formatUtils', () => {
     });
 
     it('should return empty string for unknown metrics', () => {
-      expect(getNutritionMetricLabel('unknown')).toBe('');
+      expect(getNutritionMetricLabel('unknown' as NutritionMetric)).toBe('');
     });
   });
 });

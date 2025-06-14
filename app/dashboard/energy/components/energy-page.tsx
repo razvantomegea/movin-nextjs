@@ -606,6 +606,7 @@ export function EnergyPage() {
           }}
           imageData={capturedImageData}
           sourceType="camera"
+          mealData={null}
         />
       )}
 

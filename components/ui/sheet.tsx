@@ -3,7 +3,7 @@
 
 'use client';
 
-import { forwardRef, ComponentRef, ComponentPropsWithoutRef } from 'react';
+import { forwardRef, ComponentRef, ComponentPropsWithoutRef, HTMLAttributes } from 'react';
 import * as SheetPrimitive from '@radix-ui/react-dialog';
 import { cva, type VariantProps } from 'class-variance-authority';
 

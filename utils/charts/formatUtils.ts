@@ -9,6 +9,8 @@
  * @returns Formatted value as a string
  */
 export type ActivityMetric = 'steps' | 'calories' | 'distance' | 'duration';
+export type NutritionMetric = 'calories' | 'carbohydrates' | 'fats' | 'protein';
+
 export function formatActivityValue(value: number, metric: ActivityMetric): string {
   switch (metric) {
     case 'steps':
@@ -30,7 +32,7 @@ export function formatActivityValue(value: number, metric: ActivityMetric): stri
  * @param metric The metric type ('calories', 'carbohydrates', 'fats', 'protein')
  * @returns Formatted value as a string
  */
-export function formatNutritionValue(value: number, metric: string): string {
+export function formatNutritionValue(value: number, metric: NutritionMetric): string {
   switch (metric) {
     case 'calories':
       return value.toLocaleString();
@@ -48,7 +50,7 @@ export function formatNutritionValue(value: number, metric: string): string {
  * @param metric The metric type ('steps', 'calories', 'distance', 'duration')
  * @returns Unit string for the metric
  */
-export function getActivityUnit(metric: string): string {
+export function getActivityUnit(metric: ActivityMetric): string {
   switch (metric) {
     case 'steps':
       return '';
@@ -68,7 +70,7 @@ export function getActivityUnit(metric: string): string {
  * @param metric The metric type ('calories', 'carbohydrates', 'fats', 'protein')
  * @returns Unit string for the metric
  */
-export function getNutritionUnit(metric: string): string {
+export function getNutritionUnit(metric: NutritionMetric): string {
   switch (metric) {
     case 'calories':
       return 'kcal';
@@ -86,7 +88,7 @@ export function getNutritionUnit(metric: string): string {
  * @param metric The metric type ('steps', 'calories', 'distance', 'duration')
  * @returns Label string for the metric
  */
-export function getActivityMetricLabel(metric: string): string {
+export function getActivityMetricLabel(metric: ActivityMetric): string {
   switch (metric) {
     case 'steps':
       return 'Steps';
@@ -106,7 +108,7 @@ export function getActivityMetricLabel(metric: string): string {
  * @param metric The metric type ('calories', 'carbohydrates', 'fats', 'protein')
  * @returns Label string for the metric
  */
-export function getNutritionMetricLabel(metric: string): string {
+export function getNutritionMetricLabel(metric: NutritionMetric): string {
   switch (metric) {
     case 'calories':
       return 'Calories (kcal)';
