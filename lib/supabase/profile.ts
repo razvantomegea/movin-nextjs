@@ -11,6 +11,12 @@ export interface IProfile {
   streak_days: number;
   last_streak_update?: string;
   is_premium: boolean;
+  weight?: number;
+  weight_unit?: string;
+  weight_updated_at?: string;
+  height?: number;
+  date_of_birth?: string;
+  biological_sex?: string;
   created_at: string;
   updated_at: string;
 }

@@ -11,6 +11,7 @@ export * from './date';
 export * from './badges/badgeChecker';
 export * from './badges/badgeManager';
 export * from './energy/mealHelpers';
+export * from './energy/calculateBMR';
 export * from './notifications/testPushNotifications';
 export * from './pushNotifications';
 export * from './pwa';

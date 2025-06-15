@@ -105,13 +105,10 @@ export function ScreenshotImportModal({
 
   // Helper function to check if date is today
   const isToday = (dateStr: string): boolean => {
-    const today = new Date();
-    const date = new Date(dateStr);
-    return (
-      date.getDate() === today.getDate() &&
-      date.getMonth() === today.getMonth() &&
-      date.getFullYear() === today.getFullYear()
-    );
+    const today = new Date().toISOString().split('T')[0];
+    const [, month, day] = dateStr.split('-').map(Number);
+    const [, currentMonth, currentDay] = today.split('-').map(Number);
+    return month === currentMonth && day === currentDay;
   };
 
   // Format date for display
@@ -175,6 +172,10 @@ export function ScreenshotImportModal({
 
       // Validate that the activity date is today
       if (!isToday(activityDate)) {
+        console.error('Date validation failed:', {
+          activityDate,
+          today: new Date().toISOString().split('T')[0], // Format: YYYY-MM-DD
+        });
         setError("The activity date must be today. Only today's activities can be imported.");
         return;
       }
@@ -208,7 +209,13 @@ export function ScreenshotImportModal({
   const handleSave = () => {
     if (!extractedData) return;
 
-    const activityData = mapScreenshotToActivity(extractedData, userAddress);
+    // Ensure the activity date is always set to today
+    const todayData = {
+      ...extractedData,
+      activityDate: new Date().toISOString().split('T')[0], // Ensure today's date
+    };
+
+    const activityData = mapScreenshotToActivity(todayData, userAddress);
 
     onSaveActivity(activityData);
     handleClose();

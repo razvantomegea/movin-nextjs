@@ -29,6 +29,8 @@ import {
 import { fetchProfile, updateProfile } from '@/lib/redux/slices/profileSlice';
 import { showSuccessToast, showInfoToast } from '@/lib/redux/slices/toastSlice';
 import { IMeal } from '@/lib/supabase/meals';
+import { calculateBMR, calculateDailyCalories, calculateAge } from '@/utils/energy/calculateBMR';
+
 import {
   mapEnergyToDaily,
   mapEnergyToWeekly,
@@ -120,14 +122,23 @@ export function EnergyPage() {
       };
     }
 
-    const goal = 2000; // Default goal, could be made configurable
+    // Calculate BMR using Mifflin-St Jeor Equation
+    const age = calculateAge(profile?.date_of_birth);
+    let goal = 2000; // Default if profile data is missing
+
+    if (profile && profile.weight && profile.height && age && profile.biological_sex) {
+      const bmr = calculateBMR(profile.weight, profile.height, age, profile.biological_sex);
+
+      // Apply activity factor (default to lightly active 1.2)
+      goal = calculateDailyCalories(bmr);
+    }
 
     return {
       consumed: dailyNutrition.calories,
       goal,
       remaining: Math.max(0, goal - dailyNutrition.calories),
     };
-  }, [dailyNutrition]);
+  }, [dailyNutrition, profile]);
 
   // Fetch data when component mounts (only for premium users)
   useEffect(() => {

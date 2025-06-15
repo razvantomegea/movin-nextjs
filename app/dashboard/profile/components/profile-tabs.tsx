@@ -1,40 +1,46 @@
 'use client';
 
+import { useState } from 'react';
+import { Calendar, User } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useMovinEarn } from '@/lib/hooks/useMovinEarn';
 import { IActivity } from '@/lib/supabase/activities';
 import { IProfile } from '@/lib/supabase/profile';
-import { ProfileAchievements } from './profile-achievements';
-import { ProfileStats } from './profile-stats';
+import { AchievementsTab } from './achievements-tab';
+import { ActivitiesTab } from './activities-tab';
+import { PersonalInfoTab } from './personal-info-tab';
 
 interface ProfileTabsProps {
   profile: IProfile;
-  activities?: IActivity[];
+  activities: IActivity[];
 }
 
-export function ProfileTabs({ profile, activities = [] }: ProfileTabsProps) {
-  const { useUserStakes } = useMovinEarn();
-  const { data: stakesData } = useUserStakes(profile.address);
-
-  // Check if user has any active stakes
-  const hasStakes = stakesData?.stakes && stakesData.stakes.length > 0;
+export function ProfileTabs({ profile, activities }: ProfileTabsProps) {
+  const [activeTab, setActiveTab] = useState('activities');
 
   return (
-    <Tabs defaultValue="achievements">
-      <TabsList className="grid w-full grid-cols-2">
-        <TabsTrigger value="achievements">Achievements</TabsTrigger>
-        <TabsTrigger value="stats">Stats</TabsTrigger>
+    <Tabs defaultValue="activities" value={activeTab} onValueChange={setActiveTab}>
+      <TabsList className="grid w-full grid-cols-3">
+        <TabsTrigger value="activities">
+          <Calendar className="h-4 w-4 mr-2" />
+          Activities
+        </TabsTrigger>
+        <TabsTrigger value="achievements">
+          <Calendar className="h-4 w-4 mr-2" />
+          Achievements
+        </TabsTrigger>
+        <TabsTrigger value="personal">
+          <User className="h-4 w-4 mr-2" />
+          Personal Info
+        </TabsTrigger>
       </TabsList>
-      <TabsContent value="achievements" className="mt-4">
-        <ProfileAchievements
-          address={profile.address}
-          activities={activities}
-          profile={profile}
-          hasStakes={hasStakes}
-        />
+      <TabsContent value="activities">
+        <ActivitiesTab activities={activities} />
       </TabsContent>
-      <TabsContent value="stats" className="mt-4">
-        <ProfileStats activities={activities} />
+      <TabsContent value="achievements">
+        <AchievementsTab profile={profile} activities={activities} />
+      </TabsContent>
+      <TabsContent value="personal">
+        <PersonalInfoTab profile={profile} />
       </TabsContent>
     </Tabs>
   );
