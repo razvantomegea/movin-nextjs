@@ -126,15 +126,32 @@ export function EnergyPage() {
     const age = calculateAge(profile?.date_of_birth);
     const bmr = calculateBMR(profile?.weight, profile?.height, age, profile?.biological_sex);
 
-    // Apply activity factor (default to lightly active 1.2)
-    const goal = calculateDailyCalories(bmr);
+    // Get activities from today
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const todayEnd = new Date();
+    todayEnd.setHours(23, 59, 59, 999);
+
+    // Filter activities for today
+    const todaysActivities = activities.filter((activity) => {
+      const activityDate = new Date(activity.start_date);
+      return activityDate >= todayStart && activityDate <= todayEnd;
+    });
+
+    // Calculate total calories burned today
+    const caloriesBurnedToday = todaysActivities.reduce((total, activity) => {
+      return total + (activity.total_energy_burned || 0);
+    }, 0);
+
+    // Apply activity factor (default to lightly active 1.2) and add today's burned calories
+    const goal = calculateDailyCalories(bmr) + caloriesBurnedToday;
 
     return {
       consumed: dailyNutrition.calories,
       goal,
       remaining: Math.max(0, goal - dailyNutrition.calories),
     };
-  }, [dailyNutrition, profile]);
+  }, [dailyNutrition, profile, activities]);
 
   // Fetch data when component mounts (only for premium users)
   useEffect(() => {
