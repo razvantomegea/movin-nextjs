@@ -137,7 +137,7 @@ export function ProfilePage() {
               isPremium={isPremium}
               activitiesCount={activities.length}
             />
-            {isEditing && (
+            {isEditing && addressLower && (
               <ProfileEditForm
                 address={addressLower}
                 profile={profile}

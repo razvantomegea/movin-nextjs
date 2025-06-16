@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/nextjs';
 import { NextRequest, NextResponse } from 'next/server';
 import {
   initGoogleAIModel,
@@ -5,7 +6,6 @@ import {
   generateAIContentWithImage,
   extractJsonFromAIResponse,
 } from '@/utils/googleAi';
-import * as Sentry from '@sentry/nextjs';
 
 export async function POST(request: NextRequest) {
   try {
