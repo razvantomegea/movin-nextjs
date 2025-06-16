@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { format } from 'date-fns';
 import { CalendarIcon } from 'lucide-react';
@@ -34,15 +34,8 @@ const FormSchema = z.object({
   username: z.string().min(3, { message: 'Username must be at least 3 characters' }),
   email: z.string().email({ message: 'Please enter a valid email address' }),
   date_of_birth: z.date().optional(),
-  biological_sex: z.enum(['male', 'female', 'other', 'prefer_not_to_say']).optional(),
-  height: z
-    .string()
-    .optional()
-    .transform((val) => {
-      if (!val) return undefined;
-      const parsed = parseFloat(val);
-      return isNaN(parsed) ? undefined : parsed;
-    }),
+  biological_sex: z.enum(['male', 'female']).optional(),
+  height: z.number().optional(),
 });
 
 type FormValues = z.infer<typeof FormSchema>;
@@ -57,6 +50,8 @@ interface ProfileData {
 }
 
 export function ProfileEditForm({ profile, isUpdating, onSave }: ProfileEditFormProps) {
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
+
   const form = useForm<FormValues>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
@@ -82,9 +77,7 @@ export function ProfileEditForm({ profile, isUpdating, onSave }: ProfileEditForm
     const profileData: ProfileData = {
       username: data.username,
       email: data.email,
-      date_of_birth: data.date_of_birth
-        ? data.date_of_birth.toISOString().split('T')[0]
-        : undefined,
+      date_of_birth: data.date_of_birth ? format(data.date_of_birth, 'yyyy-MM-dd') : undefined,
       biological_sex: data.biological_sex,
       height: data.height,
     };
@@ -152,7 +145,7 @@ export function ProfileEditForm({ profile, isUpdating, onSave }: ProfileEditForm
               }) => (
                 <FormItem className="flex flex-col">
                   <FormLabel>Date of Birth</FormLabel>
-                  <Popover>
+                  <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
                     <PopoverTrigger asChild>
                       <FormControl>
                         <Button
@@ -171,7 +164,10 @@ export function ProfileEditForm({ profile, isUpdating, onSave }: ProfileEditForm
                       <Calendar
                         mode="single"
                         selected={field.value}
-                        onSelect={field.onChange}
+                        onSelect={(date) => {
+                          field.onChange(date);
+                          setDatePickerOpen(false);
+                        }}
                         disabled={(date: Date) =>
                           date > new Date() || date < new Date('1900-01-01')
                         }

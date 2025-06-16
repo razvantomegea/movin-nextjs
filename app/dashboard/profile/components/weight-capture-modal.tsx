@@ -51,7 +51,13 @@ export function WeightCaptureModal({
 
       try {
         // Convert file to base64
-        const base64Data = imageData.split(',')[1];
+        const parts = imageData.split(',');
+
+        if (parts.length !== 2) {
+          throw new Error('Invalid image data format');
+        }
+
+        const base64Data = parts[1];
 
         // Call the server API endpoint
         const response = await fetch('/api/analyse-weight', {

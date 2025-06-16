@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Calendar, User } from 'lucide-react';
+import { Calendar, Trophy, User } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { IActivity } from '@/lib/supabase/activities';
 import { IProfile } from '@/lib/supabase/profile';
@@ -25,7 +25,7 @@ export function ProfileTabs({ profile, activities }: ProfileTabsProps) {
           Activities
         </TabsTrigger>
         <TabsTrigger value="achievements">
-          <Calendar className="h-4 w-4 mr-2" />
+          <Trophy className="h-4 w-4 mr-2" />
           Achievements
         </TabsTrigger>
         <TabsTrigger value="personal">

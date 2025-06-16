@@ -76,12 +76,14 @@ export async function updateProfile({
 
   const dataToInsert: Partial<IProfile> = {
     address,
-    is_premium: profileData.is_premium || false,
-    email: profileData.email || '',
-    username: profileData.username || '',
-    avatar_url: profileData.avatar_url || '',
-    level: profileData.level || 1,
-    streak_days: profileData.streak_days || 0,
+    // spread first so explicit fallbacks below don't overwrite provided values
+    ...profileData,
+    is_premium: profileData.is_premium ?? false,
+    email: profileData.email ?? '',
+    username: profileData.username ?? '',
+    avatar_url: profileData.avatar_url ?? '',
+    level: profileData.level ?? 1,
+    streak_days: profileData.streak_days ?? 0,
   };
 
   const { data, error } = await client.from('profiles').insert(dataToInsert).select();

@@ -1,8 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { DayPicker } from 'react-day-picker';
+import { ChevronLeft, ChevronRight, ChevronsUpDown } from 'lucide-react';
+import { DayPicker, DateFormatter } from 'react-day-picker';
 
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/cn';
@@ -11,6 +11,14 @@ export type CalendarProps = React.ComponentProps<typeof DayPicker>;
 
 function Calendar({ className, classNames, showOutsideDays = true, ...props }: CalendarProps) {
   const [currentMonth, setCurrentMonth] = React.useState<Date>(props.defaultMonth || new Date());
+  const [isYearPickerOpen, setIsYearPickerOpen] = React.useState(false);
+
+  // Sync with defaultMonth prop when it changes
+  React.useEffect(() => {
+    if (props.defaultMonth) {
+      setCurrentMonth(props.defaultMonth);
+    }
+  }, [props.defaultMonth]);
 
   // Handle month change
   const handleMonthChange = (month: Date) => {
@@ -21,41 +29,92 @@ function Calendar({ className, classNames, showOutsideDays = true, ...props }: C
   };
 
   // Handle year change
-  const handleYearChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const year = parseInt(event.target.value);
+  const handleYearChange = (year: number) => {
     const newDate = new Date(currentMonth);
     newDate.setFullYear(year);
     handleMonthChange(newDate);
+    setIsYearPickerOpen(false);
   };
 
-  // Generate years for dropdown (±30 years from current year)
+  // Change year by offset
+  const changeYear = (offset: number) => {
+    const newDate = new Date(currentMonth);
+    newDate.setFullYear(currentMonth.getFullYear() + offset);
+    handleMonthChange(newDate);
+  };
+
+  // Generate years for picker (±10 years from current year)
   const currentYear = currentMonth.getFullYear();
   const years = React.useMemo(() => {
-    return Array.from({ length: 61 }, (_, i) => currentYear - 30 + i);
+    return Array.from({ length: 21 }, (_, i) => currentYear - 10 + i);
   }, [currentYear]);
+
+  // Custom caption component that only shows month name
+  const formatCaption: DateFormatter = (month) => {
+    return month.toLocaleDateString(undefined, { month: 'long' });
+  };
 
   return (
     <div className="space-y-4">
       {/* Year selector */}
-      <div className="flex justify-center">
-        <select
-          value={currentYear}
-          onChange={handleYearChange}
-          className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm"
-          aria-label="Year"
-        >
-          {years.map((year) => (
-            <option key={year} value={year}>
-              {year}
-            </option>
-          ))}
-        </select>
+      <div className="flex justify-center relative">
+        <div className="inline-flex items-center rounded-md border border-input bg-background shadow-sm">
+          <button
+            onClick={() => changeYear(-1)}
+            className="px-2 py-1 h-9 border-r"
+            aria-label="Previous Year"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+
+          <button
+            onClick={() => setIsYearPickerOpen(!isYearPickerOpen)}
+            className="px-3 py-1 h-9 inline-flex items-center justify-center gap-1 font-medium"
+            aria-label="Select Year"
+            aria-expanded={isYearPickerOpen}
+            aria-haspopup="listbox"
+          >
+            {currentYear}
+            <ChevronsUpDown className="h-4 w-4 opacity-50" />
+          </button>
+
+          <button
+            onClick={() => changeYear(1)}
+            className="px-2 py-1 h-9 border-l"
+            aria-label="Next Year"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </div>
+
+        {/* Year picker popover */}
+        {isYearPickerOpen && (
+          <div className="absolute top-full mt-1 z-50 bg-background border rounded-md shadow-md p-2 max-h-[200px] overflow-y-auto w-[100px]">
+            <div className="grid grid-cols-1 gap-1" role="listbox">
+              {years.map((year) => (
+                <button
+                  key={year}
+                  onClick={() => handleYearChange(year)}
+                  className={cn(
+                    'px-3 py-1.5 text-sm rounded-md text-center',
+                    year === currentYear ? 'bg-primary text-primary-foreground' : 'hover:bg-accent',
+                  )}
+                  role="option"
+                  aria-selected={year === currentYear}
+                >
+                  {year}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Standard day picker */}
       <DayPicker
         showOutsideDays={showOutsideDays}
         className={cn('p-3', className)}
+        formatters={{ formatCaption }}
         classNames={{
           months: 'flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0',
           month: 'space-y-4',
@@ -87,8 +146,12 @@ function Calendar({ className, classNames, showOutsideDays = true, ...props }: C
           ...classNames,
         }}
         components={{
-          IconLeft: ({ ...props }) => <ChevronLeft className="h-4 w-4" />,
-          IconRight: ({ ...props }) => <ChevronRight className="h-4 w-4" />,
+          IconLeft: (iconProps) => (
+            <ChevronLeft {...iconProps} className={cn('h-4 w-4', iconProps.className)} />
+          ),
+          IconRight: (iconProps) => (
+            <ChevronRight {...iconProps} className={cn('h-4 w-4', iconProps.className)} />
+          ),
         }}
         month={currentMonth}
         onMonthChange={handleMonthChange}

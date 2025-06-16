@@ -17,6 +17,19 @@ export function calculateBMR(
     return 2000;
   }
 
+  // Validate input ranges
+  if (weight < 20 || weight > 300) {
+    throw new Error(`Invalid weight: ${weight}kg. Weight must be between 20kg and 300kg.`);
+  }
+
+  if (height < 100 || height > 250) {
+    throw new Error(`Invalid height: ${height}cm. Height must be between 100cm and 250cm.`);
+  }
+
+  if (age < 18 || age > 100) {
+    throw new Error(`Invalid age: ${age} years. Age must be between 18 and 100 years.`);
+  }
+
   // Mifflin-St Jeor Equation
   if (biologicalSex.toLowerCase() === 'male') {
     // For men: BMR = 10 × weight (kg) + 6.25 × height (cm) - 5 × age (years) + 5

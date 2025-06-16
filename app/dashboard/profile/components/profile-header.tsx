@@ -191,6 +191,7 @@ export function ProfileHeader({
                         variant="ghost"
                         size="sm"
                         className="absolute top-1 right-1 h-6 w-6 p-0 rounded-full opacity-60 hover:opacity-100"
+                        onClick={handleOpenWeightModal}
                       >
                         <Edit className="h-3 w-3" />
                       </Button>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useAppKitAccount } from '@reown/appkit/react';
 import { formatUnits, parseUnits } from 'viem';
 import { useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
@@ -8,7 +8,6 @@ import { showErrorToast } from '@/lib/redux/slices/toastSlice';
 import { captureBlockchainError } from '@/lib/sentry';
 import { forceLogout, isWalletConnected } from '@/utils/auth';
 import { mapError } from '@/utils/errors';
-import { sleep } from '@/utils/sleep';
 import { getFormattedStakes } from '@/utils/staking/getFormattedStakes';
 
 // MovinEarn contract address (Base network)
@@ -386,16 +385,6 @@ export function useMovinEarn() {
   const useRecordActivity = () => {
     const { writeContract, data: hash, error: writeError, isPending } = useWriteContract();
     const { isSuccess, error: waitError } = useWaitForTransactionReceipt({ hash });
-    const { setTransactionSync } = useSetTransactionSyncByOwner();
-    const [transactionSyncStatus, setTransactionSyncStatus] = useState(false);
-
-    // Set transaction sync to false when transaction completes or fails
-    useEffect(() => {
-      if ((isSuccess || waitError) && addressLower && transactionSyncStatus) {
-        setTransactionSync(addressLower, false);
-        setTransactionSyncStatus(false);
-      }
-    }, [isSuccess, waitError, setTransactionSync, transactionSyncStatus]);
 
     /**
      * Records activity
@@ -406,25 +395,6 @@ export function useMovinEarn() {
     const recordActivity = async (steps: number, mets: number): Promise<boolean> => {
       if (!checkWalletConnection()) {
         return false;
-      }
-
-      try {
-        if (addressLower) {
-          await setTransactionSync(addressLower, true);
-          await sleep(1000);
-          setTransactionSyncStatus(true);
-        }
-      } catch (err) {
-        const errorMessage = mapError(err);
-        console.log('errorMessage', errorMessage);
-        captureBlockchainError(
-          err instanceof Error
-            ? err
-            : new Error(String((err as unknown as Error)?.message || 'Unknown blockchain error')),
-          hash,
-          CONTRACT_ADDRESS,
-          address,
-        );
       }
 
       try {
@@ -457,11 +427,6 @@ export function useMovinEarn() {
 
         if (errorMessage.includes('connected')) {
           forceLogout();
-        }
-
-        if (addressLower) {
-          setTransactionSync(addressLower, false);
-          setTransactionSyncStatus(false);
         }
 
         return false;

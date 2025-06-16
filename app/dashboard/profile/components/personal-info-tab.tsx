@@ -72,7 +72,7 @@ export function PersonalInfoTab({ profile }: PersonalInfoTabProps) {
           {/* Height */}
           <div className="flex items-center px-3 py-2 border rounded-lg">
             <div className="h-10 w-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mr-4">
-              <Scale className="h-5 w-5 text-green-600 dark:text-green-400" rotate={90} />
+              <Scale className="h-5 w-5 text-green-600 dark:text-green-400 transform rotate-90" />
             </div>
             <div>
               <h3 className="font-medium">Height</h3>

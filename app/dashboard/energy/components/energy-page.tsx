@@ -124,14 +124,10 @@ export function EnergyPage() {
 
     // Calculate BMR using Mifflin-St Jeor Equation
     const age = calculateAge(profile?.date_of_birth);
-    let goal = 2000; // Default if profile data is missing
+    const bmr = calculateBMR(profile?.weight, profile?.height, age, profile?.biological_sex);
 
-    if (profile && profile.weight && profile.height && age && profile.biological_sex) {
-      const bmr = calculateBMR(profile.weight, profile.height, age, profile.biological_sex);
-
-      // Apply activity factor (default to lightly active 1.2)
-      goal = calculateDailyCalories(bmr);
-    }
+    // Apply activity factor (default to lightly active 1.2)
+    const goal = calculateDailyCalories(bmr);
 
     return {
       consumed: dailyNutrition.calories,
