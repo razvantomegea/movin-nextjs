@@ -35,8 +35,10 @@ export function TransactionConfirmationModal({
   const dispatch = useAppDispatch();
 
   // Timer state
-  const [timeLeft, setTimeLeft] = useState(1 * 60); // 3 minutes in seconds
+  const INITIAL_TIME = 1 * 60; // 1 minute in seconds
+  const [timeLeft, setTimeLeft] = useState(INITIAL_TIME);
   const endTimeRef = useRef<number | null>(null);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Handle success button click
   const handleSuccess = useCallback(() => {
@@ -54,25 +56,26 @@ export function TransactionConfirmationModal({
   // Set up the timer when the modal opens
   useEffect(() => {
     if (isOpen) {
-      // Set the end time (current time + 1 minute)
-      endTimeRef.current = Date.now() + timeLeft * 1000;
+      setTimeLeft(INITIAL_TIME);
+      endTimeRef.current = Date.now() + INITIAL_TIME * 1000;
 
-      // Update the timer every second
-      const interval = setInterval(() => {
-        const secondsLeft = Math.max(0, Math.floor((endTimeRef.current! - Date.now()) / 1000));
-        setTimeLeft(secondsLeft);
-
-        // If timer reaches 0, auto-fail
-        if (secondsLeft === 0) {
-          clearInterval(interval);
-          onFail();
+      intervalRef.current = setInterval(() => {
+        if (endTimeRef.current) {
+          const secondsLeft = Math.max(0, Math.floor((endTimeRef.current - Date.now()) / 1000));
+          setTimeLeft(secondsLeft);
+          if (secondsLeft === 0) {
+            if (intervalRef.current) clearInterval(intervalRef.current);
+            onFail();
+          }
         }
       }, 1000);
-
-      // Clean up the interval when the modal closes
-      return () => clearInterval(interval);
     }
-  }, [isOpen, onFail, timeLeft]);
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+    // Only run when modal opens/closes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, onFail]);
 
   // Format the time left as MM:SS
   const formatTimeLeft = () => {

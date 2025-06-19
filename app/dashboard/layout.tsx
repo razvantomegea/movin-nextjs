@@ -2,7 +2,7 @@
 
 import type React from 'react';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAppKitAccount, useDisconnect } from '@reown/appkit/react';
 import {
   Activity,
@@ -124,11 +124,21 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     router.push(path);
   };
 
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async () => {
     setIsSheetOpen(false);
+    localStorage.clear();
+    sessionStorage.clear();
     await disconnect();
     router.push('/');
-  };
+  }, [disconnect, router]);
+
+  useEffect(() => {
+    window.addEventListener('beforeunload', handleLogout);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleLogout);
+    };
+  }, [handleLogout]);
 
   const content = (
     <div
