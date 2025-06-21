@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from '@google/genai';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
@@ -21,8 +21,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Initialize Google AI
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const genAI = new GoogleGenAI({ apiKey });
 
     const prompt = `
       Analyze this meal description and provide detailed nutritional information: "${mealDescription}"
@@ -58,9 +57,11 @@ export async function POST(request: NextRequest) {
     `;
 
     // Call Google AI API
-    const result = await model.generateContent([prompt]);
-    const response = await result.response;
-    const text = response.text();
+    const result = await genAI.models.generateContent({
+      model: 'gemini-2.0-flash-001',
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+    });
+    const text = result.text ?? '';
 
     // Clean the response to extract just the JSON
     const jsonMatch = text.match(/\{[\s\S]*\}/);

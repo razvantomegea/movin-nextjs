@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, Suspense, useMemo } from 'react';
-import { useAppKit, useAppKitAccount } from '@reown/appkit/react';
+import { useAppKit, useAppKitAccount, useDisconnect } from '@reown/appkit/react';
 import * as Sentry from '@sentry/nextjs';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
@@ -14,12 +14,14 @@ import { Button } from '@/components/ui/button';
 import { useMovinEarn } from '@/lib/hooks/useMovinEarn';
 import { updateProfile } from '@/lib/supabase/profile';
 import { getProfile } from '@/lib/supabase/profile';
+import { getTodayDate } from '@/utils';
 
 function ConnectPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { resolvedTheme } = useTheme();
   const { open } = useAppKit();
+  const { disconnect } = useDisconnect();
   const { isConnected, address } = useAppKitAccount();
   const addressLower = address?.toLowerCase();
   const [referrer, setReferrer] = useState<string | null>(null);
@@ -61,6 +63,21 @@ function ConnectPageContent() {
   const handleDismissReferral = useCallback(() => {
     setShowReferralModal(false);
   }, []);
+
+  const checkLastLogin = useCallback(async () => {
+    const lastLogin = localStorage.getItem('last_login');
+
+    if (lastLogin) {
+      const today = getTodayDate();
+
+      if (lastLogin !== today) {
+        localStorage.clear();
+        sessionStorage.clear();
+        await disconnect();
+        window.location.reload();
+      }
+    }
+  }, [disconnect]);
 
   useEffect(() => {
     const authenticateWithSupabase = async () => {
@@ -133,6 +150,8 @@ function ConnectPageContent() {
             Sentry.captureException(profileError);
           }
 
+          localStorage.setItem('last_login', getTodayDate());
+
           // Navigate to dashboard on successful authentication
           const navigateTimeout = setTimeout(() => {
             router.push('/dashboard');
@@ -159,6 +178,10 @@ function ConnectPageContent() {
     referralInfo,
     referralInfoLoading,
   ]);
+
+  useEffect(() => {
+    checkLastLogin();
+  }, [checkLastLogin]);
 
   const handleConnectWithReferral = useCallback(() => {
     handleDismissReferral();

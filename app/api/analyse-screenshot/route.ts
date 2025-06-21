@@ -1,7 +1,7 @@
 import * as Sentry from '@sentry/nextjs';
 import { NextRequest, NextResponse } from 'next/server';
 import {
-  initGoogleAIModel,
+  initGoogleAI,
   processImageForAI,
   generateAIContentWithImage,
   extractJsonFromAIResponse,
@@ -29,8 +29,9 @@ export async function POST(req: NextRequest) {
         processedImage.mimeType = mimeType;
       }
 
-      // Initialize Google AI model
-      const model = initGoogleAIModel(apiKey);
+      // Initialize Google AI client
+      const ai = initGoogleAI(apiKey);
+      const modelName = 'gemini-2.0-flash-001';
 
       const prompt = `
         Analyze this screenshot and extract fitness activity data. The image should be from a mobile fitness app or smartwatch showing workout statistics.
@@ -67,7 +68,7 @@ export async function POST(req: NextRequest) {
       `;
 
       // Call Google AI API
-      const responseText = await generateAIContentWithImage(model, prompt, processedImage);
+      const responseText = await generateAIContentWithImage(ai, modelName, prompt, processedImage);
 
       // Extract JSON from response
       const extractedData = extractJsonFromAIResponse(responseText);

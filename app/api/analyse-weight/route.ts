@@ -1,7 +1,7 @@
 import * as Sentry from '@sentry/nextjs';
 import { NextResponse, NextRequest } from 'next/server';
 import {
-  initGoogleAIModel,
+  initGoogleAI,
   processImageForAI,
   generateAIContentWithImage,
   extractJsonFromAIResponse,
@@ -32,8 +32,9 @@ export async function POST(request: NextRequest) {
       // Process the image data
       const processedImage = processImageForAI(imageData);
 
-      // Initialize Google AI model
-      const model = initGoogleAIModel(apiKey);
+      // Initialize Google AI client
+      const ai = initGoogleAI(apiKey);
+      const modelName = 'gemini-2.0-flash-001';
 
       // Prompt for the AI model to extract weight information
       const prompt = `
@@ -59,7 +60,7 @@ export async function POST(request: NextRequest) {
       `;
 
       // Generate content using Google AI
-      const responseText = await generateAIContentWithImage(model, prompt, processedImage);
+      const responseText = await generateAIContentWithImage(ai, modelName, prompt, processedImage);
 
       // Extract JSON from response
       const jsonResponse = extractJsonFromAIResponse(responseText);

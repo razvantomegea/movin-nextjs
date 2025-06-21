@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from '@google/genai';
 
 /**
  * Default MIME type to use when not specified
@@ -45,19 +45,16 @@ export function processImageForAI(imageData: string): ProcessedImageData {
 }
 
 /**
- * Initialize Google AI model
+ * Initialize Google AI client
  *
  * @param apiKey - The Google AI API key
- * @param modelName - The model name to use (defaults to gemini-1.5-flash)
- * @returns The initialized model
+ * @returns The initialized GoogleGenAI client
  */
-export function initGoogleAIModel(apiKey: string, modelName: string = 'gemini-1.5-flash') {
+export function initGoogleAI(apiKey: string) {
   if (!apiKey) {
     throw new Error('Google AI API key is required');
   }
-
-  const genAI = new GoogleGenerativeAI(apiKey);
-  return genAI.getGenerativeModel({ model: modelName });
+  return new GoogleGenAI({ apiKey });
 }
 
 /**
@@ -83,26 +80,35 @@ export function extractJsonFromAIResponse(text: string): any {
 /**
  * Generate AI content with image
  *
- * @param model - The initialized Google AI model
+ * @param ai - The initialized Google AI client
+ * @param modelName - The model to use
  * @param prompt - The prompt to send to the model
  * @param imageData - Processed image data from processImageForAI
  * @returns The AI response text
  */
 export async function generateAIContentWithImage(
-  model: any,
+  ai: GoogleGenAI,
+  modelName: string,
   prompt: string,
   imageData: ProcessedImageData,
 ) {
-  const result = await model.generateContent([
-    prompt,
-    {
-      inlineData: {
-        mimeType: imageData.mimeType,
-        data: imageData.base64Data,
+  const result = await ai.models.generateContent({
+    model: modelName,
+    contents: [
+      {
+        role: 'user',
+        parts: [
+          { text: prompt },
+          {
+            inlineData: {
+              data: imageData.base64Data,
+              mimeType: imageData.mimeType,
+            },
+          },
+        ],
       },
-    },
-  ]);
+    ],
+  });
 
-  const response = await result.response;
-  return response.text();
+  return result.text ?? '';
 }

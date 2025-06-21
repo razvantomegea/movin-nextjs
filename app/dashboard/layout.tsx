@@ -129,8 +129,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     localStorage.clear();
     sessionStorage.clear();
     await disconnect();
-    router.push('/');
-  }, [disconnect, router]);
+    window.location.reload();
+  }, [disconnect]);
 
   useEffect(() => {
     window.addEventListener('beforeunload', handleLogout);

@@ -1,7 +1,7 @@
 import * as Sentry from '@sentry/nextjs';
 import { NextRequest, NextResponse } from 'next/server';
 import {
-  initGoogleAIModel,
+  initGoogleAI,
   processImageForAI,
   generateAIContentWithImage,
   extractJsonFromAIResponse,
@@ -26,11 +26,12 @@ export async function POST(request: NextRequest) {
       // Process the image data
       const processedImage = processImageForAI(imageData);
 
-      // Initialize Google AI model
-      const model = initGoogleAIModel(apiKey);
+      // Initialize Google AI client
+      const ai = initGoogleAI(apiKey);
+      const modelName = 'gemini-2.0-flash-001';
 
       const prompt = `
-        Analyze this food image and provide detailed nutritional information. The image should show a meal, dish, or food item.
+        Analyze this food image and provide detailed nutritional information. The image should show a meal, dish, or food item. Include only the food(s) in the image.
 
         Please extract and return ONLY a JSON object with the following structure:
         {
@@ -52,7 +53,7 @@ export async function POST(request: NextRequest) {
 
         Rules:
         1. Identify all visible ingredients in the meal
-        2. Provide realistic nutritional estimates based on typical serving sizes
+        2. Provide realistic nutritional estimates based on the serving size of the food(s) in the image
         3. Break down each ingredient's nutritional contribution
         4. Ensure ingredient nutritional values sum up to the total meal values
         5. Use common food names and descriptions
@@ -62,7 +63,7 @@ export async function POST(request: NextRequest) {
       `;
 
       // Call Google AI API
-      const responseText = await generateAIContentWithImage(model, prompt, processedImage);
+      const responseText = await generateAIContentWithImage(ai, modelName, prompt, processedImage);
 
       // Extract JSON from response
       const extractedData = extractJsonFromAIResponse(responseText);
