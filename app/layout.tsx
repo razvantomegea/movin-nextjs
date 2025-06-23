@@ -14,10 +14,45 @@ import { ReduxProvider } from '@/lib/redux/provider';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Movin',
-  description: 'Your effort counts',
-  generator: 'v0.dev',
+  metadataBase: new URL('https://app.getmovin.ai'),
+  title: {
+    default: 'Movin - Your Effort Counts',
+    template: `%s | Movin`,
+  },
+  description:
+    'Track your fitness, earn rewards, and stay motivated with Movin. An innovative fitness app that rewards your effort.',
+  generator: 'Next.js',
+  applicationName: 'Movin',
+  referrer: 'origin-when-cross-origin',
+  keywords: ['Fitness', 'Health', 'Workout', 'Rewards', 'Blockchain', 'Crypto'],
+  authors: [{ name: 'Razvan Tomegea', url: 'https://github.com/razvantomegea' }],
+  creator: 'Razvan Tomegea',
+  publisher: 'Movin',
   manifest: '/manifest',
+  openGraph: {
+    title: 'Movin - Your Effort Counts',
+    description:
+      'Track your fitness, earn rewards, and stay motivated with Movin. An innovative fitness app that rewards your effort.',
+    url: 'https://app.getmovin.ai',
+    siteName: 'Movin',
+    images: [
+      {
+        url: 'https://app.getmovin.ai/images/logo.png', // Must be an absolute URL
+        width: 800,
+        height: 600,
+        alt: 'Movin App Logo',
+      },
+    ],
+    locale: 'en_US',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Movin - Your Effort Counts',
+    description:
+      'Track your fitness, earn rewards, and stay motivated with Movin. An innovative fitness app that rewards your effort.',
+    images: ['https://app.getmovin.ai/images/logo.png'], // Must be an absolute URL
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
@@ -52,6 +87,17 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
         )}
       </head>
       <body className={inter.className}>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'WebSite',
+              name: 'Movin',
+              url: 'https://app.getmovin.ai',
+            }),
+          }}
+        />
         <ReduxProvider>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
             <GoogleMapsProvider>
