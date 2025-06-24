@@ -5,6 +5,7 @@ export interface ApiIngredient {
   carbohydrates: number;
   fats: number;
   protein: number;
+  fiber: number;
 }
 
 export interface ApiMealData {
@@ -14,6 +15,7 @@ export interface ApiMealData {
   carbohydrates: number;
   fats: number;
   protein: number;
+  fiber: number;
 }
 
 export interface Ingredient {
@@ -23,6 +25,7 @@ export interface Ingredient {
   carbohydrates: number;
   fats: number;
   protein: number;
+  fiber: number;
 }
 
 export interface DetectedMeal {
@@ -32,6 +35,7 @@ export interface DetectedMeal {
   carbohydrates: number;
   fats: number;
   protein: number;
+  fiber: number;
 }
 
 export interface MealDetectionResultsModalProps {
@@ -56,6 +60,7 @@ export function mapApiResponseToDetectedMeal(apiData: ApiMealData): DetectedMeal
     carbohydrates: ingredient.carbohydrates,
     fats: ingredient.fats,
     protein: ingredient.protein,
+    fiber: ingredient.fiber,
   }));
 
   return {
@@ -65,6 +70,7 @@ export function mapApiResponseToDetectedMeal(apiData: ApiMealData): DetectedMeal
     carbohydrates: apiData.carbohydrates,
     fats: apiData.fats,
     protein: apiData.protein,
+    fiber: apiData.fiber,
   };
 }
 
@@ -81,9 +87,10 @@ export function calculateTotals(ingredients: Ingredient[]) {
         carbohydrates: acc.carbohydrates + ingredient.carbohydrates,
         fats: acc.fats + ingredient.fats,
         protein: acc.protein + ingredient.protein,
+        fiber: acc.fiber + ingredient.fiber,
       };
     },
-    { calories: 0, carbohydrates: 0, fats: 0, protein: 0 },
+    { calories: 0, carbohydrates: 0, fats: 0, protein: 0, fiber: 0 },
   );
 }
 

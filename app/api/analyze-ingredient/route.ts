@@ -33,7 +33,8 @@ export async function POST(request: NextRequest) {
         "calories": number (estimated calories for a typical serving),
         "protein": number (protein in grams),
         "carbohydrates": number (carbohydrates in grams),
-        "fats": number (fats in grams)
+        "fats": number (fats in grams),
+        "fiber": number (fiber in grams)
       }
 
       Rules:
