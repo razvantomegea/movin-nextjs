@@ -33,13 +33,15 @@ export async function POST(request: NextRequest) {
         "protein": number (protein in grams),
         "carbohydrates": number (carbohydrates in grams),
         "fats": number (fats in grams),
+        "fiber": number (fiber in grams),
         "ingredients": [
           {
             "name": string (ingredient name),
             "calories": number (calories from this ingredient),
             "protein": number (protein in grams from this ingredient),
             "carbohydrates": number (carbohydrates in grams from this ingredient),
-            "fats": number (fats in grams from this ingredient)
+            "fats": number (fats in grams from this ingredient),
+            "fiber": number (fiber in grams from this ingredient)
           }
         ]
       }

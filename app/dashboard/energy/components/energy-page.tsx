@@ -298,6 +298,8 @@ export function EnergyPage() {
           protein: meal.protein,
           carbohydrates: meal.carbohydrates,
           fats: meal.fats,
+          // @ts-expect-error fiber will exist
+          fiber: meal.fiber || 0,
           log_date: new Date().toISOString().split('T')[0],
         };
 
@@ -394,10 +396,10 @@ export function EnergyPage() {
                       animate={{ opacity: 1, scale: 1 }}
                       transition={{ duration: 0.5, delay: 0.2 }}
                     >
-                      {dailyCalories.consumed.toLocaleString()}
+                      {Math.round(dailyCalories.consumed).toLocaleString()}
                     </motion.span>
                     <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'} ml-2`}>
-                      / {dailyCalories.goal.toLocaleString()} kcal
+                      / {Math.round(dailyCalories.goal).toLocaleString()} kcal
                     </span>
                   </div>
                   <motion.div
@@ -406,12 +408,16 @@ export function EnergyPage() {
                     transition={{ duration: 0.5, delay: 0.3 }}
                   >
                     <Progress
-                      value={(dailyCalories.consumed / dailyCalories.goal) * 100}
+                      value={
+                        dailyCalories.goal > 0
+                          ? (dailyCalories.consumed / dailyCalories.goal) * 100
+                          : 0
+                      }
                       className="h-2 mt-3"
                     />
                   </motion.div>
 
-                  <div className="grid grid-cols-3 gap-4 mt-6">
+                  <div className="grid grid-cols-4 gap-4 mt-6">
                     <motion.div
                       className="flex flex-col items-center"
                       whileHover={{ scale: 1.05 }}
@@ -421,7 +427,7 @@ export function EnergyPage() {
                         <Bolt className="h-4 w-4 text-green-500" />
                       </div>
                       <span className="text-sm font-medium">
-                        {dailyNutrition?.protein.toFixed(1) || '0.0'}g
+                        {Math.round(dailyNutrition?.protein || 0)}g
                       </span>
                       <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                         protein
@@ -437,7 +443,7 @@ export function EnergyPage() {
                         <Bolt className="h-4 w-4 text-sky-500" />
                       </div>
                       <span className="text-sm font-medium">
-                        {dailyNutrition?.carbohydrates.toFixed(1) || '0.0'}g
+                        {Math.round(dailyNutrition?.carbohydrates || 0)}g
                       </span>
                       <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                         carbs
@@ -453,10 +459,26 @@ export function EnergyPage() {
                         <Bolt className="h-4 w-4 text-yellow-500" />
                       </div>
                       <span className="text-sm font-medium">
-                        {dailyNutrition?.fats.toFixed(1) || '0.0'}g
+                        {Math.round(dailyNutrition?.fats || 0)}g
                       </span>
                       <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                         fats
+                      </span>
+                    </motion.div>
+
+                    <motion.div
+                      className="flex flex-col items-center"
+                      whileHover={{ scale: 1.05 }}
+                      transition={{ type: 'spring', stiffness: 400, damping: 10 }}
+                    >
+                      <div className="bg-purple-500/10 p-2 rounded-full mb-2">
+                        <Bolt className="h-4 w-4 text-purple-500" />
+                      </div>
+                      <span className="text-sm font-medium">
+                        {Math.round(dailyNutrition?.fiber || 0)}g
+                      </span>
+                      <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                        fiber
                       </span>
                     </motion.div>
                   </div>
@@ -527,20 +549,24 @@ export function EnergyPage() {
                             {meal.time}
                           </div>
                         </div>
-                        <span className="font-bold text-blue-500">{meal.calories} kcal</span>
+                        <span className="font-bold text-blue-500">{Math.round(meal.calories)} kcal</span>
                       </div>
-                      <div className="grid grid-cols-3 gap-2 mt-3">
+                      <div className="grid grid-cols-4 gap-2 mt-3">
                         <div className="text-center p-1 bg-sky-500/10 rounded">
                           <div className="text-xs text-gray-500">Carbs</div>
-                          <div className="font-medium">{meal.carbohydrates}g</div>
+                          <div className="font-medium">{Math.round(meal.carbohydrates)}g</div>
                         </div>
                         <div className="text-center p-1 bg-yellow-500/10 rounded">
                           <div className="text-xs text-gray-500">Fats</div>
-                          <div className="font-medium">{meal.fats}g</div>
+                          <div className="font-medium">{Math.round(meal.fats)}g</div>
                         </div>
                         <div className="text-center p-1 bg-green-500/10 rounded">
                           <div className="text-xs text-gray-500">Protein</div>
-                          <div className="font-medium">{meal.protein}g</div>
+                          <div className="font-medium">{Math.round(meal.protein)}g</div>
+                        </div>
+                        <div className="text-center p-1 bg-purple-500/10 rounded">
+                          <div className="text-xs text-gray-500">Fiber</div>
+                          <div className="font-medium">{Math.round(meal.fiber)}g</div>
                         </div>
                       </div>
                     </motion.div>
@@ -630,7 +656,7 @@ export function EnergyPage() {
           }}
           imageData={capturedImageData}
           sourceType="camera"
-          mealData={null}
+          mealData={null} // This will be populated by the analysis hook
         />
       )}
 
