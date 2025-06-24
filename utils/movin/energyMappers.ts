@@ -17,6 +17,7 @@ export interface DailyNutrition {
   protein: number;
   carbohydrates: number;
   fats: number;
+  fiber: number;
   mealsCount: number;
   date: string;
 }
@@ -27,6 +28,7 @@ export interface NutritionTimeRangeData {
   protein: number;
   carbohydrates: number;
   fats: number;
+  fiber: number;
   mealsCount: number;
 }
 
@@ -38,6 +40,7 @@ export interface TodaysMeal {
   carbohydrates: number;
   fats: number;
   protein: number;
+  fiber: number;
 }
 
 export const mapEnergyToDaily = (energyEntries: IEnergy[], date: Date): DailyNutrition => {
@@ -56,6 +59,7 @@ export const mapEnergyToDaily = (energyEntries: IEnergy[], date: Date): DailyNut
       acc.protein += entry.protein || 0;
       acc.carbohydrates += entry.carbohydrates || 0;
       acc.fats += entry.fats || 0;
+      acc.fiber += entry.fiber || 0;
       acc.mealsCount += 1;
       return acc;
     },
@@ -64,6 +68,7 @@ export const mapEnergyToDaily = (energyEntries: IEnergy[], date: Date): DailyNut
       protein: 0,
       carbohydrates: 0,
       fats: 0,
+      fiber: 0,
       mealsCount: 0,
       date: targetDateStr,
     },
@@ -92,6 +97,7 @@ export const mapEnergyToWeekly = (
       protein: dailySummary.protein,
       carbohydrates: dailySummary.carbohydrates,
       fats: dailySummary.fats,
+      fiber: dailySummary.fiber,
       mealsCount: dailySummary.mealsCount,
     });
   }
@@ -116,7 +122,8 @@ export const mapEnergyToMonthly = (
       dailySummary.calories > 0 ||
       dailySummary.protein > 0 ||
       dailySummary.carbohydrates > 0 ||
-      dailySummary.fats > 0
+      dailySummary.fats > 0 ||
+      dailySummary.fiber > 0
     ) {
       monthlyData.push({
         label: day.toString(), // Use the day of the month as the label
@@ -124,6 +131,7 @@ export const mapEnergyToMonthly = (
         protein: dailySummary.protein,
         carbohydrates: dailySummary.carbohydrates,
         fats: dailySummary.fats,
+        fiber: dailySummary.fiber,
         mealsCount: dailySummary.mealsCount,
       });
     } else {
@@ -134,6 +142,7 @@ export const mapEnergyToMonthly = (
         protein: 0,
         carbohydrates: 0,
         fats: 0,
+        fiber: 0,
         mealsCount: 0,
       });
     }
@@ -162,10 +171,11 @@ export const mapEnergyToYearly = (
         acc.protein += entry.protein || 0;
         acc.carbohydrates += entry.carbohydrates || 0;
         acc.fats += entry.fats || 0;
+        acc.fiber += entry.fiber || 0;
         acc.mealsCount += 1;
         return acc;
       },
-      { calories: 0, protein: 0, carbohydrates: 0, fats: 0, mealsCount: 0 },
+      { calories: 0, protein: 0, carbohydrates: 0, fats: 0, fiber: 0, mealsCount: 0 },
     );
 
     yearlyData.push({
@@ -174,6 +184,7 @@ export const mapEnergyToYearly = (
       protein: monthlySummary.protein,
       carbohydrates: monthlySummary.carbohydrates,
       fats: monthlySummary.fats,
+      fiber: monthlySummary.fiber,
       mealsCount: monthlySummary.mealsCount,
     });
   }
@@ -197,6 +208,7 @@ export const mapEnergyToTodaysMeals = (
       carbohydrates: entry.carbohydrates || 0,
       fats: entry.fats || 0,
       protein: entry.protein || 0,
+      fiber: entry.fiber || 0,
     }));
 };
 

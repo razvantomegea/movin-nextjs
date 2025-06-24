@@ -31,6 +31,8 @@ export function getNutritionChartColor(metric: NutritionMetric, isDark: boolean)
       return isDark ? '#facc15' : '#eab308'; // yellow
     case 'protein':
       return isDark ? '#4ade80' : '#22c55e'; // green
+    case 'fiber':
+      return isDark ? '#a855f7' : '#9333ea'; // purple
     default:
       return isDark ? '#3b82f6' : '#2563eb';
   }

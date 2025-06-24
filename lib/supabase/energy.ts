@@ -8,6 +8,7 @@ export interface IEnergy {
   protein: number;
   carbohydrates: number;
   fats: number;
+  fiber: number;
   log_date: string;
   meal_name: string;
   created_at: string;
