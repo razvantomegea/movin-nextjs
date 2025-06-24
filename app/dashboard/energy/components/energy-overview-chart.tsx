@@ -25,7 +25,7 @@ interface EnergyOverviewChartProps {
   yearlyData: NutritionTimeRangeData[];
 }
 
-type MetricType = 'calories' | 'carbohydrates' | 'fats' | 'protein';
+type MetricType = 'calories' | 'carbohydrates' | 'fats' | 'protein' | 'fiber';
 
 export function EnergyOverviewChart({
   weeklyData,
@@ -72,11 +72,12 @@ export function EnergyOverviewChart({
             onValueChange={(value) => setMetric(value as MetricType)}
             className="w-full sm:w-auto"
           >
-            <TabsList className="grid grid-cols-4 w-full sm:w-auto">
+            <TabsList className="grid grid-cols-5 w-full sm:w-auto">
               <TabsTrigger value="calories">Calories</TabsTrigger>
               <TabsTrigger value="carbohydrates">Carbs</TabsTrigger>
               <TabsTrigger value="fats">Fats</TabsTrigger>
               <TabsTrigger value="protein">Protein</TabsTrigger>
+              <TabsTrigger value="fiber">Fiber</TabsTrigger>
             </TabsList>
           </Tabs>
 
@@ -198,6 +199,7 @@ export function EnergyOverviewChart({
             {metric === 'carbohydrates' && 'Total Carbs'}
             {metric === 'fats' && 'Total Fats'}
             {metric === 'protein' && 'Total Protein'}
+            {metric === 'fiber' && 'Total Fiber'}
           </div>
           <div className="text-xl font-bold">
             {hasData ? formatNutritionValue(totalValue, metric) : '0'} {getNutritionUnit(metric)}

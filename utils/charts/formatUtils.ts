@@ -9,7 +9,7 @@
  * @returns Formatted value as a string
  */
 export type ActivityMetric = 'steps' | 'calories' | 'distance' | 'duration';
-export type NutritionMetric = 'calories' | 'carbohydrates' | 'fats' | 'protein';
+export type NutritionMetric = 'calories' | 'carbohydrates' | 'fats' | 'protein' | 'fiber';
 
 export function formatActivityValue(value: number, metric: ActivityMetric): string {
   switch (metric) {
@@ -39,6 +39,7 @@ export function formatNutritionValue(value: number, metric: NutritionMetric): st
     case 'carbohydrates':
     case 'fats':
     case 'protein':
+    case 'fiber':
       return value.toLocaleString();
     default:
       return value.toString();
@@ -77,6 +78,7 @@ export function getNutritionUnit(metric: NutritionMetric): string {
     case 'carbohydrates':
     case 'fats':
     case 'protein':
+    case 'fiber':
       return 'g';
     default:
       return '';
@@ -118,6 +120,8 @@ export function getNutritionMetricLabel(metric: NutritionMetric): string {
       return 'Fats (g)';
     case 'protein':
       return 'Protein (g)';
+    case 'fiber':
+      return 'Fiber (g)';
     default:
       return '';
   }
