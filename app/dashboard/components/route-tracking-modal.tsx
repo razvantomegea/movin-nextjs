@@ -4,8 +4,9 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { GoogleMap, Marker, Polyline, InfoWindow } from '@react-google-maps/api';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Play, Pause, Save, RotateCw, MapPin, AlertTriangle, Users, Car } from 'lucide-react';
+import { X, Play, Pause, Save, RotateCw, MapPin, AlertTriangle, Users, Car, Lightbulb, LightbulbOff } from 'lucide-react';
 import { useTheme } from 'next-themes';
+import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { useGoogleMapsStatus } from '@/app/contexts/google-maps-provider';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -88,6 +89,7 @@ export function RouteTrackingModal({
     'prompt' | 'granted' | 'denied' | 'unknown'
   >('unknown');
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
+  const [isScreenAwakeEnabled, setIsScreenAwakeEnabled] = useState(false);
 
   // Speed validation state
   const [speedValidationChecked, setSpeedValidationChecked] = useState(false);
@@ -177,6 +179,32 @@ export function RouteTrackingModal({
       };
     }
   }, [currentPosition]);
+
+  // Effect for handling screen awake
+  useEffect(() => {
+    const manageScreenAwake = async () => {
+      try {
+        if (isScreenAwakeEnabled) {
+          await activateKeepAwakeAsync();
+          console.log('Screen keep awake activated');
+        } else {
+          await deactivateKeepAwake();
+          console.log('Screen keep awake deactivated');
+        }
+      } catch (e) {
+        console.error('Failed to manage screen awake state:', e);
+      }
+    };
+
+    if (isOpen) {
+      manageScreenAwake();
+    }
+
+    // Ensure deactivation when the modal is not open or component unmounts
+    return () => {
+      deactivateKeepAwake().catch(e => console.error('Failed to deactivate screen awake on cleanup:', e));
+    };
+  }, [isScreenAwakeEnabled, isOpen]);
 
   // Request permission and get position
   const requestLocationPermission = () => {
@@ -838,14 +866,26 @@ export function RouteTrackingModal({
               {/* Action Buttons */}
               {permissionState === 'granted' && !error && (
                 <div className={`p-4 border-t ${isDark ? 'border-gray-800' : 'border-gray-200'}`}>
-                  <div className="flex justify-between items-center">
+                  <div className="flex justify-around items-center">
                     <Button
                       variant="outline"
                       onClick={() => resetTracking()}
                       disabled={isTracking && routePath.length === 0}
+                      title="Reset Tracking"
                     >
-                      <RotateCw className="h-4 w-4 mr-2" />
-                      Reset
+                      <RotateCw className="h-4 w-4" />
+                    </Button>
+
+                    <Button
+                      variant="outline"
+                      onClick={() => setIsScreenAwakeEnabled(!isScreenAwakeEnabled)}
+                      title={isScreenAwakeEnabled ? 'Disable Keep Screen Awake' : 'Enable Keep Screen Awake'}
+                    >
+                      {isScreenAwakeEnabled ? (
+                        <LightbulbOff className="h-4 w-4 text-amber-500" />
+                      ) : (
+                        <Lightbulb className="h-4 w-4" />
+                      )}
                     </Button>
 
                     {!isTracking ? (
