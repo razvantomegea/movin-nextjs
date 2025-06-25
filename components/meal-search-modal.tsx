@@ -307,7 +307,7 @@ export function MealSearchModal({
                               F: {meal.fats}g
                             </span>
                             <span className={isDark ? 'text-gray-400' : 'text-gray-600'}>
-                              F: {meal.fiber}g
+                              Fi: {meal.fiber}g
                             </span>
                           </div>
 
