@@ -1,3 +1,5 @@
+import { IMeal } from '@/lib/supabase/meals';
+
 // Types for meal detection and processing
 export interface ApiIngredient {
   name: string;
@@ -100,4 +102,33 @@ export function calculateTotals(ingredients: Ingredient[]) {
  */
 export function generateUniqueIngredientId(): string {
   return `ingredient_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+}
+
+/**
+ * Maps an IMeal (from the meal library) to a DetectedMeal structure for editing.
+ * When editing a meal from the library, it might not have detailed ingredients breakdown
+ * like an AI-analyzed meal. We represent it as a single "ingredient" for editing its overall nutrition.
+ * @param meal - The IMeal object from the meal library
+ * @returns DetectedMeal object for editing
+ */
+export function mapIMealToDetectedMeal(meal: IMeal): DetectedMeal {
+  return {
+    mealName: meal.meal_name,
+    calories: meal.calories,
+    protein: meal.protein,
+    carbohydrates: meal.carbohydrates,
+    fats: meal.fats,
+    fiber: meal.fiber,
+    ingredients: [
+      {
+        id: generateUniqueIngredientId(), // Placeholder ID
+        name: meal.meal_name, // Use meal name as the "ingredient"
+        calories: meal.calories,
+        protein: meal.protein,
+        carbohydrates: meal.carbohydrates,
+        fats: meal.fats,
+        fiber: meal.fiber,
+      },
+    ],
+  };
 }

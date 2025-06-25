@@ -22,8 +22,10 @@ import { useGoogleMapsStatus } from '@/app/contexts/google-maps-provider';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useToast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/cn';
 import { formatDistance, formatDuration } from '@/utils';
+import { calculateHaversineDistance } from '@/utils/movin';
 
 // Add this type if WakeLockSentinel is not recognized by TypeScript
 // Remove if already globally available
@@ -66,27 +68,6 @@ const sarrahUser = {
   location: { lat: 0, lng: 0 }, // Will be updated based on current position
 };
 
-// Haversine formula to calculate distance between two coordinates
-const calculateHaversineDistance = (
-  lat1: number,
-  lng1: number,
-  lat2: number,
-  lng2: number,
-): number => {
-  const R = 6371e3; // Earth's radius in meters
-  const φ1 = (lat1 * Math.PI) / 180;
-  const φ2 = (lat2 * Math.PI) / 180;
-  const Δφ = ((lat2 - lat1) * Math.PI) / 180;
-  const Δλ = ((lng2 - lng1) * Math.PI) / 180;
-
-  const a =
-    Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-    Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-  return R * c; // Distance in meters
-};
-
 // Web Wake Lock API helper
 let wakeLock: WakeLockSentinel | null = null;
 async function requestWakeLock() {
@@ -127,6 +108,7 @@ export function RouteTrackingModal({
   const mapRef = useRef<google.maps.Map | null>(null);
   const watchIdRef = useRef<number | null>(null);
   const { isLoaded: mapsLoaded, loadError: mapsError } = useGoogleMapsStatus();
+  const { toast } = useToast();
 
   const [isTracking, setIsTracking] = useState(false);
   const [currentPosition, setCurrentPosition] = useState<google.maps.LatLngLiteral | null>(null);
@@ -246,13 +228,25 @@ export function RouteTrackingModal({
 
     if (isOpen) {
       manageScreenAwake();
+      // Show toast when toggled
+      if (isScreenAwakeEnabled) {
+        toast({
+          title: 'Keep Screen Awake Enabled',
+          description: 'Your device will try to keep the screen on during route tracking.',
+        });
+      } else {
+        toast({
+          title: 'Keep Screen Awake Disabled',
+          description: 'Your device will allow the screen to turn off as usual.',
+        });
+      }
     }
 
     // Ensure deactivation when the modal is not open or component unmounts
     return () => {
       releaseWakeLock();
     };
-  }, [isScreenAwakeEnabled, isOpen]);
+  }, [isScreenAwakeEnabled, isOpen, toast]);
 
   // Request permission and get position
   const requestLocationPermission = () => {
@@ -918,6 +912,13 @@ export function RouteTrackingModal({
                     For best tracking accuracy and experience, please keep the app open or check it
                     every few minutes.
                   </p>
+                  {isScreenAwakeEnabled && (
+                    <div className="mt-3 px-3 py-2 rounded bg-yellow-100 dark:bg-yellow-900 border border-yellow-300 dark:border-yellow-700 text-yellow-800 dark:text-yellow-200 text-xs font-medium">
+                      <span className="font-semibold">Keep Screen Awake is enabled.</span> This will
+                      prevent your phone from sleeping and may drain your battery faster. To save
+                      power, consider dimming your screen brightness.
+                    </div>
+                  )}
                 </div>
               )}
 

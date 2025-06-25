@@ -1,21 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAppKitAccount } from '@reown/appkit/react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Edit2, Plus, Trash2, Save, ArrowRight, BookOpen, AlertTriangle } from 'lucide-react';
+import { X, Edit2, Plus, Trash2, Save, ArrowRight, BookOpen } from 'lucide-react';
 import Image from 'next/image';
 import { useTheme } from 'next-themes';
-
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { Button, buttonVariants } from '@/components/ui/button';
+import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { useAppDispatch } from '@/lib/redux/hooks';
@@ -30,11 +19,11 @@ import { IMeal } from '@/lib/supabase/meals';
 import {
   Ingredient,
   DetectedMeal,
-  // MealDetectionResultsModalProps, // Prop definition will be updated
   ApiMealData,
   mapApiResponseToDetectedMeal,
   calculateTotals,
   generateUniqueIngredientId,
+  mapIMealToDetectedMeal,
 } from '@/utils/energy/mealHelpers';
 import { getTodayDateString } from '@/utils/movin/energyMappers';
 
@@ -49,32 +38,6 @@ export interface MealDetectionResultsModalProps {
   initialMealData?: IMeal | null; // For pre-filling when editing an existing meal
   isEditing?: boolean; // Explicit flag to denote editing mode
 }
-
-// Helper to map IMeal to DetectedMeal structure for editing
-const mapIMealToDetectedMeal = (meal: IMeal): DetectedMeal => {
-  // When editing a meal from the library (IMeal), it might not have detailed ingredients breakdown
-  // like an AI-analyzed meal. We represent it as a single "ingredient" for editing its overall nutrition.
-  // A more advanced implementation might involve storing/retrieving full ingredient lists for library meals.
-  return {
-    mealName: meal.meal_name,
-    calories: meal.calories,
-    protein: meal.protein,
-    carbohydrates: meal.carbohydrates,
-    fats: meal.fats,
-    fiber: meal.fiber,
-    ingredients: [
-      {
-        id: generateUniqueIngredientId(), // Placeholder ID
-        name: meal.meal_name, // Use meal name as the "ingredient"
-        calories: meal.calories,
-        protein: meal.protein,
-        carbohydrates: meal.carbohydrates,
-        fats: meal.fats,
-        fiber: meal.fiber,
-      },
-    ],
-  };
-};
 
 export function MealDetectionResultsModal({
   isOpen,
@@ -97,7 +60,6 @@ export function MealDetectionResultsModal({
   const [originalIngredientName, setOriginalIngredientName] = useState<string>('');
   const [isAnalyzingIngredient, setIsAnalyzingIngredient] = useState(false);
   const [saveToMealLibrary, setSaveToMealLibrary] = useState(isEditing); // Default to true if editing a library item
-  const [showSaveConfirm, setShowSaveConfirm] = useState(false); // State for confirmation dialog
 
   const isDark = resolvedTheme === 'dark';
 
@@ -149,10 +111,8 @@ export function MealDetectionResultsModal({
 
   // Handler for backdrop click to close modal (if no confirmation dialog is open)
   const handleBackdropClick = useCallback(() => {
-    if (!showSaveConfirm) {
-      onClose();
-    }
-  }, [onClose, showSaveConfirm]);
+    onClose();
+  }, [onClose]);
 
   // Handler for saving ingredient edits (includes re-analysis if name changes)
   const handleSaveIngredientEdit = useCallback(async () => {
@@ -215,7 +175,6 @@ export function MealDetectionResultsModal({
       setMealNameEditMode(false);
       setEditingIngredientId(null);
       setIsAnalyzingIngredient(false);
-      setShowSaveConfirm(false);
       // Set saveToMealLibrary based on whether we are editing an existing library meal
       setSaveToMealLibrary(isEditing || sourceType === 'edit');
 
@@ -264,7 +223,6 @@ export function MealDetectionResultsModal({
       setOriginalIngredientName('');
       setIsAnalyzingIngredient(false);
       // setSaveToMealLibrary(false); // Or persist user's last choice - current is to reset based on edit state
-      setShowSaveConfirm(false);
     }
   }, [
     isOpen,
@@ -335,8 +293,7 @@ export function MealDetectionResultsModal({
   );
 
   // This function is called after user confirms in the AlertDialog
-  const proceedWithSaveMeal = async () => {
-    setShowSaveConfirm(false); // Close confirmation dialog
+  const handleSaveMealClick = async () => {
     if (!detectedMeal || !address) return;
 
     // Consolidate meal data for saving/updating
@@ -360,19 +317,15 @@ export function MealDetectionResultsModal({
             mealData: mealPayload,
           }),
         ).unwrap();
-        // console.log('Dispatching updateMealInLibrary with:', { mealId: initialMealData.id, address: address.toLowerCase(), mealData: mealPayload });
         dispatch(
           showSuccessToast({
             title: 'Meal Updated',
             description: 'Your meal has been updated in the library.',
           }),
         );
-        // Note: Editing a library meal does not automatically log it as a new energy entry here.
-        // It only updates the library item. User can log it separately if needed.
       } else if (address) {
         // Ensure address exists for adding new meal too
         // Adding a new meal (from camera/text analysis)
-        // Always save to daily energy log
         await dispatch(
           addEnergyEntry({ address: address.toLowerCase(), energyData: mealPayload }),
         ).unwrap();
@@ -402,14 +355,6 @@ export function MealDetectionResultsModal({
         }),
       );
     }
-  };
-
-  // This function is called when the main "Save" or "Update" button is clicked
-  // It will now just open the confirmation dialog
-  const handleSaveMealClick = () => {
-    if (!detectedMeal || !address) return;
-    // Potentially add validation here before showing confirm dialog
-    setShowSaveConfirm(true);
   };
 
   // UI Callback Handlers for ingredient edits, add, remove
@@ -952,38 +897,6 @@ export function MealDetectionResultsModal({
               </div>
             </div>
           </motion.div>
-
-          {/* Save/Update Confirmation Dialog */}
-          <AlertDialog open={showSaveConfirm} onOpenChange={setShowSaveConfirm}>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle className="flex items-center">
-                  <AlertTriangle className="h-5 w-5 mr-2 text-yellow-400" />{' '}
-                  {/* Icon for warning */}
-                  Confirm Action
-                </AlertDialogTitle>
-                <AlertDialogDescription>
-                  {isEditing
-                    ? 'Are you sure you want to save these changes to this meal in your library? This action cannot be undone.'
-                    : 'Are you sure you want to add this meal to your log? This action cannot be undone.'}
-                  {saveToMealLibrary &&
-                    !isEditing &&
-                    ' This will also add it to your meal library.'}
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel onClick={() => setShowSaveConfirm(false)}>
-                  Cancel
-                </AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={proceedWithSaveMeal} // Renamed to proceedWithSaveMeal
-                  className={buttonVariants({ variant: isEditing ? 'default' : 'default' })} // Consistent styling for confirm
-                >
-                  {isEditing ? 'Save Changes' : 'Add Meal'}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
         </motion.div>
       )}
     </AnimatePresence>
