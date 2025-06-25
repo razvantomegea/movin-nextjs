@@ -1,20 +1,36 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAppKitAccount } from '@reown/appkit/react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Edit2, Plus, Trash2, Save, ArrowRight, BookOpen } from 'lucide-react';
+import { X, Edit2, Plus, Trash2, Save, ArrowRight, BookOpen, AlertTriangle } from 'lucide-react';
 import Image from 'next/image';
 import { useTheme } from 'next-themes';
-import { Button } from '@/components/ui/button';
+
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { useAppDispatch } from '@/lib/redux/hooks';
 import { addEnergyEntry, fetchEnergyData } from '@/lib/redux/slices/energyDataSlice';
-import { addMealToLibrary, fetchRecentMeals } from '@/lib/redux/slices/mealsSlice';
+import {
+  addMealToLibrary,
+  fetchRecentMeals,
+  updateMealInLibrary, // Import the action
+} from '@/lib/redux/slices/mealsSlice';
 import { showSuccessToast, showErrorToast } from '@/lib/redux/slices/toastSlice';
+import { IMeal } from '@/lib/supabase/meals';
 import {
   Ingredient,
   DetectedMeal,
-  MealDetectionResultsModalProps,
+  // MealDetectionResultsModalProps, // Prop definition will be updated
   ApiMealData,
   mapApiResponseToDetectedMeal,
   calculateTotals,
@@ -22,13 +38,53 @@ import {
 } from '@/utils/energy/mealHelpers';
 import { getTodayDateString } from '@/utils/movin/energyMappers';
 
+// Updated Props to include new ones for editing
+export interface MealDetectionResultsModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  imageData?: string | null;
+  mealData?: ApiMealData | null; // Used for text input
+  sourceType?: 'camera' | 'text' | 'edit'; // Added 'edit' to signify editing mode
+  originalDescription?: string; // For text based analysis display
+  initialMealData?: IMeal | null; // For pre-filling when editing an existing meal
+  isEditing?: boolean; // Explicit flag to denote editing mode
+}
+
+// Helper to map IMeal to DetectedMeal structure for editing
+const mapIMealToDetectedMeal = (meal: IMeal): DetectedMeal => {
+  // When editing a meal from the library (IMeal), it might not have detailed ingredients breakdown
+  // like an AI-analyzed meal. We represent it as a single "ingredient" for editing its overall nutrition.
+  // A more advanced implementation might involve storing/retrieving full ingredient lists for library meals.
+  return {
+    mealName: meal.meal_name,
+    calories: meal.calories,
+    protein: meal.protein,
+    carbohydrates: meal.carbohydrates,
+    fats: meal.fats,
+    fiber: meal.fiber,
+    ingredients: [
+      {
+        id: generateUniqueIngredientId(), // Placeholder ID
+        name: meal.meal_name, // Use meal name as the "ingredient"
+        calories: meal.calories,
+        protein: meal.protein,
+        carbohydrates: meal.carbohydrates,
+        fats: meal.fats,
+        fiber: meal.fiber,
+      },
+    ],
+  };
+};
+
 export function MealDetectionResultsModal({
   isOpen,
   onClose,
   imageData,
-  mealData,
+  mealData, // This prop can be from text input OR when editing (via initialMealData)
   sourceType = 'camera',
   originalDescription,
+  initialMealData, // Provided when sourceType is 'edit'
+  isEditing = false, // Explicitly passed to indicate edit mode
 }: MealDetectionResultsModalProps) {
   const dispatch = useAppDispatch();
   const { resolvedTheme } = useTheme();
@@ -36,408 +92,340 @@ export function MealDetectionResultsModal({
   const [detectedMeal, setDetectedMeal] = useState<DetectedMeal | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [editedMealName, setEditedMealName] = useState('');
-  const [editMode, setEditMode] = useState(false);
+  const [mealNameEditMode, setMealNameEditMode] = useState(false); // For meal name text input vs. display
   const [editingIngredientId, setEditingIngredientId] = useState<string | null>(null);
   const [originalIngredientName, setOriginalIngredientName] = useState<string>('');
   const [isAnalyzingIngredient, setIsAnalyzingIngredient] = useState(false);
-  const [saveToMealLibrary, setSaveToMealLibrary] = useState(false);
+  const [saveToMealLibrary, setSaveToMealLibrary] = useState(isEditing); // Default to true if editing a library item
+  const [showSaveConfirm, setShowSaveConfirm] = useState(false); // State for confirmation dialog
 
   const isDark = resolvedTheme === 'dark';
 
-  // Handler for API response success
-  const handleAnalysisSuccess = useCallback((data: ApiMealData) => {
-    const mappedMeal = mapApiResponseToDetectedMeal(data);
-    setDetectedMeal(mappedMeal);
-    setEditedMealName(mappedMeal.mealName);
-  }, []);
-
-  // Handler for API response error
-  const handleAnalysisError = useCallback(
-    (error: unknown) => {
-      console.error('Error analyzing meal:', error);
-      dispatch(
-        showErrorToast({
-          title: 'Analysis Error',
-          description: 'An error occurred while analyzing the meal',
-        }),
-      );
-    },
-    [dispatch],
-  );
-
-  // Handler for API response failure
-  const handleAnalysisFailure = useCallback(
-    (errorMessage: string) => {
-      dispatch(
-        showErrorToast({
-          title: 'Analysis Failed',
-          description: errorMessage || 'Failed to analyze meal image',
-        }),
-      );
-    },
-    [dispatch],
-  );
-
-  // Handler for API completion
-  const handleAnalysisComplete = useCallback(() => {
+  // Unified handler for successful data processing (API or initialMealData)
+  const handleDataProcessed = useCallback((processedMealData: DetectedMeal) => {
+    setDetectedMeal(processedMealData);
+    setEditedMealName(processedMealData.mealName);
     setIsLoading(false);
   }, []);
 
-  // Handler for editing meal name input
+  // Unified error handler for API calls
+  const handleAnalysisError = useCallback(
+    (error: unknown, context: string = 'meal') => {
+      console.error(`Error analyzing ${context}:`, error);
+      dispatch(
+        showErrorToast({
+          title: `${context.charAt(0).toUpperCase() + context.slice(1)} Analysis Error`,
+          description: `An error occurred while analyzing the ${context}.`,
+        }),
+      );
+      setIsLoading(false);
+    },
+    [dispatch],
+  );
+
+  // Unified failure handler for API calls
+  const handleAnalysisFailure = useCallback(
+    (errorMessage: string, context: string = 'meal') => {
+      dispatch(
+        showErrorToast({
+          title: `${context.charAt(0).toUpperCase() + context.slice(1)} Analysis Failed`,
+          description: errorMessage || `Failed to analyze ${context}.`,
+        }),
+      );
+      setIsLoading(false);
+    },
+    [dispatch],
+  );
+
+  // Handler for meal name input change
   const handleMealNameChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setEditedMealName(e.target.value);
   }, []);
 
-  // Handler for toggling edit mode
-  const handleToggleEditMode = useCallback(() => {
-    setEditMode(!editMode);
-  }, [editMode]);
+  // Handler for toggling meal name edit UI
+  const handleToggleMealNameEditMode = useCallback(() => {
+    setMealNameEditMode(!mealNameEditMode);
+  }, [mealNameEditMode]);
 
-  // Handler for backdrop click to close modal
+  // Handler for backdrop click to close modal (if no confirmation dialog is open)
   const handleBackdropClick = useCallback(() => {
-    onClose();
-  }, [onClose]);
+    if (!showSaveConfirm) {
+      onClose();
+    }
+  }, [onClose, showSaveConfirm]);
 
-  // Handler for saving ingredient edit
+  // Handler for saving ingredient edits (includes re-analysis if name changes)
   const handleSaveIngredientEdit = useCallback(async () => {
     if (!detectedMeal || !editingIngredientId) return;
-
     const currentIngredient = detectedMeal.ingredients.find(
-      (ingredient) => ingredient.id === editingIngredientId,
+      (ing) => ing.id === editingIngredientId,
     );
-
     if (!currentIngredient) return;
 
-    // Check if the ingredient name has changed
     const nameChanged = currentIngredient.name !== originalIngredientName;
-
     if (nameChanged && currentIngredient.name.trim()) {
       setIsAnalyzingIngredient(true);
-
       try {
-        // Call the ingredient analysis API
         const response = await fetch('/api/analyze-ingredient', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ ingredientName: currentIngredient.name }),
         });
-
-        const data = await response.json();
-
-        if (data.success) {
-          // Update the ingredient with the new nutritional data from the API
-          const updatedIngredients = detectedMeal.ingredients.map((ingredient) => {
-            if (ingredient.id === editingIngredientId) {
-              return {
-                ...ingredient,
-                name: data.data.name, // Use the cleaned name from API
-                calories: data.data.calories,
-                carbohydrates: data.data.carbohydrates,
-                fats: data.data.fats,
-                protein: data.data.protein,
-                fiber: data.data.fiber,
-              };
-            }
-            return ingredient;
-          });
-
+        const apiResult = await response.json();
+        if (apiResult.success) {
+          const updatedIngredients = detectedMeal.ingredients.map((ing) =>
+            ing.id === editingIngredientId
+              ? { ...ing, ...apiResult.data, name: apiResult.data.name } // Ensure name from API is used
+              : ing,
+          );
           const totals = calculateTotals(updatedIngredients);
-
-          setDetectedMeal({
-            ...detectedMeal,
-            ingredients: updatedIngredients,
-            ...totals,
-          });
-
+          setDetectedMeal({ ...detectedMeal, ingredients: updatedIngredients, ...totals });
           dispatch(
             showSuccessToast({
               title: 'Ingredient Updated',
-              description: `${data.data.name} nutritional information has been updated`,
+              description: `${apiResult.data.name} nutritional info updated.`,
             }),
           );
         } else {
-          dispatch(
-            showErrorToast({
-              title: 'Analysis Failed',
-              description: data.error || 'Failed to analyze ingredient',
-            }),
-          );
+          handleAnalysisFailure(apiResult.error, 'ingredient');
         }
       } catch (error) {
-        console.error('Error analyzing ingredient:', error);
-        dispatch(
-          showErrorToast({
-            title: 'Analysis Error',
-            description: 'An error occurred while analyzing the ingredient',
-          }),
-        );
+        handleAnalysisError(error, 'ingredient');
       } finally {
         setIsAnalyzingIngredient(false);
       }
     }
-
     setEditingIngredientId(null);
     setOriginalIngredientName('');
-  }, [detectedMeal, editingIngredientId, originalIngredientName, dispatch]);
+  }, [
+    detectedMeal,
+    editingIngredientId,
+    originalIngredientName,
+    dispatch,
+    handleAnalysisFailure,
+    handleAnalysisError,
+  ]);
 
-  // Analyze meal when modal opens
+  // Effect to initialize or reset modal state when it opens or relevant props change
   useEffect(() => {
     if (isOpen) {
-      if (sourceType === 'text' && mealData) {
-        // For text-based analysis, use the provided mealData directly
-        handleAnalysisSuccess(mealData);
-      } else if (sourceType === 'camera' && imageData) {
-        setIsLoading(true);
+      // Reset common states
+      setDetectedMeal(null);
+      setEditedMealName('');
+      setMealNameEditMode(false);
+      setEditingIngredientId(null);
+      setIsAnalyzingIngredient(false);
+      setShowSaveConfirm(false);
+      // Set saveToMealLibrary based on whether we are editing an existing library meal
+      setSaveToMealLibrary(isEditing || sourceType === 'edit');
 
-        // Call the meal analysis API for image
+
+      setIsLoading(true); // Set loading true initially for all paths
+
+      if (isEditing && initialMealData) {
+        // Editing an existing meal from the library
+        const mappedMeal = mapIMealToDetectedMeal(initialMealData);
+        handleDataProcessed(mappedMeal);
+      } else if (sourceType === 'text' && mealData) {
+        // Analyzing a meal from text input
+        const mappedMeal = mapApiResponseToDetectedMeal(mealData as ApiMealData);
+        handleDataProcessed(mappedMeal);
+      } else if (sourceType === 'camera' && imageData) {
+        // Analyzing a meal from image
         fetch('/api/analyze-meal', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ imageData }),
         })
-          .then((response) => response.json())
-          .then((data) => {
-            if (data.success) {
-              handleAnalysisSuccess(data.data);
+          .then((res) => res.json())
+          .then((apiResult) => {
+            if (apiResult.success) {
+              handleDataProcessed(mapApiResponseToDetectedMeal(apiResult.data));
             } else {
-              handleAnalysisFailure(data.error);
+              handleAnalysisFailure(apiResult.error);
             }
           })
           .catch(handleAnalysisError)
-          .finally(handleAnalysisComplete);
+          .finally(() => setIsLoading(false)); // Ensure loading is set to false in all cases
+      } else {
+        // No valid data source for analysis or editing, or just opened blank
+        setIsLoading(false);
+        if (sourceType !== 'edit') { // Avoid error if it's an edit scenario without initial data yet
+           // console.warn('Meal modal opened without sufficient data for analysis or editing.');
+        }
       }
+    } else {
+      // Reset all states when modal is closed to ensure clean state for next open
+      setDetectedMeal(null);
+      setIsLoading(false);
+      setEditedMealName('');
+      setMealNameEditMode(false);
+      setEditingIngredientId(null);
+      setOriginalIngredientName('');
+      setIsAnalyzingIngredient(false);
+      // setSaveToMealLibrary(false); // Or persist user's last choice - current is to reset based on edit state
+      setShowSaveConfirm(false);
     }
   }, [
     isOpen,
     imageData,
     mealData,
     sourceType,
-    handleAnalysisSuccess,
+    initialMealData,
+    isEditing,
+    handleDataProcessed,
     handleAnalysisFailure,
     handleAnalysisError,
-    handleAnalysisComplete,
+    // dispatch // dispatch is stable, not needed here
   ]);
 
-  // Handle editing an ingredient
-  const handleEditIngredient = useCallback(
+  // Handle direct editing of ingredient properties (e.g., calories, protein)
+  const handleEditIngredientNumericField = useCallback(
     (id: string, field: keyof Ingredient, value: string) => {
       if (!detectedMeal) return;
-
-      const updatedIngredients = detectedMeal.ingredients.map((ingredient) => {
-        if (ingredient.id === id) {
-          if (field === 'name') {
-            return { ...ingredient, [field]: value };
-          } else {
-            // Convert string to number for numeric fields
-            return { ...ingredient, [field]: Number.parseFloat(value) || 0 };
-          }
-        }
-        return ingredient;
-      });
-
+      const updatedIngredients = detectedMeal.ingredients.map((ing) =>
+        ing.id === id ? { ...ing, [field]: Number.parseFloat(value) || 0 } : ing,
+      );
       const totals = calculateTotals(updatedIngredients);
-
-      setDetectedMeal({
-        ...detectedMeal,
-        ingredients: updatedIngredients,
-        ...totals,
-      });
+      setDetectedMeal({ ...detectedMeal, ingredients: updatedIngredients, ...totals });
+    },
+    [detectedMeal],
+  );
+   // Specifically for name, as it might trigger re-analysis if different from original
+  const handleEditIngredientName = useCallback(
+    (id: string, value: string) => {
+      if (!detectedMeal) return;
+      const updatedIngredients = detectedMeal.ingredients.map((ing) =>
+        ing.id === id ? { ...ing, name: value } : ing,
+      );
+      // Totals don't change with name, but we update the state
+      setDetectedMeal({ ...detectedMeal, ingredients: updatedIngredients });
     },
     [detectedMeal],
   );
 
+
   // Handle adding a new ingredient
   const handleAddIngredient = useCallback(() => {
-    if (!detectedMeal) {
-      return;
-    }
-
+    if (!detectedMeal) return;
     const newIngredient: Ingredient = {
       id: generateUniqueIngredientId(),
-      name: 'New Ingredient',
-      calories: 0,
-      carbohydrates: 0,
-      fats: 0,
-      protein: 0,
-      fiber: 0,
+      name: 'New Ingredient', // Default name
+      calories: 0, carbohydrates: 0, fats: 0, protein: 0, fiber: 0,
     };
-
     const updatedIngredients = [...detectedMeal.ingredients, newIngredient];
     const totals = calculateTotals(updatedIngredients);
-
-    const updatedMeal = {
-      ...detectedMeal,
-      ingredients: updatedIngredients,
-      ...totals,
-    };
-
-    setDetectedMeal(updatedMeal);
-
-    // Set this new ingredient to edit mode
-    setEditingIngredientId(newIngredient.id);
+    setDetectedMeal({ ...detectedMeal, ingredients: updatedIngredients, ...totals });
+    setEditingIngredientId(newIngredient.id); // Immediately set new ingredient to edit mode
+    setOriginalIngredientName('New Ingredient'); // Set for potential re-analysis if name changes
   }, [detectedMeal]);
 
   // Handle removing an ingredient
   const handleRemoveIngredient = useCallback(
     (id: string) => {
       if (!detectedMeal) return;
-
-      const updatedIngredients = detectedMeal.ingredients.filter(
-        (ingredient) => ingredient.id !== id,
-      );
+      const updatedIngredients = detectedMeal.ingredients.filter((ing) => ing.id !== id);
       const totals = calculateTotals(updatedIngredients);
-
-      setDetectedMeal({
-        ...detectedMeal,
-        ingredients: updatedIngredients,
-        ...totals,
-      });
+      setDetectedMeal({ ...detectedMeal, ingredients: updatedIngredients, ...totals });
     },
     [detectedMeal],
   );
 
-  // Handle saving the meal
-  const handleSaveMeal = async () => {
+  // This function is called after user confirms in the AlertDialog
+  const proceedWithSaveMeal = async () => {
+    setShowSaveConfirm(false); // Close confirmation dialog
     if (!detectedMeal || !address) return;
 
+    // Consolidate meal data for saving/updating
+    const mealPayload: Partial<IMeal> = {
+      meal_name: editedMealName || detectedMeal.mealName,
+      calories: Math.round(detectedMeal.calories), // Ensure whole numbers
+      protein: Math.round(detectedMeal.protein),
+      carbohydrates: Math.round(detectedMeal.carbohydrates),
+      fats: Math.round(detectedMeal.fats),
+      fiber: Math.round(detectedMeal.fiber),
+      log_date: getTodayDateString(), // For new energy entries
+    };
+
     try {
-      // Create energy entry data
-      const energyEntryData = {
-        address,
-        meal_name: editedMealName || detectedMeal.mealName,
-        calories: detectedMeal.calories,
-        protein: detectedMeal.protein,
-        carbohydrates: detectedMeal.carbohydrates,
-        fats: detectedMeal.fats,
-        fiber: detectedMeal.fiber,
-        log_date: getTodayDateString(),
-      };
+      if (isEditing && initialMealData && address) {
+        // Updating an existing meal in the library
+        await dispatch(updateMealInLibrary({
+          mealId: initialMealData.id,
+          address: address.toLowerCase(),
+          mealData: mealPayload,
+        })).unwrap();
+        // console.log('Dispatching updateMealInLibrary with:', { mealId: initialMealData.id, address: address.toLowerCase(), mealData: mealPayload });
+        dispatch(showSuccessToast({ title: 'Meal Updated', description: 'Your meal has been updated in the library.' }));
+        // Note: Editing a library meal does not automatically log it as a new energy entry here.
+        // It only updates the library item. User can log it separately if needed.
+      } else if (address) { // Ensure address exists for adding new meal too
+        // Adding a new meal (from camera/text analysis)
+        // Always save to daily energy log
+        await dispatch(addEnergyEntry({ address: address.toLowerCase(), energyData: mealPayload })).unwrap();
 
-      // Save to energy log
-      await dispatch(
-        addEnergyEntry({ address: address.toLowerCase(), energyData: energyEntryData }),
-      ).unwrap();
-
-      // Optionally save to meals library for quick access
-      if (saveToMealLibrary) {
-        await dispatch(
-          addMealToLibrary({ address: address.toLowerCase(), mealData: energyEntryData }),
-        ).unwrap();
-        // Also refetch meals to get latest from server
-        dispatch(fetchRecentMeals(address.toLowerCase()));
+        let successMessage = 'Your meal has been added to your log.';
+        if (saveToMealLibrary) {
+          await dispatch(addMealToLibrary({ address: address.toLowerCase(), mealData: mealPayload })).unwrap();
+          successMessage = 'Your meal has been added to your log and saved to your meal library.';
+        }
+        dispatch(showSuccessToast({ title: 'Meal Added', description: successMessage }));
       }
 
-      // Refetch energy data to get the latest entries from the server
-      dispatch(fetchEnergyData(address.toLowerCase()));
-
-      dispatch(
-        showSuccessToast({
-          title: 'Meal Added',
-          description: saveToMealLibrary
-            ? 'Your meal has been added to your log and saved to your meal library'
-            : 'Your meal has been added to your log',
-        }),
-      );
-
-      onClose();
+      // Common post-save actions
+      if (address) {
+        dispatch(fetchRecentMeals(address.toLowerCase())); // Refresh recent meals
+        dispatch(fetchEnergyData(address.toLowerCase()));   // Refresh daily energy data
+      }
+      onClose(); // Close the modal
     } catch (error) {
-      console.error('Failed to add meal:', error);
+      console.error(`Failed to ${isEditing ? 'update' : 'save'} meal:`, error);
       dispatch(
         showErrorToast({
           title: 'Save Failed',
-          description: 'Failed to save meal to your log',
+          description: `Failed to ${isEditing ? 'update' : 'save'} your meal. Please try again.`,
         }),
       );
     }
   };
 
-  // Additional UI callback handlers
-  // Handler for adding ingredient button click with event handling
-  const handleAddIngredientClick = useCallback(
-    (e: React.MouseEvent<HTMLButtonElement>) => {
-      e.preventDefault();
-      e.stopPropagation();
-      handleAddIngredient();
-    },
-    [handleAddIngredient],
-  );
+  // This function is called when the main "Save" or "Update" button is clicked
+  // It will now just open the confirmation dialog
+  const handleSaveMealClick = () => {
+    if (!detectedMeal || !address) return;
+    // Potentially add validation here before showing confirm dialog
+    setShowSaveConfirm(true);
+  };
 
-  // Handler for editing ingredient in edit mode
-  const handleIngredientEditClick = useCallback(
-    (ingredientId: string) => {
-      if (!detectedMeal) return;
 
-      const ingredient = detectedMeal.ingredients.find((ing) => ing.id === ingredientId);
-      if (ingredient) {
-        setOriginalIngredientName(ingredient.name);
-      }
+  // UI Callback Handlers for ingredient edits, add, remove
+  const handleAddIngredientClick = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault(); e.stopPropagation(); // Prevent form submission if applicable
+    handleAddIngredient();
+  }, [handleAddIngredient]);
 
-      setEditingIngredientId(ingredientId);
-    },
-    [detectedMeal],
-  );
+  const handleIngredientEditClick = useCallback((ingredientId: string) => {
+    if (!detectedMeal) return;
+    const ingredient = detectedMeal.ingredients.find((ing) => ing.id === ingredientId);
+    if (ingredient) {
+      setOriginalIngredientName(ingredient.name); // Store original name for re-analysis logic
+    }
+    setEditingIngredientId(ingredientId);
+  }, [detectedMeal]);
 
-  // Handler for removing ingredient
-  const handleRemoveIngredientClick = useCallback(
-    (ingredientId: string) => {
-      handleRemoveIngredient(ingredientId);
-    },
-    [handleRemoveIngredient],
-  );
+  const handleRemoveIngredientClick = useCallback((ingredientId: string) => {
+    handleRemoveIngredient(ingredientId);
+  }, [handleRemoveIngredient]);
 
-  // Handler for ingredient name change
-  const handleIngredientNameChange = useCallback(
-    (ingredientId: string, value: string) => {
-      handleEditIngredient(ingredientId, 'name', value);
-    },
-    [handleEditIngredient],
-  );
+  // Updated change handlers to use the specific field editor functions
+  const handleIngredientNameChange = useCallback((id: string, value: string) => handleEditIngredientName(id, value), [handleEditIngredientName]);
+  const handleIngredientCaloriesChange = useCallback((id: string, value: string) => handleEditIngredientNumericField(id, 'calories', value), [handleEditIngredientNumericField]);
+  const handleIngredientCarbsChange = useCallback((id: string, value: string) => handleEditIngredientNumericField(id, 'carbohydrates', value), [handleEditIngredientNumericField]);
+  const handleIngredientFatsChange = useCallback((id: string, value: string) => handleEditIngredientNumericField(id, 'fats', value), [handleEditIngredientNumericField]);
+  const handleIngredientProteinChange = useCallback((id: string, value: string) => handleEditIngredientNumericField(id, 'protein', value), [handleEditIngredientNumericField]);
+  const handleIngredientFiberChange = useCallback((id: string, value: string) => handleEditIngredientNumericField(id, 'fiber', value), [handleEditIngredientNumericField]);
 
-  // Handler for ingredient calories change
-  const handleIngredientCaloriesChange = useCallback(
-    (ingredientId: string, value: string) => {
-      handleEditIngredient(ingredientId, 'calories', value);
-    },
-    [handleEditIngredient],
-  );
-
-  // Handler for ingredient carbohydrates change
-  const handleIngredientCarbsChange = useCallback(
-    (ingredientId: string, value: string) => {
-      handleEditIngredient(ingredientId, 'carbohydrates', value);
-    },
-    [handleEditIngredient],
-  );
-
-  // Handler for ingredient fats change
-  const handleIngredientFatsChange = useCallback(
-    (ingredientId: string, value: string) => {
-      handleEditIngredient(ingredientId, 'fats', value);
-    },
-    [handleEditIngredient],
-  );
-
-  // Handler for ingredient protein change
-  const handleIngredientProteinChange = useCallback(
-    (ingredientId: string, value: string) => {
-      handleEditIngredient(ingredientId, 'protein', value);
-    },
-    [handleEditIngredient],
-  );
-
-  // Handler for ingredient fiber change
-  const handleIngredientFiberChange = useCallback(
-    (ingredientId: string, value: string) => {
-      handleEditIngredient(ingredientId, 'fiber', value);
-    },
-    [handleEditIngredient],
-  );
-
-  // Handler for save to meal library checkbox change
+  // Handler for "Save to Meal Library" checkbox
   const handleSaveToMealLibraryChange = useCallback((checked: boolean) => {
     setSaveToMealLibrary(checked);
   }, []);
@@ -530,26 +518,27 @@ export function MealDetectionResultsModal({
 
                   {/* Meal Name */}
                   <div className="flex items-center justify-between">
-                    {editMode ? (
+                    {mealNameEditMode ? (
                       <Input
                         value={editedMealName}
                         onChange={handleMealNameChange}
-                        className="text-lg font-bold"
+                        className="text-lg font-bold flex-1"
                         placeholder="Enter meal name"
                       />
                     ) : (
-                      <h3 className="text-lg font-bold">
+                      <h3 className="text-lg font-bold flex-1 truncate" title={editedMealName || detectedMeal.mealName}>
                         {editedMealName || detectedMeal.mealName}
                       </h3>
                     )}
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={handleToggleEditMode}
-                      className="ml-2"
+                      onClick={handleToggleMealNameEditMode}
+                      className="ml-2 p-2"
+                      aria-label={mealNameEditMode ? 'Save meal name' : 'Edit meal name'}
                     >
                       <Edit2 className="h-4 w-4" />
-                      <span className="sr-only">{editMode ? 'Save' : 'Edit'} meal name</span>
+                      <span className="sr-only">{mealNameEditMode ? 'Save' : 'Edit'} meal name</span>
                     </Button>
                   </div>
 
@@ -560,7 +549,8 @@ export function MealDetectionResultsModal({
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={handleAddIngredientClick}
+                        disabled={isEditing && initialMealData && detectedMeal?.ingredients.length === 1 && detectedMeal.ingredients[0].name === initialMealData.meal_name}
+                        onClick={handleAddIngredientClick} // Disable add if editing a single-entry library meal
                         className="text-blue-500 border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20"
                         type="button"
                       >
@@ -569,6 +559,11 @@ export function MealDetectionResultsModal({
                       </Button>
                     </div>
 
+                    {isEditing && initialMealData && detectedMeal?.ingredients.length === 1 && detectedMeal.ingredients[0].name === initialMealData.meal_name && (
+                       <p className={`text-xs mb-3 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                         Editing overall nutrition for &quot;{initialMealData.meal_name}&quot;. To edit individual ingredients, log this as a new meal for full analysis.
+                       </p>
+                    )}
                     <div className="space-y-3">
                       {detectedMeal.ingredients.map((ingredient) => (
                         <div
@@ -877,27 +872,58 @@ export function MealDetectionResultsModal({
                   </label>
                 </div>
                 <p className={`text-xs mt-1 ml-7 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-                  Your meal will always be saved to today&apos;s energy log. Check this to also save
-                  it to your meal library for easy reuse.
+                  {isEditing
+                    ? "Changes will update this meal in your library. It won't be automatically re-logged to today's energy."
+                    : "Your meal will always be saved to today's energy log. Check this to also save it to your meal library for easy reuse."
+                  }
                 </p>
               </div>
 
               {/* Action Buttons */}
               <div className="flex justify-between">
                 <Button variant="outline" onClick={onClose}>
-                  Cancel
+                  Cancel {/* Using onClose directly */}
                 </Button>
                 <Button
-                  onClick={handleSaveMeal}
+                  onClick={handleSaveMealClick} // This now opens the confirmation dialog
                   disabled={isLoading || !detectedMeal}
-                  className="bg-green-500 hover:bg-green-600"
+                  className={isEditing ? "bg-blue-500 hover:bg-blue-600" : "bg-green-500 hover:bg-green-600"}
                 >
-                  Save to Log
+                  {isEditing ? 'Update Meal' : 'Save to Log'}
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </div>
             </div>
           </motion.div>
+
+          {/* Save/Update Confirmation Dialog */}
+          <AlertDialog open={showSaveConfirm} onOpenChange={setShowSaveConfirm}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle className="flex items-center">
+                  <AlertTriangle className="h-5 w-5 mr-2 text-yellow-400" /> {/* Icon for warning */}
+                  Confirm Action
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  {isEditing
+                    ? 'Are you sure you want to save these changes to this meal in your library? This action cannot be undone.'
+                    : 'Are you sure you want to add this meal to your log? This action cannot be undone.'}
+                  {saveToMealLibrary && !isEditing && ' This will also add it to your meal library.'}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => setShowSaveConfirm(false)}>
+                  Cancel
+                </AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={proceedWithSaveMeal} // Renamed to proceedWithSaveMeal
+                  className={buttonVariants({ variant: isEditing ? 'default' : 'default' })} // Consistent styling for confirm
+                >
+                  {isEditing ? 'Save Changes' : 'Add Meal'}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </motion.div>
       )}
     </AnimatePresence>
