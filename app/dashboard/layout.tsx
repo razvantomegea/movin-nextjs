@@ -22,6 +22,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAccount } from 'wagmi';
+import { PremiumUpgradeModal } from '@/components/premium-upgrade-modal';
 import { AdSenseBanner } from '@/components/ui/adsense-banner';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -41,8 +42,6 @@ import { fetchProfile } from '@/lib/redux/slices/profileSlice';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
-  onRefresh?: () => Promise<void>;
-  isLoading?: boolean;
 }
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
@@ -59,6 +58,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const { usePremiumStatus } = useMovinEarn();
   const { isPremiumActive } = usePremiumStatus();
   const isPremium = isPremiumActive();
+  const [showPremiumModal, setShowPremiumModal] = useState(false);
+  const [premiumFeatureName, setPremiumFeatureName] = useState<string>('');
 
   const isActive = (path: string) => {
     return pathname === path;
@@ -129,9 +130,16 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     }
   }, [addressLower, profile, dispatch, router, isConnecting, lastPath, pathname]);
 
-  const handleNavigate = (path: string) => () => {
-    router.push(path);
-  };
+  const handleNavigate =
+    (path: string, tab?: { premium?: boolean; name?: string }) => (e?: React.MouseEvent) => {
+      if (tab?.premium && !isPremium) {
+        e?.preventDefault();
+        setPremiumFeatureName(tab.name || 'Premium Feature');
+        setShowPremiumModal(true);
+        return;
+      }
+      router.push(path);
+    };
 
   const handleLogout = useCallback(async () => {
     setIsSheetOpen(false);
@@ -369,8 +377,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   isActive(tab.path) ? 'text-blue-400 font-medium' : 'text-gray-400'
                 }`}
                 style={{ backgroundColor: 'transparent' }}
-                onClick={handleNavigate(tab.path)}
-                disabled={tab.premium && !isPremium}
+                onClick={handleNavigate(tab.path, tab)}
                 title={tab.premium && !isPremium ? 'Premium Only' : undefined}
               >
                 <span className="mb-0.5">{tab.icon}</span>
@@ -385,6 +392,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           )}
         </div>
       </nav>
+      <PremiumUpgradeModal
+        isOpen={showPremiumModal}
+        onClose={() => setShowPremiumModal(false)}
+        featureName={premiumFeatureName}
+      />
     </div>
   );
 
