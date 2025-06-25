@@ -51,8 +51,8 @@ pnpm exec playwright test --grep "should connect MetaMask wallet"
 
 ## Test Files
 
-- `connect-page.spec.ts` - Tests for the wallet connection functionality on the main connect page
-- `metamask-connect.spec.ts` - General MetaMask connection tests
+- `connect-page.spec.mjs` - Tests for the wallet connection functionality on the main connect page, including referral scenarios
+- `utils/login.mjs` - Reusable utility functions for MetaMask authentication
 
 ## Test Configuration
 
@@ -65,11 +65,21 @@ The tests are configured in `playwright.config.ts` with:
 
 ## Wallet Setup
 
-The MetaMask wallet setup is configured in `wallet-setup/basic.setup.ts` with:
+The MetaMask wallet setup is configured in `build-cache/basic.setup.mjs` with:
 
 - Test seed phrase: "test test test test test test test test test test test junk"
 - Test password: "Tester@1234"
 - Automatic wallet import
+- **Pre-configured Base Mainnet network (chain ID 8453)** to match the app's default network
+- This configuration minimizes network approval popups during testing
+
+### Network Configuration
+
+The app uses Base Mainnet as its default network. The wallet setup automatically configures this network to prevent network switching popups during tests. If you encounter network approval popups:
+
+1. The login utilities include automatic network approval handling
+2. The `handleNetworkApproval()` function will automatically click "Approve" on network switching popups
+3. Multiple popup types are handled: "Approve", "Switch network", "Add network", etc.
 
 ## Test Scenarios
 
@@ -80,6 +90,89 @@ The tests cover:
 3. **Connection States** - Tests loading/connecting states
 4. **Connection Rejection** - Tests handling of user rejection
 5. **Error Handling** - Tests error scenarios and error message display
+6. **PWA Install Banner** - Tests PWA installation banner display
+7. **Referral Scenarios** - Tests referral modal display, interactions, and login flows
+
+## Reusable Utility Functions
+
+The project includes reusable login functions in `e2e/utils/login.mjs` that can be used across all tests:
+
+### `loginWithMetaMask(params)`
+
+Standard MetaMask login function for most test scenarios.
+
+```javascript
+import { loginWithMetaMask } from './utils/login.mjs';
+
+test('should login and do something', async ({ context, page, metamaskPage, extensionId }) => {
+  await loginWithMetaMask({
+    context,
+    page,
+    metamaskPage,
+    extensionId,
+    walletPassword: basicSetup.walletPassword,
+  });
+
+  // User is now logged in and redirected to dashboard
+  await expect(page).toHaveURL('/dashboard');
+});
+```
+
+### `loginWithMetaMaskViaReferral(params)`
+
+Login function specifically for testing referral flows.
+
+```javascript
+import { loginWithMetaMaskViaReferral } from './utils/login.mjs';
+
+test('should login via referral', async ({ context, page, metamaskPage, extensionId }) => {
+  const referralAddress = '0x1234567890123456789012345678901234567890';
+
+  await loginWithMetaMaskViaReferral({
+    context,
+    page,
+    metamaskPage,
+    extensionId,
+    walletPassword: basicSetup.walletPassword,
+    referralAddress,
+  });
+
+  // User is now logged in via referral and redirected to dashboard
+});
+```
+
+### Using in beforeEach/beforeAll
+
+For tests that require authentication, use in setup hooks:
+
+```javascript
+test.describe('Dashboard Tests', () => {
+  test.beforeEach(async ({ context, page, metamaskPage, extensionId }) => {
+    await loginWithMetaMask({
+      context,
+      page,
+      metamaskPage,
+      extensionId,
+      walletPassword: basicSetup.walletPassword,
+    });
+  });
+
+  test('should display user data', async ({ page }) => {
+    // Test runs with user already logged in
+    await expect(page).toHaveURL('/dashboard');
+  });
+});
+```
+
+## Data Test IDs
+
+All tests use data-testid attributes for reliable element selection. Test IDs are centralized in `constants/dataTestIds.mjs` for easy maintenance.
+
+### Best Practices:
+
+- Always use `page.getByTestId(DataTestIds.ELEMENT_NAME)` instead of text or CSS selectors
+- Import test IDs from the constants file: `import { DataTestIds } from '../constants/dataTestIds.mjs'`
+- Use semantic, descriptive test ID names
 
 ## Debugging
 

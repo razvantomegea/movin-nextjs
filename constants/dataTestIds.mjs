@@ -17,6 +17,8 @@ const DataTestIds = {
 
   // PWA Install Elements
   PWA_INSTALL_BANNER: 'pwa-install-banner',
+  PWA_INSTALL_BUTTON: 'pwa-install-button',
+  PWA_DISMISS_BUTTON: 'pwa-dismiss-button',
 
   // Loading States
   CONNECTING_SPINNER: 'connecting-spinner',
