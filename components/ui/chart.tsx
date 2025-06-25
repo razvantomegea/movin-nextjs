@@ -28,6 +28,16 @@ export type ChartConfig = {
   );
 };
 
+type TooltipPayloadItem = {
+  name?: string;
+  dataKey?: string;
+  value?: number | string;
+  color?: string;
+  payload?: Record<string, any>;
+  fill?: string;
+  [key: string]: unknown;
+};
+
 type ChartContextProps = {
   config: ChartConfig;
 };
@@ -106,14 +116,26 @@ const ChartTooltip = RechartsPrimitive.Tooltip;
 
 const ChartTooltipContent = forwardRef<
   HTMLDivElement,
-  ComponentProps<typeof RechartsPrimitive.Tooltip> &
-    ComponentProps<'div'> & {
-      hideLabel?: boolean;
-      hideIndicator?: boolean;
-      indicator?: 'line' | 'dot' | 'dashed';
-      nameKey?: string;
-      labelKey?: string;
-    }
+  ComponentProps<'div'> & {
+    active?: boolean;
+    payload?: TooltipPayloadItem[];
+    label?: string;
+    labelFormatter?: (label: unknown, payload: TooltipPayloadItem[]) => ReactNode;
+    formatter?: (
+      value: string | number | undefined,
+      name: string,
+      item: TooltipPayloadItem,
+      index: number,
+      payload: Record<string, unknown>,
+    ) => ReactNode;
+    hideLabel?: boolean;
+    hideIndicator?: boolean;
+    indicator?: 'line' | 'dot' | 'dashed';
+    nameKey?: string;
+    labelKey?: string;
+    labelClassName?: string;
+    color?: string;
+  }
 >(
   (
     {
@@ -177,10 +199,10 @@ const ChartTooltipContent = forwardRef<
       >
         {!nestLabel ? tooltipLabel : null}
         <div className="grid gap-1.5">
-          {payload.map((item, index) => {
+          {payload.map((item: TooltipPayloadItem, index: number) => {
             const key = `${nameKey || item.name || item.dataKey || 'value'}`;
             const itemConfig = getPayloadConfigFromPayload(config, item, key);
-            const indicatorColor = color || item.payload.fill || item.color;
+            const indicatorColor = color || item.payload?.fill || item.color;
 
             return (
               <div
@@ -191,7 +213,7 @@ const ChartTooltipContent = forwardRef<
                 )}
               >
                 {formatter && item?.value !== undefined && item.name ? (
-                  formatter(item.value, item.name, item, index, item.payload)
+                  formatter(item.value, item.name, item, index, item.payload ?? {})
                 ) : (
                   <>
                     {itemConfig?.icon ? (
@@ -252,11 +274,17 @@ const ChartLegend = RechartsPrimitive.Legend;
 
 const ChartLegendContent = forwardRef<
   HTMLDivElement,
-  ComponentProps<'div'> &
-    Pick<RechartsPrimitive.LegendProps, 'payload' | 'verticalAlign'> & {
-      hideIcon?: boolean;
-      nameKey?: string;
-    }
+  ComponentProps<'div'> & {
+    payload?: Array<{
+      value?: string;
+      dataKey?: string;
+      color?: string;
+      [key: string]: unknown;
+    }>;
+    verticalAlign?: 'top' | 'bottom';
+    hideIcon?: boolean;
+    nameKey?: string;
+  }
 >(({ className, hideIcon = false, payload, verticalAlign = 'bottom', nameKey }, ref) => {
   const { config } = useChart();
 
