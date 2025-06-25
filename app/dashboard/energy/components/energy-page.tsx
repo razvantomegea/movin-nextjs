@@ -74,6 +74,8 @@ export function EnergyPage() {
   const [textAnalysisResult, setTextAnalysisResult] = useState<any | null>(null); // For text based analysis results
   const [mealToEdit, setMealToEdit] = useState<IMeal | null>(null); // For editing a meal
   const [mealResultsModalSourceType, setMealResultsModalSourceType] = useState<'camera' | 'text' | 'edit'>('camera');
+  const [showLogMealConfirm, setShowLogMealConfirm] = useState(false); // For log confirmation
+  const [mealToLogConfirm, setMealToLogConfirm] = useState<IMeal | null>(null); // Meal to log
 
   const [showStreakCelebration, setShowStreakCelebration] = useState(false);
   const [streakMilestone, setStreakMilestone] = useState(0);
@@ -325,30 +327,52 @@ export function EnergyPage() {
 
 
   const handleMealSelectedForLogging = useCallback(
-    async (meal: IMeal) => {
+    (meal: IMeal) => { // No longer async, just sets state to show dialog
       if (!addressLower) return;
-
-      try {
-        const energyEntryData = {
-          address: addressLower,
-          meal_name: meal.meal_name,
-          calories: meal.calories,
-          protein: meal.protein,
-          carbohydrates: meal.carbohydrates,
-          fats: meal.fats,
-          fiber: meal.fiber || 0,
-          log_date: new Date().toISOString().split('T')[0],
-        };
-        await dispatch(addEnergyEntry({ address: addressLower, energyData: energyEntryData })).unwrap();
-        updateStreakCount();
-        dispatch(showSuccessToast({ title: 'Meal Added', description: `${meal.meal_name} has been added to your log` }));
-      } catch (error) {
-        console.error('Failed to add meal for logging:', error);
-        dispatch(showInfoToast({ title: 'Log Failed', description: 'Failed to log meal.' }));
-      }
+      setMealToLogConfirm(meal);
+      setShowLogMealConfirm(true);
+      // MealSearchModal's onSelectMeal calls its own onClose, so it should close.
     },
-    [addressLower, dispatch, updateStreakCount],
+    [addressLower], // Removed dependencies that are now in executeLogMeal
   );
+
+  const resetLogMealConfirmState = useCallback(() => {
+    setShowLogMealConfirm(false);
+    setMealToLogConfirm(null);
+  }, []);
+
+  const executeLogMeal = useCallback(async () => {
+    if (!mealToLogConfirm || !addressLower) {
+      resetLogMealConfirmState();
+      return;
+    }
+    try {
+      const energyEntryData = {
+        address: addressLower,
+        meal_name: mealToLogConfirm.meal_name,
+        calories: mealToLogConfirm.calories,
+        protein: mealToLogConfirm.protein,
+        carbohydrates: mealToLogConfirm.carbohydrates,
+        fats: mealToLogConfirm.fats,
+        fiber: mealToLogConfirm.fiber || 0,
+        log_date: new Date().toISOString().split('T')[0],
+      };
+      await dispatch(addEnergyEntry({ address: addressLower, energyData: energyEntryData })).unwrap();
+      updateStreakCount(); // Make sure updateStreakCount is defined and stable if not in deps
+      dispatch(
+        showSuccessToast({
+          title: 'Meal Added',
+          description: `${mealToLogConfirm.meal_name} has been added to your log`,
+        }),
+      );
+    } catch (error) {
+      console.error('Failed to add meal for logging:', error);
+      dispatch(showInfoToast({ title: 'Log Failed', description: 'Failed to log meal.' }));
+    } finally {
+      resetLogMealConfirmState();
+    }
+  }, [mealToLogConfirm, addressLower, dispatch, updateStreakCount, resetLogMealConfirmState]);
+
 
   const handleEditMealRequest = useCallback((meal: IMeal) => {
     setMealToEdit(meal);
@@ -704,6 +728,25 @@ export function EnergyPage() {
           sourceType={mealResultsModalSourceType}
         />
       )}
+
+      {/* Confirmation Dialog for Logging Meal */}
+      {mealToLogConfirm && (
+          <AlertDialog open={showLogMealConfirm} onOpenChange={setShowLogMealConfirm}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Confirm Log Meal</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to log &quot;{mealToLogConfirm?.meal_name}&quot;? This
+                  action is permanent.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel onClick={resetLogMealConfirmState}>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={executeLogMeal}>Log Meal</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
 
       <CelebrationAnimation
         isOpen={showStreakCelebration}
