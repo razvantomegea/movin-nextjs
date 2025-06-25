@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button';
 import { useMovinEarn } from '@/lib/hooks/useMovinEarn';
 import { updateProfile } from '@/lib/supabase/profile';
 import { getProfile } from '@/lib/supabase/profile';
-import { getTodayDate } from '@/utils';
+import { getTodayDate, getCurrentDateHour } from '@/utils';
 
 function ConnectPageContent() {
   const router = useRouter();
@@ -66,11 +66,12 @@ function ConnectPageContent() {
 
   const checkLastLogin = useCallback(async () => {
     const lastLogin = localStorage.getItem('last_login');
-
     if (lastLogin) {
-      const today = getTodayDate();
-
-      if (lastLogin !== today) {
+      const lastLoginDate = new Date(lastLogin.replace(' ', 'T'));
+      const now = new Date();
+      const diffMs = now.getTime() - lastLoginDate.getTime();
+      const diffHours = diffMs / (1000 * 60 * 60);
+      if (diffHours > 1) {
         localStorage.clear();
         sessionStorage.clear();
         await disconnect();
@@ -150,7 +151,7 @@ function ConnectPageContent() {
             Sentry.captureException(profileError);
           }
 
-          localStorage.setItem('last_login', getTodayDate());
+          localStorage.setItem('last_login', getCurrentDateHour());
 
           // Navigate to dashboard on successful authentication
           const navigateTimeout = setTimeout(() => {
