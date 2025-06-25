@@ -71,6 +71,10 @@ export function EnergyPage() {
   const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
   const [isMealResultsModalOpen, setIsMealResultsModalOpen] = useState(false);
   const [capturedImageData, setCapturedImageData] = useState<string | null>(null);
+  const [textAnalysisResult, setTextAnalysisResult] = useState<any | null>(null); // For text based analysis results
+  const [mealToEdit, setMealToEdit] = useState<IMeal | null>(null); // For editing a meal
+  const [mealResultsModalSourceType, setMealResultsModalSourceType] = useState<'camera' | 'text' | 'edit'>('camera');
+
   const [showStreakCelebration, setShowStreakCelebration] = useState(false);
   const [streakMilestone, setStreakMilestone] = useState(0);
   const dispatch = useAppDispatch();
@@ -274,23 +278,57 @@ export function EnergyPage() {
   }, []);
 
   const handleCameraCapture = useCallback(async (imageData: string) => {
-    // Store the captured image data and show the meal detection results modal
     setCapturedImageData(imageData);
+    setTextAnalysisResult(null); // Clear other sources
+    setMealToEdit(null);
+    setMealResultsModalSourceType('camera');
     setIsMealResultsModalOpen(true);
+    setIsCameraModalOpen(false); // Close camera modal
   }, []);
 
-  const handleTextMealAnalyze = useCallback(async (description: string) => {
-    // This function is for backward compatibility
-    // The actual meal saving is handled in the MealDetectionResultsModal
-    console.log('Meal described:', description);
+  // This should be called when TextMealModal provides the analyzed data (currently it doesn't directly)
+  // For now, let's assume TextMealModal's onAnalyze will eventually provide data to open MealDetectionResultsModal
+  const handleTextMealAnalysisComplete = useCallback((analyzedMealData: any) => {
+    // This function would be called if TextMealModal itself doesn't open MealDetectionResultsModal
+    // but provides data back to this page to then open it.
+    // The current TextMealModal seems to handle its own analysis and might directly call an API.
+    // For now, let's assume it will set a state that triggers MealDetectionResultsModal
+    setCapturedImageData(null); // Clear other sources
+    setTextAnalysisResult(analyzedMealData);
+    setMealToEdit(null);
+    setMealResultsModalSourceType('text');
+    setIsMealResultsModalOpen(true);
+    setIsTextMealModalOpen(false); // Close text modal
   }, []);
 
-  const handleMealSelected = useCallback(
+  // Placeholder for TextMealModal's onAnalyze if it needs to trigger results modal from here
+  // The current TextMealModal's onAnalyze prop is just console logging.
+  // If TextMealModal is to use MealDetectionResultsModal, its onAnalyze should call something like handleTextMealAnalysisComplete.
+  // For now, the `textAnalysisResult` state and `handleTextMealAnalysisComplete` are prepared for that integration.
+  const handleTextMealAnalyzeProp = useCallback(async (description: string) => {
+    console.log('Text input for meal analysis:', description);
+    // Here, you would typically call an API to analyze the text, then:
+    // const analysisData = await api.analyzeText(description);
+    // handleTextMealAnalysisComplete(analysisData);
+    // For demonstration, let's simulate this by passing the description as mealData
+    // This assumes MealDetectionResultsModal can handle a raw description or that an API call happens before it.
+    // The current structure of MealDetectionResultsModal expects ApiMealData.
+    // So, TextMealModal should ideally perform the analysis and then pass structured data.
+    // For now, we'll set a placeholder that it's text type.
+    setTextAnalysisResult({ mealName: description, ingredients: [] }); // Placeholder structure
+    setCapturedImageData(null);
+    setMealToEdit(null);
+    setMealResultsModalSourceType('text');
+    setIsMealResultsModalOpen(true);
+    setIsTextMealModalOpen(false);
+  }, []);
+
+
+  const handleMealSelectedForLogging = useCallback(
     async (meal: IMeal) => {
       if (!addressLower) return;
 
       try {
-        // Create energy entry data from selected meal
         const energyEntryData = {
           address: addressLower,
           meal_name: meal.meal_name,
@@ -301,32 +339,34 @@ export function EnergyPage() {
           fiber: meal.fiber || 0,
           log_date: new Date().toISOString().split('T')[0],
         };
-
-        // Add the meal to energy log
-        await dispatch(
-          addEnergyEntry({ address: addressLower, energyData: energyEntryData }),
-        ).unwrap();
-
+        await dispatch(addEnergyEntry({ address: addressLower, energyData: energyEntryData })).unwrap();
         updateStreakCount();
-
-        dispatch(
-          showSuccessToast({
-            title: 'Meal Added',
-            description: `${meal.meal_name} has been added to your log`,
-          }),
-        );
+        dispatch(showSuccessToast({ title: 'Meal Added', description: `${meal.meal_name} has been added to your log` }));
       } catch (error) {
-        console.error('Failed to add meal:', error);
-        dispatch(
-          showInfoToast({
-            title: 'Save Failed',
-            description: 'Failed to save meal to your log',
-          }),
-        );
+        console.error('Failed to add meal for logging:', error);
+        dispatch(showInfoToast({ title: 'Log Failed', description: 'Failed to log meal.' }));
       }
     },
     [addressLower, dispatch, updateStreakCount],
   );
+
+  const handleEditMealRequest = useCallback((meal: IMeal) => {
+    setMealToEdit(meal);
+    setMealResultsModalSourceType('edit');
+    setCapturedImageData(null); // Clear other sources
+    setTextAnalysisResult(null);
+    setIsMealSearchModalOpen(false); // Close search modal
+    setIsMealResultsModalOpen(true); // Open results modal in edit mode
+  }, []);
+
+  const handleCloseMealResultsModal = useCallback(() => {
+    setIsMealResultsModalOpen(false);
+    setCapturedImageData(null);
+    setTextAnalysisResult(null);
+    setMealToEdit(null);
+    // Optionally reset mealResultsModalSourceType to a default, e.g., 'camera'
+    // setMealResultsModalSourceType('camera');
+  }, []);
 
   const handleRetryLoadEnergy = useCallback(() => {
     if (!addressLower) return;
@@ -633,7 +673,7 @@ export function EnergyPage() {
         <TextMealModal
           isOpen={isTextMealModalOpen}
           onClose={() => setIsTextMealModalOpen(false)}
-          onAnalyze={handleTextMealAnalyze}
+          onAnalyze={handleTextMealAnalyzeProp} // Updated to use the new handler
         />
       )}
 
@@ -642,7 +682,8 @@ export function EnergyPage() {
         <MealSearchModal
           isOpen={isMealSearchModalOpen}
           onClose={() => setIsMealSearchModalOpen(false)}
-          onSelectMeal={handleMealSelected}
+          onSelectMeal={handleMealSelectedForLogging} // For logging
+          onEditMeal={handleEditMealRequest} // For editing
           userAddress={addressLower}
         />
       )}
@@ -651,13 +692,16 @@ export function EnergyPage() {
       {isPremium && (
         <MealDetectionResultsModal
           isOpen={isMealResultsModalOpen}
-          onClose={() => {
-            setIsMealResultsModalOpen(false);
-            setCapturedImageData(null);
-          }}
-          imageData={capturedImageData}
-          sourceType="camera"
-          mealData={null} // This will be populated by the analysis hook
+          onClose={handleCloseMealResultsModal}
+          imageData={mealResultsModalSourceType === 'camera' ? capturedImageData : null}
+          // mealData prop is used for text analysis results or pre-filling for edit.
+          // The structure of mealData for 'text' source depends on what analyze-meal-text API returns
+          // or how TextMealModal prepares it.
+          // For 'edit', initialMealData is used directly.
+          mealData={mealResultsModalSourceType === 'text' ? textAnalysisResult : null}
+          initialMealData={mealResultsModalSourceType === 'edit' ? mealToEdit : null}
+          isEditing={mealResultsModalSourceType === 'edit'}
+          sourceType={mealResultsModalSourceType}
         />
       )}
 

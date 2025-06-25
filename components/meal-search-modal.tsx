@@ -1,15 +1,31 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Search, Clock, Calendar, Loader2 } from 'lucide-react';
+import { X, Search, Clock, Calendar, Loader2, Edit, Trash2 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useDispatch, useSelector } from 'react-redux';
+
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { fetchRecentMeals, searchMeals, clearSearchResults } from '@/lib/redux/slices/mealsSlice';
+import {
+  fetchRecentMeals,
+  searchMeals,
+  clearSearchResults,
+  deleteMealFromLibrary, // Import the action
+} from '@/lib/redux/slices/mealsSlice';
 import { RootState, AppDispatch } from '@/lib/redux/store';
 import { IMeal } from '@/lib/supabase/meals';
 
@@ -17,6 +33,7 @@ interface MealSearchModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSelectMeal: (meal: IMeal) => void;
+  onEditMeal: (meal: IMeal) => void; // New prop for editing
   userAddress: string;
 }
 
@@ -24,6 +41,7 @@ export function MealSearchModal({
   isOpen,
   onClose,
   onSelectMeal,
+  onEditMeal,
   userAddress,
 }: MealSearchModalProps) {
   const { resolvedTheme } = useTheme();
@@ -36,9 +54,12 @@ export function MealSearchModal({
 
   const [activeTab, setActiveTab] = useState<'recent' | 'search'>('recent');
   const [searchQuery, setSearchQuery] = useState('');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [mealToDeleteId, setMealToDeleteId] = useState<string | null>(null);
 
   // Fetch recent meals when modal opens
   useEffect(() => {
+    // Only fetch if userAddress is present and recentMeals is empty or not yet loaded for this user
     if (isOpen && userAddress && recentMeals.length === 0) {
       dispatch(fetchRecentMeals(userAddress));
     }
@@ -52,10 +73,12 @@ export function MealSearchModal({
       }, 300); // 300ms debounce
 
       return () => clearTimeout(timeoutId);
-    } else {
+    } else if (!searchQuery.trim()) {
+      // Clear search results if query is empty
       dispatch(clearSearchResults());
     }
   }, [searchQuery, userAddress, dispatch]);
+
 
   // Switch to search tab when user starts typing
   useEffect(() => {
@@ -79,13 +102,42 @@ export function MealSearchModal({
   };
 
   const handleMealSelect = (meal: IMeal) => {
-    onSelectMeal(meal);
+    onSelectMeal(meal); // This is for logging the meal
     onClose();
+  };
+
+  const handleEditClick = (meal: IMeal) => {
+    onEditMeal(meal); // This will open the MealDetectionResultsModal for editing
+    // onClose(); // Keep search modal open or close based on UX preference, for now, it closes.
+  };
+
+  const handleRemoveClick = (mealId: string) => {
+    setMealToDeleteId(mealId);
+    setShowDeleteConfirm(true);
+  };
+
+  const handleConfirmRemove = async () => {
+    if (mealToDeleteId && userAddress) {
+      try {
+        await dispatch(
+          deleteMealFromLibrary({ mealId: mealToDeleteId, address: userAddress }),
+        ).unwrap(); // unwrap to catch potential rejections here
+        // No need to manually refetch, the slice reducer should update the lists.
+        // Consider adding a success toast if desired.
+      } catch (error) {
+        console.error('Failed to delete meal:', error);
+        // Consider adding an error toast here.
+      }
+    }
+    setShowDeleteConfirm(false);
+    setMealToDeleteId(null);
   };
 
   const handleClose = () => {
     setSearchQuery('');
     dispatch(clearSearchResults());
+    setShowDeleteConfirm(false); // Ensure dialog is closed
+    setMealToDeleteId(null);
     onClose();
   };
 
@@ -94,7 +146,7 @@ export function MealSearchModal({
     if (isOpen) {
       setSearchQuery('');
       dispatch(clearSearchResults());
-      setActiveTab('recent');
+      setActiveTab('recent'); // Default to recent tab
     }
   }, [isOpen, dispatch]);
 
@@ -118,6 +170,7 @@ export function MealSearchModal({
     return 'Your recently logged meals will appear here';
   };
 
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -132,6 +185,7 @@ export function MealSearchModal({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            onClick={handleClose} // Close on backdrop click
           />
 
           <motion.div
@@ -150,7 +204,7 @@ export function MealSearchModal({
               }`}
             >
               <div className="flex items-center justify-between p-4">
-                <h2 className="text-xl font-bold">Search Meals</h2>
+                <h2 className="text-xl font-bold">Search Your Meals</h2>
                 <Button variant="ghost" size="icon" onClick={handleClose} className="rounded-full">
                   <X className="h-5 w-5" />
                 </Button>
@@ -232,19 +286,11 @@ export function MealSearchModal({
 
             {/* Content */}
             <div className="flex-1 overflow-y-auto">
-              {currentMeals.length === 0 ? (
+              {currentMeals.length === 0 && !isLoading ? (
                 <div className="flex flex-col items-center justify-center py-12 px-4">
-                  {isLoading && activeTab === 'recent' ? (
-                    <Loader2
-                      className={`h-12 w-12 mb-4 animate-spin ${
-                        isDark ? 'text-gray-600' : 'text-gray-400'
-                      }`}
-                    />
-                  ) : (
-                    <Search
-                      className={`h-12 w-12 mb-4 ${isDark ? 'text-gray-600' : 'text-gray-400'}`}
-                    />
-                  )}
+                  <Search
+                    className={`h-12 w-12 mb-4 ${isDark ? 'text-gray-600' : 'text-gray-400'}`}
+                  />
                   <h3
                     className={`text-lg font-semibold mb-2 ${
                       isDark ? 'text-gray-300' : 'text-gray-700'
@@ -258,45 +304,83 @@ export function MealSearchModal({
                     {getEmptyStateDescription()}
                   </p>
                 </div>
+              ) : isLoading && currentMeals.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 px-4">
+                  <Loader2
+                    className={`h-12 w-12 mb-4 animate-spin ${
+                      isDark ? 'text-gray-600' : 'text-gray-400'
+                    }`}
+                  />
+                   <h3
+                    className={`text-lg font-semibold mb-2 ${
+                      isDark ? 'text-gray-300' : 'text-gray-700'
+                    }`}
+                  >
+                    {isLoading && activeTab === 'recent' ? 'Loading recent meals...' : 'Searching...'}
+                  </h3>
+                </div>
               ) : (
                 <div className="p-4 space-y-3">
                   {currentMeals.map((meal) => (
                     <motion.div
                       key={meal.id}
-                      whileHover={{ scale: 1.01 }}
-                      whileTap={{ scale: 0.99 }}
-                      transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      transition={{ duration: 0.2 }}
                     >
                       <Card
-                        className={`cursor-pointer transition-colors ${
+                        className={`transition-colors ${
                           isDark
-                            ? 'bg-gray-800 hover:bg-gray-700 border-gray-700'
+                            ? 'bg-gray-800 hover:bg-gray-700/70 border-gray-700'
                             : 'bg-white hover:bg-gray-50 border-gray-200'
                         }`}
-                        onClick={() => handleMealSelect(meal)}
                       >
                         <CardContent className="p-4">
                           <div className="flex items-start justify-between mb-2">
-                            <div className="flex-1">
-                              <div className="flex items-center space-x-2 mb-1">
-                                <h3 className="font-semibold">{meal.meal_name}</h3>
+                            <div className="flex-1 pr-2">
+                              <h3 className="font-semibold cursor-pointer" onClick={() => handleMealSelect(meal)}>{meal.meal_name}</h3>
+                              <div
+                                className={`text-xs mt-1 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}
+                              >
+                                Logged on {new Date(meal.log_date).toLocaleDateString()}
                               </div>
                             </div>
-                            {activeTab === 'recent' && (
-                              <div
-                                className={`flex items-center space-x-1 text-xs ${
-                                  isDark ? 'text-gray-500' : 'text-gray-400'
-                                }`}
+                            <div className="flex items-center space-x-1">
+                               <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleEditClick(meal)}
+                                className="h-8 w-8 rounded-full"
+                                title="Edit meal"
                               >
-                                <Calendar className="h-3 w-3" />
-                                <span>{formatLastEaten(meal.created_at)}</span>
-                              </div>
-                            )}
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleRemoveClick(meal.id)}
+                                className="h-8 w-8 rounded-full text-red-500 hover:text-red-600"
+                                title="Remove meal"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                              {activeTab === 'recent' && (
+                                <div
+                                  className={`flex items-center space-x-1 text-xs pl-2 ${
+                                    isDark ? 'text-gray-500' : 'text-gray-400'
+                                  }`}
+                                >
+                                  <Calendar className="h-3 w-3" />
+                                  <span>{formatLastEaten(meal.created_at)}</span>
+                                </div>
+                              )}
+                            </div>
                           </div>
 
                           {/* Nutrition Info */}
-                          <div className="flex items-center space-x-4 mb-2 text-sm">
-                            <span className="font-medium">{meal.calories} cal</span>
+                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm mb-2 cursor-pointer" onClick={() => handleMealSelect(meal)}>
+                            <Badge variant="secondary">{meal.calories} cal</Badge>
                             <span className={isDark ? 'text-gray-400' : 'text-gray-600'}>
                               P: {meal.protein}g
                             </span>
@@ -310,11 +394,6 @@ export function MealSearchModal({
                               Fi: {meal.fiber}g
                             </span>
                           </div>
-
-                          {/* Log Date */}
-                          <div className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-                            Logged on {new Date(meal.log_date).toLocaleDateString()}
-                          </div>
                         </CardContent>
                       </Card>
                     </motion.div>
@@ -326,6 +405,30 @@ export function MealSearchModal({
             {/* Mobile-only bottom padding for safe area */}
             <div className="h-8 sm:hidden"></div>
           </motion.div>
+
+          {/* Delete Confirmation Dialog */}
+          <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will permanently delete this meal from your
+                  library.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => setShowDeleteConfirm(false)}>
+                  Cancel
+                </AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleConfirmRemove}
+                  className={buttonVariants({ variant: 'destructive' })}
+                >
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </motion.div>
       )}
     </AnimatePresence>
