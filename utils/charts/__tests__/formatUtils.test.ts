@@ -57,6 +57,11 @@ describe('formatUtils', () => {
       expect(formatNutritionValue(1000, 'protein')).toBe('1,000');
     });
 
+    it('should format fiber correctly', () => {
+      expect(formatNutritionValue(10, 'fiber')).toBe('10');
+      expect(formatNutritionValue(1000, 'fiber')).toBe('1,000');
+    });
+
     it('should handle unknown metric types', () => {
       expect(formatNutritionValue(1000, 'unknown' as NutritionMetric)).toBe('1000');
     });
@@ -101,6 +106,10 @@ describe('formatUtils', () => {
       expect(getNutritionUnit('protein')).toBe('g');
     });
 
+    it('should return correct units for fiber', () => {
+      expect(getNutritionUnit('fiber')).toBe('g');
+    });
+
     it('should return empty string for unknown metrics', () => {
       expect(getNutritionUnit('unknown' as NutritionMetric)).toBe('');
     });
@@ -143,6 +152,10 @@ describe('formatUtils', () => {
 
     it('should return correct label for protein', () => {
       expect(getNutritionMetricLabel('protein')).toBe('Protein (g)');
+    });
+
+    it('should return correct label for fiber', () => {
+      expect(getNutritionMetricLabel('fiber')).toBe('Fiber (g)');
     });
 
     it('should return empty string for unknown metrics', () => {

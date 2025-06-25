@@ -1,11 +1,11 @@
+import { easeOut, easeIn } from 'framer-motion';
+import { NutritionMetric } from '../formatUtils';
 import {
   getActivityChartColor,
   getNutritionChartColor,
   createChartGradient,
   chartAnimationVariants,
 } from '../stylingUtils';
-import { NutritionMetric } from '../formatUtils';
-import { easeOut, easeIn } from 'framer-motion';
 
 describe('stylingUtils', () => {
   describe('getActivityChartColor', () => {
@@ -36,6 +36,10 @@ describe('stylingUtils', () => {
         expect(getNutritionChartColor('protein', false)).toBe('#22c55e');
       });
 
+      it('should return correct color for fiber', () => {
+        expect(getNutritionChartColor('fiber', false)).toBe('#9333ea');
+      });
+
       it('should return default color for unknown metrics', () => {
         expect(getNutritionChartColor('unknown' as NutritionMetric, false)).toBe('#2563eb');
       });
@@ -56,6 +60,10 @@ describe('stylingUtils', () => {
 
       it('should return correct color for protein', () => {
         expect(getNutritionChartColor('protein', true)).toBe('#4ade80');
+      });
+
+      it('should return correct color for fiber', () => {
+        expect(getNutritionChartColor('fiber', true)).toBe('#a855f7');
       });
 
       it('should return default color for unknown metrics', () => {

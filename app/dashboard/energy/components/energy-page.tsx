@@ -298,7 +298,6 @@ export function EnergyPage() {
           protein: meal.protein,
           carbohydrates: meal.carbohydrates,
           fats: meal.fats,
-          // @ts-expect-error fiber will exist
           fiber: meal.fiber || 0,
           log_date: new Date().toISOString().split('T')[0],
         };
@@ -549,7 +548,9 @@ export function EnergyPage() {
                             {meal.time}
                           </div>
                         </div>
-                        <span className="font-bold text-blue-500">{Math.round(meal.calories)} kcal</span>
+                        <span className="font-bold text-blue-500">
+                          {Math.round(meal.calories)} kcal
+                        </span>
                       </div>
                       <div className="grid grid-cols-4 gap-2 mt-3">
                         <div className="text-center p-1 bg-sky-500/10 rounded">

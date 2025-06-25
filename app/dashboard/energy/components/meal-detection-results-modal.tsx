@@ -137,6 +137,7 @@ export function MealDetectionResultsModal({
                 carbohydrates: data.data.carbohydrates,
                 fats: data.data.fats,
                 protein: data.data.protein,
+                fiber: data.data.fiber,
               };
             }
             return ingredient;
@@ -262,6 +263,7 @@ export function MealDetectionResultsModal({
       carbohydrates: 0,
       fats: 0,
       protein: 0,
+      fiber: 0,
     };
 
     const updatedIngredients = [...detectedMeal.ingredients, newIngredient];
@@ -311,6 +313,7 @@ export function MealDetectionResultsModal({
         protein: detectedMeal.protein,
         carbohydrates: detectedMeal.carbohydrates,
         fats: detectedMeal.fats,
+        fiber: detectedMeal.fiber,
         log_date: getTodayDateString(),
       };
 
@@ -422,6 +425,14 @@ export function MealDetectionResultsModal({
   const handleIngredientProteinChange = useCallback(
     (ingredientId: string, value: string) => {
       handleEditIngredient(ingredientId, 'protein', value);
+    },
+    [handleEditIngredient],
+  );
+
+  // Handler for ingredient fiber change
+  const handleIngredientFiberChange = useCallback(
+    (ingredientId: string, value: string) => {
+      handleEditIngredient(ingredientId, 'fiber', value);
     },
     [handleEditIngredient],
   );
@@ -677,6 +688,23 @@ export function MealDetectionResultsModal({
                                     className="h-8"
                                   />
                                 </div>
+                                <div>
+                                  <label
+                                    className={`text-xs mb-1 block ${
+                                      isDark ? 'text-gray-400' : 'text-gray-500'
+                                    }`}
+                                  >
+                                    Fiber (g)
+                                  </label>
+                                  <Input
+                                    type="number"
+                                    value={ingredient.fiber}
+                                    onChange={(e) =>
+                                      handleIngredientFiberChange(ingredient.id, e.target.value)
+                                    }
+                                    className="h-8"
+                                  />
+                                </div>
                               </div>
                             </div>
                           ) : (
@@ -745,6 +773,16 @@ export function MealDetectionResultsModal({
                                   </div>
                                   <div className="font-medium">{ingredient.protein}g</div>
                                 </div>
+                                <div className="text-center p-1 bg-purple-500/10 rounded">
+                                  <div
+                                    className={`text-xs ${
+                                      isDark ? 'text-gray-400' : 'text-gray-500'
+                                    }`}
+                                  >
+                                    Fiber
+                                  </div>
+                                  <div className="font-medium">{ingredient.fiber}g</div>
+                                </div>
                               </div>
                             </div>
                           )}
@@ -791,6 +829,12 @@ export function MealDetectionResultsModal({
                         <div className="text-2xl font-bold">{Math.round(detectedMeal.protein)}</div>
                         <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                           Protein (g)
+                        </div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold">{Math.round(detectedMeal.fiber)}</div>
+                        <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                          Fiber (g)
                         </div>
                       </div>
                     </div>

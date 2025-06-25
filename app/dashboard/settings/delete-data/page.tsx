@@ -236,6 +236,113 @@ export default function DeleteDataPage() {
                   <Badge>{dataSummary.summary.total_staked} tokens</Badge>
                 </div>
               </div>
+
+              {/* Profile Fields */}
+              <div className="pt-4 border-t">
+                <div className="font-semibold mb-2">Profile Information</div>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  {dataSummary.summary.username && (
+                    <div className="flex justify-between">
+                      <span>Username:</span>
+                      <span>{dataSummary.summary.username}</span>
+                    </div>
+                  )}
+                  {dataSummary.summary.email && (
+                    <div className="flex justify-between">
+                      <span>Email:</span>
+                      <span>{dataSummary.summary.email}</span>
+                    </div>
+                  )}
+                  {dataSummary.summary.level !== undefined && (
+                    <div className="flex justify-between">
+                      <span>Level:</span>
+                      <span>{dataSummary.summary.level}</span>
+                    </div>
+                  )}
+                  {dataSummary.summary.streak_days !== undefined && (
+                    <div className="flex justify-between">
+                      <span>Streak Days:</span>
+                      <span>{dataSummary.summary.streak_days}</span>
+                    </div>
+                  )}
+                  {dataSummary.summary.last_streak_update && (
+                    <div className="flex justify-between">
+                      <span>Last Streak Update:</span>
+                      <span>{dataSummary.summary.last_streak_update}</span>
+                    </div>
+                  )}
+                  {dataSummary.summary.is_premium !== undefined && (
+                    <div className="flex justify-between">
+                      <span>Premium:</span>
+                      <span>{dataSummary.summary.is_premium ? 'Yes' : 'No'}</span>
+                    </div>
+                  )}
+                  {dataSummary.summary.weight !== undefined && (
+                    <div className="flex justify-between">
+                      <span>Weight:</span>
+                      <span>
+                        {dataSummary.summary.weight} {dataSummary.summary.weight_unit || ''}
+                      </span>
+                    </div>
+                  )}
+                  {dataSummary.summary.weight_updated_at && (
+                    <div className="flex justify-between">
+                      <span>Weight Updated At:</span>
+                      <span>{dataSummary.summary.weight_updated_at}</span>
+                    </div>
+                  )}
+                  {dataSummary.summary.height !== undefined && (
+                    <div className="flex justify-between">
+                      <span>Height:</span>
+                      <span>{dataSummary.summary.height}</span>
+                    </div>
+                  )}
+                  {dataSummary.summary.date_of_birth && (
+                    <div className="flex justify-between">
+                      <span>Date of Birth:</span>
+                      <span>{dataSummary.summary.date_of_birth}</span>
+                    </div>
+                  )}
+                  {dataSummary.summary.biological_sex && (
+                    <div className="flex justify-between">
+                      <span>Biological Sex:</span>
+                      <span>{dataSummary.summary.biological_sex}</span>
+                    </div>
+                  )}
+                  {dataSummary.summary.bio && (
+                    <div className="flex justify-between">
+                      <span>Bio:</span>
+                      <span>{dataSummary.summary.bio}</span>
+                    </div>
+                  )}
+                  {dataSummary.summary.website && (
+                    <div className="flex justify-between">
+                      <span>Website:</span>
+                      <span>{dataSummary.summary.website}</span>
+                    </div>
+                  )}
+                  {dataSummary.summary.created_at && (
+                    <div className="flex justify-between">
+                      <span>Created At:</span>
+                      <span>{dataSummary.summary.created_at}</span>
+                    </div>
+                  )}
+                  {dataSummary.summary.updated_at && (
+                    <div className="flex justify-between">
+                      <span>Updated At:</span>
+                      <span>{dataSummary.summary.updated_at}</span>
+                    </div>
+                  )}
+                  {dataSummary.summary.avatar_url && (
+                    <div className="flex justify-between">
+                      <span>Avatar URL:</span>
+                      <span className="truncate max-w-[120px]">
+                        {dataSummary.summary.avatar_url}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
             </CardContent>
           </Card>
         </motion.div>

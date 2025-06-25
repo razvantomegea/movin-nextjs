@@ -65,10 +65,21 @@ BEGIN
   IF jsonb_typeof(import_data -> 'profile') = 'object' AND (import_data -> 'profile' ->> 'address') IS NOT NULL THEN
     UPDATE profiles SET
       username = import_data -> 'profile' ->> 'username',
+      email = import_data -> 'profile' ->> 'email',
       avatar_url = import_data -> 'profile' ->> 'avatar_url',
       bio = import_data -> 'profile' ->> 'bio',
       website = import_data -> 'profile' ->> 'website',
-      created_at = COALESCE((import_data -> 'profile' ->> 'created_at')::TIMESTAMPTZ, now()),
+      level = COALESCE((import_data -> 'profile' ->> 'level')::INTEGER, level),
+      streak_days = COALESCE((import_data -> 'profile' ->> 'streak_days')::INTEGER, streak_days),
+      last_streak_update = COALESCE((import_data -> 'profile' ->> 'last_streak_update')::TIMESTAMPTZ, last_streak_update),
+      is_premium = COALESCE((import_data -> 'profile' ->> 'is_premium')::BOOLEAN, is_premium),
+      weight = COALESCE((import_data -> 'profile' ->> 'weight')::DECIMAL, weight),
+      weight_unit = COALESCE(import_data -> 'profile' ->> 'weight_unit', weight_unit),
+      weight_updated_at = COALESCE((import_data -> 'profile' ->> 'weight_updated_at')::TIMESTAMPTZ, weight_updated_at),
+      height = COALESCE((import_data -> 'profile' ->> 'height')::DECIMAL, height),
+      date_of_birth = COALESCE(import_data -> 'profile' ->> 'date_of_birth', date_of_birth),
+      biological_sex = COALESCE(import_data -> 'profile' ->> 'biological_sex', biological_sex),
+      created_at = COALESCE((import_data -> 'profile' ->> 'created_at')::TIMESTAMPTZ, created_at, now()),
       updated_at = now()
     WHERE address = user_address;
   END IF;
@@ -133,7 +144,7 @@ BEGIN
   -- Import meals
   FOR item IN SELECT * FROM jsonb_array_elements(import_data -> 'meals')
   LOOP
-    INSERT INTO meals (id, address, calories, protein, carbohydrates, fats, log_date, meal_name, created_at, updated_at)
+    INSERT INTO meals (id, address, calories, protein, carbohydrates, fats, fiber, log_date, meal_name, created_at, updated_at)
     VALUES (
       (item ->> 'id')::UUID,
       user_address,
@@ -141,6 +152,7 @@ BEGIN
       (item ->> 'protein')::DECIMAL,
       (item ->> 'carbohydrates')::DECIMAL,
       (item ->> 'fats')::DECIMAL,
+      (item ->> 'fiber')::DECIMAL,
       (item ->> 'log_date')::DATE,
       item ->> 'meal_name',
       (item ->> 'created_at')::TIMESTAMPTZ,
@@ -151,7 +163,7 @@ BEGIN
   -- Import energy
   FOR item IN SELECT * FROM jsonb_array_elements(import_data -> 'energy')
   LOOP
-    INSERT INTO energy (id, address, calories, protein, carbohydrates, fats, log_date, meal_name, created_at, updated_at)
+    INSERT INTO energy (id, address, calories, protein, carbohydrates, fats, fiber, log_date, meal_name, created_at, updated_at)
     VALUES (
       (item ->> 'id')::UUID,
       user_address,
@@ -159,6 +171,7 @@ BEGIN
       (item ->> 'protein')::DECIMAL,
       (item ->> 'carbohydrates')::DECIMAL,
       (item ->> 'fats')::DECIMAL,
+      (item ->> 'fiber')::DECIMAL,
       (item ->> 'log_date')::DATE,
       item ->> 'meal_name',
       (item ->> 'created_at')::TIMESTAMPTZ,

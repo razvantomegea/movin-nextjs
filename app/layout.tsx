@@ -16,28 +16,50 @@ const inter = Inter({ subsets: ['latin'] });
 export const metadata: Metadata = {
   metadataBase: new URL('https://app.getmovin.ai'),
   title: {
-    default: 'Movin - Your Effort Counts',
-    template: `%s | Movin`,
+    default: 'Movin - Fitness, Calorie Tracking & Rewards',
+    template: '%s | Movin',
   },
   description:
-    'Track your fitness, earn rewards, and stay motivated with Movin. An innovative fitness app that rewards your effort.',
+    'Movin is your all-in-one fitness and calorie tracking app. Track workouts, log meals, monitor your weight loss journey, and earn crypto rewards for staying active and healthy.',
   generator: 'Next.js',
-  applicationName: 'Movin',
+  applicationName: 'Movin - Fitness, Calorie Tracking & Rewards',
   referrer: 'origin-when-cross-origin',
-  keywords: ['Fitness', 'Health', 'Workout', 'Rewards', 'Blockchain', 'Crypto'],
+  keywords: [
+    'fitness',
+    'calorie tracking',
+    'weight loss',
+    'health',
+    'exercise',
+    'activity tracker',
+    'rewards',
+    'move to earn',
+    'crypto rewards',
+    'healthy lifestyle',
+    'nutrition',
+    'workout',
+    'step counter',
+    'diet',
+    'motivation',
+    'wellness',
+    'activity rewards',
+    'calorie counter',
+    'fitness app',
+    'health app',
+    'Movin',
+  ],
   authors: [{ name: 'Razvan Tomegea', url: 'https://github.com/razvantomegea' }],
   creator: 'Razvan Tomegea',
   publisher: 'Movin',
   manifest: '/manifest',
   openGraph: {
-    title: 'Movin - Your Effort Counts',
+    title: 'Movin - Fitness, Calorie Tracking & Rewards',
     description:
-      'Track your fitness, earn rewards, and stay motivated with Movin. An innovative fitness app that rewards your effort.',
+      'Track your fitness, calories, and weight loss progress. Earn rewards for your healthy lifestyle with Movin.',
     url: 'https://app.getmovin.ai',
     siteName: 'Movin',
     images: [
       {
-        url: 'https://app.getmovin.ai/images/logo.png', // Must be an absolute URL
+        url: 'https://app.getmovin.ai/images/logo.png',
         width: 800,
         height: 600,
         alt: 'Movin App Logo',
@@ -48,10 +70,10 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Movin - Your Effort Counts',
+    title: 'Movin - Fitness, Calorie Tracking & Rewards',
     description:
-      'Track your fitness, earn rewards, and stay motivated with Movin. An innovative fitness app that rewards your effort.',
-    images: ['https://app.getmovin.ai/images/logo.png'], // Must be an absolute URL
+      'Track your fitness, calories, and weight loss progress. Earn rewards for your healthy lifestyle with Movin.',
+    images: ['https://app.getmovin.ai/images/logo.png'],
   },
   appleWebApp: {
     capable: true,
@@ -77,6 +99,15 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="Movin" />
         <link rel="apple-touch-icon" href="/icons/icon-192.webp" />
+        <meta
+          name="subject"
+          content="Fitness, Calorie Tracking, Weight Loss, Rewards, Health, Wellness"
+        />
+        <meta name="topic" content="Fitness and Rewards App" />
+        <meta name="rating" content="General" />
+        <meta name="HandheldFriendly" content="True" />
+        <meta name="MobileOptimized" content="320" />
+        {/* End custom meta tags */}
         {adsenseClientId && (
           <Script
             async

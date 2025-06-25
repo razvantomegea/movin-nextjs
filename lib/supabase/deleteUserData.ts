@@ -13,6 +13,24 @@ export interface UserDataSummary {
     energy: number;
     total_rewards: number;
     total_staked: number;
+    // Profile fields
+    email?: string;
+    level?: number;
+    streak_days?: number;
+    last_streak_update?: string;
+    is_premium?: boolean;
+    weight?: number;
+    weight_unit?: string;
+    weight_updated_at?: string;
+    height?: number;
+    date_of_birth?: string;
+    biological_sex?: string;
+    bio?: string;
+    website?: string;
+    created_at?: string;
+    updated_at?: string;
+    avatar_url?: string;
+    username?: string;
   };
 }
 
@@ -69,7 +87,7 @@ export async function getUserDataSummary({
       // Check if profile exists
       const { data: profile, error: profileError } = await client
         .from('profiles')
-        .select('address')
+        .select('*')
         .eq('address', address)
         .single();
 
@@ -142,6 +160,24 @@ export async function getUserDataSummary({
           energy: energyRes.count || 0,
           total_rewards: totalRewards,
           total_staked: totalStaked,
+          // Profile fields
+          email: profile.email,
+          level: profile.level,
+          streak_days: profile.streak_days,
+          last_streak_update: profile.last_streak_update,
+          is_premium: profile.is_premium,
+          weight: profile.weight,
+          weight_unit: profile.weight_unit,
+          weight_updated_at: profile.weight_updated_at,
+          height: profile.height,
+          date_of_birth: profile.date_of_birth,
+          biological_sex: profile.biological_sex,
+          bio: profile.bio,
+          website: profile.website,
+          created_at: profile.created_at,
+          updated_at: profile.updated_at,
+          avatar_url: profile.avatar_url,
+          username: profile.username,
         },
       };
     } catch (fallbackError) {
