@@ -18,13 +18,11 @@ import { ActivityColumnChart } from '@/app/dashboard/components/activity-column-
 import { CelebrationAnimation } from '@/components/celebration-animation';
 import { CircularProgress } from '@/components/circular-progress';
 import ErrorBoundary from '@/components/error-boundary';
-import { PremiumUpgradeModal } from '@/components/premium-upgrade-modal';
 import { RefreshButton } from '@/components/refresh-button';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ErrorAlert } from '@/components/ui/error-alert';
 import { Progress } from '@/components/ui/progress';
-import { useMovinEarn } from '@/lib/hooks/useMovinEarn';
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
 import {
   fetchActivities,
@@ -86,7 +84,6 @@ export function MovinDashboard() {
   const [isRouteModalOpen, setIsRouteModalOpen] = useState(false);
   const [isJointTrackingSelected, setIsJointTrackingSelected] = useState(false);
   const [isScreenshotImportModalOpen, setIsScreenshotImportModalOpen] = useState(false);
-  const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
   const [showStepsCelebration, setShowStepsCelebration] = useState(false);
   const [showStreakCelebration, setShowStreakCelebration] = useState(false);
   const [streakMilestone, setStreakMilestone] = useState(0);
@@ -95,11 +92,6 @@ export function MovinDashboard() {
   const addressLower = useMemo(() => address?.toLowerCase(), [address]);
 
   const dispatch = useAppDispatch();
-
-  // Get premium status
-  const { usePremiumStatus } = useMovinEarn();
-  const { isPremiumActive } = usePremiumStatus();
-  const isPremiumUser = isPremiumActive();
 
   const { activities, isLoading, error } = useAppSelector((state: RootState) => state.activityData);
   const { energyEntries } = useAppSelector((state: RootState) => state.energyData);
@@ -336,10 +328,6 @@ export function MovinDashboard() {
 
   // Handle opening the route type modal
   const handleOpenRouteTracking = () => {
-    if (!isPremiumUser) {
-      setIsPremiumModalOpen(true);
-      return;
-    }
     setIsRouteTypeModalOpen(true);
   };
 
@@ -621,10 +609,8 @@ export function MovinDashboard() {
               <Button
                 onClick={handleOpenRouteTracking}
                 size="sm"
-                aria-label={isPremiumUser ? 'Track Route' : 'Track Route - Premium feature'}
-                className={`${
-                  isPremiumUser ? 'bg-blue-500 hover:bg-blue-600' : 'bg-gray-500 hover:bg-gray-600'
-                }`}
+                aria-label="Track Route"
+                className="bg-blue-500 hover:bg-blue-600"
               >
                 <MapPin className="h-4 w-4 mr-2" />
                 Track Route
@@ -747,15 +733,6 @@ export function MovinDashboard() {
         achievementTitle="Streak Milestone"
         description={`Congratulations on maintaining a ${streakMilestone}-day activity streak!`}
         showReward={false}
-      />
-
-      {/* Premium Upgrade Modal */}
-      <PremiumUpgradeModal
-        isOpen={isPremiumModalOpen}
-        onClose={() => setIsPremiumModalOpen(false)}
-        featureName="Route Tracking"
-        title="Route Tracking - Premium Feature"
-        description="Track your runs and workouts with GPS, analyze your performance, and enjoy joint tracking with friends. Upgrade to premium to unlock advanced activity features."
       />
     </>
   );

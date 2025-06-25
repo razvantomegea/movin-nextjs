@@ -1,13 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, User, Users, MapPin, Search, UserPlus, Check, Clock } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { useMovinEarn } from '@/lib/hooks/useMovinEarn';
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
 import {
   findNearbyUsers,
@@ -36,27 +35,9 @@ export function RouteTypeModal({
 
   const [step, setStep] = useState<'select' | 'search' | 'invite'>('select');
 
-  // Get premium status
-  const { usePremiumStatus } = useMovinEarn();
-  const { isPremiumActive } = usePremiumStatus();
-  const isPremiumUser = isPremiumActive();
-
   const { nearbyUsers, invitedUsers, joinedUsers, isSearching, error } = useAppSelector(
     (state) => state.jointTracking,
   );
-
-  // Close modal if user is not premium
-  useEffect(() => {
-    if (isOpen && !isPremiumUser) {
-      dispatch(
-        showInfoToast({
-          title: 'Premium Feature',
-          description: 'Route tracking is only available for premium subscribers.',
-        }),
-      );
-      onClose();
-    }
-  }, [isOpen, isPremiumUser, dispatch, onClose]);
 
   // Handle searching for nearby users
   const handleSearchNearby = () => {

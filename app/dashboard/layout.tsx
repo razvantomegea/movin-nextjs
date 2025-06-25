@@ -16,6 +16,7 @@ import {
   Flame,
   ExternalLink,
   Coins,
+  Lock,
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -65,9 +66,17 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   const tabs = [
     { name: 'Movin', path: '/dashboard', icon: <Activity className="h-5 w-5" /> },
-    ...(isPremium
-      ? [{ name: 'Energy', path: '/dashboard/energy', icon: <Bolt className="h-5 w-5" /> }]
-      : []),
+    {
+      name: 'Energy',
+      path: '/dashboard/energy',
+      icon: (
+        <span className="relative flex items-center">
+          <Bolt className="h-5 w-5" />
+          {!isPremium && <Lock className="h-3 w-3 text-yellow-400 absolute -top-1 -right-2" />}
+        </span>
+      ),
+      premium: true,
+    },
     { name: 'Rewards', path: '/dashboard/rewards', icon: <Gift className="h-5 w-5" /> },
     // { name: 'Social', path: '/dashboard/social', icon: <Users className="h-5 w-5" /> },
     { name: 'More', path: '#', icon: <Menu className="h-5 w-5" /> },
@@ -361,9 +370,16 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 }`}
                 style={{ backgroundColor: 'transparent' }}
                 onClick={handleNavigate(tab.path)}
+                disabled={tab.premium && !isPremium}
+                title={tab.premium && !isPremium ? 'Premium Only' : undefined}
               >
                 <span className="mb-0.5">{tab.icon}</span>
-                <span className="text-xs">{tab.name}</span>
+                <span className="text-xs flex items-center">
+                  {tab.name}
+                  {tab.premium && !isPremium && (
+                    <span className="ml-1 text-[10px] text-yellow-400 font-semibold">Premium</span>
+                  )}
+                </span>
               </Button>
             ),
           )}
