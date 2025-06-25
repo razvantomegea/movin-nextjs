@@ -21,6 +21,7 @@ import { useTheme } from 'next-themes';
 import { useGoogleMapsStatus } from '@/app/contexts/google-maps-provider';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/cn';
 import { formatDistance, formatDuration } from '@/utils';
 
@@ -606,12 +607,14 @@ export function RouteTrackingModal({
       <AnimatePresence>
         {showSpeedWarning && (
           <motion.div
+            key="speed-warning-overlay"
             className="fixed inset-0 z-60 flex items-center justify-center p-4"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
             <motion.div
+              key="speed-warning-backdrop"
               className="absolute inset-0 bg-black/80 backdrop-blur-sm"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -619,6 +622,7 @@ export function RouteTrackingModal({
             />
 
             <motion.div
+              key="speed-warning-content"
               className={`relative max-w-md w-full rounded-xl p-6 ${
                 isDark ? 'bg-gray-900 border border-gray-800' : 'bg-white border border-gray-200'
               } shadow-xl`}
@@ -691,12 +695,14 @@ export function RouteTrackingModal({
     <AnimatePresence>
       {isOpen && (
         <motion.div
+          key="route-tracking-overlay"
           className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
         >
           <motion.div
+            key="route-tracking-backdrop"
             className="absolute inset-0 bg-black/80 backdrop-blur-sm"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -704,6 +710,7 @@ export function RouteTrackingModal({
           />
 
           <motion.div
+            key="route-tracking-content"
             className={`relative w-full h-full sm:max-w-lg sm:h-auto sm:max-h-[90vh] sm:rounded-xl overflow-hidden ${
               isDark ? 'bg-gray-900' : 'bg-white'
             } shadow-xl`}
@@ -769,6 +776,7 @@ export function RouteTrackingModal({
                       {/* Current user marker */}
                       {currentPosition && (
                         <Marker
+                          key="current-user-marker"
                           position={currentPosition}
                           icon={{
                             path: window.google.maps.SymbolPath.CIRCLE,
@@ -784,6 +792,7 @@ export function RouteTrackingModal({
                       {/* Sarrah's marker */}
                       {isJointTracking && sarrahPosition && (
                         <Marker
+                          key="sarrah-marker"
                           position={sarrahPosition}
                           onClick={() => setSelectedUser(sarrahUser.id)}
                           icon={{
@@ -800,6 +809,7 @@ export function RouteTrackingModal({
                       {/* Info window for Sarrah */}
                       {selectedUser === sarrahUser.id && sarrahPosition && (
                         <InfoWindow
+                          key="sarrah-info-window"
                           position={sarrahPosition}
                           onCloseClick={() => setSelectedUser(null)}
                         >
@@ -821,6 +831,7 @@ export function RouteTrackingModal({
                       {/* Route path */}
                       {routePath.length > 1 && (
                         <Polyline
+                          key="route-path"
                           path={routePath}
                           options={{
                             strokeColor: '#FF0000',
@@ -913,53 +924,74 @@ export function RouteTrackingModal({
               {/* Action Buttons */}
               {permissionState === 'granted' && !error && (
                 <div className={`p-4 border-t ${isDark ? 'border-gray-800' : 'border-gray-200'}`}>
-                  <div className="flex justify-around items-center">
-                    <Button
-                      variant="outline"
-                      onClick={() => resetTracking()}
-                      disabled={isTracking && routePath.length === 0}
-                      title="Reset Tracking"
-                    >
-                      <RotateCw className="h-4 w-4" />
-                    </Button>
+                  <TooltipProvider>
+                    <div className="flex justify-around items-center">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="outline"
+                            onClick={() => resetTracking()}
+                            disabled={isTracking && routePath.length === 0}
+                          >
+                            <RotateCw className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Reset tracking data</p>
+                        </TooltipContent>
+                      </Tooltip>
 
-                    <Button
-                      variant="outline"
-                      onClick={() => setIsScreenAwakeEnabled(!isScreenAwakeEnabled)}
-                      title={
-                        isScreenAwakeEnabled
-                          ? 'Disable Keep Screen Awake'
-                          : 'Enable Keep Screen Awake'
-                      }
-                    >
-                      {isScreenAwakeEnabled ? (
-                        <LightbulbOff className="h-4 w-4 text-amber-500" />
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="outline"
+                            onClick={() => setIsScreenAwakeEnabled(!isScreenAwakeEnabled)}
+                          >
+                            {isScreenAwakeEnabled ? (
+                              <LightbulbOff className="h-4 w-4 text-amber-500" />
+                            ) : (
+                              <Lightbulb className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>
+                            {isScreenAwakeEnabled
+                              ? 'Disable keep screen awake during tracking'
+                              : 'Enable keep screen awake during tracking'}
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+
+                      {!isTracking ? (
+                        <Button onClick={startTracking} className="bg-green-500 hover:bg-green-600">
+                          <Play className="h-4 w-4 mr-2" />
+                          Start
+                        </Button>
                       ) : (
-                        <Lightbulb className="h-4 w-4" />
+                        <Button onClick={stopTracking} className="bg-amber-500 hover:bg-amber-600">
+                          <Pause className="h-4 w-4 mr-2" />
+                          Pause
+                        </Button>
                       )}
-                    </Button>
 
-                    {!isTracking ? (
-                      <Button onClick={startTracking} className="bg-green-500 hover:bg-green-600">
-                        <Play className="h-4 w-4 mr-2" />
-                        Start
-                      </Button>
-                    ) : (
-                      <Button onClick={stopTracking} className="bg-amber-500 hover:bg-amber-600">
-                        <Pause className="h-4 w-4 mr-2" />
-                        Pause
-                      </Button>
-                    )}
-
-                    <Button
-                      onClick={saveRoute}
-                      className="bg-blue-500 hover:bg-blue-600"
-                      disabled={isTracking || routePath.length < 2}
-                    >
-                      <Save className="h-4 w-4 mr-2" />
-                      Save
-                    </Button>
-                  </div>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            onClick={saveRoute}
+                            className="bg-blue-500 hover:bg-blue-600"
+                            disabled={isTracking || routePath.length < 2}
+                          >
+                            <Save className="h-4 w-4 mr-2" />
+                            Save
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Save route to your activity history</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                  </TooltipProvider>
                 </div>
               )}
             </div>

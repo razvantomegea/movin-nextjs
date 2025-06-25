@@ -7,7 +7,6 @@ import Script from 'next/script';
 import AppkitProvider from '@/app/contexts/appkit-provider';
 import { GoogleMapsProvider } from '@/app/contexts/google-maps-provider';
 import { ThemeProvider } from '@/app/contexts/theme-provider';
-import { FloatingBugReportButton } from '@/components/feedback';
 import { ReduxToaster } from '@/components/ui/redux-toaster';
 import { ReduxProvider } from '@/lib/redux/provider';
 
@@ -134,7 +133,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
             <GoogleMapsProvider>
               <AppkitProvider>{children}</AppkitProvider>
               <ReduxToaster />
-              <FloatingBugReportButton />
+              {/* <FloatingBugReportButton /> */}
               <Analytics />
             </GoogleMapsProvider>
           </ThemeProvider>
