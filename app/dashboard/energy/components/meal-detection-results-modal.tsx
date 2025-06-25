@@ -596,12 +596,12 @@ export function MealDetectionResultsModal({
                       <Button
                         variant="outline"
                         size="sm"
-                        disabled={
+                        disabled={Boolean(
                           isEditing &&
-                          initialMealData &&
-                          detectedMeal?.ingredients.length === 1 &&
-                          detectedMeal.ingredients[0].name === initialMealData.meal_name
-                        }
+                            initialMealData &&
+                            detectedMeal?.ingredients.length === 1 &&
+                            detectedMeal.ingredients[0].name === initialMealData.meal_name,
+                        )}
                         onClick={handleAddIngredientClick} // Disable add if editing a single-entry library meal
                         className="text-blue-500 border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20"
                         type="button"
