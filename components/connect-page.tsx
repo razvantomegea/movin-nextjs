@@ -11,6 +11,7 @@ import { useTheme } from 'next-themes';
 import { CelebrationAnimation } from '@/components/celebration-animation';
 import InstallPWA from '@/components/install-pwa';
 import { Button } from '@/components/ui/button';
+import { DataTestIds } from '@/constants';
 import { useMovinEarn } from '@/lib/hooks/useMovinEarn';
 import { updateProfile } from '@/lib/supabase/profile';
 import { getProfile } from '@/lib/supabase/profile';
@@ -243,6 +244,7 @@ function ConnectPageContent() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            data-testid={DataTestIds.REFERRAL_MODAL_CONTAINER}
           >
             <motion.div
               className="absolute inset-0 bg-black/50 backdrop-blur-sm"
@@ -268,6 +270,7 @@ function ConnectPageContent() {
                 <button
                   onClick={handleDismissReferral}
                   className="absolute top-4 right-4 text-white/80 hover:text-white transition-colors"
+                  data-testid={DataTestIds.REFERRAL_MODAL_CLOSE_BUTTON}
                 >
                   <X className="h-5 w-5" />
                 </button>
@@ -296,6 +299,7 @@ function ConnectPageContent() {
                 <Button
                   onClick={handleConnectWithReferral}
                   className="w-full h-12 text-base font-semibold rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white transition-all shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50"
+                  data-testid={DataTestIds.REFERRAL_MODAL_CONNECT_BUTTON}
                 >
                   Connect Wallet & Claim Bonus
                 </Button>
@@ -303,6 +307,7 @@ function ConnectPageContent() {
                 <button
                   onClick={handleDismissReferral}
                   className="mt-3 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+                  data-testid={DataTestIds.REFERRAL_MODAL_DISMISS_BUTTON}
                 >
                   Continue without connecting
                 </button>
@@ -356,6 +361,7 @@ function ConnectPageContent() {
                   height={120}
                   className="object-contain"
                   priority
+                  data-testid={DataTestIds.CONNECT_PAGE_LOGO}
                 />
               </motion.div>
             </div>
@@ -368,6 +374,7 @@ function ConnectPageContent() {
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.3, duration: 0.5 }}
               className="text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-blue-700 dark:from-blue-300 dark:to-blue-500"
+              data-testid={DataTestIds.CONNECT_PAGE_TITLE}
             >
               Movin
             </motion.h1>
@@ -377,6 +384,7 @@ function ConnectPageContent() {
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.4, duration: 0.5 }}
               className="text-lg text-gray-700 dark:text-blue-100"
+              data-testid={DataTestIds.CONNECT_PAGE_SUBTITLE}
             >
               Your effort counts
             </motion.p>
@@ -393,6 +401,7 @@ function ConnectPageContent() {
               onClick={handleConnect}
               disabled={connecting}
               className="w-full h-12 text-base font-semibold rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white transition-all shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 border-0"
+              data-testid={DataTestIds.CONNECT_WALLET_BUTTON}
             >
               {connecting ? (
                 <motion.div
@@ -400,8 +409,11 @@ function ConnectPageContent() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                 >
-                  <div className="animate-spin mr-3 h-5 w-5 border-2 border-white border-t-transparent rounded-full"></div>
-                  Connecting...
+                  <div
+                    className="animate-spin mr-3 h-5 w-5 border-2 border-white border-t-transparent rounded-full"
+                    data-testid={DataTestIds.CONNECTING_SPINNER}
+                  ></div>
+                  <span data-testid={DataTestIds.CONNECTING_TEXT}>Connecting...</span>
                 </motion.div>
               ) : (
                 <motion.div
@@ -419,6 +431,7 @@ function ConnectPageContent() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 className="text-red-500 text-center text-sm"
+                data-testid={DataTestIds.CONNECT_PAGE_ERROR_MESSAGE}
               >
                 {authError}
               </motion.p>
@@ -463,7 +476,12 @@ function ConnectPageContent() {
         transition={{ delay: 0.8, duration: 0.5 }}
         className="absolute bottom-4"
       >
-        <p className="text-gray-400 dark:text-blue-200/50 text-xs text-center">v1.5.0</p>
+        <p
+          className="text-gray-400 dark:text-blue-200/50 text-xs text-center"
+          data-testid={DataTestIds.CONNECT_PAGE_VERSION}
+        >
+          v1.5.0
+        </p>
       </motion.div>
     </div>
   );
