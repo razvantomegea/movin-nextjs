@@ -4,9 +4,20 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { GoogleMap, Marker, Polyline, InfoWindow } from '@react-google-maps/api';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Play, Pause, Save, RotateCw, MapPin, AlertTriangle, Users, Car, Lightbulb, LightbulbOff } from 'lucide-react';
+import {
+  X,
+  Play,
+  Pause,
+  Save,
+  RotateCw,
+  MapPin,
+  AlertTriangle,
+  Users,
+  Car,
+  Lightbulb,
+  LightbulbOff,
+} from 'lucide-react';
 import { useTheme } from 'next-themes';
-import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { useGoogleMapsStatus } from '@/app/contexts/google-maps-provider';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -65,6 +76,35 @@ const calculateHaversineDistance = (
 
   return R * c; // Distance in meters
 };
+
+// Web Wake Lock API helper
+let wakeLock: any = null;
+async function requestWakeLock() {
+  if ('wakeLock' in navigator) {
+    try {
+      wakeLock = await (navigator as any).wakeLock.request('screen');
+      wakeLock.addEventListener('release', () => {
+        console.log('Screen Wake Lock released');
+      });
+      console.log('Screen Wake Lock acquired');
+    } catch (err) {
+      console.error('Failed to acquire wake lock:', err);
+    }
+  } else {
+    console.log('Wake Lock API not supported');
+  }
+}
+async function releaseWakeLock() {
+  if (wakeLock) {
+    try {
+      await wakeLock.release();
+      wakeLock = null;
+      console.log('Screen Wake Lock released');
+    } catch (err) {
+      console.error('Failed to release wake lock:', err);
+    }
+  }
+}
 
 export function RouteTrackingModal({
   isOpen,
@@ -185,11 +225,9 @@ export function RouteTrackingModal({
     const manageScreenAwake = async () => {
       try {
         if (isScreenAwakeEnabled) {
-          await activateKeepAwakeAsync();
-          console.log('Screen keep awake activated');
+          await requestWakeLock();
         } else {
-          await deactivateKeepAwake();
-          console.log('Screen keep awake deactivated');
+          await releaseWakeLock();
         }
       } catch (e) {
         console.error('Failed to manage screen awake state:', e);
@@ -202,7 +240,7 @@ export function RouteTrackingModal({
 
     // Ensure deactivation when the modal is not open or component unmounts
     return () => {
-      deactivateKeepAwake().catch(e => console.error('Failed to deactivate screen awake on cleanup:', e));
+      releaseWakeLock();
     };
   }, [isScreenAwakeEnabled, isOpen]);
 
@@ -879,7 +917,11 @@ export function RouteTrackingModal({
                     <Button
                       variant="outline"
                       onClick={() => setIsScreenAwakeEnabled(!isScreenAwakeEnabled)}
-                      title={isScreenAwakeEnabled ? 'Disable Keep Screen Awake' : 'Enable Keep Screen Awake'}
+                      title={
+                        isScreenAwakeEnabled
+                          ? 'Disable Keep Screen Awake'
+                          : 'Enable Keep Screen Awake'
+                      }
                     >
                       {isScreenAwakeEnabled ? (
                         <LightbulbOff className="h-4 w-4 text-amber-500" />
