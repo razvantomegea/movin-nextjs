@@ -33,7 +33,7 @@ type TooltipPayloadItem = {
   dataKey?: string;
   value?: number | string;
   color?: string;
-  payload?: Record<string, any>;
+  payload?: Record<string, unknown>;
   fill?: string;
   [key: string]: unknown;
 };
