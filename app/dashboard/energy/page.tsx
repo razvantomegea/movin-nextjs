@@ -14,21 +14,19 @@ export default function Energy() {
   const isPremium = isPremiumActive();
 
   useEffect(() => {
-    if (!isLoading) {
-      if (!isPremium) {
-        // Show premium upgrade modal for non-premium users
-        setShowPremiumModal(true);
-      }
+    if (!isLoading && !isPremium) {
+      // Show premium upgrade modal for non-premium users
+      setShowPremiumModal(true);
     }
   }, [isPremium, isLoading]);
 
   const handleModalClose = () => {
     setShowPremiumModal(false);
-    // Redirect to dashboard when modal is closed
-    router.push('/dashboard');
+    // Use replace instead of push to avoid adding to browser history
+    router.replace('/dashboard');
   };
 
-  // If still loading premium status, show nothing (or loading state)
+  // If still loading premium status, show loading state
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -42,12 +40,14 @@ export default function Energy() {
     return <EnergyPage />;
   }
 
-  // For non-premium users, show modal and redirect
+  // For non-premium users, show modal with minimal page content
   return (
     <>
       <div className="p-4">
         <h1 className="text-2xl font-bold">Energy</h1>
-        <p className="text-gray-500 mt-2">Loading...</p>
+        <p className="text-gray-500 mt-2">
+          Premium feature - Please upgrade to access energy tracking.
+        </p>
       </div>
 
       <PremiumUpgradeModal

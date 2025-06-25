@@ -76,7 +76,6 @@ export async function insertMeal({
   delete dataToInsert.created_at;
   delete dataToInsert.updated_at;
 
-
   const { data: insertedData, error } = await client
     .from('meals')
     .insert(dataToInsert)
@@ -123,15 +122,20 @@ export async function updateMeal({
     address: undefined,
     id: undefined,
     created_at: undefined,
-    log_date: mealData.log_date ? new Date(mealData.log_date).toISOString().split('T')[0] : undefined,
+    log_date: mealData.log_date
+      ? new Date(mealData.log_date).toISOString().split('T')[0]
+      : undefined,
   };
   delete dataToUpdate.address; // Address should not be updatable this way
-  delete dataToUpdate.id;       // ID is used for matching, not updating
+  delete dataToUpdate.id; // ID is used for matching, not updating
   delete dataToUpdate.created_at; // created_at should not be updated
 
   // Remove any undefined fields from dataToUpdate to avoid overwriting with null
-  Object.keys(dataToUpdate).forEach(key => dataToUpdate[key as keyof typeof dataToUpdate] === undefined && delete dataToUpdate[key as keyof typeof dataToUpdate]);
-
+  Object.keys(dataToUpdate).forEach(
+    (key) =>
+      dataToUpdate[key as keyof typeof dataToUpdate] === undefined &&
+      delete dataToUpdate[key as keyof typeof dataToUpdate],
+  );
 
   const { data: updatedData, error } = await client
     .from('meals')
@@ -151,7 +155,6 @@ export async function updateMeal({
   }
   return updatedData as IMeal;
 }
-
 
 export async function searchMealsByName({
   address,

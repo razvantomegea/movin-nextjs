@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Search, Clock, Calendar, Loader2, Edit, Trash2 } from 'lucide-react';
 import { useTheme } from 'next-themes';
@@ -17,7 +17,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import {
@@ -78,7 +78,6 @@ export function MealSearchModal({
       dispatch(clearSearchResults());
     }
   }, [searchQuery, userAddress, dispatch]);
-
 
   // Switch to search tab when user starts typing
   useEffect(() => {
@@ -169,7 +168,6 @@ export function MealSearchModal({
     }
     return 'Your recently logged meals will appear here';
   };
-
 
   return (
     <AnimatePresence>
@@ -311,12 +309,14 @@ export function MealSearchModal({
                       isDark ? 'text-gray-600' : 'text-gray-400'
                     }`}
                   />
-                   <h3
+                  <h3
                     className={`text-lg font-semibold mb-2 ${
                       isDark ? 'text-gray-300' : 'text-gray-700'
                     }`}
                   >
-                    {isLoading && activeTab === 'recent' ? 'Loading recent meals...' : 'Searching...'}
+                    {isLoading && activeTab === 'recent'
+                      ? 'Loading recent meals...'
+                      : 'Searching...'}
                   </h3>
                 </div>
               ) : (
@@ -339,15 +339,22 @@ export function MealSearchModal({
                         <CardContent className="p-4">
                           <div className="flex items-start justify-between mb-2">
                             <div className="flex-1 pr-2">
-                              <h3 className="font-semibold cursor-pointer" onClick={() => handleMealSelect(meal)}>{meal.meal_name}</h3>
+                              <h3
+                                className="font-semibold cursor-pointer"
+                                onClick={() => handleMealSelect(meal)}
+                              >
+                                {meal.meal_name}
+                              </h3>
                               <div
-                                className={`text-xs mt-1 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}
+                                className={`text-xs mt-1 ${
+                                  isDark ? 'text-gray-500' : 'text-gray-400'
+                                }`}
                               >
                                 Logged on {new Date(meal.log_date).toLocaleDateString()}
                               </div>
                             </div>
                             <div className="flex items-center space-x-1">
-                               <Button
+                              <Button
                                 variant="ghost"
                                 size="icon"
                                 onClick={() => handleEditClick(meal)}
@@ -379,7 +386,10 @@ export function MealSearchModal({
                           </div>
 
                           {/* Nutrition Info */}
-                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm mb-2 cursor-pointer" onClick={() => handleMealSelect(meal)}>
+                          <div
+                            className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm mb-2 cursor-pointer"
+                            onClick={() => handleMealSelect(meal)}
+                          >
                             <Badge variant="secondary">{meal.calories} cal</Badge>
                             <span className={isDark ? 'text-gray-400' : 'text-gray-600'}>
                               P: {meal.protein}g

@@ -95,11 +95,7 @@ export const deleteMealFromLibrary = createAsyncThunk(
 export const updateMealInLibrary = createAsyncThunk(
   'meals/updateMealInLibrary',
   async (
-    {
-      mealId,
-      address,
-      mealData,
-    }: { mealId: string; address: string; mealData: Partial<IMeal> },
+    { mealId, address, mealData }: { mealId: string; address: string; mealData: Partial<IMeal> },
     { rejectWithValue },
   ) => {
     try {

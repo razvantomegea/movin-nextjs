@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button';
 import { useMovinEarn } from '@/lib/hooks/useMovinEarn';
 import { updateProfile } from '@/lib/supabase/profile';
 import { getProfile } from '@/lib/supabase/profile';
-import { getTodayDate, getCurrentDateHour } from '@/utils';
+import { getCurrentDateHour } from '@/utils';
 
 function ConnectPageContent() {
   const router = useRouter();

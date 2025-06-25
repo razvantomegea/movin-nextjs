@@ -24,6 +24,15 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/cn';
 import { formatDistance, formatDuration } from '@/utils';
 
+// Add this type if WakeLockSentinel is not recognized by TypeScript
+// Remove if already globally available
+type WakeLockSentinel = {
+  released: boolean;
+  release: () => Promise<void>;
+  addEventListener: (type: string, listener: EventListenerOrEventListenerObject) => void;
+  removeEventListener: (type: string, listener: EventListenerOrEventListenerObject) => void;
+};
+
 interface RouteTrackingModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -78,12 +87,12 @@ const calculateHaversineDistance = (
 };
 
 // Web Wake Lock API helper
-let wakeLock: any = null;
+let wakeLock: WakeLockSentinel | null = null;
 async function requestWakeLock() {
   if ('wakeLock' in navigator) {
     try {
-      wakeLock = await (navigator as any).wakeLock.request('screen');
-      wakeLock.addEventListener('release', () => {
+      wakeLock = await navigator.wakeLock.request('screen');
+      wakeLock?.addEventListener('release', () => {
         console.log('Screen Wake Lock released');
       });
       console.log('Screen Wake Lock acquired');

@@ -14,6 +14,16 @@ import { MealSearchModal } from '@/components/meal-search-modal';
 import { PremiumUpgradeModal } from '@/components/premium-upgrade-modal';
 import { RefreshButton } from '@/components/refresh-button';
 import { TextMealModal } from '@/components/text-meal-modal';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ErrorAlert } from '@/components/ui/error-alert';
@@ -63,38 +73,44 @@ const item = {
 export function EnergyPage() {
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
+  // UI state
   const [refreshing, setRefreshing] = useState(false);
+  const [showStreakCelebration, setShowStreakCelebration] = useState(false);
+  const [streakMilestone, setStreakMilestone] = useState(0);
+
+  // Modal states
   const [isMealLoggingTypeModalOpen, setIsMealLoggingTypeModalOpen] = useState(false);
   const [isCameraModalOpen, setIsCameraModalOpen] = useState(false);
   const [isTextMealModalOpen, setIsTextMealModalOpen] = useState(false);
   const [isMealSearchModalOpen, setIsMealSearchModalOpen] = useState(false);
   const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
   const [isMealResultsModalOpen, setIsMealResultsModalOpen] = useState(false);
-  const [capturedImageData, setCapturedImageData] = useState<string | null>(null);
-  const [textAnalysisResult, setTextAnalysisResult] = useState<any | null>(null); // For text based analysis results
-  const [mealToEdit, setMealToEdit] = useState<IMeal | null>(null); // For editing a meal
-  const [mealResultsModalSourceType, setMealResultsModalSourceType] = useState<'camera' | 'text' | 'edit'>('camera');
-  const [showLogMealConfirm, setShowLogMealConfirm] = useState(false); // For log confirmation
-  const [mealToLogConfirm, setMealToLogConfirm] = useState<IMeal | null>(null); // Meal to log
+  const [showLogMealConfirm, setShowLogMealConfirm] = useState(false);
 
-  const [showStreakCelebration, setShowStreakCelebration] = useState(false);
-  const [streakMilestone, setStreakMilestone] = useState(0);
+  // Meal data states
+  const [capturedImageData, setCapturedImageData] = useState<string | null>(null);
+  const [mealToEdit, setMealToEdit] = useState<IMeal | null>(null);
+  const [mealToLogConfirm, setMealToLogConfirm] = useState<IMeal | null>(null);
+  const [mealResultsModalSourceType, setMealResultsModalSourceType] = useState<
+    'camera' | 'text' | 'edit'
+  >('camera');
+  // Redux and app state
   const dispatch = useAppDispatch();
   const { address } = useAppKitAccount();
   const addressLower = useMemo(() => address?.toLowerCase(), [address]);
   const currentDate = useMemo(() => new Date(), []);
 
-  // Check if user has premium access
+  // Premium status
   const { usePremiumStatus } = useMovinEarn();
   const { isPremiumActive } = usePremiumStatus();
   const isPremium = isPremiumActive();
 
-  // Get energy data from Redux store
+  // Redux store data
   const { energyEntries, isLoading, error } = useAppSelector((state) => state.energyData);
   const { profile } = useAppSelector((state) => state.profile);
   const { activities } = useAppSelector((state) => state.activityData);
 
-  // Memoize derived data using energy mappers
+  // Computed nutrition data from energy entries
   const dailyNutrition: DailyNutrition | null = useMemo(() => {
     if (energyEntries.length > 0) {
       return mapEnergyToDaily(energyEntries, currentDate);
@@ -159,7 +175,7 @@ export function EnergyPage() {
     };
   }, [dailyNutrition, profile, activities]);
 
-  // Fetch data when component mounts (only for premium users)
+  // Initialize data on mount
   useEffect(() => {
     if (isPremium && addressLower) {
       dispatch(fetchEnergyData(addressLower));
@@ -281,59 +297,23 @@ export function EnergyPage() {
 
   const handleCameraCapture = useCallback(async (imageData: string) => {
     setCapturedImageData(imageData);
-    setTextAnalysisResult(null); // Clear other sources
     setMealToEdit(null);
     setMealResultsModalSourceType('camera');
     setIsMealResultsModalOpen(true);
-    setIsCameraModalOpen(false); // Close camera modal
+    setIsCameraModalOpen(false);
   }, []);
 
-  // This should be called when TextMealModal provides the analyzed data (currently it doesn't directly)
-  // For now, let's assume TextMealModal's onAnalyze will eventually provide data to open MealDetectionResultsModal
-  const handleTextMealAnalysisComplete = useCallback((analyzedMealData: any) => {
-    // This function would be called if TextMealModal itself doesn't open MealDetectionResultsModal
-    // but provides data back to this page to then open it.
-    // The current TextMealModal seems to handle its own analysis and might directly call an API.
-    // For now, let's assume it will set a state that triggers MealDetectionResultsModal
-    setCapturedImageData(null); // Clear other sources
-    setTextAnalysisResult(analyzedMealData);
-    setMealToEdit(null);
-    setMealResultsModalSourceType('text');
-    setIsMealResultsModalOpen(true);
-    setIsTextMealModalOpen(false); // Close text modal
-  }, []);
-
-  // Placeholder for TextMealModal's onAnalyze if it needs to trigger results modal from here
-  // The current TextMealModal's onAnalyze prop is just console logging.
-  // If TextMealModal is to use MealDetectionResultsModal, its onAnalyze should call something like handleTextMealAnalysisComplete.
-  // For now, the `textAnalysisResult` state and `handleTextMealAnalysisComplete` are prepared for that integration.
-  const handleTextMealAnalyzeProp = useCallback(async (description: string) => {
+  const handleTextMealAnalyze = useCallback((description: string) => {
     console.log('Text input for meal analysis:', description);
-    // Here, you would typically call an API to analyze the text, then:
-    // const analysisData = await api.analyzeText(description);
-    // handleTextMealAnalysisComplete(analysisData);
-    // For demonstration, let's simulate this by passing the description as mealData
-    // This assumes MealDetectionResultsModal can handle a raw description or that an API call happens before it.
-    // The current structure of MealDetectionResultsModal expects ApiMealData.
-    // So, TextMealModal should ideally perform the analysis and then pass structured data.
-    // For now, we'll set a placeholder that it's text type.
-    setTextAnalysisResult({ mealName: description, ingredients: [] }); // Placeholder structure
-    setCapturedImageData(null);
-    setMealToEdit(null);
-    setMealResultsModalSourceType('text');
-    setIsMealResultsModalOpen(true);
-    setIsTextMealModalOpen(false);
   }, []);
-
 
   const handleMealSelectedForLogging = useCallback(
-    (meal: IMeal) => { // No longer async, just sets state to show dialog
+    (meal: IMeal) => {
       if (!addressLower) return;
       setMealToLogConfirm(meal);
       setShowLogMealConfirm(true);
-      // MealSearchModal's onSelectMeal calls its own onClose, so it should close.
     },
-    [addressLower], // Removed dependencies that are now in executeLogMeal
+    [addressLower],
   );
 
   const resetLogMealConfirmState = useCallback(() => {
@@ -357,8 +337,10 @@ export function EnergyPage() {
         fiber: mealToLogConfirm.fiber || 0,
         log_date: new Date().toISOString().split('T')[0],
       };
-      await dispatch(addEnergyEntry({ address: addressLower, energyData: energyEntryData })).unwrap();
-      updateStreakCount(); // Make sure updateStreakCount is defined and stable if not in deps
+      await dispatch(
+        addEnergyEntry({ address: addressLower, energyData: energyEntryData }),
+      ).unwrap();
+      updateStreakCount();
       dispatch(
         showSuccessToast({
           title: 'Meal Added',
@@ -373,23 +355,18 @@ export function EnergyPage() {
     }
   }, [mealToLogConfirm, addressLower, dispatch, updateStreakCount, resetLogMealConfirmState]);
 
-
   const handleEditMealRequest = useCallback((meal: IMeal) => {
     setMealToEdit(meal);
     setMealResultsModalSourceType('edit');
-    setCapturedImageData(null); // Clear other sources
-    setTextAnalysisResult(null);
-    setIsMealSearchModalOpen(false); // Close search modal
-    setIsMealResultsModalOpen(true); // Open results modal in edit mode
+    setCapturedImageData(null);
+    setIsMealSearchModalOpen(false);
+    setIsMealResultsModalOpen(true);
   }, []);
 
   const handleCloseMealResultsModal = useCallback(() => {
     setIsMealResultsModalOpen(false);
     setCapturedImageData(null);
-    setTextAnalysisResult(null);
     setMealToEdit(null);
-    // Optionally reset mealResultsModalSourceType to a default, e.g., 'camera'
-    // setMealResultsModalSourceType('camera');
   }, []);
 
   const handleRetryLoadEnergy = useCallback(() => {
@@ -697,7 +674,7 @@ export function EnergyPage() {
         <TextMealModal
           isOpen={isTextMealModalOpen}
           onClose={() => setIsTextMealModalOpen(false)}
-          onAnalyze={handleTextMealAnalyzeProp} // Updated to use the new handler
+          onAnalyze={handleTextMealAnalyze}
         />
       )}
 
@@ -706,8 +683,8 @@ export function EnergyPage() {
         <MealSearchModal
           isOpen={isMealSearchModalOpen}
           onClose={() => setIsMealSearchModalOpen(false)}
-          onSelectMeal={handleMealSelectedForLogging} // For logging
-          onEditMeal={handleEditMealRequest} // For editing
+          onSelectMeal={handleMealSelectedForLogging}
+          onEditMeal={handleEditMealRequest}
           userAddress={addressLower}
         />
       )}
@@ -718,11 +695,7 @@ export function EnergyPage() {
           isOpen={isMealResultsModalOpen}
           onClose={handleCloseMealResultsModal}
           imageData={mealResultsModalSourceType === 'camera' ? capturedImageData : null}
-          // mealData prop is used for text analysis results or pre-filling for edit.
-          // The structure of mealData for 'text' source depends on what analyze-meal-text API returns
-          // or how TextMealModal prepares it.
-          // For 'edit', initialMealData is used directly.
-          mealData={mealResultsModalSourceType === 'text' ? textAnalysisResult : null}
+          mealData={null}
           initialMealData={mealResultsModalSourceType === 'edit' ? mealToEdit : null}
           isEditing={mealResultsModalSourceType === 'edit'}
           sourceType={mealResultsModalSourceType}
@@ -731,22 +704,22 @@ export function EnergyPage() {
 
       {/* Confirmation Dialog for Logging Meal */}
       {mealToLogConfirm && (
-          <AlertDialog open={showLogMealConfirm} onOpenChange={setShowLogMealConfirm}>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Confirm Log Meal</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Are you sure you want to log &quot;{mealToLogConfirm?.meal_name}&quot;? This
-                  action is permanent.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel onClick={resetLogMealConfirmState}>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={executeLogMeal}>Log Meal</AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        )}
+        <AlertDialog open={showLogMealConfirm} onOpenChange={setShowLogMealConfirm}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirm Log Meal</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to log &quot;{mealToLogConfirm?.meal_name}&quot;? This action
+                is permanent.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={resetLogMealConfirmState}>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={executeLogMeal}>Log Meal</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
 
       <CelebrationAnimation
         isOpen={showStreakCelebration}

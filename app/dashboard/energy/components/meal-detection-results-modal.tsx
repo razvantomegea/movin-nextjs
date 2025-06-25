@@ -219,7 +219,6 @@ export function MealDetectionResultsModal({
       // Set saveToMealLibrary based on whether we are editing an existing library meal
       setSaveToMealLibrary(isEditing || sourceType === 'edit');
 
-
       setIsLoading(true); // Set loading true initially for all paths
 
       if (isEditing && initialMealData) {
@@ -250,8 +249,9 @@ export function MealDetectionResultsModal({
       } else {
         // No valid data source for analysis or editing, or just opened blank
         setIsLoading(false);
-        if (sourceType !== 'edit') { // Avoid error if it's an edit scenario without initial data yet
-           // console.warn('Meal modal opened without sufficient data for analysis or editing.');
+        if (sourceType !== 'edit') {
+          // Avoid error if it's an edit scenario without initial data yet
+          // console.warn('Meal modal opened without sufficient data for analysis or editing.');
         }
       }
     } else {
@@ -291,7 +291,7 @@ export function MealDetectionResultsModal({
     },
     [detectedMeal],
   );
-   // Specifically for name, as it might trigger re-analysis if different from original
+  // Specifically for name, as it might trigger re-analysis if different from original
   const handleEditIngredientName = useCallback(
     (id: string, value: string) => {
       if (!detectedMeal) return;
@@ -304,14 +304,17 @@ export function MealDetectionResultsModal({
     [detectedMeal],
   );
 
-
   // Handle adding a new ingredient
   const handleAddIngredient = useCallback(() => {
     if (!detectedMeal) return;
     const newIngredient: Ingredient = {
       id: generateUniqueIngredientId(),
       name: 'New Ingredient', // Default name
-      calories: 0, carbohydrates: 0, fats: 0, protein: 0, fiber: 0,
+      calories: 0,
+      carbohydrates: 0,
+      fats: 0,
+      protein: 0,
+      fiber: 0,
     };
     const updatedIngredients = [...detectedMeal.ingredients, newIngredient];
     const totals = calculateTotals(updatedIngredients);
@@ -350,23 +353,35 @@ export function MealDetectionResultsModal({
     try {
       if (isEditing && initialMealData && address) {
         // Updating an existing meal in the library
-        await dispatch(updateMealInLibrary({
-          mealId: initialMealData.id,
-          address: address.toLowerCase(),
-          mealData: mealPayload,
-        })).unwrap();
+        await dispatch(
+          updateMealInLibrary({
+            mealId: initialMealData.id,
+            address: address.toLowerCase(),
+            mealData: mealPayload,
+          }),
+        ).unwrap();
         // console.log('Dispatching updateMealInLibrary with:', { mealId: initialMealData.id, address: address.toLowerCase(), mealData: mealPayload });
-        dispatch(showSuccessToast({ title: 'Meal Updated', description: 'Your meal has been updated in the library.' }));
+        dispatch(
+          showSuccessToast({
+            title: 'Meal Updated',
+            description: 'Your meal has been updated in the library.',
+          }),
+        );
         // Note: Editing a library meal does not automatically log it as a new energy entry here.
         // It only updates the library item. User can log it separately if needed.
-      } else if (address) { // Ensure address exists for adding new meal too
+      } else if (address) {
+        // Ensure address exists for adding new meal too
         // Adding a new meal (from camera/text analysis)
         // Always save to daily energy log
-        await dispatch(addEnergyEntry({ address: address.toLowerCase(), energyData: mealPayload })).unwrap();
+        await dispatch(
+          addEnergyEntry({ address: address.toLowerCase(), energyData: mealPayload }),
+        ).unwrap();
 
         let successMessage = 'Your meal has been added to your log.';
         if (saveToMealLibrary) {
-          await dispatch(addMealToLibrary({ address: address.toLowerCase(), mealData: mealPayload })).unwrap();
+          await dispatch(
+            addMealToLibrary({ address: address.toLowerCase(), mealData: mealPayload }),
+          ).unwrap();
           successMessage = 'Your meal has been added to your log and saved to your meal library.';
         }
         dispatch(showSuccessToast({ title: 'Meal Added', description: successMessage }));
@@ -375,7 +390,7 @@ export function MealDetectionResultsModal({
       // Common post-save actions
       if (address) {
         dispatch(fetchRecentMeals(address.toLowerCase())); // Refresh recent meals
-        dispatch(fetchEnergyData(address.toLowerCase()));   // Refresh daily energy data
+        dispatch(fetchEnergyData(address.toLowerCase())); // Refresh daily energy data
       }
       onClose(); // Close the modal
     } catch (error) {
@@ -397,33 +412,60 @@ export function MealDetectionResultsModal({
     setShowSaveConfirm(true);
   };
 
-
   // UI Callback Handlers for ingredient edits, add, remove
-  const handleAddIngredientClick = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault(); e.stopPropagation(); // Prevent form submission if applicable
-    handleAddIngredient();
-  }, [handleAddIngredient]);
+  const handleAddIngredientClick = useCallback(
+    (e: React.MouseEvent<HTMLButtonElement>) => {
+      e.preventDefault();
+      e.stopPropagation(); // Prevent form submission if applicable
+      handleAddIngredient();
+    },
+    [handleAddIngredient],
+  );
 
-  const handleIngredientEditClick = useCallback((ingredientId: string) => {
-    if (!detectedMeal) return;
-    const ingredient = detectedMeal.ingredients.find((ing) => ing.id === ingredientId);
-    if (ingredient) {
-      setOriginalIngredientName(ingredient.name); // Store original name for re-analysis logic
-    }
-    setEditingIngredientId(ingredientId);
-  }, [detectedMeal]);
+  const handleIngredientEditClick = useCallback(
+    (ingredientId: string) => {
+      if (!detectedMeal) return;
+      const ingredient = detectedMeal.ingredients.find((ing) => ing.id === ingredientId);
+      if (ingredient) {
+        setOriginalIngredientName(ingredient.name); // Store original name for re-analysis logic
+      }
+      setEditingIngredientId(ingredientId);
+    },
+    [detectedMeal],
+  );
 
-  const handleRemoveIngredientClick = useCallback((ingredientId: string) => {
-    handleRemoveIngredient(ingredientId);
-  }, [handleRemoveIngredient]);
+  const handleRemoveIngredientClick = useCallback(
+    (ingredientId: string) => {
+      handleRemoveIngredient(ingredientId);
+    },
+    [handleRemoveIngredient],
+  );
 
   // Updated change handlers to use the specific field editor functions
-  const handleIngredientNameChange = useCallback((id: string, value: string) => handleEditIngredientName(id, value), [handleEditIngredientName]);
-  const handleIngredientCaloriesChange = useCallback((id: string, value: string) => handleEditIngredientNumericField(id, 'calories', value), [handleEditIngredientNumericField]);
-  const handleIngredientCarbsChange = useCallback((id: string, value: string) => handleEditIngredientNumericField(id, 'carbohydrates', value), [handleEditIngredientNumericField]);
-  const handleIngredientFatsChange = useCallback((id: string, value: string) => handleEditIngredientNumericField(id, 'fats', value), [handleEditIngredientNumericField]);
-  const handleIngredientProteinChange = useCallback((id: string, value: string) => handleEditIngredientNumericField(id, 'protein', value), [handleEditIngredientNumericField]);
-  const handleIngredientFiberChange = useCallback((id: string, value: string) => handleEditIngredientNumericField(id, 'fiber', value), [handleEditIngredientNumericField]);
+  const handleIngredientNameChange = useCallback(
+    (id: string, value: string) => handleEditIngredientName(id, value),
+    [handleEditIngredientName],
+  );
+  const handleIngredientCaloriesChange = useCallback(
+    (id: string, value: string) => handleEditIngredientNumericField(id, 'calories', value),
+    [handleEditIngredientNumericField],
+  );
+  const handleIngredientCarbsChange = useCallback(
+    (id: string, value: string) => handleEditIngredientNumericField(id, 'carbohydrates', value),
+    [handleEditIngredientNumericField],
+  );
+  const handleIngredientFatsChange = useCallback(
+    (id: string, value: string) => handleEditIngredientNumericField(id, 'fats', value),
+    [handleEditIngredientNumericField],
+  );
+  const handleIngredientProteinChange = useCallback(
+    (id: string, value: string) => handleEditIngredientNumericField(id, 'protein', value),
+    [handleEditIngredientNumericField],
+  );
+  const handleIngredientFiberChange = useCallback(
+    (id: string, value: string) => handleEditIngredientNumericField(id, 'fiber', value),
+    [handleEditIngredientNumericField],
+  );
 
   // Handler for "Save to Meal Library" checkbox
   const handleSaveToMealLibraryChange = useCallback((checked: boolean) => {
@@ -526,7 +568,10 @@ export function MealDetectionResultsModal({
                         placeholder="Enter meal name"
                       />
                     ) : (
-                      <h3 className="text-lg font-bold flex-1 truncate" title={editedMealName || detectedMeal.mealName}>
+                      <h3
+                        className="text-lg font-bold flex-1 truncate"
+                        title={editedMealName || detectedMeal.mealName}
+                      >
                         {editedMealName || detectedMeal.mealName}
                       </h3>
                     )}
@@ -538,7 +583,9 @@ export function MealDetectionResultsModal({
                       aria-label={mealNameEditMode ? 'Save meal name' : 'Edit meal name'}
                     >
                       <Edit2 className="h-4 w-4" />
-                      <span className="sr-only">{mealNameEditMode ? 'Save' : 'Edit'} meal name</span>
+                      <span className="sr-only">
+                        {mealNameEditMode ? 'Save' : 'Edit'} meal name
+                      </span>
                     </Button>
                   </div>
 
@@ -549,7 +596,12 @@ export function MealDetectionResultsModal({
                       <Button
                         variant="outline"
                         size="sm"
-                        disabled={isEditing && initialMealData && detectedMeal?.ingredients.length === 1 && detectedMeal.ingredients[0].name === initialMealData.meal_name}
+                        disabled={
+                          isEditing &&
+                          initialMealData &&
+                          detectedMeal?.ingredients.length === 1 &&
+                          detectedMeal.ingredients[0].name === initialMealData.meal_name
+                        }
                         onClick={handleAddIngredientClick} // Disable add if editing a single-entry library meal
                         className="text-blue-500 border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20"
                         type="button"
@@ -559,11 +611,15 @@ export function MealDetectionResultsModal({
                       </Button>
                     </div>
 
-                    {isEditing && initialMealData && detectedMeal?.ingredients.length === 1 && detectedMeal.ingredients[0].name === initialMealData.meal_name && (
-                       <p className={`text-xs mb-3 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                         Editing overall nutrition for &quot;{initialMealData.meal_name}&quot;. To edit individual ingredients, log this as a new meal for full analysis.
-                       </p>
-                    )}
+                    {isEditing &&
+                      initialMealData &&
+                      detectedMeal?.ingredients.length === 1 &&
+                      detectedMeal.ingredients[0].name === initialMealData.meal_name && (
+                        <p className={`text-xs mb-3 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                          Editing overall nutrition for &quot;{initialMealData.meal_name}&quot;. To
+                          edit individual ingredients, log this as a new meal for full analysis.
+                        </p>
+                      )}
                     <div className="space-y-3">
                       {detectedMeal.ingredients.map((ingredient) => (
                         <div
@@ -874,8 +930,7 @@ export function MealDetectionResultsModal({
                 <p className={`text-xs mt-1 ml-7 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
                   {isEditing
                     ? "Changes will update this meal in your library. It won't be automatically re-logged to today's energy."
-                    : "Your meal will always be saved to today's energy log. Check this to also save it to your meal library for easy reuse."
-                  }
+                    : "Your meal will always be saved to today's energy log. Check this to also save it to your meal library for easy reuse."}
                 </p>
               </div>
 
@@ -887,7 +942,9 @@ export function MealDetectionResultsModal({
                 <Button
                   onClick={handleSaveMealClick} // This now opens the confirmation dialog
                   disabled={isLoading || !detectedMeal}
-                  className={isEditing ? "bg-blue-500 hover:bg-blue-600" : "bg-green-500 hover:bg-green-600"}
+                  className={
+                    isEditing ? 'bg-blue-500 hover:bg-blue-600' : 'bg-green-500 hover:bg-green-600'
+                  }
                 >
                   {isEditing ? 'Update Meal' : 'Save to Log'}
                   <ArrowRight className="ml-2 h-4 w-4" />
@@ -901,14 +958,17 @@ export function MealDetectionResultsModal({
             <AlertDialogContent>
               <AlertDialogHeader>
                 <AlertDialogTitle className="flex items-center">
-                  <AlertTriangle className="h-5 w-5 mr-2 text-yellow-400" /> {/* Icon for warning */}
+                  <AlertTriangle className="h-5 w-5 mr-2 text-yellow-400" />{' '}
+                  {/* Icon for warning */}
                   Confirm Action
                 </AlertDialogTitle>
                 <AlertDialogDescription>
                   {isEditing
                     ? 'Are you sure you want to save these changes to this meal in your library? This action cannot be undone.'
                     : 'Are you sure you want to add this meal to your log? This action cannot be undone.'}
-                  {saveToMealLibrary && !isEditing && ' This will also add it to your meal library.'}
+                  {saveToMealLibrary &&
+                    !isEditing &&
+                    ' This will also add it to your meal library.'}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>

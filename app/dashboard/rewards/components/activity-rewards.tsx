@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAppKitAccount } from '@reown/appkit/react';
-import { CircleDollarSign, Award, RefreshCw } from 'lucide-react';
+import { CircleDollarSign, RefreshCw } from 'lucide-react';
 
 import { CelebrationAnimation } from '@/components/celebration-animation';
 import { TransactionConfirmationModal } from '@/components/transaction-confirmation-modal';
@@ -126,32 +126,6 @@ export function ActivityRewards({ refreshing, onDataLoaded }: ActivityRewardsPro
       { type: 'METs', amount: rewards.metsRewards, percentage: metsPercentage },
     ];
   }, [rewards, totalRewards]);
-
-  // Sample challenges (could be replaced with real data from blockchain in the future)
-  const challenges = useMemo(() => {
-    if (!dailyActivity) return [];
-
-    const mets = calculateMetsFromCalories(dailyActivity.calories || 0);
-
-    return [
-      {
-        id: 1,
-        title: 'Daily Steps',
-        description: `Complete ${dailyActivity.steps} steps today`,
-        reward: rewards?.stepsRewards || 0,
-        progress: dailyActivity.steps,
-        total: rewards?.steps || 0,
-      },
-      {
-        id: 2,
-        title: 'Daily METs',
-        description: `Burn ${mets} METs today`,
-        reward: rewards?.metsRewards || 0,
-        progress: mets,
-        total: rewards?.mets || 0,
-      },
-    ];
-  }, [rewards, dailyActivity]);
 
   const rewardsToSaveString = useMemo(() => {
     return rewardsToSave.toFixed(2);
@@ -381,39 +355,6 @@ export function ActivityRewards({ refreshing, onDataLoaded }: ActivityRewardsPro
                     <span className="font-medium">{reward.amount.toFixed(2)} MVN</span>
                   </div>
                   <Progress value={reward.percentage} className="h-2" />
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="space-y-4">
-        <h2 className="text-lg font-medium">Current Progress</h2>
-        <Card className="bg-gray-100 dark:bg-gray-900 border-gray-300 dark:border-gray-800">
-          <CardContent className="p-4">
-            <div className="space-y-4">
-              {challenges.map((challenge) => (
-                <div
-                  key={challenge.id}
-                  className="flex items-center p-2 bg-gray-200/70 dark:bg-gray-800/50 rounded-lg"
-                >
-                  <div className="bg-blue-500/20 p-2 rounded-full mr-3">
-                    <Award className="h-4 w-4 text-blue-400" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex justify-between">
-                      <span className="font-medium">{challenge.title}</span>
-                      <span className="text-blue-400 font-medium">
-                        +{challenge.reward.toFixed(2)} MVN
-                      </span>
-                    </div>
-                    <div className="text-sm text-gray-400 mt-1">{challenge.description}</div>
-                    <Progress
-                      value={(challenge.progress / challenge.total) * 100}
-                      className="h-1.5 mt-2"
-                    />
-                  </div>
                 </div>
               ))}
             </div>
