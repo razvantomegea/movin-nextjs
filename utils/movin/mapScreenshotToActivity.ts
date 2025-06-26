@@ -46,16 +46,29 @@ export function mapScreenshotToActivity(
   // Calculate start time based on duration
   const startTime = new Date(endTime.getTime() - extractedData.duration * 1000);
 
+  // If steps are missing but distance is present, estimate steps
+  let steps = extractedData.steps;
+  let distance = extractedData.distance;
+  // Use 1300 steps per km as a common estimate (from mapRouteToActivity)
+  const STEPS_PER_KM = 1300;
+  const METERS_PER_STEP = 1000 / STEPS_PER_KM; // ~0.77 meters per step
+
+  if ((steps == null || steps === 0) && distance && distance > 0) {
+    steps = Math.round((distance / 1000) * STEPS_PER_KM);
+  } else if ((distance == null || distance === 0) && steps && steps > 0) {
+    distance = Math.round(steps * METERS_PER_STEP);
+  }
+
   const baseActivity: Partial<IActivity> = {
     address: userAddress,
-    name: extractedData.name,
+    name: extractedData.name || 'Imported Activity',
     source: 'Screenshot Import', // Indicates this activity was imported from a screenshot
     start_date: startTime.toISOString(),
     end_date: endTime.toISOString(),
     duration: extractedData.duration, // seconds
-    total_distance: extractedData.distance || 0, // meters
-    total_energy_burned: extractedData.calories, // kcal
-    total_steps: extractedData.steps || 0,
+    total_distance: distance || 0, // meters
+    total_energy_burned: extractedData.calories || 0, // kcal
+    total_steps: steps || 0,
     // Heart rate data from the screenshot
     maximum_heart_rate: extractedData.heartRate?.maximum || 0,
     average_heart_rate: extractedData.heartRate?.average || 0,
