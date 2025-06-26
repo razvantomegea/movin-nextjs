@@ -19,14 +19,14 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui",
-    "test:e2e:headed": "playwright test --headed",
-    "test:e2e:debug": "playwright test --debug",
+    "test:e2e": "NEXT_PUBLIC_DISABLE_SERVICE_WORKER=true playwright test",
+    "test:e2e:ui": "NEXT_PUBLIC_DISABLE_SERVICE_WORKER=true playwright test --ui",
+    "test:e2e:headed": "NEXT_PUBLIC_DISABLE_SERVICE_WORKER=true playwright test --headed",
+    "test:e2e:debug": "NEXT_PUBLIC_DISABLE_SERVICE_WORKER=true playwright test --debug",
     "prepare": "husky",
     "update-version": "node scripts/update-version.js",
-    "start:no-sw": "DISABLE_SERVICE_WORKER=1 next start",
-    "build:no-sw": "DISABLE_SERVICE_WORKER=1 next build"
+    "start:no-sw": "NEXT_PUBLIC_DISABLE_SERVICE_WORKER=true next start",
+    "build:no-sw": "NEXT_PUBLIC_DISABLE_SERVICE_WORKER=true next build"
   },
   "dependencies": {
     "@emotion/is-prop-valid": "latest",

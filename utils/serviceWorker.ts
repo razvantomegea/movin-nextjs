@@ -44,7 +44,7 @@ export async function registerServiceWorker(
 
   // Check for environment variable to disable service worker
   if (
-    (typeof process !== 'undefined' && process.env.DISABLE_SERVICE_WORKER === '1') ||
+    (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_DISABLE_SERVICE_WORKER) ||
     (typeof window !== 'undefined' &&
       (window as unknown as { DISABLE_SERVICE_WORKER: string }).DISABLE_SERVICE_WORKER === '1')
   ) {
@@ -56,7 +56,7 @@ export async function registerServiceWorker(
 
   globalRegistrationPromise = (async () => {
     if (
-      (typeof process !== 'undefined' && process.env.DISABLE_SERVICE_WORKER === '1') ||
+      (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_DISABLE_SERVICE_WORKER) ||
       (typeof window !== 'undefined' &&
         (window as unknown as { DISABLE_SERVICE_WORKER: string }).DISABLE_SERVICE_WORKER === '1')
     ) {
