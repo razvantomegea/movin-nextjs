@@ -1,3 +1,4 @@
+import { IActivity } from '@/lib/supabase/activities';
 import {
   mapActivitiesToDaily,
   mapActivitiesToWeekly,
@@ -6,7 +7,7 @@ import {
   mapActivitiesToTodaysWorkouts,
 } from '../activityMappers';
 
-const mockActivities = [
+const mockActivities: IActivity[] = [
   {
     id: '1',
     name: 'Run',
@@ -16,6 +17,9 @@ const mockActivities = [
     total_distance: 5000,
     total_energy_burned: 300,
     total_steps: 6500,
+    address: 'erd1testaddress',
+    created_at: '2024-06-01T08:00:00Z',
+    updated_at: '2024-06-01T08:00:00Z',
   },
   {
     id: '2',
@@ -26,6 +30,9 @@ const mockActivities = [
     total_distance: 2000,
     total_energy_burned: 100,
     total_steps: 2500,
+    address: 'erd1testaddress',
+    created_at: '2024-06-01T18:00:00Z',
+    updated_at: '2024-06-01T18:00:00Z',
   },
   {
     id: '3',
@@ -36,6 +43,9 @@ const mockActivities = [
     total_distance: 20000,
     total_energy_burned: 600,
     total_steps: 0,
+    address: 'erd1testaddress',
+    created_at: '2024-06-02T07:00:00Z',
+    updated_at: '2024-06-02T07:00:00Z',
   },
 ];
 
