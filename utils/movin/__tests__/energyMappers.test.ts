@@ -1,3 +1,4 @@
+import { IEnergy } from '@/lib/supabase/energy';
 import {
   mapEnergyToDaily,
   mapEnergyToWeekly,
@@ -6,7 +7,7 @@ import {
   mapEnergyToTodaysMeals,
 } from '../energyMappers';
 
-const mockEnergy = [
+const mockEnergy: IEnergy[] = [
   {
     id: '1',
     meal_name: 'Breakfast',
@@ -17,6 +18,8 @@ const mockEnergy = [
     carbohydrates: 50,
     fats: 10,
     fiber: 5,
+    address: 'erd1testaddress',
+    updated_at: '2024-06-01T08:00:00Z',
   },
   {
     id: '2',
@@ -28,6 +31,8 @@ const mockEnergy = [
     carbohydrates: 70,
     fats: 20,
     fiber: 8,
+    address: 'erd1testaddress',
+    updated_at: '2024-06-01T13:00:00Z',
   },
   {
     id: '3',
@@ -39,6 +44,8 @@ const mockEnergy = [
     carbohydrates: 80,
     fats: 25,
     fiber: 10,
+    address: 'erd1testaddress',
+    updated_at: '2024-06-02T19:00:00Z',
   },
 ];
 
