@@ -569,7 +569,7 @@ export function MovinDashboard() {
                   </div>
                 </>
               ) : (
-                <div className="text-center py-8 text-gray-500">
+                <div className="text-center py-8 text-gray-500" data-testid="dashboard-empty-state">
                   <Activity className="h-12 w-12 mx-auto mb-4 text-gray-400" />
                   <p>No activity data recorded for today.</p>
                   <p className="text-xs mt-2">
@@ -620,7 +620,10 @@ export function MovinDashboard() {
           <Card className={isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}>
             <CardContent className="p-6">
               {todaysWorkouts.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
+                <div
+                  className="text-center py-8 text-gray-500"
+                  data-testid="dashboard-empty-workouts"
+                >
                   <Dumbbell className="h-12 w-12 mx-auto mb-4 text-gray-400" />
                   <p>No workouts recorded today</p>
                   <Button variant="outline" className="mt-4" onClick={handleOpenScreenshotImport}>
@@ -679,7 +682,13 @@ export function MovinDashboard() {
 
   return (
     <>
-      <motion.div className="p-4" initial="hidden" animate="show" variants={container}>
+      <motion.div
+        className="p-4"
+        initial="hidden"
+        animate="show"
+        variants={container}
+        data-testid="dashboard-container"
+      >
         <motion.div className="flex items-center mb-6" variants={item}>
           <h1 className="text-2xl font-bold mr-2">Activities</h1>
           {/* Conditionally render the refresh button */}

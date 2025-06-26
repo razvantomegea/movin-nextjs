@@ -26,8 +26,9 @@ const DataTestIds = {
 
   // Future elements can be added here as you expand testing
   // Dashboard Elements
-  // DASHBOARD_CONTAINER: 'dashboard-container',
-  // DASHBOARD_HEADER: 'dashboard-header',
+  DASHBOARD_CONTAINER: 'dashboard-container',
+  DASHBOARD_EMPTY_STATE: 'dashboard-empty-state',
+  DASHBOARD_EMPTY_WORKOUTS: 'dashboard-empty-workouts',
 
   // Modal Elements
   // MODAL_OVERLAY: 'modal-overlay',

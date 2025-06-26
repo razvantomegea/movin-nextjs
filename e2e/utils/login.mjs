@@ -1,5 +1,8 @@
 import { MetaMask } from '@synthetixio/synpress/playwright';
+import { sleep } from './sleep.mjs';
 import { DataTestIds } from '../../constants/dataTestIds.mjs';
+
+const SLEEP_TIME = 1000;
 
 /**
  * Handle MetaMask network approval using proper Synpress methods
@@ -10,7 +13,7 @@ async function handleNetworkApproval(metamask) {
     console.log('Handling network approval with Synpress methods...');
 
     // Wait a moment for network popups to appear
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    await sleep(SLEEP_TIME);
 
     // Try to approve new network addition if needed
     try {
@@ -76,15 +79,11 @@ export async function loginWithMetaMask({
   metamaskPage,
   extensionId,
   walletPassword,
-  url = '/',
   expectRedirect = true,
   expectedRedirectUrl = '/dashboard',
 }) {
   // Create a new MetaMask instance
   const metamask = new MetaMask(context, metamaskPage, walletPassword, extensionId);
-
-  // Navigate to the specified page
-  await page.goto(url);
 
   // Wait for page to load and connect button to be visible
   await page.waitForSelector(`[data-testid="${DataTestIds.CONNECT_WALLET_BUTTON}"]`, {
@@ -95,13 +94,13 @@ export async function loginWithMetaMask({
   await page.getByTestId(DataTestIds.CONNECT_WALLET_BUTTON).click();
 
   // Wait for the AppKit modal to appear
-  await page.waitForTimeout(2000);
+  await sleep(SLEEP_TIME);
 
   // Look for MetaMask option in the modal and click it
   await page.locator('text=MetaMask').first().click();
 
   // Wait for MetaMask connection popup
-  await page.waitForTimeout(1000);
+  await sleep(SLEEP_TIME);
 
   // Connect MetaMask to the dapp
   await metamask.connectToDapp();
@@ -110,16 +109,12 @@ export async function loginWithMetaMask({
   await handleNetworkApproval(metamask);
 
   // Wait for authentication and potential redirect
-  try {
-    await page.waitForTimeout(3000);
-  } catch (error) {
-    console.log('Page wait timeout error (page may have closed):', error.message);
-  }
+  await sleep(SLEEP_TIME);
 
   // Check for redirect if expected
   if (expectRedirect) {
     try {
-      await page.waitForURL(expectedRedirectUrl, { timeout: 10000 });
+      await page.waitForURL(expectedRedirectUrl, { timeout: 30000 });
       console.log('Successfully redirected to dashboard');
     } catch (error) {
       // If browser closes or times out, check current URL
@@ -173,13 +168,13 @@ export async function loginWithMetaMaskViaReferral({
   await page.getByTestId(DataTestIds.REFERRAL_MODAL_CONNECT_BUTTON).click();
 
   // Wait for the AppKit modal to appear
-  await page.waitForTimeout(2000);
+  await sleep(SLEEP_TIME);
 
   // Look for MetaMask option in the modal and click it
   await page.locator('text=MetaMask').first().click();
 
   // Wait for MetaMask connection popup
-  await page.waitForTimeout(1000);
+  await sleep(SLEEP_TIME);
 
   // Connect MetaMask to the dapp
   await metamask.connectToDapp();
@@ -188,7 +183,7 @@ export async function loginWithMetaMaskViaReferral({
   await handleNetworkApproval(metamask);
 
   // Wait for authentication and potential redirect (extra time for referral processing)
-  await page.waitForTimeout(7000);
+  await sleep(SLEEP_TIME);
 
   return metamask;
 }

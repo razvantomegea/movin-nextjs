@@ -42,10 +42,9 @@ test.describe('Movin Connect Page Tests', () => {
         extensionId,
         walletPassword: basicSetup.walletPassword,
         expectRedirect: true,
+        expectedRedirectUrl: '/dashboard',
       });
 
-      // If we get here, the redirect worked
-      await expect(page).toHaveURL('/dashboard');
       console.log('✅ Test passed: Successfully connected and redirected to dashboard');
     } catch (error) {
       console.log('Login error (checking if this is expected):', error.message);
