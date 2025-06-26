@@ -27,7 +27,7 @@ export default defineWalletSetup(PASSWORD, async (context, walletPage) => {
   try {
     await metamask.addNetwork(BASE_NETWORK);
     console.log('Base network added successfully');
-    
+
     // Switch to Base network
     await metamask.changeNetwork('Base Mainnet');
     console.log('Switched to Base network');

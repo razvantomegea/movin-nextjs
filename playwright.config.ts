@@ -65,7 +65,7 @@ const config = defineConfig({
 
   /* Run your local dev server before starting the tests */
   webServer: {
-    command: 'pnpm start',
+    command: 'pnpm start:no-sw',
     url: 'http://localhost:3000',
     timeout: 5 * 60 * 1000,
     reuseExistingServer: !process.env.CI,

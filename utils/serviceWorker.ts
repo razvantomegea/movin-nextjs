@@ -42,6 +42,16 @@ export async function registerServiceWorker(
     throw new Error('Service workers not supported in this browser');
   }
 
+  // Check for environment variable to disable service worker
+  if (
+    (typeof process !== 'undefined' && process.env.DISABLE_SERVICE_WORKER === '1') ||
+    (typeof window !== 'undefined' &&
+      (window as unknown as { DISABLE_SERVICE_WORKER: string }).DISABLE_SERVICE_WORKER === '1')
+  ) {
+    console.log('[SW Utils] Service worker registration is disabled by DISABLE_SERVICE_WORKER');
+    throw new Error('Service worker registration is disabled');
+  }
+
   console.log('[SW Utils] Starting service worker registration...');
 
   globalRegistrationPromise = (async () => {

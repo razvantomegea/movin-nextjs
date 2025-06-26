@@ -24,7 +24,9 @@
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:debug": "playwright test --debug",
     "prepare": "husky",
-    "update-version": "node scripts/update-version.js"
+    "update-version": "node scripts/update-version.js",
+    "start:no-sw": "DISABLE_SERVICE_WORKER=1 next start",
+    "build:no-sw": "DISABLE_SERVICE_WORKER=1 next build"
   },
   "dependencies": {
     "@emotion/is-prop-valid": "latest",

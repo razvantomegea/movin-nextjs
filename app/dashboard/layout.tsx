@@ -149,14 +149,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     window.location.reload();
   }, [disconnect]);
 
-  useEffect(() => {
-    window.addEventListener('beforeunload', handleLogout);
-
-    return () => {
-      window.removeEventListener('beforeunload', handleLogout);
-    };
-  }, [handleLogout]);
-
   const content = (
     <div
       className="flex flex-col min-h-screen"

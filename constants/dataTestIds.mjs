@@ -29,6 +29,12 @@ const DataTestIds = {
   DASHBOARD_CONTAINER: 'dashboard-container',
   DASHBOARD_EMPTY_STATE: 'dashboard-empty-state',
   DASHBOARD_EMPTY_WORKOUTS: 'dashboard-empty-workouts',
+  DASHBOARD_DAILY_ACTIVITY_CARD: 'dashboard-daily-activity-card',
+  DASHBOARD_DAILY_STEPS: 'dashboard-daily-steps',
+  DASHBOARD_DAILY_CALORIES: 'dashboard-daily-calories',
+  DASHBOARD_DAILY_DISTANCE: 'dashboard-daily-distance',
+  DASHBOARD_DAILY_DURATION: 'dashboard-daily-duration',
+  DASHBOARD_WORKOUT_ROW: 'dashboard-workout-row',
 
   // Modal Elements
   // MODAL_OVERLAY: 'modal-overlay',

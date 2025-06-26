@@ -94,13 +94,13 @@ export async function loginWithMetaMask({
   await page.getByTestId(DataTestIds.CONNECT_WALLET_BUTTON).click();
 
   // Wait for the AppKit modal to appear
-  await sleep(SLEEP_TIME);
+  await page.waitForTimeout(SLEEP_TIME);
 
   // Look for MetaMask option in the modal and click it
   await page.locator('text=MetaMask').first().click();
 
   // Wait for MetaMask connection popup
-  await sleep(SLEEP_TIME);
+  await page.waitForTimeout(SLEEP_TIME);
 
   // Connect MetaMask to the dapp
   await metamask.connectToDapp();
@@ -109,7 +109,7 @@ export async function loginWithMetaMask({
   await handleNetworkApproval(metamask);
 
   // Wait for authentication and potential redirect
-  await sleep(SLEEP_TIME);
+  await page.waitForTimeout(SLEEP_TIME);
 
   // Check for redirect if expected
   if (expectRedirect) {
@@ -168,13 +168,13 @@ export async function loginWithMetaMaskViaReferral({
   await page.getByTestId(DataTestIds.REFERRAL_MODAL_CONNECT_BUTTON).click();
 
   // Wait for the AppKit modal to appear
-  await sleep(SLEEP_TIME);
+  await page.waitForTimeout(SLEEP_TIME);
 
   // Look for MetaMask option in the modal and click it
   await page.locator('text=MetaMask').first().click();
 
   // Wait for MetaMask connection popup
-  await sleep(SLEEP_TIME);
+  await page.waitForTimeout(SLEEP_TIME);
 
   // Connect MetaMask to the dapp
   await metamask.connectToDapp();
@@ -183,7 +183,7 @@ export async function loginWithMetaMaskViaReferral({
   await handleNetworkApproval(metamask);
 
   // Wait for authentication and potential redirect (extra time for referral processing)
-  await sleep(SLEEP_TIME);
+  await page.waitForTimeout(SLEEP_TIME);
 
   return metamask;
 }

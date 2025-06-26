@@ -23,6 +23,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ErrorAlert } from '@/components/ui/error-alert';
 import { Progress } from '@/components/ui/progress';
+import { DataTestIds } from '@/constants/dataTestIds.mjs';
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
 import {
   fetchActivities,
@@ -463,6 +464,7 @@ export function MovinDashboard() {
                 ? 'bg-gradient-to-br from-gray-800 to-gray-900 border-gray-700'
                 : 'bg-gradient-to-br from-white to-gray-100 border-gray-200'
             }`}
+            data-testid={DataTestIds.DASHBOARD_DAILY_ACTIVITY_CARD}
           >
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
@@ -487,6 +489,7 @@ export function MovinDashboard() {
                           initial={{ opacity: 0, scale: 0.8 }}
                           animate={{ opacity: 1, scale: 1 }}
                           transition={{ duration: 0.5, delay: 0.2 }}
+                          data-testid={DataTestIds.DASHBOARD_DAILY_STEPS}
                         >
                           {dailyActivity.steps.toLocaleString()}
                         </motion.span>
@@ -516,7 +519,10 @@ export function MovinDashboard() {
                           <div className="bg-blue-500/10 p-2 rounded-full mb-2">
                             <Flame className="h-4 w-4 text-blue-500" />
                           </div>
-                          <span className="text-sm font-medium">
+                          <span
+                            className="text-sm font-medium"
+                            data-testid={DataTestIds.DASHBOARD_DAILY_CALORIES}
+                          >
                             {dailyActivity.calories.toLocaleString()}
                           </span>
                           <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
@@ -532,7 +538,10 @@ export function MovinDashboard() {
                           <div className="bg-blue-500/10 p-2 rounded-full mb-2">
                             <TrendingUp className="h-4 w-4 text-blue-500" />
                           </div>
-                          <span className="text-sm font-medium">
+                          <span
+                            className="text-sm font-medium"
+                            data-testid={DataTestIds.DASHBOARD_DAILY_DISTANCE}
+                          >
                             {dailyActivity.distance.toLocaleString()} km
                           </span>
                           <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
@@ -548,7 +557,10 @@ export function MovinDashboard() {
                           <div className="bg-blue-500/10 p-2 rounded-full mb-2">
                             <Clock className="h-4 w-4 text-blue-500" />
                           </div>
-                          <span className="text-sm font-medium">
+                          <span
+                            className="text-sm font-medium"
+                            data-testid={DataTestIds.DASHBOARD_DAILY_DURATION}
+                          >
                             {Math.floor(dailyActivity.activeMinutes / 60)}h{' '}
                             {Math.round(dailyActivity.activeMinutes % 60)}m
                           </span>
@@ -569,7 +581,10 @@ export function MovinDashboard() {
                   </div>
                 </>
               ) : (
-                <div className="text-center py-8 text-gray-500" data-testid="dashboard-empty-state">
+                <div
+                  className="text-center py-8 text-gray-500"
+                  data-testid={DataTestIds.DASHBOARD_EMPTY_STATE}
+                >
                   <Activity className="h-12 w-12 mx-auto mb-4 text-gray-400" />
                   <p>No activity data recorded for today.</p>
                   <p className="text-xs mt-2">
@@ -622,7 +637,7 @@ export function MovinDashboard() {
               {todaysWorkouts.length === 0 ? (
                 <div
                   className="text-center py-8 text-gray-500"
-                  data-testid="dashboard-empty-workouts"
+                  data-testid={DataTestIds.DASHBOARD_EMPTY_WORKOUTS}
                 >
                   <Dumbbell className="h-12 w-12 mx-auto mb-4 text-gray-400" />
                   <p>No workouts recorded today</p>
@@ -642,6 +657,7 @@ export function MovinDashboard() {
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.1 * i }}
+                      data-testid={DataTestIds.DASHBOARD_WORKOUT_ROW}
                     >
                       <div className="bg-blue-500/20 p-2 rounded-full mr-3">
                         <Activity className="h-5 w-5 text-blue-500" />
