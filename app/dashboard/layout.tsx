@@ -104,6 +104,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       path: '/dashboard/subscription',
       icon: <Crown className="h-6 w-6 mr-4 text-blue-400" />,
     },
+    {
+      name: 'Feedback',
+      path: 'https://forms.gle/ZHrgheUZsAYr2vGW9',
+      icon: <ExternalLink className="h-6 w-6 mr-4 text-blue-400" />,
+      external: true,
+    },
   ];
 
   useEffect(() => {
@@ -253,14 +259,26 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                           <ul className="space-y-3">
                             {sideNavLinks.map((link) => (
                               <li key={link.path}>
-                                <Link
-                                  href={link.path}
-                                  className="flex items-center p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
-                                  onClick={() => setIsSheetOpen(false)}
-                                >
-                                  {link.icon}
-                                  <span className="text-base">{link.name}</span>
-                                </Link>
+                                {link.external ? (
+                                  <a
+                                    href={link.path}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+                                  >
+                                    {link.icon}
+                                    <span className="text-base">{link.name}</span>
+                                  </a>
+                                ) : (
+                                  <Link
+                                    href={link.path}
+                                    className="flex items-center p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+                                    onClick={() => setIsSheetOpen(false)}
+                                  >
+                                    {link.icon}
+                                    <span className="text-base">{link.name}</span>
+                                  </Link>
+                                )}
                               </li>
                             ))}
                           </ul>
