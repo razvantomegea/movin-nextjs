@@ -55,6 +55,15 @@ export async function registerServiceWorker(
   console.log('[SW Utils] Starting service worker registration...');
 
   globalRegistrationPromise = (async () => {
+    if (
+      (typeof process !== 'undefined' && process.env.DISABLE_SERVICE_WORKER === '1') ||
+      (typeof window !== 'undefined' &&
+        (window as unknown as { DISABLE_SERVICE_WORKER: string }).DISABLE_SERVICE_WORKER === '1')
+    ) {
+      console.log('[SW Utils] Service worker registration is disabled by DISABLE_SERVICE_WORKER');
+      return {} as ServiceWorkerRegistration;
+    }
+
     try {
       // Use different service workers for development and production
       const isDevelopment = process.env.NODE_ENV === 'development';
@@ -220,7 +229,8 @@ export function isPWAInstalled(): boolean {
   const isDisplayModeStandalone = window.matchMedia('(display-mode: standalone)').matches;
 
   // Method 2: iOS Safari specific check
-  const isIOSStandalone = (window.navigator as any).standalone === true;
+  const isIOSStandalone =
+    (window.navigator as unknown as { standalone: boolean }).standalone === true;
 
   // Method 3: Check if launched from home screen (Android Chrome)
   const isMinimalUI = window.matchMedia('(display-mode: minimal-ui)').matches;

@@ -15,10 +15,21 @@ test.describe('Movin Dashboard Data State', () => {
     metamaskPage,
     extensionId,
   }) => {
+    await page.route(
+      'https://glzwixacshqzriejlkwt.supabase.co/rest/v1/activities**',
+      async (route) => {
+        return await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify(activitiesMock),
+        });
+      },
+    );
+
     await context.route(
       'https://glzwixacshqzriejlkwt.supabase.co/rest/v1/activities**',
       async (route) => {
-        await route.fulfill({
+        return await route.fulfill({
           status: 200,
           contentType: 'application/json',
           body: JSON.stringify(activitiesMock),
