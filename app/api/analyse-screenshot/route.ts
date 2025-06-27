@@ -36,14 +36,24 @@ export async function POST(req: NextRequest) {
       const prompt = `
         Analyze this screenshot and extract fitness activity data. The image should be from a mobile fitness app or smartwatch showing workout statistics.
 
+        CRITICAL: Extract ONLY the exact values you see displayed in the image. Do NOT perform any unit conversions or mathematical operations.
+
+        Look for these specific metrics in the screenshot:
+        - Distance: Look for values with "m", "meters", "km", "kilometers", "mi", "miles", "mil" 
+        - Steps: Look for step counts (usually large numbers like 8,234 steps)
+        - Calories: Look for "kcal", "cal", "calories" - extract the EXACT number shown
+        - Heart Rate: Look for "bpm", "HR", heart rate values
+        - Duration: Look for time formats like "30:45", "1h 15m", "45 min"
+        - Date: Look for dates in any format (MM/DD, DD/MM/YYYY, "Today", etc.)
+
         Please extract and return ONLY a JSON object with the following structure:
         {
           "isValidScreenshot": boolean (true if this is clearly a fitness app/smartwatch screenshot),
-          "name": string (type of activity like "Running", "Walking", "Cycling", etc.),
-          "duration": number (total duration in seconds),
-          "distance": number (distance in meters, if available),
-          "calories": number (calories burned),
-          "steps": number (step count, if available),
+          "name": string (type of activity like "Running", "Walking", "Cycling", "Steps", etc.),
+          "duration": number (total duration in seconds - convert time formats to seconds),
+          "distance": number (distance in meters - convert km to meters by multiplying by 1000, miles to meters by multiplying by 1609),
+          "calories": number (calories burned - extract EXACT number shown, do NOT multiply by 1000),
+          "steps": number (step count if available - extract exact number shown),
           "heartRate": {
             "average": number (if available),
             "maximum": number (if available),
@@ -55,16 +65,19 @@ export async function POST(req: NextRequest) {
           "isValidTiming": boolean (true if activity time is from today and earlier than device time, or "Today" for Steps/Walking)
         }
 
-        Rules:
+        EXTRACTION RULES:
         1. Set isValidScreenshot to false if this is not a fitness/health app screenshot
-        2. Extract all visible numeric values for duration, distance, calories, steps
-        3. Convert duration to seconds (e.g., "30:45" = 1845 seconds)
-        4. Convert distance to meters (e.g., "5.2 km" = 5200 meters)
-        5. Look for time stamps to determine deviceTime and activityTime
-        6. Extract the activity date from the screenshot. It MUST be today's date in YYYY-MM-DD format
-        7. Validate that activityTime is earlier than deviceTime and from today, OR set activityTime to "Today" for Steps/Walking activities that show cumulative daily data
-        8. If any critical data is missing or unclear, make reasonable estimates based on activity type
-        9. Return only the JSON object, no additional text or formatting
+        2. For calories: Extract the EXACT number you see. If you see "805 kcal", return 805. Do NOT multiply by 1000.
+        3. For distance: If you see "5.2 km", convert to meters (5200). If you see "500 m", use 500.
+        4. For steps: Extract the exact number shown (e.g., "8,234 steps" = 8234)
+        5. For duration: Convert to seconds (e.g., "30:45" = 1845 seconds, "1h 15m" = 4500 seconds)
+        6. For heart rate: Extract BPM values exactly as shown
+        7. Look for time stamps to determine deviceTime and activityTime
+        8. Extract the activity date from the screenshot. It MUST be today's date in YYYY-MM-DD format
+        9. Validate that activityTime is earlier than deviceTime and from today, OR set activityTime to "Today" for Steps/Walking activities that show cumulative daily data
+        10. If any critical data is missing or unclear, make reasonable estimates based on activity type
+        11. Pay attention to unit labels: "kcal" means kilocalories, "cal" means calories, "km" means kilometers, "m" means meters
+        12. Return only the JSON object, no additional text or formatting
       `;
 
       // Call Google AI API

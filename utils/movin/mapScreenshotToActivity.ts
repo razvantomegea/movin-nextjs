@@ -65,7 +65,7 @@ export function mapScreenshotToActivity(
     source: 'Screenshot Import', // Indicates this activity was imported from a screenshot
     start_date: startTime.toISOString(),
     end_date: endTime.toISOString(),
-    duration: extractedData.duration, // seconds
+    duration: extractedData.duration, // seconds@multiversx/sdk-dapp-utils@2.0.2-alpha.1
     total_distance: distance || 0, // meters
     total_energy_burned: extractedData.calories || 0, // kcal
     total_steps: steps || 0,

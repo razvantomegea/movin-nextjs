@@ -1,12 +1,24 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import * as Sentry from '@sentry/nextjs';
+import { addEnergyEntry } from '@/lib/redux/slices/energyDataSlice';
 import { IActivity, insertActivities, updateActivity } from '@/lib/supabase/activities';
 
 export interface FailedSave {
   id: string;
   type: 'add' | 'update';
+  dataType: 'activity' | 'meal';
   address: string;
-  activityData: Partial<IActivity> | Partial<IActivity>[];
+  activityData?: Partial<IActivity> | Partial<IActivity>[];
+  mealData?: {
+    address: string;
+    meal_name: string;
+    calories: number;
+    protein: number;
+    carbohydrates: number;
+    fats: number;
+    fiber: number;
+    log_date: string;
+  };
   timestamp: number;
   retryCount: number;
   error: string;
@@ -57,23 +69,34 @@ const saveFailedSaves = (failedSaves: FailedSave[]) => {
 // Retry a failed save
 export const retryFailedSave = createAsyncThunk(
   'failedSaves/retryFailedSave',
-  async (failedSave: FailedSave, { rejectWithValue }) => {
+  async (failedSave: FailedSave, { dispatch, rejectWithValue }) => {
     try {
       let result;
 
-      if (failedSave.type === 'add') {
-        const activityData = Array.isArray(failedSave.activityData)
-          ? failedSave.activityData
-          : [failedSave.activityData];
+      if (failedSave.dataType === 'activity') {
+        if (failedSave.type === 'add' && failedSave.activityData) {
+          const activityData = Array.isArray(failedSave.activityData)
+            ? failedSave.activityData
+            : [failedSave.activityData];
 
-        // Ensure address is set on all activities
-        const dataWithAddress = activityData.map((a) => ({ ...a, address: failedSave.address }));
-        result = await insertActivities({ activityData: dataWithAddress });
-      } else if (failedSave.type === 'update') {
-        if (Array.isArray(failedSave.activityData)) {
-          throw new Error('Update operation cannot handle multiple activities');
+          // Ensure address is set on all activities
+          const dataWithAddress = activityData.map((a) => ({ ...a, address: failedSave.address }));
+          result = await insertActivities({ activityData: dataWithAddress });
+        } else if (failedSave.type === 'update' && failedSave.activityData) {
+          if (Array.isArray(failedSave.activityData)) {
+            throw new Error('Update operation cannot handle multiple activities');
+          }
+          result = await updateActivity({ activityData: failedSave.activityData });
         }
-        result = await updateActivity({ activityData: failedSave.activityData });
+      } else if (failedSave.dataType === 'meal' && failedSave.mealData) {
+        if (failedSave.type === 'add') {
+          result = await dispatch(
+            addEnergyEntry({
+              address: failedSave.address,
+              energyData: failedSave.mealData,
+            }),
+          ).unwrap();
+        }
       }
 
       return { failedSaveId: failedSave.id, result };

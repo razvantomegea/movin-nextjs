@@ -361,6 +361,7 @@ export function MovinDashboard() {
       dispatch(
         addFailedSave({
           type: 'add',
+          dataType: 'activity',
           address: addressLower,
           activityData: [newActivity],
           error: error instanceof Error ? error.message : 'Failed to save activity',
@@ -480,7 +481,10 @@ export function MovinDashboard() {
         if (existingStepsActivity) {
           // This was an update operation
           operationType = 'update';
-          activityForQueue = mergeStepsActivities(existingStepsActivity, activityWithAddress);
+          activityForQueue = {
+            ...mergeStepsActivities(existingStepsActivity, activityWithAddress),
+            address: addressLower,
+          };
         }
       }
 
@@ -488,6 +492,7 @@ export function MovinDashboard() {
       dispatch(
         addFailedSave({
           type: operationType,
+          dataType: 'activity',
           address: addressLower,
           activityData: operationType === 'add' ? [activityForQueue] : activityForQueue,
           error: error instanceof Error ? error.message : 'Failed to import workout',

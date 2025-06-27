@@ -386,12 +386,11 @@ export function EnergyPage() {
 
         dispatch(
           addFailedSave({
-            id: Date.now().toString(),
             type: 'add',
-            data: energyEntryData,
+            dataType: 'meal',
+            address: addressLower,
+            mealData: energyEntryData,
             error: error.message,
-            timestamp: Date.now(),
-            retryCount: 0,
           }),
         );
 
@@ -440,7 +439,10 @@ export function EnergyPage() {
     async (saveId: string) => {
       setRetryingFailedSaves((prev) => ({ ...prev, [saveId]: true }));
       try {
-        await dispatch(retryFailedSave(saveId)).unwrap();
+        const failedSave = failedSaves.find((save) => save.id === saveId);
+        if (failedSave) {
+          await dispatch(retryFailedSave(failedSave)).unwrap();
+        }
       } catch (error) {
         console.error('Failed to retry save:', error);
       } finally {
@@ -782,7 +784,9 @@ export function EnergyPage() {
                     >
                       <div className="flex-1">
                         <p className="text-sm font-medium">
-                          {save.data.meal_name || 'Unknown Meal'}
+                          {save.dataType === 'meal'
+                            ? save.mealData?.meal_name || 'Unknown Meal'
+                            : 'Activity'}
                         </p>
                         <p className="text-xs text-gray-500 dark:text-gray-400">
                           Failed: {new Date(save.timestamp).toLocaleString()} • Retries:{' '}
