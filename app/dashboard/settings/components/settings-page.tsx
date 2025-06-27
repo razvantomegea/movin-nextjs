@@ -298,7 +298,7 @@ export function SettingsPage() {
               </div>
               <div className="flex items-center justify-between">
                 <Label>Build</Label>
-                <span className="text-sm">2025.06.26</span>
+                <span className="text-sm">2025.06.27</span>
               </div>
 
               <hr className="my-4" />

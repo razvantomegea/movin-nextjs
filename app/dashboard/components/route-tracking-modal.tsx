@@ -24,7 +24,9 @@ import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useToast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/cn';
+import { IActivity } from '@/lib/supabase/activities';
 import { formatDistance, formatDuration } from '@/utils';
+import { doesActivityOverlap } from '@/utils';
 import { calculateHaversineDistance } from '@/utils/movin';
 
 // Add this type if WakeLockSentinel is not recognized by TypeScript
@@ -41,6 +43,7 @@ interface RouteTrackingModalProps {
   onClose: () => void;
   onSaveRoute: (routeData: RouteData) => void;
   isJointTracking?: boolean;
+  activities: IActivity[];
 }
 
 export interface RouteData {
@@ -102,6 +105,7 @@ export function RouteTrackingModal({
   onClose,
   onSaveRoute,
   isJointTracking = false,
+  activities,
 }: RouteTrackingModalProps) {
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
@@ -501,6 +505,24 @@ export function RouteTrackingModal({
           ]
         : undefined,
     };
+
+    // Check for overlap
+    const overlap = doesActivityOverlap(
+      {
+        start_date: routeData.startTime.toISOString(),
+        end_date: routeData.endTime.toISOString(),
+      },
+      activities,
+    );
+    if (overlap) {
+      toast({
+        title: 'Activity Overlap',
+        description:
+          'An activity already exists during this time. Please check your activities and try again.',
+        variant: 'destructive',
+      });
+      return;
+    }
 
     onSaveRoute(routeData);
     onClose();
@@ -908,10 +930,12 @@ export function RouteTrackingModal({
                       Your route is being tracked. Press pause to stop tracking.
                     </p>
                   )}
-                  <p className="text-xs text-amber-500 dark:text-amber-400 mt-2">
-                    For best tracking accuracy and experience, please keep the app open or check it
-                    every few minutes.
-                  </p>
+                  {!isScreenAwakeEnabled && (
+                    <p className="text-xs text-amber-500 dark:text-amber-400 mt-2">
+                      For best tracking accuracy and experience, please keep the app open or check
+                      it every few minutes.
+                    </p>
+                  )}
                   {isScreenAwakeEnabled && (
                     <div className="mt-3 px-3 py-2 rounded bg-yellow-100 dark:bg-yellow-900 border border-yellow-300 dark:border-yellow-700 text-yellow-800 dark:text-yellow-200 text-xs font-medium">
                       <span className="font-semibold">Keep Screen Awake is enabled.</span> This will

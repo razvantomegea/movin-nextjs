@@ -14,6 +14,32 @@ const isSameDay = (date1: Date | string, date2: Date | string): boolean => {
   );
 };
 
+/**
+ * Checks if a new activity overlaps with any existing activities.
+ * @param newActivity The new activity (must have start_date and end_date)
+ * @param existingActivities Array of existing activities
+ * @returns The overlapping activity if found, otherwise null
+ */
+export function doesActivityOverlap(
+  newActivity: { start_date: string; end_date: string; id?: string },
+  existingActivities: Array<{ start_date: string; end_date: string; id?: string }>,
+): { start_date: string; end_date: string; id?: string } | null {
+  const newStart = new Date(newActivity.start_date).getTime();
+  const newEnd = new Date(newActivity.end_date).getTime();
+
+  for (const act of existingActivities) {
+    // Skip self if editing
+    if (newActivity.id && act.id && newActivity.id === act.id) continue;
+    const actStart = new Date(act.start_date).getTime();
+    const actEnd = new Date(act.end_date).getTime();
+    // Overlap if intervals intersect
+    if (newStart < actEnd && newEnd > actStart) {
+      return act;
+    }
+  }
+  return null;
+}
+
 export interface DailyActivity {
   steps: number;
   distance: number;

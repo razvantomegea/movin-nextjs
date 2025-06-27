@@ -728,6 +728,7 @@ export function MovinDashboard() {
         onClose={handleCloseRouteModal}
         onSaveRoute={handleSaveRoute}
         isJointTracking={isJointTrackingSelected}
+        activities={activities}
       />
 
       {/* Screenshot Import Modal */}
@@ -736,6 +737,7 @@ export function MovinDashboard() {
         onClose={() => setIsScreenshotImportModalOpen(false)}
         onSaveActivity={handleSaveImportedActivity}
         userAddress={addressLower || ''}
+        activities={activities}
       />
 
       {/* Steps Goal Celebration */}

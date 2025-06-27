@@ -5,6 +5,7 @@ import {
   mapActivitiesToMonthly,
   mapActivitiesToYearly,
   mapActivitiesToTodaysWorkouts,
+  doesActivityOverlap,
 } from '../activityMappers';
 
 const mockActivities: IActivity[] = [
@@ -83,5 +84,59 @@ describe('activityMappers', () => {
     expect(result[0]).toHaveProperty('type');
     expect(result[0]).toHaveProperty('duration');
     expect(result[0]).toHaveProperty('distance');
+  });
+});
+
+describe('doesActivityOverlap', () => {
+  const baseActivities = [
+    {
+      id: '1',
+      start_date: '2024-06-01T08:00:00Z',
+      end_date: '2024-06-01T09:00:00Z',
+    },
+    {
+      id: '2',
+      start_date: '2024-06-01T10:00:00Z',
+      end_date: '2024-06-01T11:00:00Z',
+    },
+  ];
+
+  it('returns null if no overlap', () => {
+    const newAct = { start_date: '2024-06-01T09:00:00Z', end_date: '2024-06-01T10:00:00Z' };
+    expect(doesActivityOverlap(newAct, baseActivities)).toBeNull();
+  });
+
+  it('detects exact overlap', () => {
+    const newAct = { start_date: '2024-06-01T08:00:00Z', end_date: '2024-06-01T09:00:00Z' };
+    expect(doesActivityOverlap(newAct, baseActivities)).toEqual(baseActivities[0]);
+  });
+
+  it('detects partial overlap at start', () => {
+    const newAct = { start_date: '2024-06-01T08:30:00Z', end_date: '2024-06-01T09:30:00Z' };
+    expect(doesActivityOverlap(newAct, baseActivities)).toEqual(baseActivities[0]);
+  });
+
+  it('detects partial overlap at end', () => {
+    const newAct = { start_date: '2024-06-01T09:30:00Z', end_date: '2024-06-01T10:30:00Z' };
+    expect(doesActivityOverlap(newAct, baseActivities)).toEqual(baseActivities[1]);
+  });
+
+  it('detects new inside existing', () => {
+    const newAct = { start_date: '2024-06-01T08:15:00Z', end_date: '2024-06-01T08:45:00Z' };
+    expect(doesActivityOverlap(newAct, baseActivities)).toEqual(baseActivities[0]);
+  });
+
+  it('detects existing inside new', () => {
+    const newAct = { start_date: '2024-06-01T07:00:00Z', end_date: '2024-06-01T12:00:00Z' };
+    expect(doesActivityOverlap(newAct, baseActivities)).toEqual(baseActivities[0]);
+  });
+
+  it('ignores self when editing', () => {
+    const newAct = {
+      id: '1',
+      start_date: '2024-06-01T08:00:00Z',
+      end_date: '2024-06-01T09:00:00Z',
+    };
+    expect(doesActivityOverlap(newAct, baseActivities)).toBeNull();
   });
 });

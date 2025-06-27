@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/cn';
 import { IActivity } from '@/lib/supabase/activities';
+import { doesActivityOverlap } from '@/utils';
 import {
   mapScreenshotToActivity,
   type ExtractedActivityData,
@@ -20,6 +21,7 @@ interface ScreenshotImportModalProps {
   onClose: () => void;
   onSaveActivity: (activityData: Partial<IActivity>) => void;
   userAddress: string;
+  activities: IActivity[];
 }
 
 export function ScreenshotImportModal({
@@ -27,6 +29,7 @@ export function ScreenshotImportModal({
   onClose,
   onSaveActivity,
   userAddress,
+  activities,
 }: ScreenshotImportModalProps) {
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
@@ -216,6 +219,21 @@ export function ScreenshotImportModal({
     };
 
     const activityData = mapScreenshotToActivity(todayData, userAddress);
+
+    // Check for overlap
+    const overlap = doesActivityOverlap(
+      {
+        start_date: activityData.start_date!,
+        end_date: activityData.end_date!,
+      },
+      activities,
+    );
+    if (overlap) {
+      setError(
+        'An activity already exists during this time. Please check your activities and try again.',
+      );
+      return;
+    }
 
     onSaveActivity(activityData);
     handleClose();
