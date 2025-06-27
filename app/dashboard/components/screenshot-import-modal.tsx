@@ -8,6 +8,7 @@ import { useTheme } from 'next-themes';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { useToast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/cn';
 import { IActivity } from '@/lib/supabase/activities';
 import { doesActivityOverlap } from '@/utils';
@@ -19,7 +20,7 @@ import {
 interface ScreenshotImportModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSaveActivity: (activityData: Partial<IActivity>) => void;
+  onSaveActivity: (activityData: Partial<IActivity>) => Promise<void>;
   userAddress: string;
   activities: IActivity[];
 }
@@ -33,10 +34,12 @@ export function ScreenshotImportModal({
 }: ScreenshotImportModalProps) {
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
+  const { toast } = useToast();
 
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [extractedData, setExtractedData] = useState<ExtractedActivityData | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -209,7 +212,7 @@ export function ScreenshotImportModal({
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!extractedData) return;
 
     // Ensure the activity date is always set to today
@@ -235,8 +238,39 @@ export function ScreenshotImportModal({
       return;
     }
 
-    onSaveActivity(activityData);
-    handleClose();
+    setIsSaving(true);
+    setError(null);
+
+    try {
+      await onSaveActivity(activityData);
+
+      // Show success message
+      toast({
+        title: 'Workout Imported',
+        description: `${activityData.name} workout has been successfully imported.`,
+      });
+
+      handleClose();
+    } catch (error) {
+      console.error('Failed to save imported activity:', error);
+
+      // Show error message with retry information
+      toast({
+        title: 'Import Failed',
+        description:
+          'Workout has been queued for retry. Check your connection and try refreshing the Activities page.',
+        variant: 'destructive',
+      });
+
+      // Set local error to show in the modal
+      setError(
+        error instanceof Error
+          ? error.message
+          : 'Failed to save the workout. It has been queued for retry.',
+      );
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleClose = () => {
@@ -245,6 +279,7 @@ export function ScreenshotImportModal({
     setError(null);
     setExtractedData(null);
     setIsProcessing(false);
+    setIsSaving(false);
     onClose();
   };
 
@@ -468,8 +503,19 @@ export function ScreenshotImportModal({
                     </Button>
                   )}
                   {extractedData && (
-                    <Button onClick={handleSave} className="bg-blue-500 hover:bg-blue-600">
-                      Save Activity
+                    <Button
+                      onClick={handleSave}
+                      disabled={isSaving}
+                      className="bg-blue-500 hover:bg-blue-600 disabled:opacity-50"
+                    >
+                      {isSaving ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        'Save Activity'
+                      )}
                     </Button>
                   )}
                 </div>

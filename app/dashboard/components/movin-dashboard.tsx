@@ -12,6 +12,9 @@ import {
   Dumbbell,
   MapPin,
   Upload,
+  ChevronDown,
+  ChevronUp,
+  AlertTriangle,
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { ActivityColumnChart } from '@/app/dashboard/components/activity-column-chart';
@@ -31,6 +34,12 @@ import {
   updateActivityData,
 } from '@/lib/redux/slices/activityDataSlice';
 import { fetchEnergyData } from '@/lib/redux/slices/energyDataSlice';
+import {
+  addFailedSave,
+  retryAllFailedSaves,
+  retryFailedSave,
+  removeFailedSave,
+} from '@/lib/redux/slices/failedSavesSlice';
 import { resetJointTracking } from '@/lib/redux/slices/jointTrackingSlice';
 import { fetchProfile, updateProfile } from '@/lib/redux/slices/profileSlice';
 import { showSuccessToast, showInfoToast } from '@/lib/redux/slices/toastSlice';
@@ -88,6 +97,7 @@ export function MovinDashboard() {
   const [showStepsCelebration, setShowStepsCelebration] = useState(false);
   const [showStreakCelebration, setShowStreakCelebration] = useState(false);
   const [streakMilestone, setStreakMilestone] = useState(0);
+  const [showFailedSavesDetails, setShowFailedSavesDetails] = useState(false);
   const currentDate = useMemo(() => new Date(), []);
   const { address } = useAppKitAccount();
   const addressLower = useMemo(() => address?.toLowerCase(), [address]);
@@ -97,6 +107,7 @@ export function MovinDashboard() {
   const { activities, isLoading, error } = useAppSelector((state: RootState) => state.activityData);
   const { energyEntries } = useAppSelector((state: RootState) => state.energyData);
   const { profile } = useAppSelector((state: RootState) => state.profile);
+  const { failedSaves, isRetrying } = useAppSelector((state: RootState) => state.failedSaves);
 
   // Memoize derived data
   const dailyActivity: DailyActivity | null = useMemo(() => {
@@ -258,11 +269,39 @@ export function MovinDashboard() {
     }
 
     setRefreshing(true);
-    await dispatch(fetchActivities(addressLower)).unwrap();
-    await dispatch(fetchProfile(addressLower)).unwrap();
-    await dispatch(fetchEnergyData(addressLower)).unwrap();
+
+    try {
+      // Retry any failed saves first
+      if (failedSaves.length > 0) {
+        await dispatch(retryAllFailedSaves()).unwrap();
+      }
+
+      // Then refresh the data
+      await dispatch(fetchActivities(addressLower)).unwrap();
+      await dispatch(fetchProfile(addressLower)).unwrap();
+      await dispatch(fetchEnergyData(addressLower)).unwrap();
+
+      // Show success message if there were failed saves that were retried
+      if (failedSaves.length > 0) {
+        dispatch(
+          showSuccessToast({
+            title: 'Retry Successful',
+            description: `Successfully retried ${failedSaves.length} failed save(s) and refreshed data.`,
+          }),
+        );
+      }
+    } catch (error) {
+      console.error('Refresh or retry failed:', error);
+      dispatch(
+        showInfoToast({
+          title: 'Refresh Failed',
+          description: 'Some operations failed. Please check your connection and try again.',
+        }),
+      );
+    }
+
     setRefreshing(false);
-  }, [addressLower, dispatch]);
+  }, [addressLower, dispatch, failedSaves.length]);
 
   useEffect(() => {
     if (addressLower) {
@@ -316,14 +355,25 @@ export function MovinDashboard() {
         dispatch(resetJointTracking());
       }
     } catch (error) {
+      console.error('Failed to save activity:', error);
+
+      // Add to failed saves queue for retry
+      dispatch(
+        addFailedSave({
+          type: 'add',
+          address: addressLower,
+          activityData: [newActivity],
+          error: error instanceof Error ? error.message : 'Failed to save activity',
+        }),
+      );
+
       dispatch(
         showInfoToast({
           title: 'Failed to Save Activity',
-          description: 'Please try again later.',
+          description:
+            'Activity has been queued for retry. Please check your connection and try refreshing.',
         }),
       );
-      // Log the error for debugging
-      console.error('Failed to save activity:', error);
     }
   };
 
@@ -381,6 +431,7 @@ export function MovinDashboard() {
           // Update the existing activity
           await dispatch(updateActivityData(mergedActivity)).unwrap();
 
+          // Show success toast for steps updates (these don't go through the modal UI)
           dispatch(
             showSuccessToast({
               title: 'Steps Activity Updated',
@@ -396,12 +447,7 @@ export function MovinDashboard() {
         addActivities({ address: addressLower, activityData: [activityWithAddress] }),
       ).unwrap();
 
-      dispatch(
-        showSuccessToast({
-          title: 'Workout Imported Successfully',
-          description: `${activityWithAddress.name} workout has been added to your profile.`,
-        }),
-      );
+      // Success toast is now handled in the screenshot import modal
 
       // Send push notification in the background (only for non-Steps activities to avoid spam)
       if (activityWithAddress.name !== 'Steps') {
@@ -417,14 +463,40 @@ export function MovinDashboard() {
         });
       }
     } catch (error) {
+      console.error('Failed to save imported activity:', error);
+
+      // Add the user's address to the activity data
+      const activityWithAddress = { ...activityData, address: addressLower };
+
+      // Check if this was an update operation
+      const isStepsActivity = activityWithAddress.name === 'Steps';
+      let operationType: 'add' | 'update' = 'add';
+      let activityForQueue = activityWithAddress;
+
+      if (isStepsActivity) {
+        const today = new Date();
+        const existingStepsActivity = findExistingStepsActivity(activities, today);
+
+        if (existingStepsActivity) {
+          // This was an update operation
+          operationType = 'update';
+          activityForQueue = mergeStepsActivities(existingStepsActivity, activityWithAddress);
+        }
+      }
+
+      // Add to failed saves queue for retry
       dispatch(
-        showInfoToast({
-          title: 'Failed to Import Workout',
-          description: 'Please try again later.',
+        addFailedSave({
+          type: operationType,
+          address: addressLower,
+          activityData: operationType === 'add' ? [activityForQueue] : activityForQueue,
+          error: error instanceof Error ? error.message : 'Failed to import workout',
         }),
       );
-      // Log the error for debugging
-      console.error('Failed to save imported activity:', error);
+
+      // Error toast is now handled in the screenshot import modal
+      // Re-throw the error so the modal can handle it
+      throw error;
     }
   };
 
@@ -435,6 +507,46 @@ export function MovinDashboard() {
   const handleCloseStreakCelebration = useCallback(() => {
     setShowStreakCelebration(false);
   }, []);
+
+  // Handle individual retry of failed save
+  const handleRetryFailedSave = useCallback(
+    async (failedSaveId: string) => {
+      const failedSave = failedSaves.find((save) => save.id === failedSaveId);
+      if (!failedSave) return;
+
+      try {
+        await dispatch(retryFailedSave(failedSave)).unwrap();
+        dispatch(
+          showSuccessToast({
+            title: 'Save Successful',
+            description: 'The failed save has been successfully retried.',
+          }),
+        );
+      } catch (error) {
+        dispatch(
+          showInfoToast({
+            title: 'Retry Failed',
+            description: 'Unable to retry the save. Please check your connection.',
+          }),
+        );
+      }
+    },
+    [failedSaves, dispatch],
+  );
+
+  // Handle removing a failed save from the queue
+  const handleRemoveFailedSave = useCallback(
+    (failedSaveId: string) => {
+      dispatch(removeFailedSave(failedSaveId));
+      dispatch(
+        showInfoToast({
+          title: 'Save Removed',
+          description: 'The failed save has been removed from the retry queue.',
+        }),
+      );
+    },
+    [dispatch],
+  );
 
   // Render the dashboard content
   const renderDashboardContent = () => {
@@ -641,6 +753,24 @@ export function MovinDashboard() {
                 >
                   <Dumbbell className="h-12 w-12 mx-auto mb-4 text-gray-400" />
                   <p>No workouts recorded today</p>
+                  {failedSaves.length > 0 && (
+                    <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+                      <p className="text-amber-700 dark:text-amber-300 text-sm mb-2">
+                        {failedSaves.length} workout{failedSaves.length !== 1 ? 's' : ''} failed to
+                        save
+                      </p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleRefresh}
+                        disabled={isRetrying}
+                        className="mr-2"
+                      >
+                        <RefreshCw className={`h-4 w-4 mr-2 ${isRetrying ? 'animate-spin' : ''}`} />
+                        {isRetrying ? 'Retrying...' : 'Retry Saves'}
+                      </Button>
+                    </div>
+                  )}
                   <Button variant="outline" className="mt-4" onClick={handleOpenScreenshotImport}>
                     <Upload className="h-4 w-4 mr-2" />
                     Import Workout
@@ -707,9 +837,122 @@ export function MovinDashboard() {
       >
         <motion.div className="flex items-center mb-6" variants={item}>
           <h1 className="text-2xl font-bold mr-2">Activities</h1>
+          {/* Failed saves indicator */}
+          {failedSaves.length > 0 && (
+            <button
+              onClick={() => setShowFailedSavesDetails(!showFailedSavesDetails)}
+              className="mr-3 px-2 py-1 bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200 text-xs rounded-md border border-amber-200 dark:border-amber-700 hover:bg-amber-200 dark:hover:bg-amber-800 transition-colors duration-200 flex items-center"
+            >
+              <AlertTriangle className="h-3 w-3 mr-1" />
+              {failedSaves.length} pending save{failedSaves.length !== 1 ? 's' : ''}
+              {showFailedSavesDetails ? (
+                <ChevronUp className="h-3 w-3 ml-1" />
+              ) : (
+                <ChevronDown className="h-3 w-3 ml-1" />
+              )}
+            </button>
+          )}
           {/* Conditionally render the refresh button */}
-          {<RefreshButton onRefresh={handleRefresh} isLoading={isLoading || refreshing} />}
+          {
+            <RefreshButton
+              onRefresh={handleRefresh}
+              isLoading={isLoading || refreshing || isRetrying}
+            />
+          }
         </motion.div>
+
+        {/* Failed Saves Details */}
+        {failedSaves.length > 0 && showFailedSavesDetails && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="mb-6"
+            variants={item}
+          >
+            <Card
+              className={`${
+                isDark ? 'bg-amber-900/20 border-amber-800' : 'bg-amber-50 border-amber-200'
+              }`}
+            >
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-lg font-medium text-amber-800 dark:text-amber-200">
+                    Failed Saves Queue
+                  </h3>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      onClick={handleRefresh}
+                      disabled={isRetrying}
+                      className="bg-amber-600 hover:bg-amber-700 text-white"
+                    >
+                      <RefreshCw className={`h-4 w-4 mr-2 ${isRetrying ? 'animate-spin' : ''}`} />
+                      {isRetrying ? 'Retrying All...' : 'Retry All'}
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  {failedSaves.map((failedSave) => (
+                    <div
+                      key={failedSave.id}
+                      className={`p-3 rounded-lg border ${
+                        isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center mb-1">
+                            <span className="text-sm font-medium">
+                              {failedSave.type === 'add' ? 'Add Activity' : 'Update Activity'}
+                            </span>
+                            <span
+                              className={`ml-2 px-2 py-1 text-xs rounded ${
+                                failedSave.retryCount === 0
+                                  ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                                  : 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200'
+                              }`}
+                            >
+                              {failedSave.retryCount === 0
+                                ? 'New'
+                                : `${failedSave.retryCount} retries`}
+                            </span>
+                          </div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                            {new Date(failedSave.timestamp).toLocaleString()}
+                          </p>
+                          <p className="text-xs text-red-600 dark:text-red-400">
+                            {failedSave.error}
+                          </p>
+                        </div>
+
+                        <div className="flex gap-1 ml-3">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleRetryFailedSave(failedSave.id)}
+                            disabled={isRetrying}
+                          >
+                            <RefreshCw className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleRemoveFailedSave(failedSave.id)}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/20"
+                          >
+                            ×
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
 
         <ErrorBoundary>{renderDashboardContent()}</ErrorBoundary>
       </motion.div>

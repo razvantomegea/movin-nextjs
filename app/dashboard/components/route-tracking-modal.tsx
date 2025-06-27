@@ -524,8 +524,22 @@ export function RouteTrackingModal({
       return;
     }
 
-    onSaveRoute(routeData);
-    onClose();
+    // Try to save the route, with error handling for network issues
+    try {
+      onSaveRoute(routeData);
+      onClose();
+    } catch (error) {
+      // This catch block might not be needed if onSaveRoute handles errors internally
+      // but we'll keep it as a fallback
+      console.error('Failed to save route:', error);
+      toast({
+        title: 'Route Save Failed',
+        description:
+          'Route has been queued for retry. Check your connection and try refreshing the Activities page.',
+        variant: 'destructive',
+      });
+      // Don't close the modal so user can see the error
+    }
   };
 
   // Map load handler

@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAppKitAccount } from '@reown/appkit/react';
 import { motion } from 'framer-motion';
-import { Bolt, Flame, Clock, Plus, RefreshCw } from 'lucide-react';
+import { Bolt, Flame, Clock, Plus, RefreshCw, AlertTriangle, RotateCcw, X } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { CameraModal } from '@/components/camera-modal';
 import { CelebrationAnimation } from '@/components/celebration-animation';
@@ -36,6 +36,12 @@ import {
   resetEnergyError,
   addEnergyEntry,
 } from '@/lib/redux/slices/energyDataSlice';
+import {
+  addFailedSave,
+  retryAllFailedSaves,
+  retryFailedSave,
+  removeFailedSave,
+} from '@/lib/redux/slices/failedSavesSlice';
 import { fetchProfile, updateProfile } from '@/lib/redux/slices/profileSlice';
 import { showSuccessToast, showInfoToast } from '@/lib/redux/slices/toastSlice';
 import { IMeal } from '@/lib/supabase/meals';
@@ -77,6 +83,8 @@ export function EnergyPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [showStreakCelebration, setShowStreakCelebration] = useState(false);
   const [streakMilestone, setStreakMilestone] = useState(0);
+  const [showFailedSavesDetails, setShowFailedSavesDetails] = useState(false);
+  const [retryingFailedSaves, setRetryingFailedSaves] = useState<{ [key: string]: boolean }>({});
 
   // Modal states
   const [isMealLoggingTypeModalOpen, setIsMealLoggingTypeModalOpen] = useState(false);
@@ -109,6 +117,7 @@ export function EnergyPage() {
   const { energyEntries, isLoading, error } = useAppSelector((state) => state.energyData);
   const { profile } = useAppSelector((state) => state.profile);
   const { activities } = useAppSelector((state) => state.activityData);
+  const { failedSaves } = useAppSelector((state) => state.failedSaves);
 
   // Computed nutrition data from energy entries
   const dailyNutrition: DailyNutrition | null = useMemo(() => {
@@ -257,6 +266,11 @@ export function EnergyPage() {
 
     setRefreshing(true);
     try {
+      // First, retry any failed saves
+      if (failedSaves.length > 0) {
+        await dispatch(retryAllFailedSaves()).unwrap();
+      }
+
       await dispatch(fetchEnergyData(addressLower)).unwrap();
       dispatch(
         showSuccessToast({
@@ -349,7 +363,48 @@ export function EnergyPage() {
       );
     } catch (error) {
       console.error('Failed to add meal for logging:', error);
-      dispatch(showInfoToast({ title: 'Log Failed', description: 'Failed to log meal.' }));
+
+      // Check if it's a network error and add to retry queue
+      const isNetworkError =
+        error instanceof Error &&
+        (error.message.includes('network') ||
+          error.message.includes('fetch') ||
+          error.message.includes('NetworkError') ||
+          error.name === 'NetworkError');
+
+      if (isNetworkError) {
+        const energyEntryData = {
+          address: addressLower,
+          meal_name: mealToLogConfirm.meal_name,
+          calories: mealToLogConfirm.calories,
+          protein: mealToLogConfirm.protein,
+          carbohydrates: mealToLogConfirm.carbohydrates,
+          fats: mealToLogConfirm.fats,
+          fiber: mealToLogConfirm.fiber || 0,
+          log_date: new Date().toISOString().split('T')[0],
+        };
+
+        dispatch(
+          addFailedSave({
+            id: Date.now().toString(),
+            type: 'add',
+            data: energyEntryData,
+            error: error.message,
+            timestamp: Date.now(),
+            retryCount: 0,
+          }),
+        );
+
+        dispatch(
+          showInfoToast({
+            title: 'Meal Queued for Retry',
+            description:
+              'Your meal will be saved when connection is restored. Check the refresh button to retry.',
+          }),
+        );
+      } else {
+        dispatch(showInfoToast({ title: 'Log Failed', description: 'Failed to log meal.' }));
+      }
     } finally {
       resetLogMealConfirmState();
     }
@@ -379,6 +434,32 @@ export function EnergyPage() {
   const handleCloseStreakCelebration = useCallback(() => {
     setShowStreakCelebration(false);
   }, []);
+
+  // Failed saves handlers
+  const handleRetryIndividualFailedSave = useCallback(
+    async (saveId: string) => {
+      setRetryingFailedSaves((prev) => ({ ...prev, [saveId]: true }));
+      try {
+        await dispatch(retryFailedSave(saveId)).unwrap();
+      } catch (error) {
+        console.error('Failed to retry save:', error);
+      } finally {
+        setRetryingFailedSaves((prev) => ({ ...prev, [saveId]: false }));
+      }
+    },
+    [dispatch],
+  );
+
+  const handleRemoveFailedSave = useCallback(
+    (saveId: string) => {
+      dispatch(removeFailedSave(saveId));
+    },
+    [dispatch],
+  );
+
+  const handleToggleFailedSavesDetails = useCallback(() => {
+    setShowFailedSavesDetails(!showFailedSavesDetails);
+  }, [showFailedSavesDetails]);
 
   // Render the energy content
   const renderEnergyContent = () => {
@@ -566,10 +647,27 @@ export function EnergyPage() {
                 <div className="text-center py-8 text-gray-500">
                   <Flame className="h-12 w-12 mx-auto mb-4 text-gray-400" />
                   <p>No meals recorded today</p>
-                  <Button variant="outline" className="mt-4" onClick={handleOpenMealLogging}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Log Meal
-                  </Button>
+                  <div className="flex flex-col sm:flex-row gap-2 justify-center mt-4">
+                    <Button variant="outline" onClick={handleOpenMealLogging}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Log Meal
+                    </Button>
+                    {failedSaves.length > 0 && (
+                      <Button
+                        variant="outline"
+                        onClick={handleRefresh}
+                        disabled={refreshing}
+                        className="text-amber-600 border-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20"
+                      >
+                        {refreshing ? (
+                          <div className="w-4 h-4 border border-amber-500 border-t-transparent rounded-full animate-spin mr-2" />
+                        ) : (
+                          <RotateCcw className="h-4 w-4 mr-2" />
+                        )}
+                        Retry Failed Saves
+                      </Button>
+                    )}
+                  </div>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -631,8 +729,101 @@ export function EnergyPage() {
             {isPremium && addressLower && (
               <RefreshButton onRefresh={handleRefresh} isLoading={isLoading || refreshing} />
             )}
+            {/* Failed Saves Indicator */}
+            {failedSaves.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleToggleFailedSavesDetails}
+                className="ml-2 h-8 px-2 border-amber-500 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20"
+              >
+                <AlertTriangle className="h-3 w-3 mr-1" />
+                <span className="text-xs font-medium">{failedSaves.length}</span>
+              </Button>
+            )}
           </div>
         </motion.div>
+
+        {/* Failed Saves Details */}
+        {failedSaves.length > 0 && showFailedSavesDetails && (
+          <motion.div
+            className="mb-6"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            variants={item}
+          >
+            <Card
+              className={`${
+                isDark ? 'bg-amber-900/20 border-amber-800' : 'bg-amber-50 border-amber-200'
+              }`}
+            >
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-medium text-amber-700 dark:text-amber-300">
+                    Pending Meal Saves ({failedSaves.length})
+                  </h3>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleToggleFailedSavesDetails}
+                    className="h-6 w-6 p-0 text-amber-600 dark:text-amber-400"
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+                <div className="space-y-2">
+                  {failedSaves.map((save) => (
+                    <div
+                      key={save.id}
+                      className={`p-3 rounded-lg ${
+                        isDark ? 'bg-gray-800/50' : 'bg-white/70'
+                      } flex items-center justify-between`}
+                    >
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">
+                          {save.data.meal_name || 'Unknown Meal'}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          Failed: {new Date(save.timestamp).toLocaleString()} • Retries:{' '}
+                          {save.retryCount}/5
+                        </p>
+                        {save.error && (
+                          <p className="text-xs text-red-500 dark:text-red-400 mt-1">
+                            {save.error}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRetryIndividualFailedSave(save.id)}
+                          disabled={retryingFailedSaves[save.id]}
+                          className="h-8 px-3 text-blue-600 dark:text-blue-400"
+                        >
+                          {retryingFailedSaves[save.id] ? (
+                            <div className="w-3 h-3 border border-blue-500 border-t-transparent rounded-full animate-spin" />
+                          ) : (
+                            <RotateCcw className="h-3 w-3" />
+                          )}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoveFailedSave(save.id)}
+                          className="h-8 px-3 text-red-500 dark:text-red-400"
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
 
         <ErrorBoundary>{renderEnergyContent()}</ErrorBoundary>
       </motion.div>

@@ -480,7 +480,7 @@ function ConnectPageContent() {
           className="text-gray-400 dark:text-blue-200/50 text-xs text-center"
           data-testid={DataTestIds.CONNECT_PAGE_VERSION}
         >
-          v1.5.0
+          v1.5.1
         </p>
       </motion.div>
     </div>

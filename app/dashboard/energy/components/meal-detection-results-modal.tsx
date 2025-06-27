@@ -14,6 +14,7 @@ import {
   fetchRecentMeals,
   updateMealInLibrary, // Import the action
 } from '@/lib/redux/slices/mealsSlice';
+import { addFailedSave } from '@/lib/redux/slices/failedSavesSlice';
 import { showSuccessToast, showErrorToast } from '@/lib/redux/slices/toastSlice';
 import { IMeal } from '@/lib/supabase/meals';
 import {
@@ -348,12 +349,43 @@ export function MealDetectionResultsModal({
       onClose(); // Close the modal
     } catch (error) {
       console.error(`Failed to ${isEditing ? 'update' : 'save'} meal:`, error);
-      dispatch(
-        showErrorToast({
-          title: 'Save Failed',
-          description: `Failed to ${isEditing ? 'update' : 'save'} your meal. Please try again.`,
-        }),
-      );
+
+      // Check if it's a network error and add to retry queue
+      const isNetworkError =
+        error instanceof Error &&
+        (error.message.includes('network') ||
+          error.message.includes('fetch') ||
+          error.message.includes('NetworkError') ||
+          error.name === 'NetworkError');
+
+      if (isNetworkError && !isEditing && address) {
+        // Only add to retry queue for new energy entries (not library updates)
+        dispatch(
+          addFailedSave({
+            id: Date.now().toString(),
+            type: 'add',
+            data: mealPayload,
+            error: error.message,
+            timestamp: Date.now(),
+            retryCount: 0,
+          }),
+        );
+
+        dispatch(
+          showErrorToast({
+            title: 'Meal Queued for Retry',
+            description:
+              'Your meal will be saved when connection is restored. Check the energy page refresh button to retry.',
+          }),
+        );
+      } else {
+        dispatch(
+          showErrorToast({
+            title: 'Save Failed',
+            description: `Failed to ${isEditing ? 'update' : 'save'} your meal. Please try again.`,
+          }),
+        );
+      }
     }
   };
 
