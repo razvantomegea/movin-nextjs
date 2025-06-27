@@ -9,12 +9,12 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { useAppDispatch } from '@/lib/redux/hooks';
 import { addEnergyEntry, fetchEnergyData } from '@/lib/redux/slices/energyDataSlice';
+import { addFailedSave } from '@/lib/redux/slices/failedSavesSlice';
 import {
   addMealToLibrary,
   fetchRecentMeals,
   updateMealInLibrary, // Import the action
 } from '@/lib/redux/slices/mealsSlice';
-import { addFailedSave } from '@/lib/redux/slices/failedSavesSlice';
 import { showSuccessToast, showErrorToast } from '@/lib/redux/slices/toastSlice';
 import { IMeal } from '@/lib/supabase/meals';
 import {
@@ -362,12 +362,20 @@ export function MealDetectionResultsModal({
         // Only add to retry queue for new energy entries (not library updates)
         dispatch(
           addFailedSave({
-            id: Date.now().toString(),
             type: 'add',
-            data: mealPayload,
-            error: error.message,
-            timestamp: Date.now(),
-            retryCount: 0,
+            dataType: 'meal',
+            address: address.toLowerCase(),
+            mealData: {
+              address: address.toLowerCase(),
+              meal_name: mealPayload.meal_name || 'Unknown Meal',
+              calories: mealPayload.calories || 0,
+              protein: mealPayload.protein || 0,
+              carbohydrates: mealPayload.carbohydrates || 0,
+              fats: mealPayload.fats || 0,
+              fiber: mealPayload.fiber || 0,
+              log_date: mealPayload.log_date || getTodayDateString(),
+            },
+            error: error instanceof Error ? error.message : 'Failed to save meal',
           }),
         );
 
