@@ -25,6 +25,14 @@ interface ScreenshotImportModalProps {
   activities: IActivity[];
 }
 
+interface FileData {
+  file: File;
+  preview: string;
+  extractedData?: ExtractedActivityData;
+  error?: string;
+  isProcessing?: boolean;
+}
+
 export function ScreenshotImportModal({
   isOpen,
   onClose,
@@ -36,77 +44,108 @@ export function ScreenshotImportModal({
   const isDark = resolvedTheme === 'dark';
   const { toast } = useToast();
 
-  const [file, setFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
+  const [files, setFiles] = useState<FileData[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [extractedData, setExtractedData] = useState<ExtractedActivityData | null>(null);
+  const [globalError, setGlobalError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileSelect = useCallback((selectedFile: File) => {
-    if (!selectedFile.type.startsWith('image/')) {
-      setError('Please select a valid image file.');
-      return;
-    }
-
-    if (selectedFile.size > 10 * 1024 * 1024) {
-      // 10MB limit
-      setError('File size must be less than 10MB.');
-      return;
-    }
-
-    setFile(selectedFile);
-    setError(null);
-    setExtractedData(null);
-
-    // Create preview
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      setPreview(e.target?.result as string);
-    };
-    reader.readAsDataURL(selectedFile);
+  const createFileData = useCallback((file: File): Promise<FileData> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        resolve({
+          file,
+          preview: e.target?.result as string,
+        });
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
   }, []);
 
+  const validateFile = useCallback((file: File): string | null => {
+    if (!file.type.startsWith('image/')) {
+      return 'Please select a valid image file.';
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      return 'File size must be less than 10MB.';
+    }
+    return null;
+  }, []);
+
+  const handleFilesSelect = useCallback(
+    async (selectedFiles: File[]) => {
+      const newFiles: FileData[] = [];
+
+      for (const file of selectedFiles) {
+        const error = validateFile(file);
+        if (error) {
+          setGlobalError(`${file.name}: ${error}`);
+          continue;
+        }
+
+        try {
+          const fileData = await createFileData(file);
+          newFiles.push(fileData);
+        } catch (error) {
+          console.error('Error creating file data:', error);
+          setGlobalError(`Failed to process ${file.name}`);
+        }
+      }
+
+      if (newFiles.length > 0) {
+        setFiles((prev) => [...prev, ...newFiles]);
+        setGlobalError(null);
+      }
+    },
+    [validateFile, createFileData],
+  );
+
   const handlePaste = useCallback(
-    (e: React.ClipboardEvent) => {
+    async (e: React.ClipboardEvent) => {
       const items = e.clipboardData?.items;
       if (!items) return;
 
+      const imageFiles: File[] = [];
       for (let i = 0; i < items.length; i++) {
         const item = items[i];
         if (item.type.startsWith('image/')) {
           const file = item.getAsFile();
           if (file) {
-            handleFileSelect(file);
-            break;
+            imageFiles.push(file);
           }
         }
       }
+
+      if (imageFiles.length > 0) {
+        await handleFilesSelect(imageFiles);
+      }
     },
-    [handleFileSelect],
+    [handleFilesSelect],
   );
 
   const handleFileInput = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      if (e.target.files && e.target.files[0]) {
-        handleFileSelect(e.target.files[0]);
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (e.target.files) {
+        const filesArray = Array.from(e.target.files);
+        await handleFilesSelect(filesArray);
       }
     },
-    [handleFileSelect],
+    [handleFilesSelect],
   );
 
-  // Handler for click to choose file
   const handleChooseFileClick = useCallback(() => {
     fileInputRef.current?.click();
   }, []);
 
-  // Handler for removing selected file
-  const handleRemoveFile = useCallback(() => {
-    setFile(null);
-    setPreview(null);
-    setExtractedData(null);
-    setError(null);
+  const handleRemoveFile = useCallback((index: number) => {
+    setFiles((prev) => prev.filter((_, i) => i !== index));
+  }, []);
+
+  const handleRemoveAllFiles = useCallback(() => {
+    setFiles([]);
+    setGlobalError(null);
   }, []);
 
   // Helper function to check if date is today
@@ -118,28 +157,40 @@ export function ScreenshotImportModal({
   };
 
   // Format date for display
-  const formatDate = (dateStr: string): string => {
+  const formatDate = (dateStr: string | undefined): string => {
+    if (!dateStr) return 'Today';
     return new Date(dateStr).toLocaleDateString();
   };
 
-  const processScreenshot = async () => {
-    if (!file) return;
+  // Helper function to extract a date (YYYY-MM-DD or YYYYMMDD or similar) from a string
+  function extractDateFromFilename(filename: string): string | null {
+    // Match YYYY-MM-DD, YYYY_MM_DD, YYYYMMDD, or similar
+    const regex = /(20\d{2})[-_]?([01]\d)[-_]?([0-3]\d)/;
+    const match = filename.match(regex);
+    if (match) {
+      const year = match[1];
+      const month = match[2];
+      const day = match[3];
+      // Basic validation
+      if (Number(month) >= 1 && Number(month) <= 12 && Number(day) >= 1 && Number(day) <= 31) {
+        return `${year}-${month}-${day}`;
+      }
+    }
+    return null;
+  }
 
-    setIsProcessing(true);
-    setError(null);
-
+  const processScreenshot = async (fileData: FileData): Promise<FileData> => {
     try {
       // Convert file to base64
       const base64Data = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => {
           const result = reader.result as string;
-          // Remove data URL prefix
           const base64 = result.split(',')[1];
           resolve(base64);
         };
         reader.onerror = reject;
-        reader.readAsDataURL(file);
+        reader.readAsDataURL(fileData.file);
       });
 
       // Call the server API endpoint
@@ -150,7 +201,7 @@ export function ScreenshotImportModal({
         },
         body: JSON.stringify({
           imageData: base64Data,
-          mimeType: file.type,
+          mimeType: fileData.file.type,
         }),
       });
 
@@ -162,126 +213,160 @@ export function ScreenshotImportModal({
       const { data: extractedData } = await response.json();
 
       if (!extractedData.isValidScreenshot) {
-        setError('This image does not appear to be a valid fitness app or smartwatch screenshot.');
-        return;
-      }
-
-      // Check if activity has a valid date
-      const activityDate = extractedData.activityDate || '';
-
-      if (!activityDate) {
-        setError(
-          'Could not detect activity date from the screenshot. Please ensure the date is visible.',
+        throw new Error(
+          'This image does not appear to be a valid fitness app or smartwatch screenshot.',
         );
-        return;
       }
 
-      // Validate that the activity date is today
-      if (!isToday(activityDate)) {
-        console.error('Date validation failed:', {
-          activityDate,
-          today: new Date().toISOString().split('T')[0], // Format: YYYY-MM-DD
-        });
-        setError("The activity date must be today. Only today's activities can be imported.");
-        return;
-      }
-
-      if (!extractedData.isValidTiming) {
-        // Allow "Today" for Steps activities
-        const isSteps = extractedData.name.toLowerCase().includes('steps');
-        const isTodayTime = extractedData.activityTime.toLowerCase() === 'today';
-
-        if (!(isSteps && isTodayTime)) {
-          setError(
-            'The activity time in the screenshot is invalid. Please ensure the activity was completed today and the timestamp is visible, or shows "Today" for steps/walking activities.',
-          );
-          return;
+      let activityDate = extractedData.activityDate || '';
+      if (!activityDate) {
+        activityDate = extractDateFromFilename(fileData.file.name) || '';
+        if (activityDate) {
+          extractedData.activityDate = activityDate;
         }
       }
 
-      setExtractedData(extractedData);
+      if (!activityDate) {
+        // Try to extract date from file name if not already tried
+        const fallbackDate = extractDateFromFilename(fileData.file.name);
+        if (fallbackDate && isToday(fallbackDate)) {
+          activityDate = fallbackDate;
+          extractedData.activityDate = fallbackDate;
+        } else {
+          throw new Error(
+            "The activity date must be today. Only today's activities can be imported.",
+          );
+        }
+      }
+
+      if (!isToday(activityDate)) {
+        throw new Error(
+          "The activity date must be today. Only today's activities can be imported.",
+        );
+      }
+
+      if (!extractedData.isValidTiming) {
+        throw new Error(
+          'The activity time in the screenshot is invalid. Please ensure the activity was completed today.',
+        );
+      }
+
+      return {
+        ...fileData,
+        extractedData,
+        error: undefined,
+      };
     } catch (error) {
       console.error('Error processing screenshot:', error);
-      setError(
-        error instanceof Error
-          ? error.message
-          : 'Failed to process the screenshot. Please try again.',
+      return {
+        ...fileData,
+        error: error instanceof Error ? error.message : 'Failed to process the screenshot.',
+      };
+    }
+  };
+
+  const processAllScreenshots = async () => {
+    setIsProcessing(true);
+    setGlobalError(null);
+
+    // Update files to show processing state
+    setFiles((prev) => prev.map((file) => ({ ...file, isProcessing: true, error: undefined })));
+
+    try {
+      const processedFiles = await Promise.all(
+        files.map((fileData) => processScreenshot(fileData)),
       );
+
+      setFiles(processedFiles.map((file) => ({ ...file, isProcessing: false })));
+    } catch (error) {
+      console.error('Error processing screenshots:', error);
+      setGlobalError('Failed to process some screenshots. Please try again.');
+      setFiles((prev) => prev.map((file) => ({ ...file, isProcessing: false })));
     } finally {
       setIsProcessing(false);
     }
   };
 
-  const handleSave = async () => {
-    if (!extractedData) return;
+  const handleSaveAll = async () => {
+    const validFiles = files.filter((file) => file.extractedData && !file.error);
 
-    // Ensure the activity date is always set to today
-    const todayData = {
-      ...extractedData,
-      activityDate: new Date().toISOString().split('T')[0], // Ensure today's date
-    };
-
-    const activityData = mapScreenshotToActivity(todayData, userAddress);
-
-    // Check for overlap
-    const overlap = doesActivityOverlap(
-      {
-        start_date: activityData.start_date!,
-        end_date: activityData.end_date!,
-      },
-      activities,
-    );
-    if (overlap) {
-      setError(
-        'An activity already exists during this time. Please check your activities and try again.',
-      );
+    if (validFiles.length === 0) {
+      setGlobalError('No valid activities to save. Please process the screenshots first.');
       return;
     }
 
     setIsSaving(true);
-    setError(null);
+    setGlobalError(null);
 
-    try {
-      await onSaveActivity(activityData);
+    const savedActivities: string[] = [];
+    const failedActivities: string[] = [];
 
-      // Show success message
+    for (const fileData of validFiles) {
+      try {
+        const todayData = {
+          ...fileData.extractedData!,
+          activityDate: new Date().toISOString().split('T')[0],
+        };
+
+        const activityData = mapScreenshotToActivity(todayData, userAddress);
+
+        // Check for overlap
+        const overlap = doesActivityOverlap(
+          {
+            start_date: activityData.start_date!,
+            end_date: activityData.end_date!,
+          },
+          activities,
+        );
+
+        if (overlap) {
+          failedActivities.push(`${activityData.name} (time overlap)`);
+          continue;
+        }
+
+        await onSaveActivity(activityData);
+        savedActivities.push(activityData.name || 'Unknown activity');
+      } catch (error) {
+        console.error('Failed to save activity:', error);
+        failedActivities.push(fileData.extractedData?.name || 'Unknown activity');
+      }
+    }
+
+    // Show results
+    if (savedActivities.length > 0) {
       toast({
-        title: 'Workout Imported',
-        description: `${activityData.name} workout has been successfully imported.`,
+        title: 'Workouts Imported',
+        description: `Successfully imported ${savedActivities.length} workout${
+          savedActivities.length > 1 ? 's' : ''
+        }: ${savedActivities.join(', ')}`,
       });
+    }
 
-      handleClose();
-    } catch (error) {
-      console.error('Failed to save imported activity:', error);
-
-      // Show error message with retry information
+    if (failedActivities.length > 0) {
       toast({
-        title: 'Import Failed',
-        description:
-          'Workout has been queued for retry. Check your connection and try refreshing the Activities page.',
+        title: 'Some Imports Failed',
+        description: `Failed to import: ${failedActivities.join(', ')}`,
         variant: 'destructive',
       });
+    }
 
-      // Set local error to show in the modal
-      setError(
-        error instanceof Error
-          ? error.message
-          : 'Failed to save the workout. It has been queued for retry.',
-      );
-    } finally {
+    if (savedActivities.length > 0 && failedActivities.length === 0) {
+      handleClose();
+    } else {
       setIsSaving(false);
     }
   };
 
   const handleClose = () => {
-    setFile(null);
-    setPreview(null);
-    setError(null);
-    setExtractedData(null);
+    setFiles([]);
+    setGlobalError(null);
     setIsProcessing(false);
     setIsSaving(false);
     onClose();
   };
+
+  const hasValidActivities = files.some((file) => file.extractedData && !file.error);
+  const hasUnprocessedFiles = files.some((file) => !file.extractedData && !file.error);
 
   return (
     <AnimatePresence>
@@ -301,7 +386,7 @@ export function ScreenshotImportModal({
           />
 
           <motion.div
-            className={`relative w-full max-w-2xl max-h-[90vh] overflow-hidden rounded-xl shadow-xl ${
+            className={`relative w-full max-w-4xl max-h-[90vh] overflow-hidden rounded-xl shadow-xl ${
               isDark ? 'bg-gray-900' : 'bg-white'
             } flex flex-col`}
             initial={{ scale: 0.95, opacity: 0 }}
@@ -316,9 +401,9 @@ export function ScreenshotImportModal({
               }`}
             >
               <div>
-                <h2 className="text-xl font-bold">Import Workout from Screenshot</h2>
+                <h2 className="text-xl font-bold">Import Workouts from Screenshots</h2>
                 <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'} mt-1`}>
-                  Upload a screenshot of your fitness app or smartwatch
+                  Upload multiple screenshots of your fitness apps or smartwatch
                 </p>
               </div>
               <Button variant="ghost" size="icon" onClick={handleClose} className="rounded-full">
@@ -332,12 +417,12 @@ export function ScreenshotImportModal({
               <Alert className="mb-6">
                 <AlertTriangle className="h-4 w-4" />
                 <AlertDescription>
-                  <strong>For best results, ensure your screenshot clearly shows:</strong>
+                  <strong>For best results, ensure your screenshots clearly show:</strong>
                   <ul className="list-disc list-inside mt-2 space-y-1 text-sm">
                     <li>Activity date (must be today)</li>
                     <li>Device time at the top of the screen</li>
-                    <li>Completion time or &quot;Today&quot; for steps</li>
-                    <li>Workout name or &quot;Steps&quot; for steps</li>
+                    <li>Completion time</li>
+                    <li>Workout name</li>
                     <li>Calories burned (if available)</li>
                     <li>Steps count and distance (if available)</li>
                     <li>Heart rate data (if available)</li>
@@ -349,8 +434,16 @@ export function ScreenshotImportModal({
                 </AlertDescription>
               </Alert>
 
+              {/* Global Error Display */}
+              {globalError && (
+                <Alert variant="destructive" className="mb-6">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>{globalError}</AlertDescription>
+                </Alert>
+              )}
+
               {/* File Upload Area */}
-              {!file && (
+              {files.length === 0 && (
                 <div
                   className={cn(
                     'border-2 border-dashed rounded-lg p-8 text-center transition-colors',
@@ -362,112 +455,142 @@ export function ScreenshotImportModal({
                   onPaste={handlePaste}
                 >
                   <Upload className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                  <h3 className="text-lg font-medium mb-2">Upload Screenshot</h3>
+                  <h3 className="text-lg font-medium mb-2">Upload Screenshots</h3>
                   <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'} mb-4`}>
-                    Click to browse or paste from clipboard (Ctrl+V / Cmd+V)
+                    Click to browse, select multiple files, or paste from clipboard (Ctrl+V / Cmd+V)
                   </p>
                   <input
                     ref={fileInputRef}
                     type="file"
                     accept="image/*"
+                    multiple
                     onChange={handleFileInput}
                     className="hidden"
                   />
                   <Button className="bg-blue-500 hover:bg-blue-600" onClick={handleChooseFileClick}>
                     <ImageIcon className="h-4 w-4 mr-2" />
-                    Choose File
+                    Choose Files
                   </Button>
                 </div>
               )}
 
-              {/* Preview and Processing */}
-              {file && (
+              {/* Files List */}
+              {files.length > 0 && (
                 <div className="space-y-4">
-                  <Card className={isDark ? 'bg-gray-800' : 'bg-gray-50'}>
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <span className="text-sm font-medium">Selected Image</span>
-                        <Button variant="ghost" size="sm" onClick={handleRemoveFile}>
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-medium">Selected Images ({files.length})</h3>
+                    <div className="flex space-x-2">
+                      <Button variant="outline" size="sm" onClick={handleChooseFileClick}>
+                        Add More
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={handleRemoveAllFiles}>
+                        Remove All
+                      </Button>
+                    </div>
+                  </div>
 
-                      {preview && (
-                        <div className="flex justify-center mb-4">
-                          <Image
-                            src={preview}
-                            alt="Screenshot preview"
-                            width={400}
-                            height={256}
-                            className="max-h-64 w-auto rounded-lg shadow-sm"
-                            unoptimized
-                          />
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-
-                  {/* Error Display */}
-                  {error && (
-                    <Alert variant="destructive">
-                      <AlertTriangle className="h-4 w-4" />
-                      <AlertDescription>{error}</AlertDescription>
-                    </Alert>
-                  )}
-
-                  {/* Extracted Data Display */}
-                  {extractedData && (
-                    <Card className={isDark ? 'bg-gray-800' : 'bg-gray-50'}>
+                  {files.map((fileData, index) => (
+                    <Card key={index} className={isDark ? 'bg-gray-800' : 'bg-gray-50'}>
                       <CardContent className="p-4">
-                        <h3 className="text-lg font-medium mb-3">Extracted Activity Data</h3>
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                          <div>
-                            <span className="font-medium">Activity:</span>
-                            <span className="ml-2">{extractedData.name}</span>
+                        <div className="flex items-start space-x-4">
+                          {/* Preview */}
+                          <div className="flex-shrink-0">
+                            <Image
+                              src={fileData.preview}
+                              alt={`Screenshot ${index + 1}`}
+                              width={120}
+                              height={120}
+                              className="rounded-lg object-cover"
+                              unoptimized
+                            />
                           </div>
-                          <div>
-                            <span className="font-medium">Date:</span>
-                            <span className="ml-2">
-                              {extractedData.activityDate
-                                ? formatDate(extractedData.activityDate)
-                                : 'Today'}
-                            </span>
-                          </div>
-                          <div>
-                            <span className="font-medium">Duration:</span>
-                            <span className="ml-2">
-                              {Math.floor(extractedData.duration / 60)}m{' '}
-                              {extractedData.duration % 60}s
-                            </span>
-                          </div>
-                          {extractedData.distance && (
-                            <div>
-                              <span className="font-medium">Distance:</span>
-                              <span className="ml-2">
-                                {(extractedData.distance / 1000).toFixed(2)} km
+
+                          {/* Content */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-sm font-medium truncate">
+                                {fileData.file.name}
                               </span>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleRemoveFile(index)}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
                             </div>
-                          )}
-                          <div>
-                            <span className="font-medium">Calories:</span>
-                            <span className="ml-2">{extractedData.calories} kcal</span>
+
+                            {/* Processing State */}
+                            {fileData.isProcessing && (
+                              <div className="flex items-center space-x-2 text-sm text-blue-600">
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                <span>Processing...</span>
+                              </div>
+                            )}
+
+                            {/* Error */}
+                            {fileData.error && (
+                              <Alert variant="destructive" className="mt-2">
+                                <AlertTriangle className="h-4 w-4" />
+                                <AlertDescription className="text-sm">
+                                  {fileData.error}
+                                </AlertDescription>
+                              </Alert>
+                            )}
+
+                            {/* Extracted Data */}
+                            {fileData.extractedData && !fileData.error && (
+                              <div className="mt-2 p-3 rounded-lg bg-green-50 dark:bg-green-900/20">
+                                <div className="flex items-center space-x-2 mb-2">
+                                  <CheckCircle className="h-4 w-4 text-green-600" />
+                                  <span className="text-sm font-medium text-green-800 dark:text-green-200">
+                                    Successfully Processed
+                                  </span>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2 text-sm">
+                                  <div>
+                                    <span className="font-medium">Activity:</span>
+                                    <span className="ml-2">{fileData.extractedData.name}</span>
+                                  </div>
+                                  <div>
+                                    <span className="font-medium">Duration:</span>
+                                    <span className="ml-2">
+                                      {Math.floor(fileData.extractedData.duration / 60)}m{' '}
+                                      {fileData.extractedData.duration % 60}s
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <span className="font-medium">Calories:</span>
+                                    <span className="ml-2">
+                                      {fileData.extractedData.calories} kcal
+                                    </span>
+                                  </div>
+                                  {fileData.extractedData.distance && (
+                                    <div>
+                                      <span className="font-medium">Distance:</span>
+                                      <span className="ml-2">
+                                        {(fileData.extractedData.distance / 1000).toFixed(2)} km
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
                           </div>
-                          {extractedData.steps && (
-                            <div>
-                              <span className="font-medium">Steps:</span>
-                              <span className="ml-2">{extractedData.steps.toLocaleString()}</span>
-                            </div>
-                          )}
-                          {extractedData.heartRate?.average && (
-                            <div>
-                              <span className="font-medium">Avg HR:</span>
-                              <span className="ml-2">{extractedData.heartRate.average} bpm</span>
-                            </div>
-                          )}
                         </div>
                       </CardContent>
                     </Card>
-                  )}
+                  ))}
+
+                  {/* Hidden file input for adding more files */}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleFileInput}
+                    className="hidden"
+                  />
                 </div>
               )}
             </div>
@@ -483,10 +606,10 @@ export function ScreenshotImportModal({
                   Cancel
                 </Button>
                 <div className="flex space-x-3">
-                  {!extractedData && (
+                  {hasUnprocessedFiles && (
                     <Button
-                      onClick={processScreenshot}
-                      disabled={isProcessing || !file}
+                      onClick={processAllScreenshots}
+                      disabled={isProcessing || files.length === 0}
                       className="bg-green-500 hover:bg-green-600 disabled:opacity-50"
                     >
                       {isProcessing ? (
@@ -497,14 +620,14 @@ export function ScreenshotImportModal({
                       ) : (
                         <>
                           <CheckCircle className="h-4 w-4 mr-2" />
-                          Analyze Screenshot
+                          Analyze All ({files.length})
                         </>
                       )}
                     </Button>
                   )}
-                  {extractedData && (
+                  {hasValidActivities && (
                     <Button
-                      onClick={handleSave}
+                      onClick={handleSaveAll}
                       disabled={isSaving}
                       className="bg-blue-500 hover:bg-blue-600 disabled:opacity-50"
                     >
@@ -514,7 +637,9 @@ export function ScreenshotImportModal({
                           Saving...
                         </>
                       ) : (
-                        'Save Activity'
+                        `Save All Activities (${
+                          files.filter((f) => f.extractedData && !f.error).length
+                        })`
                       )}
                     </Button>
                   )}

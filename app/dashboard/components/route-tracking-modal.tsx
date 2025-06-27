@@ -607,7 +607,7 @@ export function RouteTrackingModal({
     }
 
     return (
-      <div className="flex align-middle flex-col items-center justify-center text-center">
+      <div className="absolute inset-0 flex flex-col items-center justify-center text-center min-h-[300px]">
         <RotateCw className="h-16 w-16 text-blue-500 animate-spin mb-4" />
         <h3 className="text-xl font-bold mb-2">Loading Map</h3>
         <p className="text-gray-500 dark:text-gray-400">Please wait while we load the map...</p>
@@ -772,7 +772,7 @@ export function RouteTrackingModal({
 
             {/* Main Content */}
             <div
-              className={cn('flex-1', {
+              className={cn('flex-1 relative', {
                 'flex align-middle h-full pb-32 sm:pb-0':
                   !mapsLoaded ||
                   mapsError ||
@@ -781,7 +781,7 @@ export function RouteTrackingModal({
               })}
             >
               {!mapsLoaded ? (
-                renderLoading()
+                <div className="relative min-h-[300px] w-full">{renderLoading()}</div>
               ) : mapsError ? (
                 renderMapsError()
               ) : permissionState === 'prompt' ? (

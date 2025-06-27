@@ -418,31 +418,6 @@ export function MovinDashboard() {
       // Add the user's address to the activity data (already processed by mapScreenshotToActivity)
       const activityWithAddress = { ...activityData, address: addressLower };
 
-      // Check if this is a Steps activity and if there's an existing one for today
-      const isStepsActivity = activityWithAddress.name === 'Steps';
-
-      if (isStepsActivity) {
-        const today = new Date();
-        const existingStepsActivity = findExistingStepsActivity(activities, today);
-
-        if (existingStepsActivity) {
-          // Merge with existing Steps activity
-          const mergedActivity = mergeStepsActivities(existingStepsActivity, activityWithAddress);
-
-          // Update the existing activity
-          await dispatch(updateActivityData(mergedActivity)).unwrap();
-
-          // Show success toast for steps updates (these don't go through the modal UI)
-          dispatch(
-            showSuccessToast({
-              title: 'Steps Activity Updated',
-              description: `Your daily steps have been updated to ${mergedActivity.total_steps?.toLocaleString()} steps.`,
-            }),
-          );
-          return;
-        }
-      }
-
       // For new activities or non-Steps activities, add as new
       await dispatch(
         addActivities({ address: addressLower, activityData: [activityWithAddress] }),
@@ -468,25 +443,8 @@ export function MovinDashboard() {
 
       // Add the user's address to the activity data
       const activityWithAddress = { ...activityData, address: addressLower };
-
-      // Check if this was an update operation
-      const isStepsActivity = activityWithAddress.name === 'Steps';
-      let operationType: 'add' | 'update' = 'add';
-      let activityForQueue = activityWithAddress;
-
-      if (isStepsActivity) {
-        const today = new Date();
-        const existingStepsActivity = findExistingStepsActivity(activities, today);
-
-        if (existingStepsActivity) {
-          // This was an update operation
-          operationType = 'update';
-          activityForQueue = {
-            ...mergeStepsActivities(existingStepsActivity, activityWithAddress),
-            address: addressLower,
-          };
-        }
-      }
+      const operationType: 'add' | 'update' = 'add';
+      const activityForQueue = activityWithAddress;
 
       // Add to failed saves queue for retry
       dispatch(
