@@ -449,7 +449,7 @@ export function EnergyPage() {
         setRetryingFailedSaves((prev) => ({ ...prev, [saveId]: false }));
       }
     },
-    [dispatch],
+    [dispatch, failedSaves],
   );
 
   const handleRemoveFailedSave = useCallback(

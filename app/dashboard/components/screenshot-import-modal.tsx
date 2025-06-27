@@ -156,12 +156,6 @@ export function ScreenshotImportModal({
     return month === currentMonth && day === currentDay;
   };
 
-  // Format date for display
-  const formatDate = (dateStr: string | undefined): string => {
-    if (!dateStr) return 'Today';
-    return new Date(dateStr).toLocaleDateString();
-  };
-
   // Helper function to extract a date (YYYY-MM-DD or YYYYMMDD or similar) from a string
   function extractDateFromFilename(filename: string): string | null {
     // Match YYYY-MM-DD, YYYY_MM_DD, YYYYMMDD, or similar

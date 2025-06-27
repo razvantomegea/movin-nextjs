@@ -28,11 +28,7 @@ import { ErrorAlert } from '@/components/ui/error-alert';
 import { Progress } from '@/components/ui/progress';
 import { DataTestIds } from '@/constants/dataTestIds.mjs';
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
-import {
-  fetchActivities,
-  addActivities,
-  updateActivityData,
-} from '@/lib/redux/slices/activityDataSlice';
+import { fetchActivities, addActivities } from '@/lib/redux/slices/activityDataSlice';
 import { fetchEnergyData } from '@/lib/redux/slices/energyDataSlice';
 import {
   addFailedSave,
@@ -54,8 +50,6 @@ import {
   mapActivitiesToMonthly,
   mapActivitiesToYearly,
   mapRouteToActivity,
-  findExistingStepsActivity,
-  mergeStepsActivities,
   type DailyActivity,
   type Workout,
   type TimeRangeData,
