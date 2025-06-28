@@ -12,6 +12,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/cn';
 import { IActivity } from '@/lib/supabase/activities';
 import { doesActivityOverlap } from '@/utils';
+import { extractDateFromText, isToday } from '@/utils';
 import {
   mapScreenshotToActivity,
   type ExtractedActivityData,
@@ -148,31 +149,6 @@ export function ScreenshotImportModal({
     setGlobalError(null);
   }, []);
 
-  // Helper function to check if date is today
-  const isToday = (dateStr: string): boolean => {
-    const today = new Date().toISOString().split('T')[0];
-    const [, month, day] = dateStr.split('-').map(Number);
-    const [, currentMonth, currentDay] = today.split('-').map(Number);
-    return month === currentMonth && day === currentDay;
-  };
-
-  // Helper function to extract a date (YYYY-MM-DD or YYYYMMDD or similar) from a string
-  function extractDateFromFilename(filename: string): string | null {
-    // Match YYYY-MM-DD, YYYY_MM_DD, YYYYMMDD, or similar
-    const regex = /(20\d{2})[-_]?([01]\d)[-_]?([0-3]\d)/;
-    const match = filename.match(regex);
-    if (match) {
-      const year = match[1];
-      const month = match[2];
-      const day = match[3];
-      // Basic validation
-      if (Number(month) >= 1 && Number(month) <= 12 && Number(day) >= 1 && Number(day) <= 31) {
-        return `${year}-${month}-${day}`;
-      }
-    }
-    return null;
-  }
-
   const processScreenshot = async (fileData: FileData): Promise<FileData> => {
     try {
       // Convert file to base64
@@ -212,26 +188,8 @@ export function ScreenshotImportModal({
         );
       }
 
-      let activityDate = extractedData.activityDate || '';
-      if (!activityDate) {
-        activityDate = extractDateFromFilename(fileData.file.name) || '';
-        if (activityDate) {
-          extractedData.activityDate = activityDate;
-        }
-      }
-
-      if (!activityDate) {
-        // Try to extract date from file name if not already tried
-        const fallbackDate = extractDateFromFilename(fileData.file.name);
-        if (fallbackDate && isToday(fallbackDate)) {
-          activityDate = fallbackDate;
-          extractedData.activityDate = fallbackDate;
-        } else {
-          throw new Error(
-            "The activity date must be today. Only today's activities can be imported.",
-          );
-        }
-      }
+      const fileNameDate = extractDateFromText(fileData.file.name);
+      const activityDate = fileNameDate || extractedData.activityDate || '';
 
       if (!isToday(activityDate)) {
         throw new Error(
