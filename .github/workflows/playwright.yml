@@ -18,7 +18,7 @@ jobs:
     - name: Install Playwright Browsers
       run: pnpm exec playwright install --with-deps
     - name: Build no-sw
-      run: pnpm run build-no-sw
+      run: pnpm run build:no-sw
     - name: Run Playwright tests
       run: pnpm exec playwright test
     - uses: actions/upload-artifact@v4
