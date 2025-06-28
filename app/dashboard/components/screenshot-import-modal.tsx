@@ -189,13 +189,42 @@ export function ScreenshotImportModal({
       }
 
       const fileNameDate = extractDateFromText(fileData.file.name);
-      const activityDate = fileNameDate || extractedData.activityDate || '';
+      const imageDate = extractedData.activityDate; // This is already expected to be YYYY-MM-DD
 
-      if (!isToday(activityDate)) {
+      let finalActivityDate: string | null = null;
+
+      if (fileNameDate && imageDate) {
+        if (fileNameDate !== imageDate) {
+          throw new Error(
+            `Date mismatch: File name suggests ${fileNameDate}, but screenshot says ${imageDate}.`,
+          );
+        }
+        finalActivityDate = fileNameDate; // or imageDate, they are the same
+      } else if (fileNameDate) {
+        finalActivityDate = fileNameDate;
+      } else if (imageDate) {
+        finalActivityDate = imageDate;
+      } else {
         throw new Error(
-          "The activity date must be today. Only today's activities can be imported.",
+          'Could not determine the activity date from the file name or screenshot content.',
         );
       }
+
+      if (!finalActivityDate) {
+        // This case should ideally be caught by the block above, but as a safeguard:
+        throw new Error('Activity date could not be verified.');
+      }
+
+      if (!isToday(finalActivityDate)) {
+        throw new Error(
+          `The activity date (${finalActivityDate}) must be today. Only today's activities can be imported.`,
+        );
+      }
+
+      // Assign the validated date to extractedData to be used later
+      // This ensures that if only fileNameDate was present, it's now part of extractedData for mapScreenshotToActivity
+      extractedData.activityDate = finalActivityDate;
+
 
       if (!extractedData.isValidTiming) {
         throw new Error(
