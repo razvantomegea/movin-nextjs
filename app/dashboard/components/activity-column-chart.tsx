@@ -26,7 +26,7 @@ interface ActivityColumnChartProps {
   isLoading: boolean;
 }
 
-type MetricType = 'steps' | 'calories' | 'distance' | 'duration';
+type MetricType = 'steps' | 'calories' | 'distance' | 'duration' | 'mets';
 
 export function ActivityColumnChart({
   weeklyData,
@@ -78,11 +78,12 @@ export function ActivityColumnChart({
             onValueChange={(value) => setMetric(value as MetricType)}
             className="w-full sm:w-auto"
           >
-            <TabsList className="grid grid-cols-4 w-full sm:w-auto">
+            <TabsList className="grid grid-cols-5 w-full sm:w-auto">
               <TabsTrigger value="steps">Steps</TabsTrigger>
-              <TabsTrigger value="calories">Calories</TabsTrigger>
-              <TabsTrigger value="distance">Distance</TabsTrigger>
-              <TabsTrigger value="duration">Duration</TabsTrigger>
+              <TabsTrigger value="calories">Kcal</TabsTrigger>
+              <TabsTrigger value="distance">Km</TabsTrigger>
+              <TabsTrigger value="duration">Min</TabsTrigger>
+              <TabsTrigger value="mets">METs</TabsTrigger>
             </TabsList>
           </Tabs>
 
@@ -206,6 +207,7 @@ export function ActivityColumnChart({
             {metric === 'calories' && 'Total Calories'}
             {metric === 'distance' && 'Total Distance'}
             {metric === 'duration' && 'Total Duration'}
+            {metric === 'mets' && 'Total METs'}
           </div>
           <div className="text-xl font-bold">
             {hasData ? formatActivityValue(totalValue, metric) : '0'}

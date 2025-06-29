@@ -8,7 +8,7 @@
  * @param metric The metric type ('steps', 'calories', 'distance', 'duration')
  * @returns Formatted value as a string
  */
-export type ActivityMetric = 'steps' | 'calories' | 'distance' | 'duration';
+export type ActivityMetric = 'steps' | 'calories' | 'distance' | 'duration' | 'mets';
 export type NutritionMetric = 'calories' | 'carbohydrates' | 'fats' | 'protein' | 'fiber';
 
 export function formatActivityValue(value: number, metric: ActivityMetric): string {
@@ -21,6 +21,8 @@ export function formatActivityValue(value: number, metric: ActivityMetric): stri
       return value.toFixed(1);
     case 'duration':
       return value.toString();
+    case 'mets':
+      return Math.round(value).toString();
     default:
       return value.toString();
   }
@@ -61,6 +63,8 @@ export function getActivityUnit(metric: ActivityMetric): string {
       return 'km';
     case 'duration':
       return 'min';
+    case 'mets':
+      return '';
     default:
       return '';
   }
@@ -100,6 +104,8 @@ export function getActivityMetricLabel(metric: ActivityMetric): string {
       return 'Distance (km)';
     case 'duration':
       return 'Duration (min)';
+    case 'mets':
+      return 'METs';
     default:
       return '';
   }

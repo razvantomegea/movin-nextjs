@@ -579,7 +579,7 @@ export function MovinDashboard() {
                         />
                       </motion.div>
 
-                      <div className="grid grid-cols-3 gap-4 mt-6">
+                      <div className="grid grid-cols-4 gap-4 mt-6">
                         <motion.div
                           className="flex flex-col items-center"
                           whileHover={{ scale: 1.05 }}
@@ -635,6 +635,23 @@ export function MovinDashboard() {
                           </span>
                           <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                             active
+                          </span>
+                        </motion.div>
+
+                        {/* METs metric */}
+                        <motion.div
+                          className="flex flex-col items-center"
+                          whileHover={{ scale: 1.05 }}
+                          transition={{ type: 'spring', stiffness: 400, damping: 10 }}
+                        >
+                          <div className="bg-blue-500/10 p-2 rounded-full mb-2">
+                            <Activity className="h-4 w-4 text-blue-500" />
+                          </div>
+                          <span className="text-sm font-medium" data-testid="dashboard-daily-mets">
+                            {dailyActivity.mets}
+                          </span>
+                          <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                            METs
                           </span>
                         </motion.div>
                       </div>

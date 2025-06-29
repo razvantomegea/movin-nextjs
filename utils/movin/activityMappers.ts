@@ -1,6 +1,7 @@
 import { IActivity } from '@/lib/supabase/activities';
 import { formatDistance } from './formatDistance';
 import { formatDuration } from './formatDuration';
+import { calculateMetsFromCalories } from './calculateMets';
 
 // Helper function to check if two dates are the same day
 const isSameDay = (date1: Date | string, date2: Date | string): boolean => {
@@ -44,6 +45,7 @@ export interface DailyActivity {
   steps: number;
   distance: number;
   calories: number;
+  mets: number;
   activeMinutes: number;
   date: string;
 }
@@ -53,6 +55,7 @@ export interface TimeRangeData {
   steps: number;
   distance: number;
   calories: number;
+  mets: number;
   duration: number;
 }
 
@@ -77,22 +80,28 @@ export const mapActivitiesToDaily = (activities: IActivity[], date: Date): Daily
   // Then use it in the filter function
   const dailyActivities = activities.filter((activity) => isSameDay(activity.start_date, date));
 
-  return dailyActivities.reduce<DailyActivity>(
-    (acc, activity) => {
-      acc.steps += activity?.total_steps || 0;
-      acc.distance += (activity?.total_distance || 0) / 1000;
-      acc.calories += activity?.total_energy_burned || 0;
-      acc.activeMinutes += (activity?.duration || 0) / 60;
-      return acc;
-    },
-    {
-      steps: 0,
-      distance: 0,
-      calories: 0,
-      activeMinutes: 0,
-      date: targetDateStr,
-    },
-  );
+  let calories = 0;
+  let mets = 0;
+  let steps = 0;
+  let distance = 0;
+  let activeMinutes = 0;
+
+  dailyActivities.forEach((activity) => {
+    steps += activity?.total_steps || 0;
+    distance += (activity?.total_distance || 0) / 1000;
+    calories += activity?.total_energy_burned || 0;
+    activeMinutes += (activity?.duration || 0) / 60;
+    mets += calculateMetsFromCalories(activity?.total_energy_burned || 0);
+  });
+
+  return {
+    steps,
+    distance,
+    calories,
+    mets,
+    activeMinutes,
+    date: targetDateStr,
+  };
 };
 
 export const mapActivitiesToWeekly = (
@@ -116,6 +125,7 @@ export const mapActivitiesToWeekly = (
       steps: dailySummary.steps,
       distance: dailySummary.distance,
       calories: dailySummary.calories,
+      mets: dailySummary.mets,
       duration: Math.round(dailySummary.activeMinutes),
     });
   }
@@ -147,6 +157,7 @@ export const mapActivitiesToMonthly = (
         steps: dailySummary.steps,
         distance: dailySummary.distance,
         calories: dailySummary.calories,
+        mets: dailySummary.mets,
         duration: Math.round(dailySummary.activeMinutes),
       });
     } else {
@@ -156,6 +167,7 @@ export const mapActivitiesToMonthly = (
         steps: 0,
         distance: 0,
         calories: 0,
+        mets: 0,
         duration: 0,
       });
     }
@@ -178,23 +190,26 @@ export const mapActivitiesToYearly = (
       return activityDate.getFullYear() === year && activityDate.getMonth() === i;
     });
 
-    const monthlySummary = monthlyActivities.reduce(
-      (acc, activity) => {
-        acc.steps += activity.total_steps || 0;
-        acc.distance += (activity.total_distance || 0) / 1000;
-        acc.calories += activity.total_energy_burned || 0;
-        acc.duration += (activity.duration || 0) / 60;
-        return acc;
-      },
-      { steps: 0, distance: 0, calories: 0, duration: 0 },
-    );
+    let steps = 0;
+    let distance = 0;
+    let calories = 0;
+    let mets = 0;
+    let duration = 0;
+    monthlyActivities.forEach((activity) => {
+      steps += activity.total_steps || 0;
+      distance += (activity.total_distance || 0) / 1000;
+      calories += activity.total_energy_burned || 0;
+      mets += calculateMetsFromCalories(activity.total_energy_burned || 0);
+      duration += (activity.duration || 0) / 60;
+    });
 
     yearlyData.push({
       label: monthStr,
-      steps: monthlySummary.steps,
-      distance: monthlySummary.distance,
-      calories: monthlySummary.calories,
-      duration: Math.round(monthlySummary.duration),
+      steps,
+      distance,
+      calories,
+      mets,
+      duration: Math.round(duration),
     });
   }
   return yearlyData;
