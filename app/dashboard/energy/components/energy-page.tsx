@@ -43,14 +43,14 @@ import {
   removeFailedSave,
 } from '@/lib/redux/slices/failedSavesSlice';
 import { fetchProfile, updateProfile } from '@/lib/redux/slices/profileSlice';
-import { showSuccessToast, showInfoToast } from '@/lib/redux/slices/toastSlice';
 import { createPost } from '@/lib/redux/slices/socialFeedSlice';
+import { showSuccessToast, showInfoToast } from '@/lib/redux/slices/toastSlice';
 import { IMeal } from '@/lib/supabase/meals';
-import { calculateBMR, calculateDailyCalories, calculateAge } from '@/utils/energy/calculateBMR';
 import {
   generateAchievementPostContent,
   createAchievementData,
 } from '@/utils/achievements/shareAchievement';
+import { calculateBMR, calculateDailyCalories, calculateAge } from '@/utils/energy/calculateBMR';
 
 import {
   mapEnergyToDaily,

@@ -18,8 +18,8 @@ import {
   fetchActivityRewards,
   recordActivityReward,
 } from '@/lib/redux/slices/activityRewardsSlice';
-import { showSuccessToast, showErrorToast } from '@/lib/redux/slices/toastSlice';
 import { createPost } from '@/lib/redux/slices/socialFeedSlice';
+import { showSuccessToast, showErrorToast } from '@/lib/redux/slices/toastSlice';
 import { RootState } from '@/lib/redux/store';
 import { mapActivitiesToDaily, mapError, type DailyActivity } from '@/utils';
 import {

@@ -15,6 +15,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useAppDispatch } from '@/lib/redux/hooks';
 import { uploadPostImageAsync } from '@/lib/redux/slices/socialFeedSlice';
+import { useToast } from '@/components/ui/use-toast';
 
 interface ShareAchievementModalProps {
   isOpen: boolean;
@@ -30,6 +31,7 @@ export function ShareAchievementModal({
   userAddress,
 }: ShareAchievementModalProps) {
   const dispatch = useAppDispatch();
+  const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [content, setContent] = useState('');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -52,14 +54,22 @@ export function ShareAchievementModal({
       // Validate file type
       const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
       if (!allowedTypes.includes(file.type)) {
-        alert('Please select a valid image file (JPEG, PNG, WebP, or GIF)');
+        toast({
+          title: 'Invalid file type',
+          description: 'Please select a valid image file (JPEG, PNG, WebP, or GIF)',
+          variant: 'destructive',
+        });
         return;
       }
 
       // Validate file size (5MB)
       const maxSize = 5 * 1024 * 1024;
       if (file.size > maxSize) {
-        alert('File size must be less than 5MB');
+        toast({
+          title: 'File too large',
+          description: 'File size must be less than 5MB',
+          variant: 'destructive',
+        });
         return;
       }
 
@@ -91,7 +101,11 @@ export function ShareAchievementModal({
           ).unwrap();
         } catch (error) {
           console.error('Failed to upload image:', error);
-          alert('Failed to upload image. Please try again.');
+          toast({
+            title: 'Image upload failed',
+            description: 'Failed to upload image. Please try again.',
+            variant: 'destructive',
+          });
           return;
         } finally {
           setIsUploadingImage(false);

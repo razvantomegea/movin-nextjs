@@ -30,6 +30,8 @@ import {
   type ISocialPostInput,
   type IPostCommentInput,
 } from '@/lib/supabase/social';
+import { RootState } from '../store';
+import type { AppDispatch } from '../store';
 
 // Types
 export interface SocialPost {
@@ -93,6 +95,8 @@ interface SocialFeedState {
   isLoadingComments: Record<string, boolean>; // postId -> loading state
   isSubmittingComment: Record<string, boolean>; // postId -> submitting state
   error: string | null;
+  // For optimistic updates
+  optimisticallyRemovedComments: Record<string, Record<string, PostComment>>; // { [postId]: { [commentId]: PostComment } }
 }
 
 // Async thunks
@@ -381,6 +385,8 @@ const initialState: SocialFeedState = {
   isLoadingComments: {},
   isSubmittingComment: {},
   error: null,
+  // For optimistic updates
+  optimisticallyRemovedComments: {}, // { [postId]: { [commentId]: PostComment } }
 };
 
 // Slice
@@ -672,29 +678,31 @@ const socialFeedSlice = createSlice({
         state.error = action.payload as string;
       })
 
-      // Delete comment
-      .addCase(deleteCommentAsync.fulfilled, (state, action) => {
-        const { commentId, postId } = action.payload;
-
-        // Update post comment count
-        const post = state.posts.find((p) => p.id === postId);
-        if (post) {
-          post.comments_count = Math.max((post.comments_count || 0) - 1, 0);
+      // Optimistic delete (pending)
+      .addCase(deleteCommentAsync.pending, (state, action) => {
+        const { commentId, postId } = action.meta.arg;
+        if (!state.optimisticallyRemovedComments[postId]) {
+          state.optimisticallyRemovedComments[postId] = {};
         }
-
         if (state.postComments[postId]) {
-          // Remove comment from top-level comments
+          // Try to remove from top-level
           const topLevelIndex = state.postComments[postId].findIndex(
             (comment) => comment.id === commentId,
           );
           if (topLevelIndex !== -1) {
+            // Save for rollback
+            state.optimisticallyRemovedComments[postId][commentId] =
+              state.postComments[postId][topLevelIndex];
             state.postComments[postId].splice(topLevelIndex, 1);
           } else {
-            // Remove comment from replies
+            // Try to remove from replies
             for (const comment of state.postComments[postId]) {
               if (comment.replies) {
                 const replyIndex = comment.replies.findIndex((reply) => reply.id === commentId);
                 if (replyIndex !== -1) {
+                  // Save for rollback
+                  state.optimisticallyRemovedComments[postId][commentId] =
+                    comment.replies[replyIndex];
                   comment.replies.splice(replyIndex, 1);
                   comment.replies_count = Math.max((comment.replies_count || 0) - 1, 0);
                   break;
@@ -704,7 +712,42 @@ const socialFeedSlice = createSlice({
           }
         }
       })
+      // Delete comment fulfilled (do nothing, already removed)
+      .addCase(deleteCommentAsync.fulfilled, (state, action) => {
+        const { commentId, postId } = action.payload;
+        // Remove from rollback state
+        if (state.optimisticallyRemovedComments[postId]) {
+          delete state.optimisticallyRemovedComments[postId][commentId];
+        }
+        // Update post comment count
+        const post = state.posts.find((p) => p.id === postId);
+        if (post) {
+          post.comments_count = Math.max((post.comments_count || 0) - 1, 0);
+        }
+      })
+      // Delete comment rejected (restore comment)
       .addCase(deleteCommentAsync.rejected, (state, action) => {
+        const { commentId, postId } = action.meta.arg;
+        const removed = state.optimisticallyRemovedComments[postId]?.[commentId];
+        if (removed && state.postComments[postId]) {
+          if (!removed.parent_comment_id) {
+            // Restore as top-level
+            state.postComments[postId].unshift(removed);
+          } else {
+            // Restore as reply
+            const parent = state.postComments[postId].find(
+              (c) => c.id === removed.parent_comment_id,
+            );
+            if (parent) {
+              if (!parent.replies) parent.replies = [];
+              parent.replies.unshift(removed);
+              parent.replies_count = (parent.replies_count || 0) + 1;
+            }
+          }
+        }
+        if (state.optimisticallyRemovedComments[postId]) {
+          delete state.optimisticallyRemovedComments[postId][commentId];
+        }
         state.error = action.payload as string;
       })
 
@@ -727,11 +770,6 @@ export const { clearError, clearSearchResults, updateSearchResultConnectionStatu
 export default socialFeedSlice.reducer;
 
 // ==================== MEMOIZED SELECTORS ====================
-
-// Define the RootState type for selectors
-interface RootState {
-  socialFeed: SocialFeedState;
-}
 
 // Empty arrays to avoid creating new references
 const EMPTY_COMMENTS_ARRAY: PostComment[] = [];
@@ -793,7 +831,8 @@ export const makeSelectIsSubmittingComment = () =>
 
 // Thunk wrappers to always refetch post after like/dislike or comment mutations
 export const togglePostReactionAndRefetch =
-  (params: { postId: string; address: string; isLike: boolean }) => async (dispatch: any) => {
+  (params: { postId: string; address: string; isLike: boolean }) =>
+  async (dispatch: AppDispatch) => {
     const result = await dispatch(togglePostReactionAsync(params));
     if (togglePostReactionAsync.fulfilled.match(result)) {
       await dispatch(fetchSocialPost({ postId: params.postId, address: params.address }));
@@ -803,7 +842,7 @@ export const togglePostReactionAndRefetch =
 
 export const createCommentAndRefetch =
   (params: { postId: string; address: string; commentData: IPostCommentInput }) =>
-  async (dispatch: any) => {
+  async (dispatch: AppDispatch) => {
     const result = await dispatch(createCommentAsync(params));
     if (createCommentAsync.fulfilled.match(result)) {
       await dispatch(fetchSocialPost({ postId: params.postId, address: params.address }));
@@ -813,7 +852,7 @@ export const createCommentAndRefetch =
 
 export const updateCommentAndRefetch =
   (params: { commentId: string; address: string; content: string; postId: string }) =>
-  async (dispatch: any) => {
+  async (dispatch: AppDispatch) => {
     const result = await dispatch(updateCommentAsync(params));
     if (updateCommentAsync.fulfilled.match(result)) {
       await dispatch(fetchSocialPost({ postId: params.postId, address: params.address }));
@@ -822,7 +861,8 @@ export const updateCommentAndRefetch =
   };
 
 export const deleteCommentAndRefetch =
-  (params: { commentId: string; address: string; postId: string }) => async (dispatch: any) => {
+  (params: { commentId: string; address: string; postId: string }) =>
+  async (dispatch: AppDispatch) => {
     const result = await dispatch(deleteCommentAsync(params));
     if (deleteCommentAsync.fulfilled.match(result)) {
       await dispatch(fetchSocialPost({ postId: params.postId, address: params.address }));

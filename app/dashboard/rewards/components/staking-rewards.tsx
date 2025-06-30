@@ -14,13 +14,13 @@ import { RewardCountdownTimer } from '@/components/ui/reward-countdown-timer';
 import { IUserStake, useMovinEarn } from '@/lib/hooks/useMovinEarn';
 import { useMovinToken } from '@/lib/hooks/useMovinToken';
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
+import { createPost } from '@/lib/redux/slices/socialFeedSlice';
 import {
   fetchStakingData,
   updateStakeData,
   insertStakesData,
 } from '@/lib/redux/slices/stakingSlice';
 import { showSuccessToast, showErrorToast } from '@/lib/redux/slices/toastSlice';
-import { createPost } from '@/lib/redux/slices/socialFeedSlice';
 import { IStake } from '@/lib/supabase/stake';
 import {
   generateAchievementPostContent,
@@ -413,7 +413,7 @@ export function StakingRewards({ refreshing, onDataLoaded }: StakingRewardsProps
 
     try {
       const achievementData = createAchievementData(
-        'workout',
+        'staking_rewards',
         `${claimAmount.toFixed(2)} ${displayTokenSymbol}`,
         'Staking Rewards Claimed',
         'Congratulations on claiming your staking rewards!',

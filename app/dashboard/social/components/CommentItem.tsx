@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { MoreHorizontal, Trash, Send } from 'lucide-react';
 import { useDispatch } from 'react-redux';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -9,28 +10,14 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
-import { MoreHorizontal, Trash, Send } from 'lucide-react';
+import { useToast } from '@/components/ui/use-toast';
 import {
   deleteCommentAsync,
   createCommentAsync,
   type PostComment,
-  type AppDispatch,
 } from '@/lib/redux/slices/socialFeedSlice';
-
-function formatTimeAgo(dateString: string): string {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMinutes = Math.floor(diffMs / (1000 * 60));
-  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-  if (diffMinutes < 1) return 'Just now';
-  if (diffMinutes < 60) return `${diffMinutes}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays < 7) return `${diffDays}d ago`;
-  return date.toLocaleDateString();
-}
+import { AppDispatch } from '@/lib/redux/store';
+import { formatTimeAgo } from '@/utils/time/formatTimeAgo';
 
 export default function CommentItem({
   comment,
@@ -42,35 +29,54 @@ export default function CommentItem({
   currentUserAddress: string;
 }) {
   const dispatch = useDispatch<AppDispatch>();
+  const { toast } = useToast();
   const [isReplying, setIsReplying] = useState(false);
   const [replyText, setReplyText] = useState('');
 
   const handleDeleteComment = async () => {
-    if (comment.address === currentUserAddress) {
-      dispatch(
-        deleteCommentAsync({
-          commentId: comment.id,
-          address: currentUserAddress,
-          postId,
-        }),
-      );
+    if (comment.address.toLowerCase() === currentUserAddress.toLowerCase()) {
+      try {
+        await dispatch(
+          deleteCommentAsync({
+            commentId: comment.id,
+            address: currentUserAddress,
+            postId,
+          }),
+        ).unwrap();
+      } catch (error) {
+        console.error('Failed to delete comment:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to delete comment. Please try again.',
+          variant: 'destructive',
+        });
+      }
     }
   };
 
   const handleReply = async () => {
     if (replyText.trim()) {
-      dispatch(
-        createCommentAsync({
-          postId,
-          address: currentUserAddress,
-          commentData: {
-            content: replyText.trim(),
-            parent_comment_id: comment.id,
-          },
-        }),
-      );
-      setReplyText('');
-      setIsReplying(false);
+      try {
+        await dispatch(
+          createCommentAsync({
+            postId,
+            address: currentUserAddress,
+            commentData: {
+              content: replyText.trim(),
+              parent_comment_id: comment.id,
+            },
+          }),
+        ).unwrap();
+        setReplyText('');
+        setIsReplying(false);
+      } catch (error) {
+        console.error('Failed to post reply:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to post reply. Please try again.',
+          variant: 'destructive',
+        });
+      }
     }
   };
 
@@ -91,21 +97,22 @@ export default function CommentItem({
             <span className="text-xs text-muted-foreground">
               {formatTimeAgo(comment.created_at)}
             </span>
-            {comment.address === currentUserAddress && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-                    <MoreHorizontal className="h-3 w-3" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={handleDeleteComment} className="text-red-600">
-                    <Trash className="h-4 w-4 mr-2" />
-                    Delete
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
+            {comment.address &&
+              comment.address.toLowerCase() === currentUserAddress.toLowerCase() && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                      <MoreHorizontal className="h-3 w-3" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={handleDeleteComment} className="text-red-600">
+                      <Trash className="h-4 w-4 mr-2" />
+                      Delete
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
           </div>
           <p className="text-sm text-gray-700 mb-2">{comment.content}</p>
           <div className="flex items-center gap-2">

@@ -88,7 +88,7 @@ ${description || 'Another milestone reached on my fitness journey!'}
  * Create achievement data object from celebration props
  */
 export function createAchievementData(
-  achievementType: 'steps' | 'workout' | 'streak' | 'level',
+  achievementType: 'steps' | 'workout' | 'streak' | 'level' | 'staking_rewards',
   achievementValue: string,
   achievementTitle: string,
   description?: string,

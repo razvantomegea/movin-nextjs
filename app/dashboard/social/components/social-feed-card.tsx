@@ -1,21 +1,20 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import {
-  MessageCircle,
-  Share,
-  ThumbsUp,
-  ThumbsDown,
-  Send,
-  MoreHorizontal,
-  Trash,
-} from 'lucide-react';
+import { MessageCircle, Share, ThumbsUp, ThumbsDown, Send } from 'lucide-react';
 import Image from 'next/image';
 import { useDispatch, useSelector } from 'react-redux';
 import { useAccount } from 'wagmi';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,19 +23,21 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/cn';
+import { useReduxToast } from '@/lib/hooks/use-redux-toast';
 import {
   togglePostReactionAsync,
   fetchPostComments,
   createCommentAsync,
-  deleteCommentAsync,
   makeSelectPostComments,
   makeSelectIsLoadingComments,
   makeSelectIsSubmittingComment,
+  createPost,
   type SocialPost,
-  type PostComment,
 } from '@/lib/redux/slices/socialFeedSlice';
 import type { AppDispatch, RootState } from '@/lib/redux/store';
+import { copyToClipboard } from '@/utils/crypto';
 import CommentItem from './CommentItem';
 
 interface SocialFeedCardProps {
@@ -63,6 +64,11 @@ export function SocialFeedCard({ post }: SocialFeedCardProps) {
   const { address } = useAccount();
   const [showComments, setShowComments] = useState(false);
   const [newComment, setNewComment] = useState('');
+  const [isRepostModalOpen, setIsRepostModalOpen] = useState(false);
+  const [repostComment, setRepostComment] = useState('');
+  const [isReposting, setIsReposting] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
+  const { success: showSuccessToast } = useReduxToast();
 
   // Create memoized selector instances
   const selectPostComments = useMemo(() => makeSelectPostComments(), []);
@@ -124,6 +130,77 @@ export function SocialFeedCard({ post }: SocialFeedCardProps) {
       }),
     );
     setNewComment('');
+  };
+
+  const handleRepost = async () => {
+    if (!address) return;
+    setIsReposting(true);
+    try {
+      const content = `${repostComment ? repostComment + '\n\n' : ''}Repost of @${username}: ${
+        post.content
+      }`;
+      await dispatch(
+        createPost({
+          address: address.toLowerCase(),
+          postData: {
+            content,
+            image_url: post.image_url,
+          },
+        }),
+      ).unwrap();
+      setIsRepostModalOpen(false);
+      setRepostComment('');
+    } catch (error) {
+      // Optionally show error toast
+    } finally {
+      setIsReposting(false);
+    }
+  };
+
+  const postUrl =
+    typeof window !== 'undefined'
+      ? `${window.location.origin}/dashboard/social?post=${post.id}`
+      : '';
+  const shareText = `${post.profile?.username ? '@' + post.profile.username : ''}: ${post.content}`;
+
+  const handleNativeShare = async () => {
+    setIsSharing(true);
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: 'Movin Social Post',
+          text: shareText,
+          url: postUrl,
+        });
+      } else {
+        // fallback
+        handleCopyLink();
+      }
+    } catch (e) {
+      // Optionally show error toast
+    } finally {
+      setIsSharing(false);
+    }
+  };
+
+  const handleShareTwitter = () => {
+    const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(
+      shareText,
+    )}&url=${encodeURIComponent(postUrl)}`;
+    window.open(url, '_blank', 'noopener');
+  };
+
+  const handleShareFacebook = () => {
+    const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(postUrl)}`;
+    window.open(url, '_blank', 'noopener');
+  };
+
+  const handleCopyLink = () => {
+    copyToClipboard(postUrl);
+    showSuccessToast({
+      title: 'Link copied!',
+      description: 'The post link has been copied to your clipboard.',
+    });
   };
 
   return (
@@ -205,10 +282,23 @@ export function SocialFeedCard({ post }: SocialFeedCardProps) {
               <MessageCircle className="h-4 w-4" />
               <span>Comment</span>
             </Button>
-            <Button variant="ghost" size="sm" className="flex items-center gap-1">
-              <Share className="h-4 w-4" />
-              <span>Share</span>
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="flex items-center gap-1">
+                  <Share className="h-4 w-4" />
+                  <span>Share</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setIsRepostModalOpen(true)} disabled={!address}>
+                  Repost
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleNativeShare}>Share via Device...</DropdownMenuItem>
+                <DropdownMenuItem onClick={handleShareTwitter}>Share to Twitter</DropdownMenuItem>
+                <DropdownMenuItem onClick={handleShareFacebook}>Share to Facebook</DropdownMenuItem>
+                <DropdownMenuItem onClick={handleCopyLink}>Copy Link</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
 
@@ -275,6 +365,48 @@ export function SocialFeedCard({ post }: SocialFeedCardProps) {
             </div>
           </div>
         )}
+
+        {/* Repost Modal */}
+        <Dialog open={isRepostModalOpen} onOpenChange={setIsRepostModalOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Repost</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div>
+                <Textarea
+                  placeholder="Add a comment (optional)"
+                  value={repostComment}
+                  onChange={(e) => setRepostComment(e.target.value)}
+                  rows={3}
+                  className="mt-2"
+                  disabled={isReposting}
+                />
+              </div>
+              <div className="border rounded p-2 bg-muted">
+                <div className="text-xs text-muted-foreground mb-1">Original post:</div>
+                <div className="text-sm">{post.content}</div>
+                {post.image_url && (
+                  <div className="relative h-32 w-full rounded-md overflow-hidden mt-2">
+                    <Image src={post.image_url} alt="Post image" fill className="object-cover" />
+                  </div>
+                )}
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setIsRepostModalOpen(false)}
+                disabled={isReposting}
+              >
+                Cancel
+              </Button>
+              <Button onClick={handleRepost} disabled={isReposting || !address}>
+                {isReposting ? 'Reposting...' : 'Repost'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </CardFooter>
     </Card>
   );

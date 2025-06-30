@@ -38,8 +38,8 @@ import {
 } from '@/lib/redux/slices/failedSavesSlice';
 import { resetJointTracking } from '@/lib/redux/slices/jointTrackingSlice';
 import { fetchProfile, updateProfile } from '@/lib/redux/slices/profileSlice';
-import { showSuccessToast, showInfoToast } from '@/lib/redux/slices/toastSlice';
 import { createPost } from '@/lib/redux/slices/socialFeedSlice';
+import { showSuccessToast, showInfoToast } from '@/lib/redux/slices/toastSlice';
 import type { RootState } from '@/lib/redux/store';
 import { IActivity } from '@/lib/supabase/activities';
 import {

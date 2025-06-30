@@ -47,7 +47,7 @@ export function UserSearchResults({
     }
 
     switch (user.connection_status) {
-      case 'connected':
+      case 'accepted':
         return (
           <Button size="sm" variant="outline" disabled>
             Connected
@@ -59,12 +59,8 @@ export function UserSearchResults({
             Pending
           </Button>
         );
-      case 'sent':
-        return (
-          <Button size="sm" variant="outline" disabled>
-            Request Sent
-          </Button>
-        );
+      case 'declined':
+      case 'blocked':
       default:
         return (
           <Button size="sm" onClick={() => handleSendConnectionRequest(user.address)}>
