@@ -20,7 +20,12 @@ import {
   insertStakesData,
 } from '@/lib/redux/slices/stakingSlice';
 import { showSuccessToast, showErrorToast } from '@/lib/redux/slices/toastSlice';
+import { createPost } from '@/lib/redux/slices/socialFeedSlice';
 import { IStake } from '@/lib/supabase/stake';
+import {
+  generateAchievementPostContent,
+  createAchievementData,
+} from '@/utils/achievements/shareAchievement';
 import { matchUserStakeWithDB } from '@/utils/staking/matchUserStakeWithDB';
 import { prepareUpdateStakesInDB } from '@/utils/staking/prepareUpdateStakesToDB';
 import { StakeItem } from './stake-item';
@@ -402,6 +407,50 @@ export function StakingRewards({ refreshing, onDataLoaded }: StakingRewardsProps
     setClaimAmount(0);
   }, []);
 
+  // Achievement sharing handler
+  const handleShareStakingRewards = useCallback(async () => {
+    if (!addressLower || claimAmount <= 0) return;
+
+    try {
+      const achievementData = createAchievementData(
+        'workout',
+        `${claimAmount.toFixed(2)} ${displayTokenSymbol}`,
+        'Staking Rewards Claimed',
+        'Congratulations on claiming your staking rewards!',
+        claimAmount.toFixed(2),
+        displayTokenSymbol,
+        'staking_rewards',
+      );
+
+      const postContent = generateAchievementPostContent(achievementData);
+
+      await dispatch(
+        createPost({
+          address: addressLower,
+          postData: { content: postContent },
+        }),
+      ).unwrap();
+
+      dispatch(
+        showSuccessToast({
+          title: 'Achievement Shared!',
+          description: 'Your staking rewards achievement has been shared with your connections.',
+        }),
+      );
+
+      setShowCelebration(false);
+      setClaimAmount(0);
+    } catch (error) {
+      console.error('Failed to share staking rewards achievement:', error);
+      dispatch(
+        showErrorToast({
+          title: 'Share Failed',
+          description: 'Unable to share achievement. Please try again.',
+        }),
+      );
+    }
+  }, [addressLower, claimAmount, displayTokenSymbol, dispatch]);
+
   const isLoadingData = useMemo(() => {
     return refreshing || isLoadingStakingData || isLoadingStakingHistory;
   }, [refreshing, isLoadingStakingData, isLoadingStakingHistory]);
@@ -554,6 +603,8 @@ export function StakingRewards({ refreshing, onDataLoaded }: StakingRewardsProps
         rewardAmount={totalClaimedRewards}
         rewardCurrency={displayTokenSymbol}
         showReward={true}
+        onShare={handleShareStakingRewards}
+        showShareButton={!!addressLower}
       />
     </>
   );

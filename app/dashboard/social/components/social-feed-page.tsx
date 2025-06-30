@@ -1,58 +1,100 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { AlertCircle, Plus } from 'lucide-react';
+import { AlertCircle, Plus, Search, Users } from 'lucide-react';
+import { useAppKitAccount } from '@reown/appkit/react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { RefreshButton } from '@/components/ui/refresh-button';
+import { Input } from '@/components/ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
 import {
   fetchSocialFeed,
   refreshSocialFeed,
-  toggleLike,
-  addPost,
+  createPost,
+  fetchConnections,
+  searchUsersAsync,
   clearError,
+  clearSearchResults,
 } from '@/lib/redux/slices/socialFeedSlice';
 import { ShareAchievementModal } from './share-achievement-modal';
 import { SocialFeedCard } from './social-feed-card';
 import { SocialFeedSkeleton } from './social-feed-skeleton';
+import { ConnectionsTab } from './connections-tab';
+import { UserSearchResults } from './user-search-results';
 
 export function SocialFeedPage() {
   const dispatch = useAppDispatch();
-  const { posts, isLoading, error, isRefreshing } = useAppSelector((state) => state.socialFeed);
+  const { address } = useAppKitAccount();
+  const { posts, connections, searchResults, isLoading, error, isRefreshing, isSearching } =
+    useAppSelector((state) => state.socialFeed);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [activeTab, setActiveTab] = useState('feed');
 
   useEffect(() => {
-    dispatch(fetchSocialFeed());
-  }, [dispatch]);
+    if (address) {
+      dispatch(fetchSocialFeed(address.toLowerCase()));
+      dispatch(fetchConnections(address.toLowerCase()));
+    }
+  }, [dispatch, address]);
 
   const handleRefresh = async () => {
-    await dispatch(refreshSocialFeed()).unwrap();
+    if (address) {
+      await dispatch(refreshSocialFeed(address.toLowerCase())).unwrap();
+    }
   };
 
-  const handleLike = (postId: string) => {
-    dispatch(toggleLike(postId));
+  const handleShare = async (content: string, image?: string) => {
+    if (address) {
+      try {
+        await dispatch(
+          createPost({
+            address: address.toLowerCase(),
+            postData: {
+              content,
+              image_url: image,
+            },
+          }),
+        ).unwrap();
+        setIsShareModalOpen(false);
+      } catch (error) {
+        console.error('Failed to create post:', error);
+      }
+    }
   };
 
-  const handleShare = (content: string, image?: string) => {
-    dispatch(
-      addPost({
-        user: {
-          name: 'You',
-          username: 'username',
-          avatar: '/vibrant-street-market.png',
-        },
-        content,
-        image,
-      }),
+  const handleSearch = (value: string) => {
+    setSearchTerm(value);
+    if (value.trim() && address) {
+      dispatch(
+        searchUsersAsync({
+          currentUserAddress: address.toLowerCase(),
+          searchTerm: value.trim(),
+        }),
+      );
+    } else {
+      dispatch(clearSearchResults());
+    }
+  };
+
+  if (!address) {
+    return (
+      <div className="p-4 max-w-2xl mx-auto">
+        <div className="text-center py-8">
+          <p className="text-muted-foreground">
+            Please connect your wallet to view the social feed.
+          </p>
+        </div>
+      </div>
     );
-    setIsShareModalOpen(false);
-  };
+  }
 
   return (
     <div className="p-4 max-w-2xl mx-auto">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Social Feed</h1>
+        <h1 className="text-2xl font-bold">Social</h1>
         <RefreshButton onRefresh={handleRefresh} isLoading={isRefreshing} />
       </div>
 
@@ -69,30 +111,78 @@ export function SocialFeedPage() {
         </Alert>
       )}
 
-      <div className="mb-4">
-        <Button
-          onClick={() => setIsShareModalOpen(true)}
-          className="w-full flex items-center justify-center gap-2 py-6"
-        >
-          <Plus size={18} />
-          Share an Achievement
-        </Button>
-      </div>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="feed">Feed</TabsTrigger>
+          <TabsTrigger value="connections">
+            <Users className="w-4 h-4 mr-2" />
+            Connections
+          </TabsTrigger>
+          <TabsTrigger value="search">
+            <Search className="w-4 h-4 mr-2" />
+            Find People
+          </TabsTrigger>
+        </TabsList>
 
-      {isLoading ? (
-        <SocialFeedSkeleton />
-      ) : (
-        <div className="space-y-4">
-          {posts.map((post) => (
-            <SocialFeedCard key={post.id} post={post} onLike={() => handleLike(post.id)} />
-          ))}
-        </div>
-      )}
+        <TabsContent value="feed" className="mt-6">
+          <div className="mb-4">
+            <Button
+              onClick={() => setIsShareModalOpen(true)}
+              className="w-full flex items-center justify-center gap-2 py-6"
+            >
+              <Plus size={18} />
+              Share an Achievement
+            </Button>
+          </div>
+
+          {isLoading ? (
+            <SocialFeedSkeleton />
+          ) : (
+            <div className="space-y-4">
+              {posts.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">
+                    No posts to show. Connect with other users to see their achievements!
+                  </p>
+                </div>
+              ) : (
+                posts.map((post) => <SocialFeedCard key={post.id} post={post} />)
+              )}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="connections" className="mt-6">
+          <ConnectionsTab
+            connections={connections}
+            userAddress={address.toLowerCase()}
+            isLoading={isLoading}
+          />
+        </TabsContent>
+
+        <TabsContent value="search" className="mt-6">
+          <div className="mb-4">
+            <Input
+              placeholder="Search for users by username..."
+              value={searchTerm}
+              onChange={(e) => handleSearch(e.target.value)}
+              className="w-full"
+            />
+          </div>
+
+          <UserSearchResults
+            searchResults={searchResults}
+            isSearching={isSearching}
+            currentUserAddress={address.toLowerCase()}
+          />
+        </TabsContent>
+      </Tabs>
 
       <ShareAchievementModal
         isOpen={isShareModalOpen}
         onClose={() => setIsShareModalOpen(false)}
         onShare={handleShare}
+        userAddress={address.toLowerCase()}
       />
     </div>
   );

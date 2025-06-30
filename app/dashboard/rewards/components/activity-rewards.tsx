@@ -19,8 +19,13 @@ import {
   recordActivityReward,
 } from '@/lib/redux/slices/activityRewardsSlice';
 import { showSuccessToast, showErrorToast } from '@/lib/redux/slices/toastSlice';
+import { createPost } from '@/lib/redux/slices/socialFeedSlice';
 import { RootState } from '@/lib/redux/store';
 import { mapActivitiesToDaily, mapError, type DailyActivity } from '@/utils';
+import {
+  generateAchievementPostContent,
+  createAchievementData,
+} from '@/utils/achievements/shareAchievement';
 import { calculateMetsFromCalories } from '@/utils/movin/calculateMets';
 import { ActivityRewardsHistory } from './activity-rewards-history';
 import { ActivityRewardsSkeleton } from './activity-rewards-skeleton';
@@ -268,6 +273,50 @@ export function ActivityRewards({ refreshing, onDataLoaded }: ActivityRewardsPro
     setRewardsToSave(0);
   }, []);
 
+  // Achievement sharing handler
+  const handleShareActivityRewards = useCallback(async () => {
+    if (!addressLower || rewardsToSave <= 0) return;
+
+    try {
+      const achievementData = createAchievementData(
+        'workout',
+        `${rewardsToSave.toFixed(2)} MVN`,
+        'Activity Rewards Claimed',
+        'Congratulations on claiming your activity rewards!',
+        rewardsToSave.toFixed(2),
+        'MVN',
+        'activity_rewards',
+      );
+
+      const postContent = generateAchievementPostContent(achievementData);
+
+      await dispatch(
+        createPost({
+          address: addressLower,
+          postData: { content: postContent },
+        }),
+      ).unwrap();
+
+      dispatch(
+        showSuccessToast({
+          title: 'Achievement Shared!',
+          description: 'Your activity rewards achievement has been shared with your connections.',
+        }),
+      );
+
+      setShowCelebration(false);
+      setRewardsToSave(0);
+    } catch (error) {
+      console.error('Failed to share activity rewards achievement:', error);
+      dispatch(
+        showErrorToast({
+          title: 'Share Failed',
+          description: 'Unable to share achievement. Please try again.',
+        }),
+      );
+    }
+  }, [addressLower, rewardsToSave, dispatch]);
+
   const errorMessage = useMemo(() => {
     if (activityError) {
       return activityError.message;
@@ -388,6 +437,8 @@ export function ActivityRewards({ refreshing, onDataLoaded }: ActivityRewardsPro
         rewardAmount={rewardsToSaveString}
         rewardCurrency="MVN"
         showReward={true}
+        onShare={handleShareActivityRewards}
+        showShareButton={!!addressLower}
       />
     </div>
   );

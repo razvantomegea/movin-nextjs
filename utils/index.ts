@@ -18,6 +18,7 @@ export * from './pwa';
 export * from './charts';
 export * from './extractDateFromText';
 export * from './isToday';
+export * from './achievements/shareAchievement';
 
 // Export serviceWorker utilities with explicit names to avoid conflicts
 export {

@@ -1,138 +1,367 @@
 import { createSlice, createAsyncThunk, type PayloadAction } from '@reduxjs/toolkit';
+import * as Sentry from '@sentry/nextjs';
+import {
+  getSocialFeed,
+  createSocialPost,
+  deleteSocialPost,
+  uploadPostImage,
+  togglePostReaction,
+  getPostComments,
+  createComment,
+  deleteComment,
+  updateComment,
+  type ISocialPost,
+  type ISocialPostInput,
+  type IPostComment,
+  type IPostCommentInput,
+} from '@/lib/supabase/social';
+import {
+  getUserConnections,
+  searchUsers,
+  sendConnectionRequest,
+  acceptConnectionRequest,
+  declineConnectionRequest,
+  removeConnection,
+  getPendingConnections,
+  type IConnectionUser,
+  type IConnection,
+  type ConnectionStatus,
+} from '@/lib/supabase/connections';
 
 // Types
 export interface SocialPost {
   id: string;
-  user: {
-    name: string;
-    avatar: string;
-    username: string;
-  };
+  address: string;
   content: string;
-  image?: string;
-  timestamp: string;
-  likes: number;
-  comments: number;
-  liked: boolean;
+  image_url?: string;
+  created_at: string;
+  updated_at: string;
+  profile?: {
+    username: string;
+    avatar_url: string;
+  };
+  // Engagement data
+  likes_count?: number;
+  dislikes_count?: number;
+  comments_count?: number;
+  user_reaction?: 'like' | 'dislike' | null;
+  user_has_liked?: boolean; // Legacy support
+}
+
+export interface PostComment {
+  id: string;
+  post_id: string;
+  address: string;
+  content: string;
+  parent_comment_id?: string;
+  created_at: string;
+  updated_at: string;
+  profile?: {
+    username: string;
+    avatar_url: string;
+  };
+  replies?: PostComment[];
+  replies_count?: number;
+}
+
+export interface ConnectionUser {
+  address: string;
+  username: string;
+  avatar_url: string;
+  connection_status?: ConnectionStatus;
+  connection_id?: string;
 }
 
 interface SocialFeedState {
   posts: SocialPost[];
+  connections: ConnectionUser[];
+  searchResults: ConnectionUser[];
+  pendingConnections: {
+    sent: IConnection[];
+    received: IConnection[];
+  };
+  // Comments state
+  postComments: Record<string, PostComment[]>; // postId -> comments
+  commentReplies: Record<string, PostComment[]>; // commentId -> replies
   isLoading: boolean;
-  error: string | null;
   isRefreshing: boolean;
+  isSearching: boolean;
+  isPostingImage: boolean;
+  isLoadingComments: Record<string, boolean>; // postId -> loading state
+  isSubmittingComment: Record<string, boolean>; // postId -> submitting state
+  error: string | null;
 }
 
-// Mock data
-const mockPosts: SocialPost[] = [
-  {
-    id: '1',
-    user: {
-      name: 'Alex Johnson',
-      avatar: '/diverse-group-city.png',
-      username: 'alexj',
-    },
-    content:
-      'Just completed my 10K run! 🏃‍♂️ Feeling amazing and energized. Who else is hitting their fitness goals today?',
-    image: '/urban-dawn-dash.png',
-    timestamp: '2 hours ago',
-    likes: 24,
-    comments: 5,
-    liked: false,
-  },
-  {
-    id: '2',
-    user: {
-      name: 'Sarah Miller',
-      avatar: '/contemplative-artist.png',
-      username: 'sarahm',
-    },
-    content:
-      'New personal best on my daily steps! The Movin app is really keeping me accountable. Love the energy rewards system!',
-    timestamp: '4 hours ago',
-    likes: 18,
-    comments: 3,
-    liked: true,
-  },
-  {
-    id: '3',
-    user: {
-      name: 'David Chen',
-      avatar: '/contemplative-man.png',
-      username: 'davidc',
-    },
-    content:
-      'Morning yoga session complete ✅ Starting the day with positive energy and mindfulness. Who else practices yoga?',
-    image: '/diverse-fitness-group.png',
-    timestamp: '6 hours ago',
-    likes: 32,
-    comments: 7,
-    liked: false,
-  },
-  {
-    id: '4',
-    user: {
-      name: 'Emma Wilson',
-      avatar: '/serene-woman-gaze.png',
-      username: 'emmaw',
-    },
-    content:
-      'Just earned my first achievement badge! The gamification in this app is so motivating. What badges have you all earned?',
-    timestamp: '1 day ago',
-    likes: 45,
-    comments: 12,
-    liked: false,
-  },
-  {
-    id: '5',
-    user: {
-      name: 'Michael Brown',
-      avatar: '/thoughtful-man-profile.png',
-      username: 'mikeb',
-    },
-    content:
-      'Group run in the park was amazing today! Met so many fellow Movin users. The community aspect of this app is fantastic.',
-    image: '/park-stroll.png',
-    timestamp: '1 day ago',
-    likes: 29,
-    comments: 8,
-    liked: true,
-  },
-];
-
 // Async thunks
-export const fetchSocialFeed = createAsyncThunk(
+export const fetchSocialFeed = createAsyncThunk<SocialPost[], string, { rejectValue: string }>(
   'socialFeed/fetchSocialFeed',
-  async (_, { rejectWithValue }) => {
+  async (address, { rejectWithValue }) => {
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      return mockPosts;
+      const posts = await getSocialFeed({ address });
+      return posts;
     } catch (error) {
+      Sentry.captureException(error);
       return rejectWithValue('Failed to fetch social feed. Please try again.');
     }
   },
 );
 
-export const refreshSocialFeed = createAsyncThunk(
+export const refreshSocialFeed = createAsyncThunk<SocialPost[], string, { rejectValue: string }>(
   'socialFeed/refreshSocialFeed',
-  async (_, { rejectWithValue }) => {
+  async (address, { rejectWithValue }) => {
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      return mockPosts;
+      const posts = await getSocialFeed({ address });
+      return posts;
     } catch (error) {
+      Sentry.captureException(error);
       return rejectWithValue('Failed to refresh social feed. Please try again.');
     }
   },
 );
 
+export const createPost = createAsyncThunk<
+  SocialPost,
+  { address: string; postData: ISocialPostInput },
+  { rejectValue: string }
+>('socialFeed/createPost', async ({ address, postData }, { rejectWithValue }) => {
+  try {
+    const post = await createSocialPost({ address, postData });
+    return post;
+  } catch (error) {
+    Sentry.captureException(error);
+    return rejectWithValue('Failed to create post. Please try again.');
+  }
+});
+
+export const uploadPostImageAsync = createAsyncThunk<
+  string,
+  { file: File; userId: string },
+  { rejectValue: string }
+>('socialFeed/uploadPostImage', async ({ file, userId }, { rejectWithValue }) => {
+  try {
+    const imageUrl = await uploadPostImage({ file, userId });
+    return imageUrl;
+  } catch (error) {
+    Sentry.captureException(error);
+    return rejectWithValue(
+      error instanceof Error ? error.message : 'Failed to upload image. Please try again.',
+    );
+  }
+});
+
+export const deletePost = createAsyncThunk<
+  string,
+  { postId: string; address: string },
+  { rejectValue: string }
+>('socialFeed/deletePost', async ({ postId, address }, { rejectWithValue }) => {
+  try {
+    await deleteSocialPost({ postId, address });
+    return postId;
+  } catch (error) {
+    Sentry.captureException(error);
+    return rejectWithValue('Failed to delete post. Please try again.');
+  }
+});
+
+// Connection thunks
+export const fetchConnections = createAsyncThunk<ConnectionUser[], string, { rejectValue: string }>(
+  'socialFeed/fetchConnections',
+  async (address, { rejectWithValue }) => {
+    try {
+      const connections = await getUserConnections({ address });
+      return connections;
+    } catch (error) {
+      Sentry.captureException(error);
+      return rejectWithValue('Failed to fetch connections. Please try again.');
+    }
+  },
+);
+
+export const searchUsersAsync = createAsyncThunk<
+  ConnectionUser[],
+  { currentUserAddress: string; searchTerm: string },
+  { rejectValue: string }
+>('socialFeed/searchUsers', async ({ currentUserAddress, searchTerm }, { rejectWithValue }) => {
+  try {
+    const users = await searchUsers({ currentUserAddress, searchTerm });
+    return users;
+  } catch (error) {
+    Sentry.captureException(error);
+    return rejectWithValue('Failed to search users. Please try again.');
+  }
+});
+
+export const sendConnectionRequestAsync = createAsyncThunk<
+  IConnection,
+  { requesterAddress: string; addresseeAddress: string },
+  { rejectValue: string }
+>(
+  'socialFeed/sendConnectionRequest',
+  async ({ requesterAddress, addresseeAddress }, { rejectWithValue }) => {
+    try {
+      const connection = await sendConnectionRequest({ requesterAddress, addresseeAddress });
+      return connection;
+    } catch (error) {
+      Sentry.captureException(error);
+      return rejectWithValue('Failed to send connection request. Please try again.');
+    }
+  },
+);
+
+export const acceptConnectionRequestAsync = createAsyncThunk<
+  IConnection,
+  { connectionId: string; addresseeAddress: string },
+  { rejectValue: string }
+>(
+  'socialFeed/acceptConnectionRequest',
+  async ({ connectionId, addresseeAddress }, { rejectWithValue }) => {
+    try {
+      const connection = await acceptConnectionRequest({ connectionId, addresseeAddress });
+      return connection;
+    } catch (error) {
+      Sentry.captureException(error);
+      return rejectWithValue('Failed to accept connection request. Please try again.');
+    }
+  },
+);
+
+export const declineConnectionRequestAsync = createAsyncThunk<
+  IConnection,
+  { connectionId: string; addresseeAddress: string },
+  { rejectValue: string }
+>(
+  'socialFeed/declineConnectionRequest',
+  async ({ connectionId, addresseeAddress }, { rejectWithValue }) => {
+    try {
+      const connection = await declineConnectionRequest({ connectionId, addresseeAddress });
+      return connection;
+    } catch (error) {
+      Sentry.captureException(error);
+      return rejectWithValue('Failed to decline connection request. Please try again.');
+    }
+  },
+);
+
+export const removeConnectionAsync = createAsyncThunk<
+  string,
+  { connectionId: string; userAddress: string },
+  { rejectValue: string }
+>('socialFeed/removeConnection', async ({ connectionId, userAddress }, { rejectWithValue }) => {
+  try {
+    await removeConnection({ connectionId, userAddress });
+    return connectionId;
+  } catch (error) {
+    Sentry.captureException(error);
+    return rejectWithValue('Failed to remove connection. Please try again.');
+  }
+});
+
+export const fetchPendingConnections = createAsyncThunk<
+  { sent: IConnection[]; received: IConnection[] },
+  string,
+  { rejectValue: string }
+>('socialFeed/fetchPendingConnections', async (address, { rejectWithValue }) => {
+  try {
+    const pendingConnections = await getPendingConnections({ address });
+    return pendingConnections;
+  } catch (error) {
+    Sentry.captureException(error);
+    return rejectWithValue('Failed to fetch pending connections. Please try again.');
+  }
+});
+
+// ==================== LIKES/DISLIKES THUNKS ====================
+
+export const togglePostReactionAsync = createAsyncThunk<
+  { postId: string; action: 'added' | 'updated' | 'removed'; reaction: 'like' | 'dislike' | null },
+  { postId: string; address: string; isLike: boolean },
+  { rejectValue: string }
+>('socialFeed/togglePostReaction', async ({ postId, address, isLike }, { rejectWithValue }) => {
+  try {
+    const result = await togglePostReaction({ postId, address, isLike });
+    return { postId, ...result };
+  } catch (error) {
+    Sentry.captureException(error);
+    return rejectWithValue('Failed to update reaction. Please try again.');
+  }
+});
+
+// ==================== COMMENTS THUNKS ====================
+
+export const fetchPostComments = createAsyncThunk<
+  { postId: string; comments: PostComment[] },
+  { postId: string },
+  { rejectValue: string }
+>('socialFeed/fetchPostComments', async ({ postId }, { rejectWithValue }) => {
+  try {
+    const comments = await getPostComments({ postId });
+    return { postId, comments };
+  } catch (error) {
+    Sentry.captureException(error);
+    return rejectWithValue('Failed to fetch comments. Please try again.');
+  }
+});
+
+export const createCommentAsync = createAsyncThunk<
+  { postId: string; comment: PostComment },
+  { postId: string; address: string; commentData: IPostCommentInput },
+  { rejectValue: string }
+>('socialFeed/createComment', async ({ postId, address, commentData }, { rejectWithValue }) => {
+  try {
+    const comment = await createComment({ postId, address, commentData });
+    return { postId, comment };
+  } catch (error) {
+    Sentry.captureException(error);
+    return rejectWithValue('Failed to create comment. Please try again.');
+  }
+});
+
+export const updateCommentAsync = createAsyncThunk<
+  PostComment,
+  { commentId: string; address: string; content: string },
+  { rejectValue: string }
+>('socialFeed/updateComment', async ({ commentId, address, content }, { rejectWithValue }) => {
+  try {
+    const comment = await updateComment({ commentId, address, content });
+    return comment;
+  } catch (error) {
+    Sentry.captureException(error);
+    return rejectWithValue('Failed to update comment. Please try again.');
+  }
+});
+
+export const deleteCommentAsync = createAsyncThunk<
+  { commentId: string; postId: string },
+  { commentId: string; address: string; postId: string },
+  { rejectValue: string }
+>('socialFeed/deleteComment', async ({ commentId, address, postId }, { rejectWithValue }) => {
+  try {
+    await deleteComment({ commentId, address });
+    return { commentId, postId };
+  } catch (error) {
+    Sentry.captureException(error);
+    return rejectWithValue('Failed to delete comment. Please try again.');
+  }
+});
+
 // Initial state
 const initialState: SocialFeedState = {
   posts: [],
+  connections: [],
+  searchResults: [],
+  pendingConnections: {
+    sent: [],
+    received: [],
+  },
+  postComments: {},
+  commentReplies: {},
   isLoading: false,
-  error: null,
   isRefreshing: false,
+  isSearching: false,
+  isPostingImage: false,
+  isLoadingComments: {},
+  isSubmittingComment: {},
+  error: null,
 };
 
 // Slice
@@ -140,33 +369,26 @@ const socialFeedSlice = createSlice({
   name: 'socialFeed',
   initialState,
   reducers: {
-    toggleLike: (state, action: PayloadAction<string>) => {
-      const post = state.posts.find((post) => post.id === action.payload);
-      if (post) {
-        post.liked = !post.liked;
-        post.likes += post.liked ? 1 : -1;
-      }
-    },
-    addPost: (
-      state,
-      action: PayloadAction<Omit<SocialPost, 'id' | 'timestamp' | 'likes' | 'comments' | 'liked'>>,
-    ) => {
-      const newPost: SocialPost = {
-        id: Date.now().toString(),
-        ...action.payload,
-        timestamp: 'Just now',
-        likes: 0,
-        comments: 0,
-        liked: false,
-      };
-      state.posts.unshift(newPost);
-    },
     clearError: (state) => {
       state.error = null;
+    },
+    clearSearchResults: (state) => {
+      state.searchResults = [];
+    },
+    updateSearchResultConnectionStatus: (
+      state,
+      action: PayloadAction<{ address: string; status: ConnectionStatus; connectionId?: string }>,
+    ) => {
+      const user = state.searchResults.find((user) => user.address === action.payload.address);
+      if (user) {
+        user.connection_status = action.payload.status;
+        user.connection_id = action.payload.connectionId;
+      }
     },
   },
   extraReducers: (builder) => {
     builder
+      // Fetch social feed
       .addCase(fetchSocialFeed.pending, (state) => {
         state.isLoading = true;
         state.error = null;
@@ -179,6 +401,8 @@ const socialFeedSlice = createSlice({
         state.isLoading = false;
         state.error = action.payload as string;
       })
+
+      // Refresh social feed
       .addCase(refreshSocialFeed.pending, (state) => {
         state.isRefreshing = true;
         state.error = null;
@@ -190,9 +414,313 @@ const socialFeedSlice = createSlice({
       .addCase(refreshSocialFeed.rejected, (state, action) => {
         state.isRefreshing = false;
         state.error = action.payload as string;
+      })
+
+      // Create post
+      .addCase(createPost.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(createPost.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.posts.unshift(action.payload);
+      })
+      .addCase(createPost.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      })
+
+      // Upload post image
+      .addCase(uploadPostImageAsync.pending, (state) => {
+        state.isPostingImage = true;
+        state.error = null;
+      })
+      .addCase(uploadPostImageAsync.fulfilled, (state) => {
+        state.isPostingImage = false;
+      })
+      .addCase(uploadPostImageAsync.rejected, (state, action) => {
+        state.isPostingImage = false;
+        state.error = action.payload as string;
+      })
+
+      // Delete post
+      .addCase(deletePost.fulfilled, (state, action) => {
+        state.posts = state.posts.filter((post) => post.id !== action.payload);
+      })
+      .addCase(deletePost.rejected, (state, action) => {
+        state.error = action.payload as string;
+      })
+
+      // Fetch connections
+      .addCase(fetchConnections.fulfilled, (state, action) => {
+        state.connections = action.payload;
+      })
+      .addCase(fetchConnections.rejected, (state, action) => {
+        state.error = action.payload as string;
+      })
+
+      // Search users
+      .addCase(searchUsersAsync.pending, (state) => {
+        state.isSearching = true;
+        state.error = null;
+      })
+      .addCase(searchUsersAsync.fulfilled, (state, action) => {
+        state.isSearching = false;
+        state.searchResults = action.payload;
+      })
+      .addCase(searchUsersAsync.rejected, (state, action) => {
+        state.isSearching = false;
+        state.error = action.payload as string;
+      })
+
+      // Send connection request
+      .addCase(sendConnectionRequestAsync.fulfilled, (state, action) => {
+        state.pendingConnections.sent.push(action.payload);
+      })
+      .addCase(sendConnectionRequestAsync.rejected, (state, action) => {
+        state.error = action.payload as string;
+      })
+
+      // Accept connection request
+      .addCase(acceptConnectionRequestAsync.fulfilled, (state, action) => {
+        // Remove from pending received
+        state.pendingConnections.received = state.pendingConnections.received.filter(
+          (conn) => conn.id !== action.payload.id,
+        );
+        // Add to connections
+        const connection = action.payload;
+        const connectedProfile = connection.requester_profile;
+        if (connectedProfile) {
+          state.connections.push({
+            address: connection.requester_address,
+            username: connectedProfile.username,
+            avatar_url: connectedProfile.avatar_url,
+            connection_status: 'accepted',
+            connection_id: connection.id,
+          });
+        }
+      })
+      .addCase(acceptConnectionRequestAsync.rejected, (state, action) => {
+        state.error = action.payload as string;
+      })
+
+      // Decline connection request
+      .addCase(declineConnectionRequestAsync.fulfilled, (state, action) => {
+        state.pendingConnections.received = state.pendingConnections.received.filter(
+          (conn) => conn.id !== action.payload.id,
+        );
+      })
+      .addCase(declineConnectionRequestAsync.rejected, (state, action) => {
+        state.error = action.payload as string;
+      })
+
+      // Remove connection
+      .addCase(removeConnectionAsync.fulfilled, (state, action) => {
+        const connectionId = action.payload;
+        // Remove from connections
+        state.connections = state.connections.filter((conn) => conn.connection_id !== connectionId);
+        // Remove from pending sent
+        state.pendingConnections.sent = state.pendingConnections.sent.filter(
+          (conn) => conn.id !== connectionId,
+        );
+        // Remove from pending received
+        state.pendingConnections.received = state.pendingConnections.received.filter(
+          (conn) => conn.id !== connectionId,
+        );
+      })
+      .addCase(removeConnectionAsync.rejected, (state, action) => {
+        state.error = action.payload as string;
+      })
+
+      // Fetch pending connections
+      .addCase(fetchPendingConnections.fulfilled, (state, action) => {
+        state.pendingConnections = action.payload;
+      })
+      .addCase(fetchPendingConnections.rejected, (state, action) => {
+        state.error = action.payload as string;
+      })
+
+      // ==================== LIKES/DISLIKES REDUCERS ====================
+
+      // Toggle post reaction
+      .addCase(togglePostReactionAsync.fulfilled, (state, action) => {
+        const { postId, action: reactionAction, reaction } = action.payload;
+        const post = state.posts.find((p) => p.id === postId);
+        if (post) {
+          // Update the post's reaction data
+          post.user_reaction = reaction;
+          post.user_has_liked = reaction === 'like';
+
+          // Update counts based on the action
+          if (reactionAction === 'added') {
+            if (reaction === 'like') {
+              post.likes_count = (post.likes_count || 0) + 1;
+            } else if (reaction === 'dislike') {
+              post.dislikes_count = (post.dislikes_count || 0) + 1;
+            }
+          } else if (reactionAction === 'removed') {
+            if (post.user_reaction === 'like') {
+              post.likes_count = Math.max((post.likes_count || 0) - 1, 0);
+            } else if (post.user_reaction === 'dislike') {
+              post.dislikes_count = Math.max((post.dislikes_count || 0) - 1, 0);
+            }
+          } else if (reactionAction === 'updated') {
+            // Switching from like to dislike or vice versa
+            const previousReaction = post.user_reaction === 'like' ? 'dislike' : 'like';
+            if (previousReaction === 'like') {
+              post.likes_count = Math.max((post.likes_count || 0) - 1, 0);
+              post.dislikes_count = (post.dislikes_count || 0) + 1;
+            } else {
+              post.dislikes_count = Math.max((post.dislikes_count || 0) - 1, 0);
+              post.likes_count = (post.likes_count || 0) + 1;
+            }
+          }
+        }
+      })
+      .addCase(togglePostReactionAsync.rejected, (state, action) => {
+        state.error = action.payload as string;
+      })
+
+      // ==================== COMMENTS REDUCERS ====================
+
+      // Fetch post comments
+      .addCase(fetchPostComments.pending, (state, action) => {
+        const { postId } = action.meta.arg;
+        state.isLoadingComments[postId] = true;
+        state.error = null;
+      })
+      .addCase(fetchPostComments.fulfilled, (state, action) => {
+        const { postId, comments } = action.payload;
+        state.isLoadingComments[postId] = false;
+        state.postComments[postId] = comments;
+      })
+      .addCase(fetchPostComments.rejected, (state, action) => {
+        const { postId } = action.meta.arg;
+        state.isLoadingComments[postId] = false;
+        state.error = action.payload as string;
+      })
+
+      // Create comment
+      .addCase(createCommentAsync.pending, (state, action) => {
+        const { postId } = action.meta.arg;
+        state.isSubmittingComment[postId] = true;
+        state.error = null;
+      })
+      .addCase(createCommentAsync.fulfilled, (state, action) => {
+        const { postId, comment } = action.payload;
+        state.isSubmittingComment[postId] = false;
+
+        // Add comment to the post's comments
+        if (!state.postComments[postId]) {
+          state.postComments[postId] = [];
+        }
+
+        if (comment.parent_comment_id) {
+          // It's a reply - find the parent comment and add to its replies
+          const parentComment = state.postComments[postId].find(
+            (c) => c.id === comment.parent_comment_id,
+          );
+          if (parentComment) {
+            if (!parentComment.replies) {
+              parentComment.replies = [];
+            }
+            parentComment.replies.push(comment);
+            parentComment.replies_count = (parentComment.replies_count || 0) + 1;
+          }
+        } else {
+          // It's a top-level comment
+          state.postComments[postId].push(comment);
+        }
+
+        // Update the post's comment count
+        const post = state.posts.find((p) => p.id === postId);
+        if (post) {
+          post.comments_count = (post.comments_count || 0) + 1;
+        }
+      })
+      .addCase(createCommentAsync.rejected, (state, action) => {
+        const { postId } = action.meta.arg;
+        state.isSubmittingComment[postId] = false;
+        state.error = action.payload as string;
+      })
+
+      // Update comment
+      .addCase(updateCommentAsync.fulfilled, (state, action) => {
+        const updatedComment = action.payload;
+        const postComments = state.postComments[updatedComment.post_id];
+
+        if (postComments) {
+          // Find and update the comment
+          const commentIndex = postComments.findIndex((c) => c.id === updatedComment.id);
+          if (commentIndex !== -1) {
+            postComments[commentIndex] = { ...postComments[commentIndex], ...updatedComment };
+          } else {
+            // Check if it's a reply
+            for (const comment of postComments) {
+              if (comment.replies) {
+                const replyIndex = comment.replies.findIndex((r) => r.id === updatedComment.id);
+                if (replyIndex !== -1) {
+                  comment.replies[replyIndex] = {
+                    ...comment.replies[replyIndex],
+                    ...updatedComment,
+                  };
+                  break;
+                }
+              }
+            }
+          }
+        }
+      })
+      .addCase(updateCommentAsync.rejected, (state, action) => {
+        state.error = action.payload as string;
+      })
+
+      // Delete comment
+      .addCase(deleteCommentAsync.fulfilled, (state, action) => {
+        const { commentId, postId } = action.payload;
+        const postComments = state.postComments[postId];
+
+        if (postComments) {
+          // Check if it's a top-level comment
+          const commentIndex = postComments.findIndex((c) => c.id === commentId);
+          if (commentIndex !== -1) {
+            // Remove top-level comment and all its replies
+            const deletedComment = postComments[commentIndex];
+            const replyCount = deletedComment.replies_count || 0;
+            postComments.splice(commentIndex, 1);
+
+            // Update post comment count
+            const post = state.posts.find((p) => p.id === postId);
+            if (post) {
+              post.comments_count = Math.max((post.comments_count || 0) - (1 + replyCount), 0);
+            }
+          } else {
+            // Check if it's a reply
+            for (const comment of postComments) {
+              if (comment.replies) {
+                const replyIndex = comment.replies.findIndex((r) => r.id === commentId);
+                if (replyIndex !== -1) {
+                  comment.replies.splice(replyIndex, 1);
+                  comment.replies_count = Math.max((comment.replies_count || 0) - 1, 0);
+
+                  // Update post comment count
+                  const post = state.posts.find((p) => p.id === postId);
+                  if (post) {
+                    post.comments_count = Math.max((post.comments_count || 0) - 1, 0);
+                  }
+                  break;
+                }
+              }
+            }
+          }
+        }
+      })
+      .addCase(deleteCommentAsync.rejected, (state, action) => {
+        state.error = action.payload as string;
       });
   },
 });
 
-export const { toggleLike, addPost, clearError } = socialFeedSlice.actions;
+export const { clearError, clearSearchResults, updateSearchResultConnectionStatus } =
+  socialFeedSlice.actions;
 export default socialFeedSlice.reducer;

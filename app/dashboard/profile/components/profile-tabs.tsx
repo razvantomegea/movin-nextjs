@@ -18,7 +18,7 @@ export function ProfileTabs({ profile, activities }: ProfileTabsProps) {
 
   return (
     <Tabs defaultValue="activities" value={activeTab} onValueChange={setActiveTab}>
-      <TabsList className="grid w-full grid-cols-3">
+      <TabsList className="grid w-full grid-cols-2">
         <TabsTrigger value="achievements">
           <Trophy className="h-4 w-4 mr-2" />
           Achievements

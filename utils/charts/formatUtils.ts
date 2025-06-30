@@ -5,7 +5,7 @@
 /**
  * Format activity value based on metric type
  * @param value The value to format
- * @param metric The metric type ('steps', 'calories', 'distance', 'duration')
+ * @param metric The metric type ('steps', 'calories', 'distance', 'duration', 'mets')
  * @returns Formatted value as a string
  */
 export type ActivityMetric = 'steps' | 'calories' | 'distance' | 'duration' | 'mets';
@@ -50,7 +50,7 @@ export function formatNutritionValue(value: number, metric: NutritionMetric): st
 
 /**
  * Get unit for activity metric
- * @param metric The metric type ('steps', 'calories', 'distance', 'duration')
+ * @param metric The metric type ('steps', 'calories', 'distance', 'duration', 'mets')
  * @returns Unit string for the metric
  */
 export function getActivityUnit(metric: ActivityMetric): string {
@@ -91,7 +91,7 @@ export function getNutritionUnit(metric: NutritionMetric): string {
 
 /**
  * Get label for activity metric
- * @param metric The metric type ('steps', 'calories', 'distance', 'duration')
+ * @param metric The metric type ('steps', 'calories', 'distance', 'duration', 'mets')
  * @returns Label string for the metric
  */
 export function getActivityMetricLabel(metric: ActivityMetric): string {
