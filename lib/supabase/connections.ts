@@ -371,11 +371,11 @@ export async function searchUsers({
     connectionMap.set(otherAddress, { status: conn.status, id: conn.id });
   });
 
-  // Search for users by username
+  // Search for users by username or address
   const { data: users, error: usersError } = await client
     .from('profiles')
     .select('address, username, avatar_url')
-    .ilike('username', `%${searchTerm}%`)
+    .or(`username.ilike.%${searchTerm}%,address.ilike.%${searchTerm}%`)
     .neq('address', currentUserAddress) // Exclude current user
     .limit(limit);
 

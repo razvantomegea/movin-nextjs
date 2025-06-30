@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { UserPlus, User } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -8,8 +9,11 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useAppDispatch } from '@/lib/redux/hooks';
 import {
   sendConnectionRequestAsync,
+  removeConnectionAsync,
+  updateSearchResultConnectionStatus,
   type ConnectionUser,
 } from '@/lib/redux/slices/socialFeedSlice';
+import { showSuccessToast, showInfoToast } from '@/lib/redux/slices/toastSlice';
 
 interface UserSearchResultsProps {
   searchResults: ConnectionUser[];
@@ -23,8 +27,17 @@ export function UserSearchResults({
   currentUserAddress,
 }: UserSearchResultsProps) {
   const dispatch = useAppDispatch();
+  const [loadingUser, setLoadingUser] = useState<string | null>(null);
 
   const handleSendConnectionRequest = async (addresseeAddress: string) => {
+    setLoadingUser(addresseeAddress);
+    // Optimistically update UI
+    dispatch(
+      updateSearchResultConnectionStatus({
+        address: addresseeAddress,
+        status: 'pending',
+      }),
+    );
     try {
       await dispatch(
         sendConnectionRequestAsync({
@@ -32,8 +45,72 @@ export function UserSearchResults({
           addresseeAddress,
         }),
       ).unwrap();
+      dispatch(
+        showSuccessToast({
+          title: 'Request Sent',
+          description: 'Connection request sent successfully.',
+        }),
+      );
     } catch (error) {
-      console.error('Failed to send connection request:', error);
+      // Rollback optimistic update
+      dispatch(
+        updateSearchResultConnectionStatus({
+          address: addresseeAddress,
+          status: 'declined',
+        }),
+      );
+      dispatch(
+        showInfoToast({
+          title: 'Error',
+          description: 'Failed to send connection request.',
+        }),
+      );
+    } finally {
+      setLoadingUser(null);
+    }
+  };
+
+  const handleCancelConnectionRequest = async (user: ConnectionUser) => {
+    if (!user.connection_id) return;
+    setLoadingUser(user.address);
+    // Optimistically update UI
+    dispatch(
+      updateSearchResultConnectionStatus({
+        address: user.address,
+        status: 'declined',
+        connectionId: undefined,
+      }),
+    );
+    try {
+      await dispatch(
+        removeConnectionAsync({
+          connectionId: user.connection_id,
+          userAddress: currentUserAddress,
+        }),
+      ).unwrap();
+      dispatch(
+        showSuccessToast({
+          title: 'Request Cancelled',
+          description: 'Connection request cancelled.',
+        }),
+      );
+    } catch (error) {
+      // Rollback optimistic update
+      dispatch(
+        updateSearchResultConnectionStatus({
+          address: user.address,
+          status: 'pending',
+          connectionId: user.connection_id,
+        }),
+      );
+      dispatch(
+        showInfoToast({
+          title: 'Error',
+          description: 'Failed to cancel connection request.',
+        }),
+      );
+    } finally {
+      setLoadingUser(null);
     }
   };
 
@@ -53,19 +130,46 @@ export function UserSearchResults({
             Connected
           </Button>
         );
-      case 'pending':
+      case 'pending': {
+        // If current user is the requester, show Cancel
+        // We don't have direct info here, but in search results, the user is always the addressee except for sent requests
+        // So, if connection_id exists and user.connection_status is pending, allow cancel
+        // (Assume if connection_id exists, we can cancel)
         return (
-          <Button size="sm" variant="outline" disabled>
-            Pending
-          </Button>
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" disabled>
+              Pending
+            </Button>
+            {user.connection_id && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => handleCancelConnectionRequest(user)}
+                disabled={loadingUser === user.address}
+              >
+                {loadingUser === user.address ? 'Cancelling...' : 'Cancel'}
+              </Button>
+            )}
+          </div>
         );
+      }
       case 'declined':
       case 'blocked':
       default:
         return (
-          <Button size="sm" onClick={() => handleSendConnectionRequest(user.address)}>
-            <UserPlus className="h-4 w-4 mr-1" />
-            Connect
+          <Button
+            size="sm"
+            onClick={() => handleSendConnectionRequest(user.address)}
+            disabled={loadingUser === user.address}
+          >
+            {loadingUser === user.address ? (
+              'Connecting...'
+            ) : (
+              <>
+                <UserPlus className="h-4 w-4 mr-1" />
+                Connect
+              </>
+            )}
           </Button>
         );
     }
@@ -117,10 +221,10 @@ export function UserSearchResults({
                 <AvatarImage src={user.avatar_url || '/placeholder.svg'} />
                 <AvatarFallback>{user.username.charAt(0).toUpperCase()}</AvatarFallback>
               </Avatar>
-              <div className="flex-1">
-                <div className="font-medium">{user.username}</div>
-                <div className="text-sm text-muted-foreground">
-                  {user.address.slice(0, 10)}...{user.address.slice(-8)}
+              <div className="flex-1 min-w-0">
+                <div className="font-medium truncate max-w-[160px]">{user.username}</div>
+                <div className="text-sm text-muted-foreground truncate max-w-[180px]">
+                  {user.address.slice(0, 6)}...{user.address.slice(-4)}
                 </div>
               </div>
               {getConnectionButton(user)}

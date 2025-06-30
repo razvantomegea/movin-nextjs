@@ -40,6 +40,13 @@ export function SocialFeedPage() {
     }
   }, [dispatch, address]);
 
+  useEffect(() => {
+    if (activeTab !== 'search') {
+      dispatch(clearSearchResults());
+      setSearchTerm('');
+    }
+  }, [activeTab, dispatch]);
+
   const handleRefresh = async () => {
     if (address) {
       await dispatch(refreshSocialFeed(address.toLowerCase())).unwrap();

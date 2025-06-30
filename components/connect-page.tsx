@@ -290,10 +290,12 @@ function ConnectPageContent() {
                     </span>
                   </div>
 
-                  <p className="text-gray-700 dark:text-gray-300 text-base leading-relaxed">
-                    Connect your wallet now to claim your <strong>1 MVN bonus</strong> from your
-                    referral!
-                  </p>
+                  <div className="truncate max-w-[200px]">
+                    <p className="text-gray-700 dark:text-gray-300 text-base leading-relaxed">
+                      Connect your wallet now to claim your <strong>1 MVN bonus</strong> from your
+                      referral!
+                    </p>
+                  </div>
                 </div>
 
                 <Button
@@ -413,7 +415,9 @@ function ConnectPageContent() {
                     className="animate-spin mr-3 h-5 w-5 border-2 border-white border-t-transparent rounded-full"
                     data-testid={DataTestIds.CONNECTING_SPINNER}
                   ></div>
-                  <span data-testid={DataTestIds.CONNECTING_TEXT}>Connecting...</span>
+                  <div className="truncate max-w-[200px]">
+                    <span data-testid={DataTestIds.CONNECTING_TEXT}>Connecting...</span>
+                  </div>
                 </motion.div>
               ) : (
                 <motion.div
@@ -476,12 +480,14 @@ function ConnectPageContent() {
         transition={{ delay: 0.8, duration: 0.5 }}
         className="absolute bottom-4"
       >
-        <p
-          className="text-gray-400 dark:text-blue-200/50 text-xs text-center"
-          data-testid={DataTestIds.CONNECT_PAGE_VERSION}
-        >
-          v1.6.0
-        </p>
+        <div className="truncate max-w-[200px]">
+          <p
+            className="text-gray-400 dark:text-blue-200/50 text-xs text-center"
+            data-testid={DataTestIds.CONNECT_PAGE_VERSION}
+          >
+            v1.6.1
+          </p>
+        </div>
       </motion.div>
     </div>
   );
@@ -551,7 +557,9 @@ function ConnectPageFallback() {
 
       {/* Version at bottom of page */}
       <div className="absolute bottom-4">
-        <p className="text-gray-400 dark:text-blue-200/50 text-xs text-center">v1.6.0</p>
+        <div className="truncate max-w-[200px]">
+          <p className="text-gray-400 dark:text-blue-200/50 text-xs text-center">v1.6.1</p>
+        </div>
       </div>
     </div>
   );

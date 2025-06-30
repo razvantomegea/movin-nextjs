@@ -1,10 +1,17 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { UserCheck, UserMinus, MessageCircle } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
 import {
@@ -14,6 +21,7 @@ import {
   removeConnectionAsync,
   type ConnectionUser,
 } from '@/lib/redux/slices/socialFeedSlice';
+import { showSuccessToast, showInfoToast } from '@/lib/redux/slices/toastSlice';
 
 interface ConnectionsTabProps {
   connections: ConnectionUser[];
@@ -24,6 +32,14 @@ interface ConnectionsTabProps {
 export function ConnectionsTab({ connections, userAddress, isLoading }: ConnectionsTabProps) {
   const dispatch = useAppDispatch();
   const { pendingConnections } = useAppSelector((state) => state.socialFeed);
+
+  // State for confirmation dialog
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [connectionToRemove, setConnectionToRemove] = useState<{
+    id: string;
+    label: string;
+  } | null>(null);
+  const [isRemoving, setIsRemoving] = useState(false);
 
   useEffect(() => {
     dispatch(fetchPendingConnections(userAddress));
@@ -55,18 +71,50 @@ export function ConnectionsTab({ connections, userAddress, isLoading }: Connecti
     }
   };
 
-  const handleRemoveConnection = async (connectionId: string) => {
-    if (confirm('Are you sure you want to remove this connection?')) {
-      try {
-        await dispatch(
-          removeConnectionAsync({
-            connectionId,
-            userAddress,
-          }),
-        ).unwrap();
-      } catch (error) {
-        console.error('Failed to remove connection:', error);
-      }
+  // Open dialog for remove/cancel
+  const openRemoveDialog = (connectionId: string, label: string) => {
+    setConnectionToRemove({ id: connectionId, label });
+    setConfirmDialogOpen(true);
+  };
+
+  // Confirm removal
+  const handleRemoveConnection = async () => {
+    if (!connectionToRemove) return;
+    setIsRemoving(true);
+    try {
+      await dispatch(
+        removeConnectionAsync({
+          connectionId: connectionToRemove.id,
+          userAddress,
+        }),
+      ).unwrap();
+      setConfirmDialogOpen(false);
+      setConnectionToRemove(null);
+      dispatch(
+        showSuccessToast({
+          title:
+            connectionToRemove.label === 'Cancel Request'
+              ? 'Request Cancelled'
+              : 'Connection Removed',
+          description:
+            connectionToRemove.label === 'Cancel Request'
+              ? 'Connection request cancelled.'
+              : 'Connection removed.',
+        }),
+      );
+    } catch (error) {
+      console.error('Failed to remove connection:', error);
+      dispatch(
+        showInfoToast({
+          title: 'Error',
+          description:
+            connectionToRemove.label === 'Cancel Request'
+              ? 'Failed to cancel connection request.'
+              : 'Failed to remove connection.',
+        }),
+      );
+    } finally {
+      setIsRemoving(false);
     }
   };
 
@@ -112,9 +160,11 @@ export function ConnectionsTab({ connections, userAddress, isLoading }: Connecti
                           {profile?.username?.charAt(0).toUpperCase() || 'U'}
                         </AvatarFallback>
                       </Avatar>
-                      <div className="flex-1">
-                        <div className="font-medium">{profile?.username || 'Unknown User'}</div>
-                        <div className="text-sm text-muted-foreground">
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium truncate max-w-[160px]">
+                          {profile?.username || 'Unknown User'}
+                        </div>
+                        <div className="text-sm text-muted-foreground truncate max-w-[180px]">
                           Wants to connect with you
                         </div>
                       </div>
@@ -162,9 +212,18 @@ export function ConnectionsTab({ connections, userAddress, isLoading }: Connecti
                       <AvatarImage src={connection.avatar_url || '/placeholder.svg'} />
                       <AvatarFallback>{connection.username.charAt(0).toUpperCase()}</AvatarFallback>
                     </Avatar>
-                    <div className="flex-1">
-                      <div className="font-medium">{connection.username}</div>
-                      <div className="text-sm text-muted-foreground">Connected</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium truncate max-w-[160px]">
+                        {connection.username}
+                      </div>
+                      {connection.address && (
+                        <div className="text-sm text-muted-foreground truncate max-w-[180px]">
+                          {connection.address.slice(0, 6)}...{connection.address.slice(-4)}
+                        </div>
+                      )}
+                      {!connection.address && (
+                        <div className="text-sm text-muted-foreground">Connected</div>
+                      )}
                     </div>
                     <div className="flex gap-2">
                       <Button size="sm" variant="outline" disabled>
@@ -176,7 +235,7 @@ export function ConnectionsTab({ connections, userAddress, isLoading }: Connecti
                         variant="outline"
                         onClick={() =>
                           connection.connection_id &&
-                          handleRemoveConnection(connection.connection_id)
+                          openRemoveDialog(connection.connection_id, 'Remove Connection')
                         }
                       >
                         <UserMinus className="h-4 w-4 mr-1" />
@@ -208,14 +267,18 @@ export function ConnectionsTab({ connections, userAddress, isLoading }: Connecti
                           {profile?.username?.charAt(0).toUpperCase() || 'U'}
                         </AvatarFallback>
                       </Avatar>
-                      <div className="flex-1">
-                        <div className="font-medium">{profile?.username || 'Unknown User'}</div>
-                        <div className="text-sm text-muted-foreground">Request pending</div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium truncate max-w-[160px]">
+                          {profile?.username || 'Unknown User'}
+                        </div>
+                        <div className="text-sm text-muted-foreground truncate max-w-[180px]">
+                          Request pending
+                        </div>
                       </div>
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => handleRemoveConnection(connection.id)}
+                        onClick={() => openRemoveDialog(connection.id, 'Cancel Request')}
                       >
                         Cancel
                       </Button>
@@ -227,6 +290,41 @@ export function ConnectionsTab({ connections, userAddress, isLoading }: Connecti
           </div>
         </div>
       )}
+
+      {/* Confirmation Dialog for Remove/Cancel */}
+      <Dialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{connectionToRemove?.label || 'Remove Connection'}</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-sm text-muted-foreground">
+              {connectionToRemove?.label === 'Cancel Request'
+                ? 'Are you sure you want to cancel this connection request?'
+                : 'Are you sure you want to remove this connection?'}{' '}
+              This action cannot be undone.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setConfirmDialogOpen(false)}
+              disabled={isRemoving}
+            >
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleRemoveConnection} disabled={isRemoving}>
+              {isRemoving
+                ? connectionToRemove?.label === 'Cancel Request'
+                  ? 'Cancelling...'
+                  : 'Removing...'
+                : connectionToRemove?.label === 'Cancel Request'
+                ? 'Cancel Request'
+                : 'Remove'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
