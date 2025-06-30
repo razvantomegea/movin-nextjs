@@ -408,7 +408,7 @@ export async function uploadPostImage({
   // Generate unique filename
   const fileExt = file.name.split('.').pop();
   const fileName = `${userId}-${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-  const filePath = `social-posts/${fileName}`;
+  const filePath = `social/${fileName}`;
 
   // Upload file
   const { error: uploadError } = await client.storage.from('public').upload(filePath, file, {

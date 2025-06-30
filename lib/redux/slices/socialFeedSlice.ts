@@ -88,6 +88,9 @@ interface SocialFeedState {
   // Comments state
   postComments: Record<string, PostComment[]>; // postId -> comments
   commentReplies: Record<string, PostComment[]>; // commentId -> replies
+  // Single post view
+  currentPost: SocialPost | null;
+  isLoadingPost: boolean;
   isLoading: boolean;
   isRefreshing: boolean;
   isSearching: boolean;
@@ -354,13 +357,15 @@ export const deleteCommentAsync = createAsyncThunk<
 // Thunk to fetch a single post by ID
 export const fetchSocialPost = createAsyncThunk<
   SocialPost,
-  { postId: string; address: string },
+  { postId: string; address?: string },
   { rejectValue: string }
 >('socialFeed/fetchSocialPost', async ({ postId, address }, { rejectWithValue }) => {
   try {
     const post = await getSocialPost({ postId, address });
-    if (!post) throw new Error('Post not found');
-    return post as SocialPost;
+    if (!post) {
+      return rejectWithValue('Post not found.');
+    }
+    return post;
   } catch (error) {
     Sentry.captureException(error);
     return rejectWithValue('Failed to fetch post. Please try again.');
@@ -378,6 +383,9 @@ const initialState: SocialFeedState = {
   },
   postComments: {},
   commentReplies: {},
+  // Single post view
+  currentPost: null,
+  isLoadingPost: false,
   isLoading: false,
   isRefreshing: false,
   isSearching: false,
@@ -438,6 +446,20 @@ const socialFeedSlice = createSlice({
       })
       .addCase(refreshSocialFeed.rejected, (state, action) => {
         state.isRefreshing = false;
+        state.error = action.payload as string;
+      })
+
+      // Fetch single post
+      .addCase(fetchSocialPost.pending, (state) => {
+        state.isLoadingPost = true;
+        state.error = null;
+      })
+      .addCase(fetchSocialPost.fulfilled, (state, action) => {
+        state.isLoadingPost = false;
+        state.currentPost = action.payload;
+      })
+      .addCase(fetchSocialPost.rejected, (state, action) => {
+        state.isLoadingPost = false;
         state.error = action.payload as string;
       })
 
@@ -570,6 +592,8 @@ const socialFeedSlice = createSlice({
       // Toggle post reaction
       .addCase(togglePostReactionAsync.fulfilled, (state, action) => {
         const { postId, action: reactionAction, reaction } = action.payload;
+
+        // Update reaction counts for post in posts array
         const post = state.posts.find((p) => p.id === postId);
         if (post) {
           // Update user reaction
@@ -603,6 +627,52 @@ const socialFeedSlice = createSlice({
               // Changed from like to dislike
               post.dislikes_count = (post.dislikes_count || 0) + 1;
               post.likes_count = Math.max((post.likes_count || 0) - 1, 0);
+            }
+          }
+        }
+
+        // Also update the current post if it matches
+        if (state.currentPost && state.currentPost.id === postId) {
+          // Update user reaction
+          state.currentPost.user_reaction = reaction;
+          state.currentPost.user_has_liked = reaction === 'like';
+
+          // Update counts based on action
+          if (reactionAction === 'added') {
+            if (reaction === 'like') {
+              state.currentPost.likes_count = (state.currentPost.likes_count || 0) + 1;
+            } else if (reaction === 'dislike') {
+              state.currentPost.dislikes_count = (state.currentPost.dislikes_count || 0) + 1;
+            }
+          } else if (reactionAction === 'removed') {
+            if (reaction === null) {
+              // We need to know what was removed, check previous state
+              const { isLike } = action.meta.arg;
+              if (isLike) {
+                state.currentPost.likes_count = Math.max(
+                  (state.currentPost.likes_count || 0) - 1,
+                  0,
+                );
+              } else {
+                state.currentPost.dislikes_count = Math.max(
+                  (state.currentPost.dislikes_count || 0) - 1,
+                  0,
+                );
+              }
+            }
+          } else if (reactionAction === 'updated') {
+            const { isLike } = action.meta.arg;
+            if (isLike) {
+              // Changed from dislike to like
+              state.currentPost.likes_count = (state.currentPost.likes_count || 0) + 1;
+              state.currentPost.dislikes_count = Math.max(
+                (state.currentPost.dislikes_count || 0) - 1,
+                0,
+              );
+            } else {
+              // Changed from like to dislike
+              state.currentPost.dislikes_count = (state.currentPost.dislikes_count || 0) + 1;
+              state.currentPost.likes_count = Math.max((state.currentPost.likes_count || 0) - 1, 0);
             }
           }
         }
@@ -641,10 +711,15 @@ const socialFeedSlice = createSlice({
         const { postId: metaPostId } = action.meta.arg;
         state.isSubmittingComment[metaPostId] = false;
 
-        // Update post comment count
+        // Update post comment count in posts array
         const post = state.posts.find((p) => p.id === postId);
         if (post) {
           post.comments_count = (post.comments_count || 0) + 1;
+        }
+
+        // Also update the current post if it matches
+        if (state.currentPost && state.currentPost.id === postId) {
+          state.currentPost.comments_count = (state.currentPost.comments_count || 0) + 1;
         }
 
         // Add comment to comments list if it exists
@@ -719,10 +794,18 @@ const socialFeedSlice = createSlice({
         if (state.optimisticallyRemovedComments[postId]) {
           delete state.optimisticallyRemovedComments[postId][commentId];
         }
-        // Update post comment count
+        // Update post comment count in posts array
         const post = state.posts.find((p) => p.id === postId);
         if (post) {
           post.comments_count = Math.max((post.comments_count || 0) - 1, 0);
+        }
+
+        // Also update the current post if it matches
+        if (state.currentPost && state.currentPost.id === postId) {
+          state.currentPost.comments_count = Math.max(
+            (state.currentPost.comments_count || 0) - 1,
+            0,
+          );
         }
       })
       // Delete comment rejected (restore comment)
@@ -748,18 +831,6 @@ const socialFeedSlice = createSlice({
         if (state.optimisticallyRemovedComments[postId]) {
           delete state.optimisticallyRemovedComments[postId][commentId];
         }
-        state.error = action.payload as string;
-      })
-
-      // Fetch single post and update in posts array
-      .addCase(fetchSocialPost.fulfilled, (state, action) => {
-        const updatedPost = action.payload;
-        const idx = state.posts.findIndex((p) => p.id === updatedPost.id);
-        if (idx !== -1) {
-          state.posts[idx] = { ...state.posts[idx], ...updatedPost };
-        }
-      })
-      .addCase(fetchSocialPost.rejected, (state, action) => {
         state.error = action.payload as string;
       });
   },
@@ -869,3 +940,7 @@ export const deleteCommentAndRefetch =
     }
     return result;
   };
+
+// Selectors for single post view
+export const selectCurrentPost = (state: RootState) => state.socialFeed.currentPost;
+export const selectIsLoadingPost = (state: RootState) => state.socialFeed.isLoadingPost;

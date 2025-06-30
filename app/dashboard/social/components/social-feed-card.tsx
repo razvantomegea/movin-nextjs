@@ -1,7 +1,15 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { MessageCircle, Share, ThumbsUp, ThumbsDown, Send } from 'lucide-react';
+import {
+  MessageCircle,
+  Share,
+  ThumbsUp,
+  ThumbsDown,
+  Send,
+  Trash2,
+  MoreHorizontal,
+} from 'lucide-react';
 import Image from 'next/image';
 import { useDispatch, useSelector } from 'react-redux';
 import { useAccount } from 'wagmi';
@@ -34,29 +42,16 @@ import {
   makeSelectIsLoadingComments,
   makeSelectIsSubmittingComment,
   createPost,
+  deletePost,
   type SocialPost,
 } from '@/lib/redux/slices/socialFeedSlice';
 import type { AppDispatch, RootState } from '@/lib/redux/store';
 import { copyToClipboard } from '@/utils/crypto';
+import { formatTimeAgo } from '@/utils/time/formatTimeAgo';
 import CommentItem from './CommentItem';
 
 interface SocialFeedCardProps {
   post: SocialPost;
-}
-
-function formatTimeAgo(dateString: string): string {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMinutes = Math.floor(diffMs / (1000 * 60));
-  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-  if (diffMinutes < 1) return 'Just now';
-  if (diffMinutes < 60) return `${diffMinutes}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays < 7) return `${diffDays}d ago`;
-  return date.toLocaleDateString();
 }
 
 export function SocialFeedCard({ post }: SocialFeedCardProps) {
@@ -67,8 +62,9 @@ export function SocialFeedCard({ post }: SocialFeedCardProps) {
   const [isRepostModalOpen, setIsRepostModalOpen] = useState(false);
   const [repostComment, setRepostComment] = useState('');
   const [isReposting, setIsReposting] = useState(false);
-  const [isSharing, setIsSharing] = useState(false);
-  const { success: showSuccessToast } = useReduxToast();
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const { success: showSuccessToast, error: showErrorToast } = useReduxToast();
 
   // Create memoized selector instances
   const selectPostComments = useMemo(() => makeSelectPostComments(), []);
@@ -158,13 +154,10 @@ export function SocialFeedCard({ post }: SocialFeedCardProps) {
   };
 
   const postUrl =
-    typeof window !== 'undefined'
-      ? `${window.location.origin}/dashboard/social?post=${post.id}`
-      : '';
+    typeof window !== 'undefined' ? `${window.location.origin}/dashboard/social/${post.id}` : '';
   const shareText = `${post.profile?.username ? '@' + post.profile.username : ''}: ${post.content}`;
 
   const handleNativeShare = async () => {
-    setIsSharing(true);
     try {
       if (navigator.share) {
         await navigator.share({
@@ -177,9 +170,7 @@ export function SocialFeedCard({ post }: SocialFeedCardProps) {
         handleCopyLink();
       }
     } catch (e) {
-      // Optionally show error toast
-    } finally {
-      setIsSharing(false);
+      console.error('Failed to share post:', e);
     }
   };
 
@@ -203,6 +194,36 @@ export function SocialFeedCard({ post }: SocialFeedCardProps) {
     });
   };
 
+  const handleDelete = async () => {
+    if (!address) return;
+
+    setIsDeleting(true);
+    try {
+      await dispatch(
+        deletePost({
+          postId: post.id,
+          address: address.toLowerCase(),
+        }),
+      ).unwrap();
+
+      showSuccessToast({
+        title: 'Post deleted',
+        description: 'Your post has been successfully deleted.',
+      });
+      setIsDeleteConfirmOpen(false);
+    } catch (error) {
+      showErrorToast({
+        title: 'Delete failed',
+        description: 'Failed to delete the post. Please try again.',
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  // Check if current user is the post creator
+  const isCurrentUserPost = address && post.address.toLowerCase() === address.toLowerCase();
+
   return (
     <Card className="overflow-hidden">
       <CardHeader className="p-4 pb-0">
@@ -211,10 +232,28 @@ export function SocialFeedCard({ post }: SocialFeedCardProps) {
             <AvatarImage src={avatarUrl} alt={username} />
             <AvatarFallback>{username.charAt(0).toUpperCase()}</AvatarFallback>
           </Avatar>
-          <div>
+          <div className="flex-1">
             <div className="font-medium">{username}</div>
             <div className="text-xs text-muted-foreground">{formatTimeAgo(post.created_at)}</div>
           </div>
+          {isCurrentUserPost && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onClick={() => setIsDeleteConfirmOpen(true)}
+                  className="text-red-600 focus:text-red-600"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete Post
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
       </CardHeader>
       <CardContent className="p-4">
@@ -403,6 +442,36 @@ export function SocialFeedCard({ post }: SocialFeedCardProps) {
               </Button>
               <Button onClick={handleRepost} disabled={isReposting || !address}>
                 {isReposting ? 'Reposting...' : 'Repost'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Confirmation Modal */}
+        <Dialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Delete Post</DialogTitle>
+            </DialogHeader>
+            <div className="py-4">
+              <p className="text-sm text-muted-foreground">
+                Are you sure you want to delete this post? This action cannot be undone.
+              </p>
+              <div className="mt-4 p-3 bg-muted rounded-lg">
+                <p className="text-sm line-clamp-3">{post.content}</p>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setIsDeleteConfirmOpen(false)}
+                disabled={isDeleting}
+              >
+                Cancel
+              </Button>
+              <Button variant="destructive" onClick={handleDelete} disabled={isDeleting}>
+                <Trash2 className="h-4 w-4 mr-2" />
+                {isDeleting ? 'Deleting...' : 'Delete'}
               </Button>
             </DialogFooter>
           </DialogContent>
