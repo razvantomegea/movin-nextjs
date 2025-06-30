@@ -1,0 +1,165 @@
+import { useState } from 'react';
+import { useDispatch } from 'react-redux';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import { MoreHorizontal, Trash, Send } from 'lucide-react';
+import {
+  deleteCommentAsync,
+  createCommentAsync,
+  type PostComment,
+  type AppDispatch,
+} from '@/lib/redux/slices/socialFeedSlice';
+
+function formatTimeAgo(dateString: string): string {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMinutes = Math.floor(diffMs / (1000 * 60));
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffMinutes < 1) return 'Just now';
+  if (diffMinutes < 60) return `${diffMinutes}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return date.toLocaleDateString();
+}
+
+export default function CommentItem({
+  comment,
+  postId,
+  currentUserAddress,
+}: {
+  comment: PostComment;
+  postId: string;
+  currentUserAddress: string;
+}) {
+  const dispatch = useDispatch<AppDispatch>();
+  const [isReplying, setIsReplying] = useState(false);
+  const [replyText, setReplyText] = useState('');
+
+  const handleDeleteComment = async () => {
+    if (comment.address === currentUserAddress) {
+      dispatch(
+        deleteCommentAsync({
+          commentId: comment.id,
+          address: currentUserAddress,
+          postId,
+        }),
+      );
+    }
+  };
+
+  const handleReply = async () => {
+    if (replyText.trim()) {
+      dispatch(
+        createCommentAsync({
+          postId,
+          address: currentUserAddress,
+          commentData: {
+            content: replyText.trim(),
+            parent_comment_id: comment.id,
+          },
+        }),
+      );
+      setReplyText('');
+      setIsReplying(false);
+    }
+  };
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-start gap-2">
+        <Avatar className="h-6 w-6">
+          <AvatarImage src={comment.profile?.avatar_url} alt={comment.profile?.username} />
+          <AvatarFallback className="text-xs">
+            {comment.profile?.username?.charAt(0).toUpperCase() || 'U'}
+          </AvatarFallback>
+        </Avatar>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-sm font-medium">
+              {comment.profile?.username || comment.address || 'Unknown User'}
+            </span>
+            <span className="text-xs text-muted-foreground">
+              {formatTimeAgo(comment.created_at)}
+            </span>
+            {comment.address === currentUserAddress && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                    <MoreHorizontal className="h-3 w-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={handleDeleteComment} className="text-red-600">
+                    <Trash className="h-4 w-4 mr-2" />
+                    Delete
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </div>
+          <p className="text-sm text-gray-700 mb-2">{comment.content}</p>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 text-xs text-muted-foreground"
+              onClick={() => setIsReplying(!isReplying)}
+            >
+              Reply
+            </Button>
+            {comment.replies_count && comment.replies_count > 0 && (
+              <span className="text-xs text-muted-foreground">
+                {comment.replies_count} {comment.replies_count === 1 ? 'reply' : 'replies'}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Reply form */}
+      {isReplying && (
+        <div className="ml-8 flex items-center gap-2">
+          <Input
+            placeholder="Write a reply..."
+            value={replyText}
+            onChange={(e) => setReplyText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleReply();
+              }
+            }}
+            className="h-8 text-sm"
+          />
+          <Button onClick={handleReply} size="sm" disabled={!replyText.trim()}>
+            <Send className="h-3 w-3" />
+          </Button>
+        </div>
+      )}
+
+      {/* Replies */}
+      {comment.replies && comment.replies.length > 0 && (
+        <div className="ml-8 space-y-2">
+          {comment.replies.map((reply) => (
+            <CommentItem
+              key={reply.id}
+              comment={reply}
+              postId={postId}
+              currentUserAddress={currentUserAddress}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}

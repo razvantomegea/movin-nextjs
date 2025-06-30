@@ -1,12 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { AlertCircle, Plus, Search, Users } from 'lucide-react';
 import { useAppKitAccount } from '@reown/appkit/react';
+import { AlertCircle, Plus, Search, Users } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { RefreshButton } from '@/components/ui/refresh-button';
 import { Input } from '@/components/ui/input';
+import { RefreshButton } from '@/components/ui/refresh-button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
 import {
@@ -18,10 +18,10 @@ import {
   clearError,
   clearSearchResults,
 } from '@/lib/redux/slices/socialFeedSlice';
+import { ConnectionsTab } from './connections-tab';
 import { ShareAchievementModal } from './share-achievement-modal';
 import { SocialFeedCard } from './social-feed-card';
 import { SocialFeedSkeleton } from './social-feed-skeleton';
-import { ConnectionsTab } from './connections-tab';
 import { UserSearchResults } from './user-search-results';
 
 export function SocialFeedPage() {

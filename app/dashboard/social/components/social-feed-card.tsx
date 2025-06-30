@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   MessageCircle,
   Share,
@@ -12,30 +12,32 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import { useDispatch, useSelector } from 'react-redux';
+import { useAccount } from 'wagmi';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Separator } from '@/components/ui/separator';
-import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { cn } from '@/lib/utils';
-import { useWallet } from '@/hooks/useWallet';
-import type { AppDispatch, RootState } from '@/lib/redux/store';
+import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/cn';
 import {
   togglePostReactionAsync,
   fetchPostComments,
   createCommentAsync,
   deleteCommentAsync,
+  makeSelectPostComments,
+  makeSelectIsLoadingComments,
+  makeSelectIsSubmittingComment,
   type SocialPost,
   type PostComment,
 } from '@/lib/redux/slices/socialFeedSlice';
+import type { AppDispatch, RootState } from '@/lib/redux/store';
+import CommentItem from './CommentItem';
 
 interface SocialFeedCardProps {
   post: SocialPost;
@@ -56,152 +58,24 @@ function formatTimeAgo(dateString: string): string {
   return date.toLocaleDateString();
 }
 
-function CommentItem({
-  comment,
-  postId,
-  currentUserAddress,
-}: {
-  comment: PostComment;
-  postId: string;
-  currentUserAddress: string;
-}) {
-  const dispatch = useDispatch<AppDispatch>();
-  const [isReplying, setIsReplying] = useState(false);
-  const [replyText, setReplyText] = useState('');
-
-  const handleDeleteComment = async () => {
-    if (comment.address === currentUserAddress) {
-      dispatch(
-        deleteCommentAsync({
-          commentId: comment.id,
-          address: currentUserAddress,
-          postId,
-        }),
-      );
-    }
-  };
-
-  const handleReply = async () => {
-    if (replyText.trim()) {
-      dispatch(
-        createCommentAsync({
-          postId,
-          address: currentUserAddress,
-          commentData: {
-            content: replyText.trim(),
-            parent_comment_id: comment.id,
-          },
-        }),
-      );
-      setReplyText('');
-      setIsReplying(false);
-    }
-  };
-
-  return (
-    <div className="space-y-2">
-      <div className="flex items-start gap-2">
-        <Avatar className="h-6 w-6">
-          <AvatarImage src={comment.profile?.avatar_url} alt={comment.profile?.username} />
-          <AvatarFallback className="text-xs">
-            {comment.profile?.username?.charAt(0).toUpperCase() || 'U'}
-          </AvatarFallback>
-        </Avatar>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-sm font-medium">
-              {comment.profile?.username || 'Unknown User'}
-            </span>
-            <span className="text-xs text-muted-foreground">
-              {formatTimeAgo(comment.created_at)}
-            </span>
-            {comment.address === currentUserAddress && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-                    <MoreHorizontal className="h-3 w-3" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={handleDeleteComment} className="text-red-600">
-                    <Trash className="h-4 w-4 mr-2" />
-                    Delete
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-          </div>
-          <p className="text-sm text-gray-700 mb-2">{comment.content}</p>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 text-xs text-muted-foreground"
-              onClick={() => setIsReplying(!isReplying)}
-            >
-              Reply
-            </Button>
-            {comment.replies_count && comment.replies_count > 0 && (
-              <span className="text-xs text-muted-foreground">
-                {comment.replies_count} {comment.replies_count === 1 ? 'reply' : 'replies'}
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Reply form */}
-      {isReplying && (
-        <div className="ml-8 flex items-center gap-2">
-          <Input
-            placeholder="Write a reply..."
-            value={replyText}
-            onChange={(e) => setReplyText(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                handleReply();
-              }
-            }}
-            className="h-8 text-sm"
-          />
-          <Button onClick={handleReply} size="sm" disabled={!replyText.trim()}>
-            <Send className="h-3 w-3" />
-          </Button>
-        </div>
-      )}
-
-      {/* Replies */}
-      {comment.replies && comment.replies.length > 0 && (
-        <div className="ml-8 space-y-2">
-          {comment.replies.map((reply) => (
-            <CommentItem
-              key={reply.id}
-              comment={reply}
-              postId={postId}
-              currentUserAddress={currentUserAddress}
-            />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
 export function SocialFeedCard({ post }: SocialFeedCardProps) {
   const dispatch = useDispatch<AppDispatch>();
-  const { address } = useWallet();
+  const { address } = useAccount();
   const [showComments, setShowComments] = useState(false);
   const [newComment, setNewComment] = useState('');
 
-  const postComments = useSelector(
-    (state: RootState) => state.socialFeed.postComments[post.id] || [],
+  // Create memoized selector instances
+  const selectPostComments = useMemo(() => makeSelectPostComments(), []);
+  const selectIsLoadingComments = useMemo(() => makeSelectIsLoadingComments(), []);
+  const selectIsSubmittingComment = useMemo(() => makeSelectIsSubmittingComment(), []);
+
+  // Use memoized selectors
+  const postComments = useSelector((state: RootState) => selectPostComments(state, post.id));
+  const isLoadingComments = useSelector((state: RootState) =>
+    selectIsLoadingComments(state, post.id),
   );
-  const isLoadingComments = useSelector(
-    (state: RootState) => state.socialFeed.isLoadingComments[post.id] || false,
-  );
-  const isSubmittingComment = useSelector(
-    (state: RootState) => state.socialFeed.isSubmittingComment[post.id] || false,
+  const isSubmittingComment = useSelector((state: RootState) =>
+    selectIsSubmittingComment(state, post.id),
   );
 
   const username = post.profile?.username || 'Unknown User';
@@ -275,30 +149,21 @@ export function SocialFeedCard({ post }: SocialFeedCardProps) {
         )}
       </CardContent>
       <CardFooter className="p-0 flex-col">
-        {/* Engagement Stats */}
-        {(post.likes_count || post.dislikes_count || post.comments_count) && (
-          <div className="w-full p-2 border-t flex justify-between items-center text-sm text-muted-foreground">
-            <div className="flex items-center gap-4">
-              {post.likes_count && post.likes_count > 0 && (
-                <span className="flex items-center gap-1">
-                  <ThumbsUp className="h-3 w-3" />
-                  {post.likes_count}
-                </span>
-              )}
-              {post.dislikes_count && post.dislikes_count > 0 && (
-                <span className="flex items-center gap-1">
-                  <ThumbsDown className="h-3 w-3" />
-                  {post.dislikes_count}
-                </span>
-              )}
-            </div>
-            {post.comments_count && post.comments_count > 0 && (
-              <span>
-                {post.comments_count} {post.comments_count === 1 ? 'comment' : 'comments'}
-              </span>
-            )}
+        <div className="w-full p-2 border-t flex justify-between items-center text-sm text-muted-foreground">
+          <div className="flex items-center gap-4">
+            <span className="flex items-center gap-1">
+              <ThumbsUp className="h-3 w-3" />
+              {post.likes_count}
+            </span>
+            <span className="flex items-center gap-1">
+              <ThumbsDown className="h-3 w-3" />
+              {post.dislikes_count}
+            </span>
           </div>
-        )}
+          <span>
+            {post.comments_count} {post.comments_count === 1 ? 'comment' : 'comments'}
+          </span>
+        </div>
 
         {/* Action Buttons */}
         <div className="w-full p-2 border-t flex justify-between">

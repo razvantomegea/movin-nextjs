@@ -1,5 +1,21 @@
-import { createSlice, createAsyncThunk, type PayloadAction } from '@reduxjs/toolkit';
+import {
+  createSlice,
+  createAsyncThunk,
+  createSelector,
+  type PayloadAction,
+} from '@reduxjs/toolkit';
 import * as Sentry from '@sentry/nextjs';
+import {
+  getUserConnections,
+  searchUsers,
+  sendConnectionRequest,
+  acceptConnectionRequest,
+  declineConnectionRequest,
+  removeConnection,
+  getPendingConnections,
+  type IConnection,
+  type ConnectionStatus,
+} from '@/lib/supabase/connections';
 import {
   getSocialFeed,
   createSocialPost,
@@ -10,23 +26,10 @@ import {
   createComment,
   deleteComment,
   updateComment,
-  type ISocialPost,
+  getSocialPost,
   type ISocialPostInput,
-  type IPostComment,
   type IPostCommentInput,
 } from '@/lib/supabase/social';
-import {
-  getUserConnections,
-  searchUsers,
-  sendConnectionRequest,
-  acceptConnectionRequest,
-  declineConnectionRequest,
-  removeConnection,
-  getPendingConnections,
-  type IConnectionUser,
-  type IConnection,
-  type ConnectionStatus,
-} from '@/lib/supabase/connections';
 
 // Types
 export interface SocialPost {
@@ -344,6 +347,22 @@ export const deleteCommentAsync = createAsyncThunk<
   }
 });
 
+// Thunk to fetch a single post by ID
+export const fetchSocialPost = createAsyncThunk<
+  SocialPost,
+  { postId: string; address: string },
+  { rejectValue: string }
+>('socialFeed/fetchSocialPost', async ({ postId, address }, { rejectWithValue }) => {
+  try {
+    const post = await getSocialPost({ postId, address });
+    if (!post) throw new Error('Post not found');
+    return post as SocialPost;
+  } catch (error) {
+    Sentry.captureException(error);
+    return rejectWithValue('Failed to fetch post. Please try again.');
+  }
+});
+
 // Initial state
 const initialState: SocialFeedState = {
   posts: [],
@@ -547,11 +566,11 @@ const socialFeedSlice = createSlice({
         const { postId, action: reactionAction, reaction } = action.payload;
         const post = state.posts.find((p) => p.id === postId);
         if (post) {
-          // Update the post's reaction data
+          // Update user reaction
           post.user_reaction = reaction;
           post.user_has_liked = reaction === 'like';
 
-          // Update counts based on the action
+          // Update counts based on action
           if (reactionAction === 'added') {
             if (reaction === 'like') {
               post.likes_count = (post.likes_count || 0) + 1;
@@ -559,20 +578,25 @@ const socialFeedSlice = createSlice({
               post.dislikes_count = (post.dislikes_count || 0) + 1;
             }
           } else if (reactionAction === 'removed') {
-            if (post.user_reaction === 'like') {
-              post.likes_count = Math.max((post.likes_count || 0) - 1, 0);
-            } else if (post.user_reaction === 'dislike') {
-              post.dislikes_count = Math.max((post.dislikes_count || 0) - 1, 0);
+            if (reaction === null) {
+              // We need to know what was removed, check previous state
+              const { isLike } = action.meta.arg;
+              if (isLike) {
+                post.likes_count = Math.max((post.likes_count || 0) - 1, 0);
+              } else {
+                post.dislikes_count = Math.max((post.dislikes_count || 0) - 1, 0);
+              }
             }
           } else if (reactionAction === 'updated') {
-            // Switching from like to dislike or vice versa
-            const previousReaction = post.user_reaction === 'like' ? 'dislike' : 'like';
-            if (previousReaction === 'like') {
-              post.likes_count = Math.max((post.likes_count || 0) - 1, 0);
-              post.dislikes_count = (post.dislikes_count || 0) + 1;
-            } else {
-              post.dislikes_count = Math.max((post.dislikes_count || 0) - 1, 0);
+            const { isLike } = action.meta.arg;
+            if (isLike) {
+              // Changed from dislike to like
               post.likes_count = (post.likes_count || 0) + 1;
+              post.dislikes_count = Math.max((post.dislikes_count || 0) - 1, 0);
+            } else {
+              // Changed from like to dislike
+              post.dislikes_count = (post.dislikes_count || 0) + 1;
+              post.likes_count = Math.max((post.likes_count || 0) - 1, 0);
             }
           }
         }
@@ -592,7 +616,7 @@ const socialFeedSlice = createSlice({
       .addCase(fetchPostComments.fulfilled, (state, action) => {
         const { postId, comments } = action.payload;
         state.isLoadingComments[postId] = false;
-        state.postComments[postId] = comments;
+        state.postComments[postId] = nestComments(comments);
       })
       .addCase(fetchPostComments.rejected, (state, action) => {
         const { postId } = action.meta.arg;
@@ -608,34 +632,33 @@ const socialFeedSlice = createSlice({
       })
       .addCase(createCommentAsync.fulfilled, (state, action) => {
         const { postId, comment } = action.payload;
-        state.isSubmittingComment[postId] = false;
+        const { postId: metaPostId } = action.meta.arg;
+        state.isSubmittingComment[metaPostId] = false;
 
-        // Add comment to the post's comments
-        if (!state.postComments[postId]) {
-          state.postComments[postId] = [];
-        }
-
-        if (comment.parent_comment_id) {
-          // It's a reply - find the parent comment and add to its replies
-          const parentComment = state.postComments[postId].find(
-            (c) => c.id === comment.parent_comment_id,
-          );
-          if (parentComment) {
-            if (!parentComment.replies) {
-              parentComment.replies = [];
-            }
-            parentComment.replies.push(comment);
-            parentComment.replies_count = (parentComment.replies_count || 0) + 1;
-          }
-        } else {
-          // It's a top-level comment
-          state.postComments[postId].push(comment);
-        }
-
-        // Update the post's comment count
+        // Update post comment count
         const post = state.posts.find((p) => p.id === postId);
         if (post) {
           post.comments_count = (post.comments_count || 0) + 1;
+        }
+
+        // Add comment to comments list if it exists
+        if (state.postComments[postId]) {
+          if (comment.parent_comment_id) {
+            // This is a reply, add it to the nested structure
+            const parentComment = state.postComments[postId].find(
+              (c) => c.id === comment.parent_comment_id,
+            );
+            if (parentComment) {
+              if (!parentComment.replies) {
+                parentComment.replies = [];
+              }
+              parentComment.replies.push(comment);
+              parentComment.replies_count = (parentComment.replies_count || 0) + 1;
+            }
+          } else {
+            // This is a top-level comment
+            state.postComments[postId].push({ ...comment, replies: [] });
+          }
         }
       })
       .addCase(createCommentAsync.rejected, (state, action) => {
@@ -645,32 +668,6 @@ const socialFeedSlice = createSlice({
       })
 
       // Update comment
-      .addCase(updateCommentAsync.fulfilled, (state, action) => {
-        const updatedComment = action.payload;
-        const postComments = state.postComments[updatedComment.post_id];
-
-        if (postComments) {
-          // Find and update the comment
-          const commentIndex = postComments.findIndex((c) => c.id === updatedComment.id);
-          if (commentIndex !== -1) {
-            postComments[commentIndex] = { ...postComments[commentIndex], ...updatedComment };
-          } else {
-            // Check if it's a reply
-            for (const comment of postComments) {
-              if (comment.replies) {
-                const replyIndex = comment.replies.findIndex((r) => r.id === updatedComment.id);
-                if (replyIndex !== -1) {
-                  comment.replies[replyIndex] = {
-                    ...comment.replies[replyIndex],
-                    ...updatedComment,
-                  };
-                  break;
-                }
-              }
-            }
-          }
-        }
-      })
       .addCase(updateCommentAsync.rejected, (state, action) => {
         state.error = action.payload as string;
       })
@@ -678,36 +675,28 @@ const socialFeedSlice = createSlice({
       // Delete comment
       .addCase(deleteCommentAsync.fulfilled, (state, action) => {
         const { commentId, postId } = action.payload;
-        const postComments = state.postComments[postId];
 
-        if (postComments) {
-          // Check if it's a top-level comment
-          const commentIndex = postComments.findIndex((c) => c.id === commentId);
-          if (commentIndex !== -1) {
-            // Remove top-level comment and all its replies
-            const deletedComment = postComments[commentIndex];
-            const replyCount = deletedComment.replies_count || 0;
-            postComments.splice(commentIndex, 1);
+        // Update post comment count
+        const post = state.posts.find((p) => p.id === postId);
+        if (post) {
+          post.comments_count = Math.max((post.comments_count || 0) - 1, 0);
+        }
 
-            // Update post comment count
-            const post = state.posts.find((p) => p.id === postId);
-            if (post) {
-              post.comments_count = Math.max((post.comments_count || 0) - (1 + replyCount), 0);
-            }
+        if (state.postComments[postId]) {
+          // Remove comment from top-level comments
+          const topLevelIndex = state.postComments[postId].findIndex(
+            (comment) => comment.id === commentId,
+          );
+          if (topLevelIndex !== -1) {
+            state.postComments[postId].splice(topLevelIndex, 1);
           } else {
-            // Check if it's a reply
-            for (const comment of postComments) {
+            // Remove comment from replies
+            for (const comment of state.postComments[postId]) {
               if (comment.replies) {
-                const replyIndex = comment.replies.findIndex((r) => r.id === commentId);
+                const replyIndex = comment.replies.findIndex((reply) => reply.id === commentId);
                 if (replyIndex !== -1) {
                   comment.replies.splice(replyIndex, 1);
                   comment.replies_count = Math.max((comment.replies_count || 0) - 1, 0);
-
-                  // Update post comment count
-                  const post = state.posts.find((p) => p.id === postId);
-                  if (post) {
-                    post.comments_count = Math.max((post.comments_count || 0) - 1, 0);
-                  }
                   break;
                 }
               }
@@ -717,6 +706,18 @@ const socialFeedSlice = createSlice({
       })
       .addCase(deleteCommentAsync.rejected, (state, action) => {
         state.error = action.payload as string;
+      })
+
+      // Fetch single post and update in posts array
+      .addCase(fetchSocialPost.fulfilled, (state, action) => {
+        const updatedPost = action.payload;
+        const idx = state.posts.findIndex((p) => p.id === updatedPost.id);
+        if (idx !== -1) {
+          state.posts[idx] = { ...state.posts[idx], ...updatedPost };
+        }
+      })
+      .addCase(fetchSocialPost.rejected, (state, action) => {
+        state.error = action.payload as string;
       });
   },
 });
@@ -724,3 +725,107 @@ const socialFeedSlice = createSlice({
 export const { clearError, clearSearchResults, updateSearchResultConnectionStatus } =
   socialFeedSlice.actions;
 export default socialFeedSlice.reducer;
+
+// ==================== MEMOIZED SELECTORS ====================
+
+// Define the RootState type for selectors
+interface RootState {
+  socialFeed: SocialFeedState;
+}
+
+// Empty arrays to avoid creating new references
+const EMPTY_COMMENTS_ARRAY: PostComment[] = [];
+
+// Helper to nest comments into a tree structure
+function nestComments(comments: PostComment[]): PostComment[] {
+  const commentMap: Record<string, PostComment & { replies: PostComment[] }> = {};
+  const roots: PostComment[] = [];
+
+  // Initialize map and add empty replies array
+  comments.forEach((comment) => {
+    commentMap[comment.id] = { ...comment, replies: [] };
+  });
+
+  // Build the tree
+  comments.forEach((comment) => {
+    if (comment.parent_comment_id) {
+      const parent = commentMap[comment.parent_comment_id];
+      if (parent) {
+        parent.replies.push(commentMap[comment.id]);
+      }
+    } else {
+      roots.push(commentMap[comment.id]);
+    }
+  });
+
+  return roots;
+}
+
+// Memoized selector for post comments
+export const makeSelectPostComments = () =>
+  createSelector(
+    [(state: RootState) => state.socialFeed.postComments, (_: RootState, postId: string) => postId],
+    (postComments: Record<string, PostComment[]>, postId: string) =>
+      postComments[postId] || EMPTY_COMMENTS_ARRAY,
+  );
+
+// Memoized selector for loading comments state
+export const makeSelectIsLoadingComments = () =>
+  createSelector(
+    [
+      (state: RootState) => state.socialFeed.isLoadingComments,
+      (_: RootState, postId: string) => postId,
+    ],
+    (isLoadingComments: Record<string, boolean>, postId: string) =>
+      isLoadingComments[postId] || false,
+  );
+
+// Memoized selector for submitting comment state
+export const makeSelectIsSubmittingComment = () =>
+  createSelector(
+    [
+      (state: RootState) => state.socialFeed.isSubmittingComment,
+      (_: RootState, postId: string) => postId,
+    ],
+    (isSubmittingComment: Record<string, boolean>, postId: string) =>
+      isSubmittingComment[postId] || false,
+  );
+
+// Thunk wrappers to always refetch post after like/dislike or comment mutations
+export const togglePostReactionAndRefetch =
+  (params: { postId: string; address: string; isLike: boolean }) => async (dispatch: any) => {
+    const result = await dispatch(togglePostReactionAsync(params));
+    if (togglePostReactionAsync.fulfilled.match(result)) {
+      await dispatch(fetchSocialPost({ postId: params.postId, address: params.address }));
+    }
+    return result;
+  };
+
+export const createCommentAndRefetch =
+  (params: { postId: string; address: string; commentData: IPostCommentInput }) =>
+  async (dispatch: any) => {
+    const result = await dispatch(createCommentAsync(params));
+    if (createCommentAsync.fulfilled.match(result)) {
+      await dispatch(fetchSocialPost({ postId: params.postId, address: params.address }));
+    }
+    return result;
+  };
+
+export const updateCommentAndRefetch =
+  (params: { commentId: string; address: string; content: string; postId: string }) =>
+  async (dispatch: any) => {
+    const result = await dispatch(updateCommentAsync(params));
+    if (updateCommentAsync.fulfilled.match(result)) {
+      await dispatch(fetchSocialPost({ postId: params.postId, address: params.address }));
+    }
+    return result;
+  };
+
+export const deleteCommentAndRefetch =
+  (params: { commentId: string; address: string; postId: string }) => async (dispatch: any) => {
+    const result = await dispatch(deleteCommentAsync(params));
+    if (deleteCommentAsync.fulfilled.match(result)) {
+      await dispatch(fetchSocialPost({ postId: params.postId, address: params.address }));
+    }
+    return result;
+  };

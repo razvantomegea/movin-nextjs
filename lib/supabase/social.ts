@@ -108,7 +108,7 @@ export async function getSocialFeed({
   const { data: userReactions } = await client
     .from('post_likes')
     .select('post_id, is_like')
-    .eq('address', address)
+    .eq('address', address.toLowerCase())
     .in('post_id', postIds);
 
   // Process the data to include proper counts and user reactions
@@ -150,13 +150,11 @@ export async function getSocialFeed({
  * Get posts by a specific user
  */
 export async function getUserPosts({
-  address,
   targetAddress,
   limit = 20,
   offset = 0,
   client,
 }: {
-  address: string;
   targetAddress: string;
   limit?: number;
   offset?: number;
@@ -177,7 +175,7 @@ export async function getUserPosts({
       )
     `,
     )
-    .eq('address', targetAddress)
+    .eq('address', targetAddress.toLowerCase())
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1);
 
@@ -207,7 +205,7 @@ export async function createSocialPost({
   const { data, error } = await client
     .from('social_posts')
     .insert({
-      address,
+      address: address.toLowerCase(),
       content: postData.content,
       image_url: postData.image_url,
     })
@@ -255,7 +253,7 @@ export async function updateSocialPost({
       updated_at: new Date().toISOString(),
     })
     .eq('id', postId)
-    .eq('address', address) // Ensure user can only update their own posts
+    .eq('address', address.toLowerCase()) // Ensure user can only update their own posts
     .select(
       `
       *,
@@ -294,7 +292,7 @@ export async function deleteSocialPost({
     .from('social_posts')
     .delete()
     .eq('id', postId)
-    .eq('address', address); // Ensure user can only delete their own posts
+    .eq('address', address.toLowerCase()); // Ensure user can only delete their own posts
 
   if (error) {
     throw error;
@@ -302,13 +300,15 @@ export async function deleteSocialPost({
 }
 
 /**
- * Get a single post by ID
+ * Get a single post by ID with engagement data
  */
 export async function getSocialPost({
   postId,
+  address,
   client,
 }: {
   postId: string;
+  address?: string;
   client?: SupabaseClient;
 }): Promise<ISocialPost | null> {
   if (!client) {
@@ -336,7 +336,46 @@ export async function getSocialPost({
     throw error;
   }
 
-  return data;
+  if (!data) return null;
+
+  // Get engagement data
+  const [{ data: likes }, { data: dislikes }, { data: comments }] = await Promise.all([
+    client!
+      .from('post_likes')
+      .select('id', { count: 'exact' })
+      .eq('post_id', postId)
+      .eq('is_like', true),
+    client!
+      .from('post_likes')
+      .select('id', { count: 'exact' })
+      .eq('post_id', postId)
+      .eq('is_like', false),
+    client!.from('post_comments').select('id', { count: 'exact' }).eq('post_id', postId),
+  ]);
+
+  // Get user's reaction if address is provided
+  let userReaction: 'like' | 'dislike' | null = null;
+  if (address) {
+    const { data: reactionData } = await client
+      .from('post_likes')
+      .select('is_like')
+      .eq('post_id', postId)
+      .eq('address', address.toLowerCase())
+      .single();
+
+    if (reactionData) {
+      userReaction = reactionData.is_like ? 'like' : 'dislike';
+    }
+  }
+
+  return {
+    ...data,
+    likes_count: likes?.length || 0,
+    dislikes_count: dislikes?.length || 0,
+    comments_count: comments?.length || 0,
+    user_reaction: userReaction,
+    user_has_liked: userReaction === 'like',
+  };
 }
 
 /**
@@ -449,7 +488,7 @@ export async function togglePostReaction({
     .from('post_likes')
     .select('*')
     .eq('post_id', postId)
-    .eq('address', address)
+    .eq('address', address.toLowerCase())
     .single();
 
   if (existingReaction) {
@@ -473,7 +512,7 @@ export async function togglePostReaction({
     // Add new reaction
     const { error } = await client.from('post_likes').insert({
       post_id: postId,
-      address,
+      address: address.toLowerCase(),
       is_like: isLike,
     });
 
@@ -538,7 +577,7 @@ export async function getUserPostReaction({
     .from('post_likes')
     .select('is_like')
     .eq('post_id', postId)
-    .eq('address', address)
+    .eq('address', address.toLowerCase())
     .single();
 
   if (error) {
@@ -558,20 +597,16 @@ export async function getUserPostReaction({
  */
 export async function getPostComments({
   postId,
-  limit = 20,
-  offset = 0,
   client,
 }: {
   postId: string;
-  limit?: number;
-  offset?: number;
   client?: SupabaseClient;
 }): Promise<IPostComment[]> {
   if (!client) {
     client = getClient();
   }
 
-  // Get top-level comments first
+  // Fetch all comments for the post, including replies
   const { data, error } = await client
     .from('post_comments')
     .select(
@@ -584,45 +619,11 @@ export async function getPostComments({
     `,
     )
     .eq('post_id', postId)
-    .is('parent_comment_id', null)
-    .order('created_at', { ascending: true })
-    .range(offset, offset + limit - 1);
+    .order('created_at', { ascending: true });
 
   if (error) throw error;
 
-  if (!data || data.length === 0) return [];
-
-  // Get replies for each comment
-  const commentsWithReplies = await Promise.all(
-    data.map(async (comment) => {
-      const { data: replies } = await client
-        .from('post_comments')
-        .select(
-          `
-          *,
-          profile:profiles!post_comments_address_fkey (
-            username,
-            avatar_url
-          )
-        `,
-        )
-        .eq('parent_comment_id', comment.id)
-        .order('created_at', { ascending: true });
-
-      const { count: repliesCount } = await client
-        .from('post_comments')
-        .select('id', { count: 'exact' })
-        .eq('parent_comment_id', comment.id);
-
-      return {
-        ...comment,
-        replies: replies || [],
-        replies_count: repliesCount || 0,
-      };
-    }),
-  );
-
-  return commentsWithReplies;
+  return data || [];
 }
 
 /**
@@ -647,7 +648,7 @@ export async function createComment({
     .from('post_comments')
     .insert({
       post_id: postId,
-      address,
+      address: address.toLowerCase(),
       content: commentData.content,
       parent_comment_id: commentData.parent_comment_id || null,
     })
@@ -696,7 +697,7 @@ export async function updateComment({
       updated_at: new Date().toISOString(),
     })
     .eq('id', commentId)
-    .eq('address', address) // Ensure user can only update their own comments
+    .eq('address', address.toLowerCase()) // Ensure user can only update their own comments
     .select(
       `
       *,
@@ -733,7 +734,7 @@ export async function deleteComment({
     .from('post_comments')
     .delete()
     .eq('id', commentId)
-    .eq('address', address); // Ensure user can only delete their own comments
+    .eq('address', address.toLowerCase()); // Ensure user can only delete their own comments
 
   if (error) throw error;
 }

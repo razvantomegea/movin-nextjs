@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
     const genAI = new GoogleGenAI({ apiKey });
 
     const prompt = `
-      Analyze this single ingredient and provide detailed nutritional information: "${ingredientName}"
+      You are a nutirtion analyst. Analyze this single ingredient and provide detailed nutritional information: "${ingredientName}"
 
       Please extract and return ONLY a JSON object with the following structure:
       {
@@ -38,13 +38,11 @@ export async function POST(request: NextRequest) {
       }
 
       Rules:
-      1. Provide realistic nutritional estimates based on typical serving sizes for this ingredient
+      1. Provide realistic nutritional estimates based on the provided serving size
       2. Use standard food database values when possible
-      3. If the ingredient name is unclear or not food-related, return an error structure with "error": "Invalid ingredient name"
-      4. Make reasonable assumptions about preparation (raw vs cooked) based on the ingredient type
-      5. Assume a standard single serving size appropriate for the ingredient type
-      6. Return only the JSON object, no additional text or formatting
-      7. Use clean, standardized ingredient names (e.g., "Chicken Breast" instead of "chicken breast meat")
+      3. If the ingredient name is too vague or not food-related, return an error structure with "error": "Invalid ingredient name"
+      4. Return only the JSON object, no additional text or formatting
+      5. Use clean, standardized ingredient names (e.g., "Chicken Breast" instead of "chicken breast meat")
     `;
 
     // Call Google AI API

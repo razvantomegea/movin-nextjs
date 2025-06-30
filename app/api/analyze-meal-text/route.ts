@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     const genAI = new GoogleGenAI({ apiKey });
 
     const prompt = `
-      Analyze this meal description and provide detailed nutritional information: "${mealDescription}"
+      You are a nutirtion analyst. Analyze this meal description and provide detailed nutritional information: "${mealDescription}"
 
       Please extract and return ONLY a JSON object with the following structure:
       {
@@ -47,15 +47,14 @@ export async function POST(request: NextRequest) {
       }
 
       Rules:
-      1. Interpret the description and identify all mentioned or implied ingredients
-      2. Provide realistic nutritional estimates based on typical serving sizes and preparation methods
-      3. Break down each ingredient's nutritional contribution
-      4. Ensure ingredient nutritional values sum up to the total meal values
-      5. Use common food names and descriptions
-      6. If the description is too vague or not food-related, return an error structure with "error": "Invalid meal description"
-      7. Make reasonable assumptions about cooking methods and portion sizes
-      8. If specific quantities are mentioned, use those; otherwise assume standard serving sizes
-      9. Return only the JSON object, no additional text or formatting
+      1. Interpret the description and identify all mentioned ingredients
+      2. Provide realistic nutritional estimates based on the provided serving size
+      3. Use standard food database values when possible.
+      4. Break down each ingredient's nutritional contribution
+      5. Ensure ingredient nutritional values sum up to the total meal values
+      6. Use common food names and descriptions
+      7. If the description is too vague or not food-related, return an error structure with "error": "Invalid meal description"
+      8. Return only the JSON object, no additional text or formatting
     `;
 
     // Call Google AI API

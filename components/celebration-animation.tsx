@@ -221,32 +221,38 @@ export function CelebrationAnimation({
                   transition={{ delay: 0.6 }}
                 >
                   {showShareButton && onShare && (
-                    <Button
-                      variant="outline"
-                      className="flex-1 py-2 bg-transparent border-blue-500 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                      onClick={handleShare}
-                      disabled={isSharing}
+                    <motion.div
+                      className="flex-1"
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                     >
-                      {isSharing ? (
-                        <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mr-2" />
-                      ) : (
-                        <Share2 className="h-4 w-4 mr-2" />
-                      )}
-                      {isSharing ? 'Sharing...' : 'Share Achievement'}
-                    </Button>
+                      <Button
+                        variant="outline"
+                        className="w-full py-2 bg-transparent border-blue-500 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                        onClick={handleShare}
+                        disabled={isSharing}
+                      >
+                        {isSharing ? (
+                          <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mr-2" />
+                        ) : (
+                          <Share2 className="h-4 w-4 mr-2" />
+                        )}
+                        {isSharing ? 'Sharing...' : 'Share Achievement'}
+                      </Button>
+                    </motion.div>
                   )}
-                  <Button
-                    className={`${
-                      showShareButton && onShare ? 'flex-1' : 'w-full'
-                    } py-2 bg-blue-500 hover:bg-blue-600 text-white`}
-                    onClick={onClose}
+                  <motion.div
+                    className={`${showShareButton && onShare ? 'flex-1' : 'w-full'}`}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                   >
-                    Awesome!
-                  </Button>
+                    <Button
+                      className="w-full py-2 bg-blue-500 hover:bg-blue-600 text-white"
+                      onClick={onClose}
+                    >
+                      Awesome!
+                    </Button>
+                  </motion.div>
                 </motion.div>
               </div>
             </div>
