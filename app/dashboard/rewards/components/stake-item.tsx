@@ -1,9 +1,11 @@
 'use client';
 
+import { useState } from 'react';
 import { Lock, TrendingUp, Unlock } from 'lucide-react';
 import { CountdownTimer } from '@/components/countdown-timer';
 import { LoadingButton } from '@/components/ui/loading-button';
 import { IUserStake } from '@/lib/hooks/useMovinEarn';
+import { UnstakeWarningModal } from './unstake-warning-modal';
 
 interface StakeItemProps {
   stake: IUserStake;
@@ -12,6 +14,7 @@ interface StakeItemProps {
   tokenSymbol: string;
   activeAction: { type: string; index: number } | null;
   onUnstake: (index: number) => Promise<void>;
+  onRestake: (index: number, lockMonths: number) => Promise<void>;
   onStakeUnlocked: (amount: string) => void;
   rewardsEarned?: number;
 }
@@ -23,12 +26,30 @@ export function StakeItem({
   tokenSymbol,
   activeAction,
   onUnstake,
+  onRestake,
   onStakeUnlocked,
   rewardsEarned,
 }: StakeItemProps) {
+  const [isWarningModalOpen, setIsWarningModalOpen] = useState(false);
   const aprValue = parseInt(stake.lockDurationFormatted) / 30;
   const endDateISO = new Date(stake.endTime * 1000).toISOString();
   const displayTokenSymbol = tokenSymbol || 'MVN';
+
+  const handleUnstakeClick = () => {
+    setIsWarningModalOpen(true);
+  };
+
+  const handleModalUnstake = async () => {
+    await onUnstake(index);
+  };
+
+  const handleModalRestake = async (lockMonths: number) => {
+    await onRestake(index, lockMonths);
+  };
+
+  const handleCloseModal = () => {
+    setIsWarningModalOpen(false);
+  };
 
   return (
     <div
@@ -80,7 +101,7 @@ export function StakeItem({
               className="text-green-500 border-green-500"
               loading={activeAction?.type === 'unstake' && activeAction?.index === index}
               loadingText="Unstaking..."
-              onClick={() => onUnstake(index)}
+              onClick={handleUnstakeClick}
               disabled={activeAction != null}
             >
               <Unlock className="h-4 w-4 mr-1" />
@@ -98,6 +119,17 @@ export function StakeItem({
           </>
         )}
       </div>
+
+      {/* Unstake Warning Modal */}
+      <UnstakeWarningModal
+        isOpen={isWarningModalOpen}
+        onClose={handleCloseModal}
+        stake={stake}
+        tokenSymbol={displayTokenSymbol}
+        onUnstake={handleModalUnstake}
+        onRestake={handleModalRestake}
+        isProcessing={activeAction?.type === 'unstake' && activeAction?.index === index}
+      />
     </div>
   );
 }

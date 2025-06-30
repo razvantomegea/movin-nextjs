@@ -2,18 +2,18 @@ import { type Metadata } from 'next';
 import { ConnectPage } from '@/components/connect-page';
 
 export const metadata: Metadata = {
-  title: 'Connect and Start Your Journey',
+  title: 'Movin - Your effort counts',
   description:
-    'Connect your wallet to start tracking your fitness, earning rewards, and achieving your goals with Movin.',
+    'Movin is a platform for tracking your fitness, earning rewards, and achieving your goals.',
   openGraph: {
-    title: 'Connect and Start Your Journey | Movin',
+    title: 'Movin - Your effort counts',
     description:
-      'Connect your wallet to start tracking your fitness, earning rewards, and achieving your goals with Movin.',
+      'Movin is a platform for tracking your fitness, earning rewards, and achieving your goals.',
   },
   twitter: {
-    title: 'Connect and Start Your Journey | Movin',
+    title: 'Movin - Your effort counts',
     description:
-      'Connect your wallet to start tracking your fitness, earning rewards, and achieving your goals with Movin.',
+      'Movin is a platform for tracking your fitness, earning rewards, and achieving your goals.',
   },
 };
 
