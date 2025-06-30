@@ -314,13 +314,13 @@ export function ConnectionsTab({ connections, userAddress, isLoading }: Connecti
               Cancel
             </Button>
             <Button variant="destructive" onClick={handleRemoveConnection} disabled={isRemoving}>
-              {isRemoving
-                ? connectionToRemove?.label === 'Cancel Request'
-                  ? 'Cancelling...'
-                  : 'Removing...'
-                : connectionToRemove?.label === 'Cancel Request'
-                ? 'Cancel Request'
-                : 'Remove'}
+              {(() => {
+                const isCancelRequest = connectionToRemove?.label === 'Cancel Request';
+                if (isRemoving) {
+                  return isCancelRequest ? 'Cancelling...' : 'Removing...';
+                }
+                return isCancelRequest ? 'Cancel Request' : 'Remove';
+              })()}
             </Button>
           </DialogFooter>
         </DialogContent>

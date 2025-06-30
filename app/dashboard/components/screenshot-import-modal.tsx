@@ -12,7 +12,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/cn';
 import { IActivity } from '@/lib/supabase/activities';
 import { doesActivityOverlap } from '@/utils';
-import { extractDateFromText, isToday, isTodayMonthDay } from '@/utils';
+import { extractDateFromText, isTodayMonthDay } from '@/utils';
 import {
   mapScreenshotToActivity,
   type ExtractedActivityData,
