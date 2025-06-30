@@ -12,7 +12,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/cn';
 import { IActivity } from '@/lib/supabase/activities';
 import { doesActivityOverlap } from '@/utils';
-import { extractDateFromText, isToday } from '@/utils';
+import { extractDateFromText, isToday, isTodayMonthDay } from '@/utils';
 import {
   mapScreenshotToActivity,
   type ExtractedActivityData,
@@ -215,9 +215,9 @@ export function ScreenshotImportModal({
         throw new Error('Activity date could not be verified.');
       }
 
-      if (!isToday(finalActivityDate)) {
+      if (!isTodayMonthDay(finalActivityDate)) {
         throw new Error(
-          `The activity date (${finalActivityDate}) must be today. Only today's activities can be imported.`,
+          `The activity date (${finalActivityDate}) must correspond to the current day and month. Only such activities can be imported.`,
         );
       }
 
