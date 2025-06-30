@@ -480,7 +480,7 @@ function ConnectPageContent() {
           className="text-gray-400 dark:text-blue-200/50 text-xs text-center"
           data-testid={DataTestIds.CONNECT_PAGE_VERSION}
         >
-          v1.5.4
+          v1.6.0
         </p>
       </motion.div>
     </div>
@@ -551,7 +551,7 @@ function ConnectPageFallback() {
 
       {/* Version at bottom of page */}
       <div className="absolute bottom-4">
-        <p className="text-gray-400 dark:text-blue-200/50 text-xs text-center">v1.5.4</p>
+        <p className="text-gray-400 dark:text-blue-200/50 text-xs text-center">v1.6.0</p>
       </div>
     </div>
   );

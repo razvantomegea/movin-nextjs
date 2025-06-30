@@ -3,8 +3,9 @@
 import { useState, useEffect } from 'react';
 import confetti from 'canvas-confetti';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trophy, Award, Star, Check, Flame } from 'lucide-react';
+import { Trophy, Award, Star, Check, Flame, Share2 } from 'lucide-react';
 import { useTheme } from 'next-themes';
+import { Button } from '@/components/ui/button';
 import { randomInRange } from '@/utils/randomInRange';
 
 interface CelebrationAnimationProps {
@@ -17,6 +18,8 @@ interface CelebrationAnimationProps {
   rewardAmount?: string;
   rewardCurrency?: string;
   showReward?: boolean;
+  onShare?: () => void;
+  showShareButton?: boolean;
 }
 
 export function CelebrationAnimation({
@@ -29,8 +32,11 @@ export function CelebrationAnimation({
   rewardAmount = '0.5',
   rewardCurrency = 'MVN',
   showReward = true,
+  onShare,
+  showShareButton = false,
 }: CelebrationAnimationProps) {
   const [confettiTriggered, setConfettiTriggered] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
 
@@ -76,18 +82,19 @@ export function CelebrationAnimation({
   useEffect(() => {
     if (!isOpen) {
       setConfettiTriggered(false);
+      setIsSharing(false);
     }
   }, [isOpen]);
 
-  // Auto close after 5 seconds
+  // Auto close after 8 seconds (increased to give time for sharing)
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !isSharing) {
       const timer = setTimeout(() => {
         onClose();
-      }, 5000);
+      }, 8000);
       return () => clearTimeout(timer);
     }
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, isSharing]);
 
   const getIcon = () => {
     switch (achievementType) {
@@ -101,6 +108,19 @@ export function CelebrationAnimation({
         return <Star className="h-10 w-10 text-blue-400" />;
       default:
         return <Check className="h-10 w-10 text-green-400" />;
+    }
+  };
+
+  const handleShare = async () => {
+    if (onShare) {
+      setIsSharing(true);
+      try {
+        await onShare();
+        // Don't close automatically, let the share callback handle it
+      } catch (error) {
+        console.error('Failed to share achievement:', error);
+        setIsSharing(false);
+      }
     }
   };
 
@@ -194,17 +214,46 @@ export function CelebrationAnimation({
                   </motion.div>
                 )}
 
-                <motion.button
-                  className="mt-6 px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium"
-                  onClick={onClose}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                <motion.div
+                  className="mt-6 flex gap-3 w-full"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.6 }}
                 >
-                  Awesome!
-                </motion.button>
+                  {showShareButton && onShare && (
+                    <motion.div
+                      className="flex-1"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      <Button
+                        variant="outline"
+                        className="w-full py-2 bg-transparent border-blue-500 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                        onClick={handleShare}
+                        disabled={isSharing}
+                      >
+                        {isSharing ? (
+                          <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mr-2" />
+                        ) : (
+                          <Share2 className="h-4 w-4 mr-2" />
+                        )}
+                        {isSharing ? 'Sharing...' : 'Share Achievement'}
+                      </Button>
+                    </motion.div>
+                  )}
+                  <motion.div
+                    className={`${showShareButton && onShare ? 'flex-1' : 'w-full'}`}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <Button
+                      className="w-full py-2 bg-blue-500 hover:bg-blue-600 text-white"
+                      onClick={onClose}
+                    >
+                      Awesome!
+                    </Button>
+                  </motion.div>
+                </motion.div>
               </div>
             </div>
 

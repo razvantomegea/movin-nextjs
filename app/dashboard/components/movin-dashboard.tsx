@@ -38,6 +38,7 @@ import {
 } from '@/lib/redux/slices/failedSavesSlice';
 import { resetJointTracking } from '@/lib/redux/slices/jointTrackingSlice';
 import { fetchProfile, updateProfile } from '@/lib/redux/slices/profileSlice';
+import { createPost } from '@/lib/redux/slices/socialFeedSlice';
 import { showSuccessToast, showInfoToast } from '@/lib/redux/slices/toastSlice';
 import type { RootState } from '@/lib/redux/store';
 import { IActivity } from '@/lib/supabase/activities';
@@ -55,6 +56,10 @@ import {
   type TimeRangeData,
   getTodayDate,
 } from '@/utils';
+import {
+  generateAchievementPostContent,
+  createAchievementData,
+} from '@/utils/achievements/shareAchievement';
 import {
   sendStepsGoalNotification,
   sendStreakMilestoneNotification,
@@ -464,6 +469,85 @@ export function MovinDashboard() {
   const handleCloseStreakCelebration = useCallback(() => {
     setShowStreakCelebration(false);
   }, []);
+
+  // Achievement sharing handlers
+  const handleShareStepsAchievement = useCallback(async () => {
+    if (!addressLower || !dailyActivity) return;
+
+    try {
+      const achievementData = createAchievementData(
+        'steps',
+        '10,000 steps',
+        'Daily Steps Goal',
+        'Congratulations on reaching your daily steps goal!',
+      );
+
+      const postContent = generateAchievementPostContent(achievementData);
+
+      await dispatch(
+        createPost({
+          address: addressLower,
+          postData: { content: postContent },
+        }),
+      ).unwrap();
+
+      dispatch(
+        showSuccessToast({
+          title: 'Achievement Shared!',
+          description: 'Your steps achievement has been shared with your connections.',
+        }),
+      );
+
+      setShowStepsCelebration(false);
+    } catch (error) {
+      console.error('Failed to share steps achievement:', error);
+      dispatch(
+        showInfoToast({
+          title: 'Share Failed',
+          description: 'Unable to share achievement. Please try again.',
+        }),
+      );
+    }
+  }, [addressLower, dailyActivity, dispatch]);
+
+  const handleShareStreakAchievement = useCallback(async () => {
+    if (!addressLower || !streakMilestone) return;
+
+    try {
+      const achievementData = createAchievementData(
+        'streak',
+        `${streakMilestone} days`,
+        'Streak Milestone',
+        `Congratulations on maintaining a ${streakMilestone}-day activity streak!`,
+      );
+
+      const postContent = generateAchievementPostContent(achievementData);
+
+      await dispatch(
+        createPost({
+          address: addressLower,
+          postData: { content: postContent },
+        }),
+      ).unwrap();
+
+      dispatch(
+        showSuccessToast({
+          title: 'Achievement Shared!',
+          description: 'Your streak milestone has been shared with your connections.',
+        }),
+      );
+
+      setShowStreakCelebration(false);
+    } catch (error) {
+      console.error('Failed to share streak achievement:', error);
+      dispatch(
+        showInfoToast({
+          title: 'Share Failed',
+          description: 'Unable to share achievement. Please try again.',
+        }),
+      );
+    }
+  }, [addressLower, streakMilestone, dispatch]);
 
   // Handle individual retry of failed save
   const handleRetryFailedSave = useCallback(
@@ -966,6 +1050,8 @@ export function MovinDashboard() {
         achievementTitle="Daily Steps Goal"
         description="Congratulations on reaching your daily steps goal!"
         showReward={false}
+        onShare={handleShareStepsAchievement}
+        showShareButton={!!addressLower}
       />
 
       {/* Streak Milestone Celebration */}
@@ -977,6 +1063,8 @@ export function MovinDashboard() {
         achievementTitle="Streak Milestone"
         description={`Congratulations on maintaining a ${streakMilestone}-day activity streak!`}
         showReward={false}
+        onShare={handleShareStreakAchievement}
+        showShareButton={!!addressLower}
       />
     </>
   );

@@ -17,6 +17,7 @@ import {
   ExternalLink,
   Coins,
   Lock,
+  Users,
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -79,7 +80,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       premium: true,
     },
     { name: 'Rewards', path: '/dashboard/rewards', icon: <Gift className="h-5 w-5" /> },
-    // { name: 'Social', path: '/dashboard/social', icon: <Users className="h-5 w-5" /> },
+    { name: 'Social', path: '/dashboard/social', icon: <Users className="h-5 w-5" /> },
     { name: 'More', path: '#', icon: <Menu className="h-5 w-5" /> },
   ];
 

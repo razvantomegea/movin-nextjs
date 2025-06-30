@@ -43,8 +43,13 @@ import {
   removeFailedSave,
 } from '@/lib/redux/slices/failedSavesSlice';
 import { fetchProfile, updateProfile } from '@/lib/redux/slices/profileSlice';
+import { createPost } from '@/lib/redux/slices/socialFeedSlice';
 import { showSuccessToast, showInfoToast } from '@/lib/redux/slices/toastSlice';
 import { IMeal } from '@/lib/supabase/meals';
+import {
+  generateAchievementPostContent,
+  createAchievementData,
+} from '@/utils/achievements/shareAchievement';
 import { calculateBMR, calculateDailyCalories, calculateAge } from '@/utils/energy/calculateBMR';
 
 import {
@@ -433,6 +438,46 @@ export function EnergyPage() {
   const handleCloseStreakCelebration = useCallback(() => {
     setShowStreakCelebration(false);
   }, []);
+
+  // Achievement sharing handler
+  const handleShareStreakAchievement = useCallback(async () => {
+    if (!addressLower || !streakMilestone) return;
+
+    try {
+      const achievementData = createAchievementData(
+        'streak',
+        `${streakMilestone} days`,
+        'Streak Milestone',
+        `Congratulations on maintaining a ${streakMilestone}-day activity streak!`,
+      );
+
+      const postContent = generateAchievementPostContent(achievementData);
+
+      await dispatch(
+        createPost({
+          address: addressLower,
+          postData: { content: postContent },
+        }),
+      ).unwrap();
+
+      dispatch(
+        showSuccessToast({
+          title: 'Achievement Shared!',
+          description: 'Your streak milestone has been shared with your connections.',
+        }),
+      );
+
+      setShowStreakCelebration(false);
+    } catch (error) {
+      console.error('Failed to share streak achievement:', error);
+      dispatch(
+        showInfoToast({
+          title: 'Share Failed',
+          description: 'Unable to share achievement. Please try again.',
+        }),
+      );
+    }
+  }, [addressLower, streakMilestone, dispatch]);
 
   // Failed saves handlers
   const handleRetryIndividualFailedSave = useCallback(
@@ -924,6 +969,8 @@ export function EnergyPage() {
         achievementTitle="Streak Milestone"
         description={`Congratulations on maintaining a ${streakMilestone}-day activity streak!`}
         showReward={false}
+        onShare={handleShareStreakAchievement}
+        showShareButton={!!addressLower}
       />
     </>
   );

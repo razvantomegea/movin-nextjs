@@ -14,6 +14,7 @@ import { RewardCountdownTimer } from '@/components/ui/reward-countdown-timer';
 import { IUserStake, useMovinEarn } from '@/lib/hooks/useMovinEarn';
 import { useMovinToken } from '@/lib/hooks/useMovinToken';
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
+import { createPost } from '@/lib/redux/slices/socialFeedSlice';
 import {
   fetchStakingData,
   updateStakeData,
@@ -21,6 +22,10 @@ import {
 } from '@/lib/redux/slices/stakingSlice';
 import { showSuccessToast, showErrorToast } from '@/lib/redux/slices/toastSlice';
 import { IStake } from '@/lib/supabase/stake';
+import {
+  generateAchievementPostContent,
+  createAchievementData,
+} from '@/utils/achievements/shareAchievement';
 import { matchUserStakeWithDB } from '@/utils/staking/matchUserStakeWithDB';
 import { prepareUpdateStakesInDB } from '@/utils/staking/prepareUpdateStakesToDB';
 import { StakeItem } from './stake-item';
@@ -46,7 +51,7 @@ export function StakingRewards({ refreshing, onDataLoaded }: StakingRewardsProps
   const { address } = useAppKitAccount();
   const addressLower = useMemo(() => address?.toLowerCase(), [address]);
 
-  const { useUserStakes, useClaimAllStakingRewards, useUnstake } = useMovinEarn();
+  const { useUserStakes, useClaimAllStakingRewards, useUnstake, useRestake } = useMovinEarn();
   const {
     data: stakingData,
     isLoading: isLoadingStakingData,
@@ -71,6 +76,8 @@ export function StakingRewards({ refreshing, onDataLoaded }: StakingRewardsProps
   } = useClaimAllStakingRewards();
 
   const { unstake, isSuccess: isUnstakeSuccess, error: unstakeError } = useUnstake();
+
+  const { restake, isSuccess: isRestakeSuccess, error: restakeError } = useRestake();
 
   const formattedTotalRewards = useMemo(() => {
     if (!stakingData) return '0.00';
@@ -146,7 +153,11 @@ export function StakingRewards({ refreshing, onDataLoaded }: StakingRewardsProps
 
       if (activeAction.type === 'claim') {
         await addStakesToDb();
-      } else if (activeAction?.type === 'unstake' && activeAction?.index !== undefined) {
+      } else if (
+        activeAction?.type &&
+        ['unstake', 'restake'].includes(activeAction.type) &&
+        activeAction.index !== undefined
+      ) {
         const blockchainStake = stakingData?.stakes[activeAction.index];
 
         if (blockchainStake) {
@@ -304,6 +315,36 @@ export function StakingRewards({ refreshing, onDataLoaded }: StakingRewardsProps
     }
   }, [unstakeError, isConfirmModalOpen, dispatch, activeAction]);
 
+  useEffect(() => {
+    if (isRestakeSuccess && activeAction?.type === 'restake' && isConfirmModalOpen) {
+      setIsConfirmModalOpen(false);
+
+      dispatch(
+        showSuccessToast({
+          title: 'Restake Successful',
+          description: 'Your tokens have been successfully restaked with a new lock period.',
+        }),
+      );
+
+      updateStakesInDatabase();
+    }
+  }, [isRestakeSuccess, isConfirmModalOpen, dispatch, updateStakesInDatabase, activeAction]);
+
+  useEffect(() => {
+    if (restakeError && isConfirmModalOpen && activeAction?.type === 'restake') {
+      setIsConfirmModalOpen(false);
+
+      dispatch(
+        showErrorToast({
+          title: 'Restake Failed',
+          description: 'Failed to restake tokens. Please try again.',
+        }),
+      );
+
+      setActiveAction(null);
+    }
+  }, [restakeError, isConfirmModalOpen, dispatch, activeAction]);
+
   const handleClaimStakingRewards = async () => {
     try {
       setActiveAction({ type: 'claim', index: -1 });
@@ -348,6 +389,29 @@ export function StakingRewards({ refreshing, onDataLoaded }: StakingRewardsProps
     [dispatch, unstake, setActiveAction],
   );
 
+  const handleRestake = useCallback(
+    async (stakeIndex: number, lockMonths: number) => {
+      try {
+        setActiveAction({ type: 'restake', index: stakeIndex });
+        setIsConfirmModalOpen(true);
+        await restake(stakeIndex, lockMonths);
+      } catch (err) {
+        setIsConfirmModalOpen(false);
+
+        dispatch(
+          showErrorToast({
+            title: 'Transaction Failed',
+            description: 'Failed to restake tokens. Please try again.',
+          }),
+        );
+
+        console.error('Restake error:', err);
+        setActiveAction(null);
+      }
+    },
+    [dispatch, restake, setActiveAction],
+  );
+
   const handleOpenStakeModal = useCallback(() => {
     setActiveAction({ type: 'stake', index: -1 });
     setIsStakeModalOpen(true);
@@ -357,9 +421,9 @@ export function StakingRewards({ refreshing, onDataLoaded }: StakingRewardsProps
     async (isStaked?: boolean) => {
       if (isStaked) {
         await addStakesToDb();
+        await handleRefresh();
       }
 
-      await handleRefresh();
       setIsStakeModalOpen(false);
       setActiveAction(null);
     },
@@ -401,6 +465,50 @@ export function StakingRewards({ refreshing, onDataLoaded }: StakingRewardsProps
     setShowCelebration(false);
     setClaimAmount(0);
   }, []);
+
+  // Achievement sharing handler
+  const handleShareStakingRewards = useCallback(async () => {
+    if (!addressLower || claimAmount <= 0) return;
+
+    try {
+      const achievementData = createAchievementData(
+        'staking_rewards',
+        `${claimAmount.toFixed(2)} ${displayTokenSymbol}`,
+        'Staking Rewards Claimed',
+        'Congratulations on claiming your staking rewards!',
+        claimAmount.toFixed(2),
+        displayTokenSymbol,
+        'staking_rewards',
+      );
+
+      const postContent = generateAchievementPostContent(achievementData);
+
+      await dispatch(
+        createPost({
+          address: addressLower,
+          postData: { content: postContent },
+        }),
+      ).unwrap();
+
+      dispatch(
+        showSuccessToast({
+          title: 'Achievement Shared!',
+          description: 'Your staking rewards achievement has been shared with your connections.',
+        }),
+      );
+
+      setShowCelebration(false);
+      setClaimAmount(0);
+    } catch (error) {
+      console.error('Failed to share staking rewards achievement:', error);
+      dispatch(
+        showErrorToast({
+          title: 'Share Failed',
+          description: 'Unable to share achievement. Please try again.',
+        }),
+      );
+    }
+  }, [addressLower, claimAmount, displayTokenSymbol, dispatch]);
 
   const isLoadingData = useMemo(() => {
     return refreshing || isLoadingStakingData || isLoadingStakingHistory;
@@ -516,6 +624,7 @@ export function StakingRewards({ refreshing, onDataLoaded }: StakingRewardsProps
                         tokenSymbol={displayTokenSymbol}
                         activeAction={activeAction}
                         onUnstake={handleUnstake}
+                        onRestake={handleRestake}
                         onStakeUnlocked={handleStakeUnlocked}
                         rewardsEarned={dbStake?.rewards}
                       />
@@ -554,6 +663,8 @@ export function StakingRewards({ refreshing, onDataLoaded }: StakingRewardsProps
         rewardAmount={totalClaimedRewards}
         rewardCurrency={displayTokenSymbol}
         showReward={true}
+        onShare={handleShareStakingRewards}
+        showShareButton={!!addressLower}
       />
     </>
   );
