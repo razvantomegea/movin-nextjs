@@ -8,6 +8,7 @@ import {
   type IGoal,
   type IGoalInput,
   type GoalCategory,
+  updateGoalProgress as updateGoalProgressByCategory,
 } from '@/lib/supabase/goals';
 
 // Map database goal to UI goal format
@@ -91,7 +92,7 @@ export const updateGoalProgress = createAsyncThunk(
   ) => {
     try {
       if (category) {
-        await updateAllGoalProgress({ address });
+        await updateGoalProgressByCategory({ address, category });
       } else {
         await updateAllGoalProgress({ address });
       }
@@ -158,7 +159,7 @@ const goalsSlice = createSlice({
         state.error = (action.payload as string) || 'An unknown error occurred';
       })
       // Update goal progress
-      .addCase(updateGoalProgress.pending, (state) => {
+      .addCase(updateGoalProgress.pending, () => {
         // Don't show loading for progress updates to avoid UI flickering
       })
       .addCase(updateGoalProgress.fulfilled, (state, action: PayloadAction<Goal[]>) => {

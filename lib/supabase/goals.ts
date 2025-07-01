@@ -60,7 +60,7 @@ export async function getUserGoals({
   let query = client
     .from('goals')
     .select('*')
-    .eq('address', address)
+    .eq('address', address.toLowerCase())
     .eq('is_active', true)
     .order('category', { ascending: true })
     .order('created_at', { ascending: true });
@@ -98,7 +98,7 @@ export async function getGoalById({
     .from('goals')
     .select('*')
     .eq('id', id)
-    .eq('address', address)
+    .eq('address', address.toLowerCase())
     .eq('is_active', true)
     .single();
 
@@ -167,7 +167,7 @@ export async function updateGoal({
     .from('goals')
     .update(goalData)
     .eq('id', id)
-    .eq('address', address)
+    .eq('address', address.toLowerCase())
     .eq('is_active', true)
     .select()
     .single();
@@ -199,7 +199,7 @@ export async function deleteGoal({
     .from('goals')
     .update({ is_active: false })
     .eq('id', id)
-    .eq('address', address);
+    .eq('address', address.toLowerCase());
 
   if (error) {
     throw error;
@@ -220,8 +220,8 @@ export async function createDefaultGoals({
     client = getClient();
   }
 
-  const { data, error } = await client.rpc('create_default_goals', {
-    user_address: address,
+  const { error } = await client.rpc('create_default_goals', {
+    user_address: address.toLowerCase(),
   });
 
   if (error) {
@@ -249,7 +249,7 @@ export async function updateGoalProgress({
   }
 
   const { error } = await client.rpc('update_goal_progress', {
-    user_address: address,
+    user_address: address.toLowerCase(),
     goal_category: category,
   });
 
@@ -385,7 +385,7 @@ export async function userHasGoals({
   const { data, error } = await client
     .from('goals')
     .select('id')
-    .eq('address', address)
+    .eq('address', address.toLowerCase())
     .eq('is_active', true)
     .limit(1);
 

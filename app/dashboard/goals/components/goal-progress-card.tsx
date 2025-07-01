@@ -5,9 +5,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Trophy, Award, Flame, Star, Edit3 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { CelebrationAnimation } from '@/components/celebration-animation';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { Button } from '@/components/ui/button';
 
 interface GoalProgressCardProps {
   title: string;

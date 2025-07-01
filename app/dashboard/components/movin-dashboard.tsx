@@ -7,7 +7,6 @@ import {
   Activity,
   Clock,
   Flame,
-  TrendingUp,
   RefreshCw,
   Dumbbell,
   MapPin,
