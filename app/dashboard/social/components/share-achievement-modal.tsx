@@ -247,7 +247,6 @@ export function ShareAchievementModal({
           <Button
             onClick={handleShare}
             disabled={!content.trim() || isSubmitting || isUploadingImage}
-            className="ml-2"
           >
             {isUploadingImage ? 'Uploading Image...' : isSubmitting ? 'Sharing...' : 'Share'}
           </Button>
