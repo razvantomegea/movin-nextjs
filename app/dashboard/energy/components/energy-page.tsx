@@ -81,6 +81,8 @@ const item = {
   show: { opacity: 1, y: 0 },
 };
 
+type NutrientType = 'calories' | 'protein' | 'carbohydrates' | 'fats' | 'fiber';
+
 export function EnergyPage() {
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
@@ -90,6 +92,7 @@ export function EnergyPage() {
   const [streakMilestone, setStreakMilestone] = useState(0);
   const [showFailedSavesDetails, setShowFailedSavesDetails] = useState(false);
   const [retryingFailedSaves, setRetryingFailedSaves] = useState<{ [key: string]: boolean }>({});
+  const [selectedNutrient, setSelectedNutrient] = useState<NutrientType>('calories');
 
   // Modal states
   const [isMealLoggingTypeModalOpen, setIsMealLoggingTypeModalOpen] = useState(false);
@@ -188,6 +191,94 @@ export function EnergyPage() {
       remaining: Math.max(0, goal - dailyNutrition.calories),
     };
   }, [dailyNutrition, profile, activities]);
+
+  // Get nutrient data and goals based on selected nutrient
+  const getNutrientData = useMemo(() => {
+    if (!dailyNutrition) {
+      return {
+        current: 0,
+        goal: 0,
+        unit: '',
+        displayValue: '0',
+        goalDisplay: '0',
+        percentage: 0,
+      };
+    }
+
+    switch (selectedNutrient) {
+      case 'calories':
+        return {
+          current: dailyNutrition.calories,
+          goal: dailyCalories.goal,
+          unit: 'kcal',
+          displayValue: Math.round(dailyNutrition.calories).toLocaleString(),
+          goalDisplay: Math.round(dailyCalories.goal).toLocaleString(),
+          percentage:
+            dailyCalories.goal > 0 ? (dailyNutrition.calories / dailyCalories.goal) * 100 : 0,
+        };
+      case 'protein': {
+        // Recommended protein: 1.6g per kg body weight or default 50g
+        const proteinGoal = profile?.weight ? profile.weight * 1.6 : 50;
+        return {
+          current: dailyNutrition.protein,
+          goal: proteinGoal,
+          unit: 'g',
+          displayValue: Math.round(dailyNutrition.protein).toString(),
+          goalDisplay: Math.round(proteinGoal).toString(),
+          percentage: proteinGoal > 0 ? (dailyNutrition.protein / proteinGoal) * 100 : 0,
+        };
+      }
+      case 'carbohydrates': {
+        // Recommended carbs: 45-65% of calories, using 50%
+        const carbsGoal = (dailyCalories.goal * 0.5) / 4; // 4 calories per gram of carbs
+        return {
+          current: dailyNutrition.carbohydrates,
+          goal: carbsGoal,
+          unit: 'g',
+          displayValue: Math.round(dailyNutrition.carbohydrates).toString(),
+          goalDisplay: Math.round(carbsGoal).toString(),
+          percentage: carbsGoal > 0 ? (dailyNutrition.carbohydrates / carbsGoal) * 100 : 0,
+        };
+      }
+      case 'fats': {
+        // Recommended fats: 20-35% of calories, using 30%
+        const fatsGoal = (dailyCalories.goal * 0.3) / 9; // 9 calories per gram of fat
+        return {
+          current: dailyNutrition.fats,
+          goal: fatsGoal,
+          unit: 'g',
+          displayValue: Math.round(dailyNutrition.fats).toString(),
+          goalDisplay: Math.round(fatsGoal).toString(),
+          percentage: fatsGoal > 0 ? (dailyNutrition.fats / fatsGoal) * 100 : 0,
+        };
+      }
+      case 'fiber': {
+        // Recommended fiber: 25-35g per day
+        const fiberGoal = 30;
+        return {
+          current: dailyNutrition.fiber,
+          goal: fiberGoal,
+          unit: 'g',
+          displayValue: Math.round(dailyNutrition.fiber).toString(),
+          goalDisplay: fiberGoal.toString(),
+          percentage: fiberGoal > 0 ? (dailyNutrition.fiber / fiberGoal) * 100 : 0,
+        };
+      }
+      default:
+        return {
+          current: 0,
+          goal: 0,
+          unit: '',
+          displayValue: '0',
+          goalDisplay: '0',
+          percentage: 0,
+        };
+    }
+  }, [dailyNutrition, selectedNutrient, dailyCalories, profile]);
+
+  const handleNutrientClick = useCallback((nutrient: NutrientType) => {
+    setSelectedNutrient(nutrient);
+  }, []);
 
   // Initialize data on mount
   useEffect(() => {
@@ -563,11 +654,12 @@ export function EnergyPage() {
                       initial={{ opacity: 0, scale: 0.8 }}
                       animate={{ opacity: 1, scale: 1 }}
                       transition={{ duration: 0.5, delay: 0.2 }}
+                      key={selectedNutrient}
                     >
-                      {Math.round(dailyCalories.consumed).toLocaleString()}
+                      {getNutrientData.displayValue}
                     </motion.span>
                     <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'} ml-2`}>
-                      / {Math.round(dailyCalories.goal).toLocaleString()} kcal
+                      / {getNutrientData.goalDisplay} {getNutrientData.unit}
                     </span>
                   </div>
                   <motion.div
@@ -575,21 +667,42 @@ export function EnergyPage() {
                     animate={{ width: '100%' }}
                     transition={{ duration: 0.5, delay: 0.3 }}
                   >
-                    <Progress
-                      value={
-                        dailyCalories.goal > 0
-                          ? (dailyCalories.consumed / dailyCalories.goal) * 100
-                          : 0
-                      }
-                      className="h-2 mt-3"
-                    />
+                    <Progress value={getNutrientData.percentage} className="h-2 mt-3" />
                   </motion.div>
 
-                  <div className="grid grid-cols-4 gap-4 mt-6">
+                  <div className="grid grid-cols-3 sm:grid-cols-5 gap-3 mt-6">
                     <motion.div
-                      className="flex flex-col items-center"
+                      className={`flex flex-col items-center cursor-pointer p-2 rounded-lg transition-colors ${
+                        selectedNutrient === 'calories'
+                          ? 'bg-blue-500/20 ring-2 ring-blue-500/50'
+                          : 'hover:bg-blue-500/10'
+                      }`}
                       whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
                       transition={{ type: 'spring', stiffness: 400, damping: 10 }}
+                      onClick={() => handleNutrientClick('calories')}
+                    >
+                      <div className="bg-blue-500/10 p-2 rounded-full mb-2">
+                        <Flame className="h-4 w-4 text-blue-500" />
+                      </div>
+                      <span className="text-sm font-medium">
+                        {Math.round(dailyNutrition?.calories || 0)}
+                      </span>
+                      <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                        kcal
+                      </span>
+                    </motion.div>
+
+                    <motion.div
+                      className={`flex flex-col items-center cursor-pointer p-2 rounded-lg transition-colors ${
+                        selectedNutrient === 'protein'
+                          ? 'bg-green-500/20 ring-2 ring-green-500/50'
+                          : 'hover:bg-green-500/10'
+                      }`}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      transition={{ type: 'spring', stiffness: 400, damping: 10 }}
+                      onClick={() => handleNutrientClick('protein')}
                     >
                       <div className="bg-green-500/10 p-2 rounded-full mb-2">
                         <Bolt className="h-4 w-4 text-green-500" />
@@ -603,9 +716,15 @@ export function EnergyPage() {
                     </motion.div>
 
                     <motion.div
-                      className="flex flex-col items-center"
+                      className={`flex flex-col items-center cursor-pointer p-2 rounded-lg transition-colors ${
+                        selectedNutrient === 'carbohydrates'
+                          ? 'bg-sky-500/20 ring-2 ring-sky-500/50'
+                          : 'hover:bg-sky-500/10'
+                      }`}
                       whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
                       transition={{ type: 'spring', stiffness: 400, damping: 10 }}
+                      onClick={() => handleNutrientClick('carbohydrates')}
                     >
                       <div className="bg-sky-500/10 p-2 rounded-full mb-2">
                         <Bolt className="h-4 w-4 text-sky-500" />
@@ -619,9 +738,15 @@ export function EnergyPage() {
                     </motion.div>
 
                     <motion.div
-                      className="flex flex-col items-center"
+                      className={`flex flex-col items-center cursor-pointer p-2 rounded-lg transition-colors ${
+                        selectedNutrient === 'fats'
+                          ? 'bg-yellow-500/20 ring-2 ring-yellow-500/50'
+                          : 'hover:bg-yellow-500/10'
+                      }`}
                       whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
                       transition={{ type: 'spring', stiffness: 400, damping: 10 }}
+                      onClick={() => handleNutrientClick('fats')}
                     >
                       <div className="bg-yellow-500/10 p-2 rounded-full mb-2">
                         <Bolt className="h-4 w-4 text-yellow-500" />
@@ -635,9 +760,15 @@ export function EnergyPage() {
                     </motion.div>
 
                     <motion.div
-                      className="flex flex-col items-center"
+                      className={`flex flex-col items-center cursor-pointer p-2 rounded-lg transition-colors ${
+                        selectedNutrient === 'fiber'
+                          ? 'bg-purple-500/20 ring-2 ring-purple-500/50'
+                          : 'hover:bg-purple-500/10'
+                      }`}
                       whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
                       transition={{ type: 'spring', stiffness: 400, damping: 10 }}
+                      onClick={() => handleNutrientClick('fiber')}
                     >
                       <div className="bg-purple-500/10 p-2 rounded-full mb-2">
                         <Bolt className="h-4 w-4 text-purple-500" />
@@ -654,7 +785,7 @@ export function EnergyPage() {
 
                 <div className="ml-6">
                   <CircularProgress
-                    value={Math.round((dailyCalories.consumed / dailyCalories.goal) * 100)}
+                    value={Math.round(getNutrientData.percentage)}
                     size={100}
                     strokeWidth={8}
                   />

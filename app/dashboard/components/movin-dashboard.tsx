@@ -85,6 +85,8 @@ const item = {
   show: { opacity: 1, y: 0 },
 };
 
+type MetricType = 'steps' | 'calories' | 'duration' | 'mets';
+
 export function MovinDashboard() {
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
@@ -97,6 +99,7 @@ export function MovinDashboard() {
   const [showStreakCelebration, setShowStreakCelebration] = useState(false);
   const [streakMilestone, setStreakMilestone] = useState(0);
   const [showFailedSavesDetails, setShowFailedSavesDetails] = useState(false);
+  const [selectedMetric, setSelectedMetric] = useState<MetricType>('steps');
   const currentDate = useMemo(() => new Date(), []);
   const { address } = useAppKitAccount();
   const addressLower = useMemo(() => address?.toLowerCase(), [address]);
@@ -131,6 +134,75 @@ export function MovinDashboard() {
   const yearlyChartData: TimeRangeData[] = useMemo(() => {
     return mapActivitiesToYearly(activities, currentDate);
   }, [activities, currentDate]);
+
+  // Get metric data and goals based on selected metric
+  const getMetricData = useMemo(() => {
+    if (!dailyActivity) {
+      return {
+        current: 0,
+        goal: 0,
+        unit: '',
+        displayValue: '0',
+        goalDisplay: '0',
+        percentage: 0,
+      };
+    }
+
+    switch (selectedMetric) {
+      case 'steps':
+        return {
+          current: dailyActivity.steps,
+          goal: 10000,
+          unit: 'steps',
+          displayValue: dailyActivity.steps.toLocaleString(),
+          goalDisplay: '10,000',
+          percentage: Math.min((dailyActivity.steps / 10000) * 100, 100),
+        };
+      case 'calories':
+        return {
+          current: dailyActivity.calories,
+          goal: 600,
+          unit: 'kcal',
+          displayValue: dailyActivity.calories.toLocaleString(),
+          goalDisplay: '600',
+          percentage: Math.min((dailyActivity.calories / 600) * 100, 100),
+        };
+      case 'duration': {
+        const hours = Math.floor(dailyActivity.activeMinutes / 60);
+        const minutes = Math.round(dailyActivity.activeMinutes % 60);
+        return {
+          current: dailyActivity.activeMinutes,
+          goal: 60,
+          unit: 'min',
+          displayValue: hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`,
+          goalDisplay: '60',
+          percentage: Math.min((dailyActivity.activeMinutes / 60) * 100, 100),
+        };
+      }
+      case 'mets':
+        return {
+          current: dailyActivity.mets,
+          goal: 25,
+          unit: 'METs',
+          displayValue: dailyActivity.mets.toString(),
+          goalDisplay: '25',
+          percentage: Math.min((dailyActivity.mets / 25) * 100, 100),
+        };
+      default:
+        return {
+          current: 0,
+          goal: 0,
+          unit: '',
+          displayValue: '0',
+          goalDisplay: '0',
+          percentage: 0,
+        };
+    }
+  }, [dailyActivity, selectedMetric]);
+
+  const handleMetricClick = useCallback((metric: MetricType) => {
+    setSelectedMetric(metric);
+  }, []);
 
   useEffect(() => {
     const today = getTodayDate();
@@ -643,13 +715,14 @@ export function MovinDashboard() {
                           animate={{ opacity: 1, scale: 1 }}
                           transition={{ duration: 0.5, delay: 0.2 }}
                           data-testid={DataTestIds.DASHBOARD_DAILY_STEPS}
+                          key={selectedMetric}
                         >
-                          {dailyActivity.steps.toLocaleString()}
+                          {getMetricData.displayValue}
                         </motion.span>
                         <span
                           className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'} ml-2`}
                         >
-                          / 10,000 steps
+                          / {getMetricData.goalDisplay} {getMetricData.unit}
                         </span>
                       </div>
                       <motion.div
@@ -657,17 +730,42 @@ export function MovinDashboard() {
                         animate={{ width: '100%' }}
                         transition={{ duration: 0.5, delay: 0.3 }}
                       >
-                        <Progress
-                          value={Math.min((dailyActivity.steps / 10000) * 100, 100)}
-                          className="h-2 mt-3"
-                        />
+                        <Progress value={getMetricData.percentage} className="h-2 mt-3" />
                       </motion.div>
 
-                      <div className="grid grid-cols-4 gap-4 mt-6">
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6">
                         <motion.div
-                          className="flex flex-col items-center"
+                          className={`flex flex-col items-center cursor-pointer p-2 rounded-lg transition-colors ${
+                            selectedMetric === 'steps'
+                              ? 'bg-blue-500/20 ring-2 ring-blue-500/50'
+                              : 'hover:bg-blue-500/10'
+                          }`}
                           whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
                           transition={{ type: 'spring', stiffness: 400, damping: 10 }}
+                          onClick={() => handleMetricClick('steps')}
+                        >
+                          <div className="bg-blue-500/10 p-2 rounded-full mb-2">
+                            <Activity className="h-4 w-4 text-blue-500" />
+                          </div>
+                          <span className="text-sm font-medium">
+                            {dailyActivity.steps.toLocaleString()}
+                          </span>
+                          <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                            steps
+                          </span>
+                        </motion.div>
+
+                        <motion.div
+                          className={`flex flex-col items-center cursor-pointer p-2 rounded-lg transition-colors ${
+                            selectedMetric === 'calories'
+                              ? 'bg-blue-500/20 ring-2 ring-blue-500/50'
+                              : 'hover:bg-blue-500/10'
+                          }`}
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          transition={{ type: 'spring', stiffness: 400, damping: 10 }}
+                          onClick={() => handleMetricClick('calories')}
                         >
                           <div className="bg-blue-500/10 p-2 rounded-full mb-2">
                             <Flame className="h-4 w-4 text-blue-500" />
@@ -684,28 +782,15 @@ export function MovinDashboard() {
                         </motion.div>
 
                         <motion.div
-                          className="flex flex-col items-center"
+                          className={`flex flex-col items-center cursor-pointer p-2 rounded-lg transition-colors ${
+                            selectedMetric === 'duration'
+                              ? 'bg-blue-500/20 ring-2 ring-blue-500/50'
+                              : 'hover:bg-blue-500/10'
+                          }`}
                           whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
                           transition={{ type: 'spring', stiffness: 400, damping: 10 }}
-                        >
-                          <div className="bg-blue-500/10 p-2 rounded-full mb-2">
-                            <TrendingUp className="h-4 w-4 text-blue-500" />
-                          </div>
-                          <span
-                            className="text-sm font-medium"
-                            data-testid={DataTestIds.DASHBOARD_DAILY_DISTANCE}
-                          >
-                            {dailyActivity.distance.toLocaleString()} km
-                          </span>
-                          <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                            distance
-                          </span>
-                        </motion.div>
-
-                        <motion.div
-                          className="flex flex-col items-center"
-                          whileHover={{ scale: 1.05 }}
-                          transition={{ type: 'spring', stiffness: 400, damping: 10 }}
+                          onClick={() => handleMetricClick('duration')}
                         >
                           <div className="bg-blue-500/10 p-2 rounded-full mb-2">
                             <Clock className="h-4 w-4 text-blue-500" />
@@ -724,9 +809,15 @@ export function MovinDashboard() {
 
                         {/* METs metric */}
                         <motion.div
-                          className="flex flex-col items-center"
+                          className={`flex flex-col items-center cursor-pointer p-2 rounded-lg transition-colors ${
+                            selectedMetric === 'mets'
+                              ? 'bg-blue-500/20 ring-2 ring-blue-500/50'
+                              : 'hover:bg-blue-500/10'
+                          }`}
                           whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
                           transition={{ type: 'spring', stiffness: 400, damping: 10 }}
+                          onClick={() => handleMetricClick('mets')}
                         >
                           <div className="bg-blue-500/10 p-2 rounded-full mb-2">
                             <Activity className="h-4 w-4 text-blue-500" />
@@ -743,7 +834,7 @@ export function MovinDashboard() {
 
                     <div className="ml-6">
                       <CircularProgress
-                        value={Math.round((dailyActivity.steps / 10000) * 100)}
+                        value={Math.round(getMetricData.percentage)}
                         size={100}
                         strokeWidth={8}
                       />
