@@ -60,6 +60,7 @@ let currentToken: string | null = null;
 export function getClient() {
   // For explicit token usage (legacy method)
   const token = typeof localStorage !== 'undefined' ? localStorage.getItem('auth_token') : null;
+
   if (!token) {
     // Reset singleton if no token
     authenticatedClientInstance = null;
@@ -67,20 +68,40 @@ export function getClient() {
     throw new Error('No auth token');
   }
 
+  let parsedToken: { token: string; expiresAt: number } | null = null;
+
+  try {
+    parsedToken = JSON.parse(token);
+  } catch (e) {
+    console.error('Error parsing auth token from localStorage:', e);
+    throw new Error('Invalid auth token');
+  }
+
+  if (!parsedToken) {
+    throw new Error('Invalid auth token');
+  }
+
+  const { token: tokenString, expiresAt } = parsedToken;
+
+  if (expiresAt < Date.now()) {
+    localStorage.removeItem('auth_token');
+    throw new Error('Auth token expired');
+  }
+
   // Check if we already have a client with this token
-  if (authenticatedClientInstance && currentToken === token) {
+  if (authenticatedClientInstance && currentToken === tokenString) {
     return authenticatedClientInstance;
   }
 
   // Update the stored token
-  currentToken = token;
+  currentToken = tokenString;
 
   // Create a new authenticated client
   authenticatedClientInstance = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
-      global: { headers: { Authorization: `Bearer ${token}` } },
+      global: { headers: { Authorization: `Bearer ${tokenString}` } },
       auth: { persistSession: false },
     },
   );

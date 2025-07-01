@@ -15,7 +15,7 @@ import { DataTestIds } from '@/constants';
 import { useMovinEarn } from '@/lib/hooks/useMovinEarn';
 import { updateProfile } from '@/lib/supabase/profile';
 import { getProfile } from '@/lib/supabase/profile';
-import { getCurrentDateHour } from '@/utils';
+import { getCurrentDayHour } from '@/utils';
 
 function ConnectPageContent() {
   const router = useRouter();
@@ -67,17 +67,14 @@ function ConnectPageContent() {
 
   const checkLastLogin = useCallback(async () => {
     const lastLogin = localStorage.getItem('last_login');
-    if (lastLogin) {
-      const lastLoginDate = new Date(lastLogin.replace(' ', 'T'));
-      const now = new Date();
-      const diffMs = now.getTime() - lastLoginDate.getTime();
-      const diffHours = diffMs / (1000 * 60 * 60);
-      if (diffHours > 1) {
-        localStorage.clear();
-        sessionStorage.clear();
-        await disconnect();
-        window.location.reload();
-      }
+    const currentDayHour = getCurrentDayHour();
+
+    if (lastLogin && currentDayHour !== lastLogin) {
+      console.log('Last login was not today, clearing localStorage');
+      localStorage.clear();
+      sessionStorage.clear();
+      await disconnect();
+      window.location.reload();
     }
   }, [disconnect]);
 
@@ -104,7 +101,10 @@ function ConnectPageContent() {
           const { token } = await response.json();
 
           // Store the token in localStorage for future API calls
-          localStorage.setItem('auth_token', token);
+          localStorage.setItem(
+            'auth_token',
+            JSON.stringify({ token, expiresAt: Date.now() + 1000 * 60 * 60 }),
+          );
 
           // Check if a profile exists for this address
           try {
@@ -152,12 +152,12 @@ function ConnectPageContent() {
             Sentry.captureException(profileError);
           }
 
-          localStorage.setItem('last_login', getCurrentDateHour());
+          localStorage.setItem('last_login', getCurrentDayHour());
 
           // Navigate to dashboard on successful authentication
           const navigateTimeout = setTimeout(() => {
             router.push('/dashboard');
-          }, 3000);
+          }, 1000);
 
           return () => clearTimeout(navigateTimeout);
         } catch (error) {
@@ -168,8 +168,10 @@ function ConnectPageContent() {
       }
     };
 
+    checkLastLogin();
     authenticateWithSupabase();
   }, [
+    checkLastLogin,
     isConnected,
     addressLower,
     router,

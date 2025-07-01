@@ -27,12 +27,12 @@ export function formatDate(timestamp: number | string | Date): string {
  * @returns Human-readable time remaining
  */
 export function formatTimeRemaining(unlockTime: number | null | undefined): string {
-  if (!unlockTime || unlockTime <= 0) return 'Not locked';
+  if (unlockTime == null) return 'Not locked';
+  if (unlockTime < 0) return 'Unlocked';
+  if (unlockTime === 0) return 'Not locked';
 
   // Calculate remaining time in seconds
   const seconds = unlockTime;
-
-  if (seconds <= 0) return 'Unlocked';
 
   // Convert to days, hours, minutes
   const days = Math.floor(seconds / (24 * 60 * 60));
@@ -42,10 +42,10 @@ export function formatTimeRemaining(unlockTime: number | null | undefined): stri
   // Format the output
   let result = '';
   if (days > 0) result += `${days} day${days > 1 ? 's' : ''} `;
-  if (hours > 0 || days > 0) result += `${hours} hour${hours > 1 ? 's' : ''} `;
+  result += `${hours} hour${hours > 1 ? 's' : ''} `;
   result += `${minutes} minute${minutes > 1 ? 's' : ''}`;
 
-  return result;
+  return result.trim();
 }
 
 /**
@@ -79,12 +79,9 @@ export function getTodayDate(): string {
  * Get current date and hour in YYYY-MM-DD HH:mm format
  * @returns Current date and hour as string
  */
-export function getCurrentDateHour(): string {
+export function getCurrentDayHour(): string {
   const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
   const day = String(now.getDate()).padStart(2, '0');
   const hour = String(now.getHours()).padStart(2, '0');
-  const minute = String(now.getMinutes()).padStart(2, '0');
-  return `${year}-${month}-${day} ${hour}:${minute}`;
+  return `${day} ${hour}`;
 }
