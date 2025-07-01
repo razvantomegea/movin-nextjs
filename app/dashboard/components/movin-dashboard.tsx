@@ -36,6 +36,7 @@ import {
   retryFailedSave,
   removeFailedSave,
 } from '@/lib/redux/slices/failedSavesSlice';
+import { updateGoalProgress } from '@/lib/redux/slices/goalsSlice';
 import { resetJointTracking } from '@/lib/redux/slices/jointTrackingSlice';
 import { fetchProfile, updateProfile } from '@/lib/redux/slices/profileSlice';
 import { createPost } from '@/lib/redux/slices/socialFeedSlice';
@@ -352,6 +353,14 @@ export function MovinDashboard() {
       await dispatch(fetchProfile(addressLower)).unwrap();
       await dispatch(fetchEnergyData(addressLower)).unwrap();
 
+      // Update goal progress after refreshing data
+      try {
+        await dispatch(updateGoalProgress({ address: addressLower })).unwrap();
+      } catch (goalError) {
+        console.error('Failed to update goal progress:', goalError);
+        // Don't show error for goal updates as it's not critical
+      }
+
       // Show success message if there were failed saves that were retried
       if (failedSaves.length > 0) {
         dispatch(
@@ -409,6 +418,13 @@ export function MovinDashboard() {
           }`,
         }),
       );
+
+      // Update goal progress after saving new activity
+      try {
+        await dispatch(updateGoalProgress({ address: addressLower, category: 'daily' })).unwrap();
+      } catch (goalError) {
+        console.error('Failed to update goal progress:', goalError);
+      }
 
       // Send push notification in the background
       const workoutType = routeData.isJoint ? 'Joint Route' : 'Route';
@@ -493,6 +509,13 @@ export function MovinDashboard() {
       await dispatch(
         addActivities({ address: addressLower, activityData: [activityWithAddress] }),
       ).unwrap();
+
+      // Update goal progress after saving imported activity
+      try {
+        await dispatch(updateGoalProgress({ address: addressLower, category: 'daily' })).unwrap();
+      } catch (goalError) {
+        console.error('Failed to update goal progress:', goalError);
+      }
 
       // Success toast is now handled in the screenshot import modal
 

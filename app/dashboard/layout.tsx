@@ -85,15 +85,15 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       icon: <User className="h-6 w-6 mr-4 text-blue-400" />,
     },
     {
+      name: 'Goals',
+      path: '/dashboard/goals',
+      icon: <Activity className="h-6 w-6 mr-4 text-blue-400" />,
+    },
+    {
       name: 'Settings',
       path: '/dashboard/settings',
       icon: <Settings className="h-6 w-6 mr-4 text-blue-400" />,
     },
-    // {
-    //   name: 'Goals',
-    //   path: '/dashboard/goals',
-    //   icon: <Target className="h-6 w-6 mr-4 text-blue-400" />,
-    // },
     {
       name: 'Subscription',
       path: '/dashboard/subscription',

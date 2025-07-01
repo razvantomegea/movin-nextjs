@@ -42,6 +42,7 @@ import {
   retryFailedSave,
   removeFailedSave,
 } from '@/lib/redux/slices/failedSavesSlice';
+import { updateGoalProgress } from '@/lib/redux/slices/goalsSlice';
 import { fetchProfile, updateProfile } from '@/lib/redux/slices/profileSlice';
 import { createPost } from '@/lib/redux/slices/socialFeedSlice';
 import { showSuccessToast, showInfoToast } from '@/lib/redux/slices/toastSlice';
@@ -368,6 +369,15 @@ export function EnergyPage() {
       }
 
       await dispatch(fetchEnergyData(addressLower)).unwrap();
+
+      // Update goal progress after refreshing energy data
+      try {
+        await dispatch(updateGoalProgress({ address: addressLower })).unwrap();
+      } catch (goalError) {
+        console.error('Failed to update goal progress:', goalError);
+        // Don't show error for goal updates as it's not critical
+      }
+
       dispatch(
         showSuccessToast({
           title: 'Energy Data Refreshed',
@@ -450,7 +460,16 @@ export function EnergyPage() {
       await dispatch(
         addEnergyEntry({ address: addressLower, energyData: energyEntryData }),
       ).unwrap();
+
       updateStreakCount();
+
+      // Update goal progress after adding meal
+      try {
+        await dispatch(updateGoalProgress({ address: addressLower, category: 'daily' })).unwrap();
+      } catch (goalError) {
+        console.error('Failed to update goal progress:', goalError);
+      }
+
       dispatch(
         showSuccessToast({
           title: 'Meal Added',

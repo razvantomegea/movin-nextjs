@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trophy, Award, Flame, Star } from 'lucide-react';
+import { Trophy, Award, Flame, Star, Edit3 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { CelebrationAnimation } from '@/components/celebration-animation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import { Button } from '@/components/ui/button';
 
 interface GoalProgressCardProps {
   title: string;
@@ -15,6 +16,9 @@ interface GoalProgressCardProps {
   unit: string;
   icon: 'steps' | 'workout' | 'streak' | 'level';
   autoTrigger?: boolean;
+  onShare?: () => void;
+  userAddress?: string;
+  onEdit?: () => void;
 }
 
 export function GoalProgressCard({
@@ -24,6 +28,9 @@ export function GoalProgressCard({
   unit,
   icon,
   autoTrigger = false,
+  onShare,
+  userAddress,
+  onEdit,
 }: GoalProgressCardProps) {
   const [progress, setProgress] = useState(0);
   const [showCelebration, setShowCelebration] = useState(false);
@@ -84,12 +91,11 @@ export function GoalProgressCard({
       <motion.div
         whileHover={{ scale: 1.02 }}
         transition={{ type: 'spring', stiffness: 400, damping: 10 }}
-        onClick={() => progressPercentage >= 100 && setShowCelebration(true)}
       >
         <Card
           className={`${
             isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'
-          } ${progressPercentage >= 100 ? 'cursor-pointer' : ''}`}
+          } relative group`}
         >
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-3">
@@ -97,18 +103,35 @@ export function GoalProgressCard({
                 <div className="bg-blue-500/20 p-1.5 rounded-full mr-2">{getIcon()}</div>
                 <span className="text-sm font-medium">{title}</span>
               </div>
-              <AnimatePresence>
-                {progressPercentage >= 100 && (
-                  <motion.div
-                    initial={{ scale: 0, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    exit={{ scale: 0, opacity: 0 }}
-                    className="bg-green-500/20 p-1 rounded-full"
+              <div className="flex items-center gap-2">
+                {/* Edit Button */}
+                {onEdit && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEdit();
+                    }}
                   >
-                    <Trophy className="h-4 w-4 text-green-500" />
-                  </motion.div>
+                    <Edit3 className="h-4 w-4" />
+                  </Button>
                 )}
-              </AnimatePresence>
+                <AnimatePresence>
+                  {progressPercentage >= 100 && (
+                    <motion.div
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      exit={{ scale: 0, opacity: 0 }}
+                      className="bg-green-500/20 p-1 rounded-full cursor-pointer"
+                      onClick={() => setShowCelebration(true)}
+                    >
+                      <Trophy className="h-4 w-4 text-green-500" />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             </div>
 
             <div className="flex items-baseline justify-between mb-2">
@@ -149,6 +172,8 @@ export function GoalProgressCard({
         achievementValue={`${targetValue.toLocaleString()} ${unit}`}
         achievementTitle={getAchievementTitle()}
         description={`Congratulations! You've reached your ${title.toLowerCase()} goal.`}
+        onShare={onShare}
+        showShareButton={!!userAddress && !!onShare}
       />
     </>
   );

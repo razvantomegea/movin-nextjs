@@ -79,7 +79,33 @@ export async function getSocialFeed({
     client = getClient();
   }
 
-  // Get posts with engagement data
+  // First, get the user's confirmed connections (accepted status)
+  const { data: connections, error: connectionsError } = await client
+    .from('connections')
+    .select('requester_address, addressee_address')
+    .eq('status', 'accepted')
+    .or(
+      `requester_address.eq.${address.toLowerCase()},addressee_address.eq.${address.toLowerCase()}`,
+    );
+
+  if (connectionsError) {
+    throw connectionsError;
+  }
+
+  // Extract the addresses of connected users
+  const connectedAddresses: string[] = [];
+  (connections || []).forEach((conn) => {
+    const otherAddress =
+      conn.requester_address === address.toLowerCase()
+        ? conn.addressee_address
+        : conn.requester_address;
+    connectedAddresses.push(otherAddress);
+  });
+
+  // Include the current user's address in the allowed addresses
+  const allowedAddresses = [address.toLowerCase(), ...connectedAddresses];
+
+  // Get posts only from the current user and their confirmed connections
   const { data, error } = await client
     .from('social_posts')
     .select(
@@ -94,6 +120,7 @@ export async function getSocialFeed({
       comments_count:post_comments(count)
     `,
     )
+    .in('address', allowedAddresses)
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1);
 
