@@ -24,7 +24,6 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAccount } from 'wagmi';
 import { PremiumUpgradeModal } from '@/components/premium-upgrade-modal';
-import { AdSenseBanner } from '@/components/ui/adsense-banner';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -71,12 +70,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     {
       name: 'Energy',
       path: '/dashboard/energy',
-      icon: (
-        <span className="relative flex items-center">
-          <Bolt className="h-5 w-5" />
-          {!isPremium && <Lock className="h-3 w-3 text-yellow-400 absolute -top-1 -right-2" />}
-        </span>
-      ),
+      icon: <Bolt className="h-5 w-5" />,
       premium: true,
     },
     { name: 'Rewards', path: '/dashboard/rewards', icon: <Gift className="h-5 w-5" /> },
@@ -198,13 +192,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           <appkit-button size="sm" balance="hide" />
         </div>
       </header>
-
-      {/* AdSense Banner - Only show for free users */}
-      {!isPremium && (
-        <div className="w-full px-4 py-2 border-b border-gray-200 dark:border-gray-800 safe-left safe-right">
-          <AdSenseBanner className="w-full max-w-full mx-auto" format="auto" responsive={true} />
-        </div>
-      )}
 
       {/* Main content */}
       <main
@@ -392,12 +379,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 title={tab.premium && !isPremium ? 'Premium Only' : undefined}
               >
                 <span className="mb-0.5">{tab.icon}</span>
-                <span className="text-xs flex items-center">
-                  {tab.name}
-                  {tab.premium && !isPremium && (
-                    <span className="ml-1 text-[10px] text-yellow-400 font-semibold">Premium</span>
-                  )}
-                </span>
+                <span className="text-xs flex items-center">{tab.name}</span>
               </Button>
             ),
           )}
