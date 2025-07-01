@@ -115,6 +115,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   useEffect(() => {
     if (!addressLower && !isConnecting) {
+      if (pathname && pathname !== '/') {
+        sessionStorage.setItem('intendedPath', pathname);
+      }
       router.push('/');
 
       return;

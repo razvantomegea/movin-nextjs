@@ -154,12 +154,14 @@ function ConnectPageContent() {
 
           localStorage.setItem('last_login', getCurrentDayHour());
 
-          // Navigate to dashboard on successful authentication
-          const navigateTimeout = setTimeout(() => {
+          // Navigate to intended path or dashboard on successful authentication
+          const intendedPath = sessionStorage.getItem('intendedPath');
+          if (intendedPath && intendedPath !== '/') {
+            sessionStorage.removeItem('intendedPath');
+            router.push(intendedPath);
+          } else {
             router.push('/dashboard');
-          }, 1000);
-
-          return () => clearTimeout(navigateTimeout);
+          }
         } catch (error) {
           console.error('Authentication error:', error);
           setAuthError((error as Error).message);
