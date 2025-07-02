@@ -9,8 +9,8 @@ import { Button } from '@/components/ui/button';
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
 import {
   fetchGoals,
-  updateGoalProgress,
   updateGoalAsync,
+  updateGoalProgress,
   type Goal,
 } from '@/lib/redux/slices/goalsSlice';
 import { createPost } from '@/lib/redux/slices/socialFeedSlice';
@@ -88,22 +88,29 @@ export function GoalsPage() {
     }
   };
 
-  const handleUpdateProgress = async () => {
+  // Handler to recalculate nutrition goals based on current weight and weight goal
+  const handleRecalculateNutritionGoals = async () => {
     if (!addressLower) return;
 
     try {
-      await dispatch(updateGoalProgress({ address: addressLower })).unwrap();
+      // Trigger goal progress update which will also update nutrition goals
+      await dispatch(updateGoalProgress({ address: addressLower, category: 'daily' })).unwrap();
+
+      // Refresh goals to get updated values
+      await dispatch(fetchGoals(addressLower)).unwrap();
+
       dispatch(
         showSuccessToast({
-          title: 'Progress Updated',
-          description: 'Your goal progress has been refreshed',
+          title: 'Nutrition Goals Recalculated',
+          description:
+            'Your nutrition goals have been updated based on your current weight and weight goal',
         }),
       );
     } catch (error) {
       dispatch(
         showInfoToast({
-          title: 'Update Failed',
-          description: 'Failed to update goal progress',
+          title: 'Recalculation Failed',
+          description: 'Please try again later',
         }),
       );
     }
@@ -140,14 +147,44 @@ export function GoalsPage() {
           }),
         ).unwrap();
 
-        dispatch(
-          showSuccessToast({
-            title: 'Goal Updated',
-            description: 'Your goal has been successfully updated',
-          }),
-        );
+        // If this is a weight goal update, trigger nutrition goals recalculation
+        if (editingGoal.goalType === 'weight') {
+          try {
+            // Trigger nutrition goals update on backend via goal progress update
+            await dispatch(
+              updateGoalProgress({ address: addressLower, category: 'daily' }),
+            ).unwrap();
+
+            dispatch(
+              showSuccessToast({
+                title: 'Goals Updated',
+                description: 'Your weight goal and nutrition goals have been updated automatically',
+              }),
+            );
+          } catch (nutritionError) {
+            console.error('Failed to update nutrition goals:', nutritionError);
+            dispatch(
+              showSuccessToast({
+                title: 'Goal Updated',
+                description: 'Weight goal updated. Nutrition goals will sync on next refresh.',
+              }),
+            );
+          }
+        } else {
+          dispatch(
+            showSuccessToast({
+              title: 'Goal Updated',
+              description: 'Your goal has been successfully updated',
+            }),
+          );
+        }
 
         handleCloseEditModal();
+
+        // Refresh goals to show updated values
+        if (addressLower) {
+          dispatch(fetchGoals(addressLower));
+        }
       } catch (error) {
         dispatch(
           showErrorToast({
@@ -281,8 +318,14 @@ export function GoalsPage() {
                 Track your progress and earn rewards
               </p>
             </div>
-            <Button variant="outline" size="sm" onClick={handleUpdateProgress} disabled={loading}>
-              Update Progress
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRecalculateNutritionGoals}
+              disabled={loading}
+              className="text-blue-500 border-blue-500"
+            >
+              Recalculate Nutrition Goals
             </Button>
           </div>
         </motion.div>

@@ -35,7 +35,7 @@ import {
   retryFailedSave,
   removeFailedSave,
 } from '@/lib/redux/slices/failedSavesSlice';
-import { updateGoalProgress } from '@/lib/redux/slices/goalsSlice';
+import { updateGoalProgress, fetchGoals } from '@/lib/redux/slices/goalsSlice';
 import { resetJointTracking } from '@/lib/redux/slices/jointTrackingSlice';
 import { fetchProfile, updateProfile } from '@/lib/redux/slices/profileSlice';
 import { createPost } from '@/lib/redux/slices/socialFeedSlice';
@@ -110,6 +110,7 @@ export function MovinDashboard() {
   const { energyEntries } = useAppSelector((state: RootState) => state.energyData);
   const { profile } = useAppSelector((state: RootState) => state.profile);
   const { failedSaves, isRetrying } = useAppSelector((state: RootState) => state.failedSaves);
+  const { goals } = useAppSelector((state: RootState) => state.goals);
 
   // Memoize derived data
   const dailyActivity: DailyActivity | null = useMemo(() => {
@@ -148,46 +149,62 @@ export function MovinDashboard() {
       };
     }
 
+    // Find the goal for the selected metric from database
+    const findGoal = (goalType: string) => {
+      return goals.find((goal) => goal.goalType === goalType && goal.category === 'daily');
+    };
+
     switch (selectedMetric) {
-      case 'steps':
+      case 'steps': {
+        const stepsGoal = findGoal('steps');
+        const goalValue = stepsGoal?.targetValue || 10000;
         return {
           current: dailyActivity.steps,
-          goal: 10000,
+          goal: goalValue,
           unit: 'steps',
           displayValue: dailyActivity.steps.toLocaleString(),
-          goalDisplay: '10,000',
-          percentage: Math.min((dailyActivity.steps / 10000) * 100, 100),
+          goalDisplay: Math.round(goalValue).toLocaleString(),
+          percentage: Math.min((dailyActivity.steps / goalValue) * 100, 100),
         };
-      case 'calories':
+      }
+      case 'calories': {
+        const caloriesGoal = findGoal('calories');
+        const goalValue = caloriesGoal?.targetValue || 600;
         return {
           current: dailyActivity.calories,
-          goal: 600,
+          goal: goalValue,
           unit: 'kcal',
           displayValue: dailyActivity.calories.toLocaleString(),
-          goalDisplay: '600',
-          percentage: Math.min((dailyActivity.calories / 600) * 100, 100),
+          goalDisplay: Math.round(goalValue).toLocaleString(),
+          percentage: Math.min((dailyActivity.calories / goalValue) * 100, 100),
         };
+      }
       case 'duration': {
+        const durationGoal = findGoal('duration');
+        const goalValue = durationGoal?.targetValue || 60;
         const hours = Math.floor(dailyActivity.activeMinutes / 60);
         const minutes = Math.round(dailyActivity.activeMinutes % 60);
         return {
           current: dailyActivity.activeMinutes,
-          goal: 60,
+          goal: goalValue,
           unit: 'min',
           displayValue: hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`,
-          goalDisplay: '60',
-          percentage: Math.min((dailyActivity.activeMinutes / 60) * 100, 100),
+          goalDisplay: Math.round(goalValue).toString(),
+          percentage: Math.min((dailyActivity.activeMinutes / goalValue) * 100, 100),
         };
       }
-      case 'mets':
+      case 'mets': {
+        const metsGoal = findGoal('mets');
+        const goalValue = metsGoal?.targetValue || 25;
         return {
           current: dailyActivity.mets,
-          goal: 25,
+          goal: goalValue,
           unit: 'METs',
           displayValue: dailyActivity.mets.toString(),
-          goalDisplay: '25',
-          percentage: Math.min((dailyActivity.mets / 25) * 100, 100),
+          goalDisplay: Math.round(goalValue).toString(),
+          percentage: Math.min((dailyActivity.mets / goalValue) * 100, 100),
         };
+      }
       default:
         return {
           current: 0,
@@ -198,11 +215,23 @@ export function MovinDashboard() {
           percentage: 0,
         };
     }
-  }, [dailyActivity, selectedMetric]);
+  }, [dailyActivity, selectedMetric, goals]);
 
-  const handleMetricClick = useCallback((metric: MetricType) => {
-    setSelectedMetric(metric);
-  }, []);
+  const handleMetricClick = useCallback(
+    async (metric: MetricType) => {
+      setSelectedMetric(metric);
+
+      // Update goal progress for the selected metric
+      if (addressLower) {
+        try {
+          await dispatch(updateGoalProgress({ address: addressLower, category: 'daily' })).unwrap();
+        } catch (goalError) {
+          console.error('Failed to update goal progress:', goalError);
+        }
+      }
+    },
+    [addressLower, dispatch],
+  );
 
   useEffect(() => {
     const today = getTodayDate();
@@ -351,6 +380,7 @@ export function MovinDashboard() {
       await dispatch(fetchActivities(addressLower)).unwrap();
       await dispatch(fetchProfile(addressLower)).unwrap();
       await dispatch(fetchEnergyData(addressLower)).unwrap();
+      await dispatch(fetchGoals(addressLower)).unwrap();
 
       // Update goal progress after refreshing data
       try {
