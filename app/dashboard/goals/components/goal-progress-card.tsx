@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trophy, Award, Flame, Star, Edit3 } from 'lucide-react';
+import { Trophy, Award, Flame, Star, Edit3, Clock, TrendingUp } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { CelebrationAnimation } from '@/components/celebration-animation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import { ProgressEstimation } from '@/utils/goals/progressCalculations';
 
 interface GoalProgressCardProps {
   title: string;
@@ -19,6 +20,9 @@ interface GoalProgressCardProps {
   onShare?: () => void;
   userAddress?: string;
   onEdit?: () => void;
+  category?: 'daily' | 'weekly' | 'monthly';
+  progressEstimation?: ProgressEstimation;
+  estimationText?: string;
 }
 
 export function GoalProgressCard({
@@ -31,6 +35,9 @@ export function GoalProgressCard({
   onShare,
   userAddress,
   onEdit,
+  category = 'daily',
+  progressEstimation,
+  estimationText,
 }: GoalProgressCardProps) {
   const [progress, setProgress] = useState(0);
   const [showCelebration, setShowCelebration] = useState(false);
@@ -38,8 +45,10 @@ export function GoalProgressCard({
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
 
-  // Calculate progress percentage
-  const progressPercentage = Math.min(Math.round((currentValue / targetValue) * 100), 100);
+  // Use enhanced progress if available, otherwise calculate basic progress
+  const progressPercentage =
+    progressEstimation?.currentProgress ??
+    Math.min(Math.round((currentValue / targetValue) * 100), 100);
 
   // Animate progress bar
   useEffect(() => {
@@ -85,6 +94,18 @@ export function GoalProgressCard({
         return 'Level Up';
     }
   };
+
+  // Extract weight trend label for calorie-based progress
+  let weightTrendLabel = '';
+  if (progressEstimation?.calorieBasedProgress) {
+    if (currentValue === targetValue) {
+      weightTrendLabel = ' (maintenance)';
+    } else if (progressEstimation.calorieBasedProgress.calorieDeficit > 0) {
+      weightTrendLabel = ' (loss)';
+    } else {
+      weightTrendLabel = ' (gain)';
+    }
+  }
 
   return (
     <>
@@ -158,9 +179,65 @@ export function GoalProgressCard({
               )}
             </div>
 
-            <div className="flex justify-end mt-1">
-              <span className="text-xs font-medium text-blue-500">{progressPercentage}%</span>
+            <div className="flex justify-between items-center mt-1">
+              <div className="flex items-center gap-2">
+                {progressEstimation?.isOnTrack && category !== 'daily' && (
+                  <TrendingUp className="h-3 w-3 text-green-500" />
+                )}
+                {estimationText && (
+                  <span className="text-xs text-gray-500 dark:text-gray-400">{estimationText}</span>
+                )}
+              </div>
+              <span className="text-xs font-medium text-blue-500">
+                {Math.round(progressPercentage)}%
+              </span>
             </div>
+
+            {/* Calorie-based weight progress details */}
+            {progressEstimation?.calorieBasedProgress && (
+              <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-md">
+                <div className="flex items-center gap-1 mb-1">
+                  <Flame className="h-3 w-3 text-orange-500" />
+                  <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                    Calorie Analysis
+                  </span>
+                </div>
+                <div className="text-xs text-gray-600 dark:text-gray-400 space-y-0.5">
+                  <div>
+                    Deficit: {progressEstimation.calorieBasedProgress.calorieDeficit > 0 ? '+' : ''}
+                    {Math.round(
+                      progressEstimation.calorieBasedProgress.calorieDeficit,
+                    ).toLocaleString()}{' '}
+                    kcal
+                  </div>
+                  <div>
+                    Weight trend:{' '}
+                    {progressEstimation.calorieBasedProgress.calorieDeficit > 0 ? '-' : '+'}
+                    {progressEstimation.calorieBasedProgress.weightChangeFromCalories.toFixed(2)} kg
+                    {weightTrendLabel}
+                  </div>
+                  <div className="text-blue-600 dark:text-blue-400 font-medium">
+                    Calorie-based progress:{' '}
+                    {Math.round(progressEstimation.calorieBasedProgress.adjustedProgress)}%
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Progress rate for non-daily goals (only show if not completed) */}
+            {category !== 'daily' &&
+              progressPercentage < 100 &&
+              progressEstimation?.progressRate &&
+              progressEstimation.progressRate > 0 && (
+                <div className="mt-1">
+                  <div className="flex items-center gap-1">
+                    <Clock className="h-3 w-3 text-gray-400" />
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      Rate: {progressEstimation.progressRate.toFixed(1)}% per day
+                    </span>
+                  </div>
+                </div>
+              )}
           </CardContent>
         </Card>
       </motion.div>

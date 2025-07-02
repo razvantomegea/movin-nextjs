@@ -22,6 +22,8 @@ export interface Goal {
   autoTrigger: boolean;
   category: 'daily' | 'weekly' | 'monthly';
   goalType: string; // 'calories', 'protein', 'carbohydrates', 'fats', 'fiber', 'weight', 'fitness', 'steps', 'mets', 'duration'
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface GoalsState {
@@ -50,6 +52,8 @@ function mapGoalFromDB(dbGoal: IGoal): Goal {
     autoTrigger: dbGoal.auto_trigger,
     category: dbGoal.category as 'daily' | 'weekly' | 'monthly',
     goalType: dbGoal.goal_type,
+    createdAt: dbGoal.created_at,
+    updatedAt: dbGoal.updated_at,
   };
 }
 
