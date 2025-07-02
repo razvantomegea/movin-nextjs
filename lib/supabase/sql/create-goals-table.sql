@@ -35,7 +35,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER set_timestamp_goals
+CREATE OR REPLACE TRIGGER set_timestamp_goals
 BEFORE UPDATE ON goals
 FOR EACH ROW
 EXECUTE PROCEDURE trigger_set_timestamp();
@@ -146,6 +146,17 @@ BEGIN
   calories_from_fat := daily_fats * 9; -- 9 kcal per gram
   calories_from_carbs := daily_calories - calories_from_protein - calories_from_fat;
   
+  -- Add calories burned from today's activities
+  DECLARE
+    calories_burned_today NUMERIC;
+  BEGIN
+    SELECT COALESCE(SUM(total_energy_burned), 0) INTO calories_burned_today
+    FROM activities
+    WHERE address = user_address
+      AND DATE(start_date) = CURRENT_DATE;
+    daily_calories := daily_calories + calories_burned_today;
+  END;
+  
   -- Convert carb calories to grams (4 kcal per gram)
   daily_carbohydrates := GREATEST(0, calories_from_carbs / 4);
   
@@ -223,7 +234,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Create trigger for automatic nutrition goals update
-CREATE TRIGGER update_nutrition_goals_on_weight_change
+CREATE OR REPLACE TRIGGER update_nutrition_goals_on_weight_change
 AFTER INSERT OR UPDATE ON goals
 FOR EACH ROW
 EXECUTE PROCEDURE trigger_nutrition_goals_update();
@@ -243,7 +254,7 @@ $$ LANGUAGE plpgsql;
 
 -- Create trigger for automatic nutrition goals update when profile weight changes
 -- Note: This assumes the profiles table exists and has weight column
--- CREATE TRIGGER update_nutrition_goals_on_profile_weight_change
+-- CREATE OR REPLACE TRIGGER update_nutrition_goals_on_profile_weight_change
 -- AFTER UPDATE ON profiles
 -- FOR EACH ROW
 -- EXECUTE PROCEDURE trigger_nutrition_goals_on_profile_update();
@@ -312,11 +323,10 @@ BEGIN
         AND DATE(start_date) BETWEEN date_filter_start AND date_filter_end;
         
       WHEN 'calories' THEN
-        -- For calories intake (from energy table)
         SELECT COALESCE(SUM(calories), 0) INTO current_val
-        FROM energy 
-        WHERE address = user_address 
-        AND log_date BETWEEN date_filter_start AND date_filter_end;
+        FROM energy
+        WHERE address = user_address
+          AND log_date BETWEEN date_filter_start AND date_filter_end;
         
       WHEN 'protein' THEN
         SELECT COALESCE(SUM(protein), 0) INTO current_val
@@ -414,3 +424,19 @@ on goals
 for delete
 to authenticated
 using ( (auth.jwt() ->> 'sub') = address );
+
+-- Function to trigger nutrition goals update when activities change
+CREATE OR REPLACE FUNCTION trigger_nutrition_goals_on_activity_change()
+RETURNS TRIGGER AS $$
+BEGIN
+  -- Recalculate nutrition goals for the user
+  PERFORM update_nutrition_goals(NEW.address);
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create trigger for automatic nutrition goals update when activities are inserted/updated
+CREATE OR REPLACE TRIGGER update_nutrition_goals_on_activity_change
+AFTER INSERT OR UPDATE ON activities
+FOR EACH ROW
+EXECUTE PROCEDURE trigger_nutrition_goals_on_activity_change();

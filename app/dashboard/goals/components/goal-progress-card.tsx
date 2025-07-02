@@ -45,10 +45,21 @@ export function GoalProgressCard({
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
 
+  // Unique key for celebration tracking
+  const goalKey = `goal_celebrated_${title.replace(/\s+/g, '_')}_${targetValue}`;
+
   // Use enhanced progress if available, otherwise calculate basic progress
   const progressPercentage =
     progressEstimation?.currentProgress ??
     Math.min(Math.round((currentValue / targetValue) * 100), 100);
+
+  // Check if celebration was already shown for this goal
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const alreadyCelebrated = localStorage.getItem(goalKey);
+      setHasTriggered(!!alreadyCelebrated);
+    }
+  }, [goalKey]);
 
   // Animate progress bar
   useEffect(() => {
@@ -58,16 +69,27 @@ export function GoalProgressCard({
     return () => clearTimeout(timer);
   }, [progressPercentage]);
 
-  // Auto trigger celebration if goal is reached and autoTrigger is true
+  // Auto trigger celebration if goal is reached and autoTrigger is true and not already celebrated
   useEffect(() => {
     if (autoTrigger && progressPercentage >= 100 && !hasTriggered) {
       const timer = setTimeout(() => {
         setShowCelebration(true);
         setHasTriggered(true);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(goalKey, '1');
+        }
       }, 1000);
       return () => clearTimeout(timer);
     }
-  }, [progressPercentage, autoTrigger, hasTriggered]);
+  }, [progressPercentage, autoTrigger, hasTriggered, goalKey]);
+
+  // When user manually closes the celebration, also mark as celebrated
+  const handleCloseCelebration = () => {
+    setShowCelebration(false);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(goalKey, '1');
+    }
+  };
 
   const getIcon = () => {
     switch (icon) {
@@ -244,7 +266,7 @@ export function GoalProgressCard({
 
       <CelebrationAnimation
         isOpen={showCelebration}
-        onClose={() => setShowCelebration(false)}
+        onClose={handleCloseCelebration}
         achievementType={icon}
         achievementValue={`${targetValue.toLocaleString()} ${unit}`}
         achievementTitle={getAchievementTitle()}

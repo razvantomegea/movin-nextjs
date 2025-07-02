@@ -29,7 +29,7 @@ import {
   type ProgressEstimation,
 } from '@/utils/goals/progressCalculations';
 import { EditGoalModal } from './edit-goal-modal';
-import { GoalProgressCard } from './goal-progress-card';
+import { GoalCardWithEstimation } from './goal-card-with-estimation';
 import { GoalsPageSkeleton } from './goals-page-skeleton';
 
 const container = {
@@ -46,61 +46,6 @@ const item = {
   hidden: { opacity: 0, y: 20 },
   show: { opacity: 1, y: 0 },
 };
-
-// Reusable component for rendering a GoalProgressCard with estimation data
-function GoalCardWithEstimation({
-  goal,
-  progressEstimations,
-  formatEstimationText,
-  getValidIcon,
-  handleShareGoalAchievement,
-  addressLower,
-  handleEditGoal,
-}: {
-  goal: Goal;
-  progressEstimations: Record<string, ProgressEstimation>;
-  formatEstimationText: (
-    estimation: ProgressEstimation,
-    category: 'daily' | 'weekly' | 'monthly',
-  ) => string;
-  getValidIcon: (icon: string) => 'steps' | 'workout' | 'streak' | 'level';
-  handleShareGoalAchievement: (
-    goalType: string,
-    goalValue: string,
-    goalTitle: string,
-    goalUnit: string,
-  ) => void;
-  addressLower: string;
-  handleEditGoal: (goal: Goal) => void;
-}) {
-  const estimation = progressEstimations[goal.id];
-  const estimationText = estimation ? formatEstimationText(estimation, goal.category) : undefined;
-
-  return (
-    <GoalProgressCard
-      key={goal.id}
-      title={goal.title}
-      currentValue={goal.currentValue}
-      targetValue={goal.targetValue}
-      unit={goal.unit}
-      icon={getValidIcon(goal.icon)}
-      autoTrigger={goal.autoTrigger}
-      category={goal.category}
-      progressEstimation={estimation}
-      estimationText={estimationText}
-      onShare={() =>
-        handleShareGoalAchievement(
-          goal.goalType,
-          goal.targetValue.toString(),
-          goal.title,
-          goal.unit,
-        )
-      }
-      userAddress={addressLower}
-      onEdit={() => handleEditGoal(goal)}
-    />
-  );
-}
 
 export function GoalsPage() {
   const dispatch = useAppDispatch();
