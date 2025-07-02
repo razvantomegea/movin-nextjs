@@ -141,12 +141,7 @@ BEGIN
   daily_fiber := profile_data.weight * 0.5; -- 0.5g per kg
   daily_fats := profile_data.weight * 1.0; -- 1g per kg
   
-  -- Calculate carbohydrates based on remaining calories
-  calories_from_protein := daily_protein * 4; -- 4 kcal per gram
-  calories_from_fat := daily_fats * 9; -- 9 kcal per gram
-  calories_from_carbs := daily_calories - calories_from_protein - calories_from_fat;
-  
-  -- Add calories burned from today's activities
+  -- Add calories burned from today's activities BEFORE calculating carbs
   DECLARE
     calories_burned_today NUMERIC;
   BEGIN
@@ -156,6 +151,11 @@ BEGIN
       AND DATE(start_date) = CURRENT_DATE;
     daily_calories := daily_calories + calories_burned_today;
   END;
+  
+  -- Calculate carbohydrates based on remaining calories
+  calories_from_protein := daily_protein * 4; -- 4 kcal per gram
+  calories_from_fat := daily_fats * 9; -- 9 kcal per gram
+  calories_from_carbs := daily_calories - calories_from_protein - calories_from_fat;
   
   -- Convert carb calories to grams (4 kcal per gram)
   daily_carbohydrates := GREATEST(0, calories_from_carbs / 4);
@@ -253,11 +253,10 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Create trigger for automatic nutrition goals update when profile weight changes
--- Note: This assumes the profiles table exists and has weight column
--- CREATE OR REPLACE TRIGGER update_nutrition_goals_on_profile_weight_change
--- AFTER UPDATE ON profiles
--- FOR EACH ROW
--- EXECUTE PROCEDURE trigger_nutrition_goals_on_profile_update();
+CREATE OR REPLACE TRIGGER update_nutrition_goals_on_profile_weight_change
+AFTER UPDATE ON profiles
+FOR EACH ROW
+EXECUTE PROCEDURE trigger_nutrition_goals_on_profile_update();
 
 -- Insert default goals for new users (can be called via function)
 CREATE OR REPLACE FUNCTION create_default_goals(user_address TEXT)
