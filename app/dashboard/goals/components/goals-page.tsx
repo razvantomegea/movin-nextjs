@@ -15,22 +15,22 @@ import {
 } from '@/lib/redux/slices/goalsSlice';
 import { createPost } from '@/lib/redux/slices/socialFeedSlice';
 import { showSuccessToast, showInfoToast, showErrorToast } from '@/lib/redux/slices/toastSlice';
+import { getActivities, type IActivity } from '@/lib/supabase/activities';
+import { getEnergyEntries, type IEnergy } from '@/lib/supabase/energy';
+import { getProfile, type IProfile } from '@/lib/supabase/profile';
 import {
   createAchievementData,
   generateAchievementPostContent,
 } from '@/utils/achievements/shareAchievement';
-import { EditGoalModal } from './edit-goal-modal';
-import { GoalProgressCard } from './goal-progress-card';
-import { GoalsPageSkeleton } from './goals-page-skeleton';
 import {
   calculateProgressEstimation,
   calculateCalorieBasedWeightProgress,
   formatEstimationText,
   type ProgressEstimation,
 } from '@/utils/goals/progressCalculations';
-import { getEnergyEntries, type IEnergy } from '@/lib/supabase/energy';
-import { getActivities, type IActivity } from '@/lib/supabase/activities';
-import { getProfile, type IProfile } from '@/lib/supabase/profile';
+import { EditGoalModal } from './edit-goal-modal';
+import { GoalProgressCard } from './goal-progress-card';
+import { GoalsPageSkeleton } from './goals-page-skeleton';
 
 const container = {
   hidden: { opacity: 0 },
@@ -46,6 +46,61 @@ const item = {
   hidden: { opacity: 0, y: 20 },
   show: { opacity: 1, y: 0 },
 };
+
+// Reusable component for rendering a GoalProgressCard with estimation data
+function GoalCardWithEstimation({
+  goal,
+  progressEstimations,
+  formatEstimationText,
+  getValidIcon,
+  handleShareGoalAchievement,
+  addressLower,
+  handleEditGoal,
+}: {
+  goal: Goal;
+  progressEstimations: Record<string, ProgressEstimation>;
+  formatEstimationText: (
+    estimation: ProgressEstimation,
+    category: 'daily' | 'weekly' | 'monthly',
+  ) => string;
+  getValidIcon: (icon: string) => 'steps' | 'workout' | 'streak' | 'level';
+  handleShareGoalAchievement: (
+    goalType: string,
+    goalValue: string,
+    goalTitle: string,
+    goalUnit: string,
+  ) => void;
+  addressLower: string;
+  handleEditGoal: (goal: Goal) => void;
+}) {
+  const estimation = progressEstimations[goal.id];
+  const estimationText = estimation ? formatEstimationText(estimation, goal.category) : undefined;
+
+  return (
+    <GoalProgressCard
+      key={goal.id}
+      title={goal.title}
+      currentValue={goal.currentValue}
+      targetValue={goal.targetValue}
+      unit={goal.unit}
+      icon={getValidIcon(goal.icon)}
+      autoTrigger={goal.autoTrigger}
+      category={goal.category}
+      progressEstimation={estimation}
+      estimationText={estimationText}
+      onShare={() =>
+        handleShareGoalAchievement(
+          goal.goalType,
+          goal.targetValue.toString(),
+          goal.title,
+          goal.unit,
+        )
+      }
+      userAddress={addressLower}
+      onEdit={() => handleEditGoal(goal)}
+    />
+  );
+}
 
 export function GoalsPage() {
   const dispatch = useAppDispatch();
@@ -81,8 +136,14 @@ export function GoalsPage() {
       setProfile(profileData);
     } catch (error) {
       console.error('Failed to fetch additional data for progress calculations:', error);
+      dispatch(
+        showErrorToast({
+          title: 'Progress Data Error',
+          description: 'Failed to load progress data. Some goal estimations may be unavailable.',
+        }),
+      );
     }
-  }, [addressLower]);
+  }, [addressLower, dispatch]);
 
   // Calculate progress estimations for all goals
   const calculateGoalEstimations = useCallback(async () => {
@@ -99,7 +160,7 @@ export function GoalsPage() {
 
         // Calculate calorie-based progress for weight goals
         if (goal.goalType === 'weight' && profile?.weight && energyEntries.length > 0) {
-          const goalStartDate = new Date(goal.updatedAt); // Use updatedAt as the start date
+          const goalStartDate = new Date(goal.createdAt); // Use createdAt as the start date
           calorieBasedProgress = await calculateCalorieBasedWeightProgress(
             goalStartDate,
             profile.weight,
@@ -114,7 +175,7 @@ export function GoalsPage() {
           goal.currentValue,
           goal.targetValue,
           goal.category,
-          goal.updatedAt, // Use updatedAt as the start date
+          goal.createdAt, // Use createdAt as the start date
           calorieBasedProgress,
         );
 
@@ -420,37 +481,18 @@ export function GoalsPage() {
             <motion.div variants={item}>
               <h2 className="text-lg font-medium mb-3">Daily Goals</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {dailyGoals.map((goal) => {
-                  const estimation = progressEstimations[goal.id];
-                  const estimationText = estimation
-                    ? formatEstimationText(estimation, goal.category)
-                    : undefined;
-
-                  return (
-                    <GoalProgressCard
-                      key={goal.id}
-                      title={goal.title}
-                      currentValue={goal.currentValue}
-                      targetValue={goal.targetValue}
-                      unit={goal.unit}
-                      icon={getValidIcon(goal.icon)}
-                      autoTrigger={goal.autoTrigger}
-                      category={goal.category}
-                      progressEstimation={estimation}
-                      estimationText={estimationText}
-                      onShare={() =>
-                        handleShareGoalAchievement(
-                          goal.goalType,
-                          goal.targetValue.toString(),
-                          goal.title,
-                          goal.unit,
-                        )
-                      }
-                      userAddress={addressLower}
-                      onEdit={() => handleEditGoal(goal)}
-                    />
-                  );
-                })}
+                {dailyGoals.map((goal) => (
+                  <GoalCardWithEstimation
+                    key={goal.id}
+                    goal={goal}
+                    progressEstimations={progressEstimations}
+                    formatEstimationText={formatEstimationText}
+                    getValidIcon={getValidIcon}
+                    handleShareGoalAchievement={handleShareGoalAchievement}
+                    addressLower={addressLower}
+                    handleEditGoal={handleEditGoal}
+                  />
+                ))}
               </div>
             </motion.div>
           )}
@@ -459,37 +501,18 @@ export function GoalsPage() {
             <motion.div variants={item}>
               <h2 className="text-lg font-medium mb-3">Weekly Goals</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {weeklyGoals.map((goal) => {
-                  const estimation = progressEstimations[goal.id];
-                  const estimationText = estimation
-                    ? formatEstimationText(estimation, goal.category)
-                    : undefined;
-
-                  return (
-                    <GoalProgressCard
-                      key={goal.id}
-                      title={goal.title}
-                      currentValue={goal.currentValue}
-                      targetValue={goal.targetValue}
-                      unit={goal.unit}
-                      icon={getValidIcon(goal.icon)}
-                      autoTrigger={goal.autoTrigger}
-                      category={goal.category}
-                      progressEstimation={estimation}
-                      estimationText={estimationText}
-                      onShare={() =>
-                        handleShareGoalAchievement(
-                          goal.goalType,
-                          goal.targetValue.toString(),
-                          goal.title,
-                          goal.unit,
-                        )
-                      }
-                      userAddress={addressLower}
-                      onEdit={() => handleEditGoal(goal)}
-                    />
-                  );
-                })}
+                {weeklyGoals.map((goal) => (
+                  <GoalCardWithEstimation
+                    key={goal.id}
+                    goal={goal}
+                    progressEstimations={progressEstimations}
+                    formatEstimationText={formatEstimationText}
+                    getValidIcon={getValidIcon}
+                    handleShareGoalAchievement={handleShareGoalAchievement}
+                    addressLower={addressLower}
+                    handleEditGoal={handleEditGoal}
+                  />
+                ))}
               </div>
             </motion.div>
           )}
@@ -498,37 +521,18 @@ export function GoalsPage() {
             <motion.div variants={item}>
               <h2 className="text-lg font-medium mb-3">Monthly Goals</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {monthlyGoals.map((goal) => {
-                  const estimation = progressEstimations[goal.id];
-                  const estimationText = estimation
-                    ? formatEstimationText(estimation, goal.category)
-                    : undefined;
-
-                  return (
-                    <GoalProgressCard
-                      key={goal.id}
-                      title={goal.title}
-                      currentValue={goal.currentValue}
-                      targetValue={goal.targetValue}
-                      unit={goal.unit}
-                      icon={getValidIcon(goal.icon)}
-                      autoTrigger={goal.autoTrigger}
-                      category={goal.category}
-                      progressEstimation={estimation}
-                      estimationText={estimationText}
-                      onShare={() =>
-                        handleShareGoalAchievement(
-                          goal.goalType,
-                          goal.targetValue.toString(),
-                          goal.title,
-                          goal.unit,
-                        )
-                      }
-                      userAddress={addressLower}
-                      onEdit={() => handleEditGoal(goal)}
-                    />
-                  );
-                })}
+                {monthlyGoals.map((goal) => (
+                  <GoalCardWithEstimation
+                    key={goal.id}
+                    goal={goal}
+                    progressEstimations={progressEstimations}
+                    formatEstimationText={formatEstimationText}
+                    getValidIcon={getValidIcon}
+                    handleShareGoalAchievement={handleShareGoalAchievement}
+                    addressLower={addressLower}
+                    handleEditGoal={handleEditGoal}
+                  />
+                ))}
               </div>
             </motion.div>
           )}

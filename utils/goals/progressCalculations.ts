@@ -81,13 +81,11 @@ export async function calculateCalorieBasedWeightProgress(
 ): Promise<{ calorieDeficit: number; weightChangeFromCalories: number; adjustedProgress: number }> {
   // Filter data since goal was set
   const relevantEnergyEntries = energyEntries.filter((entry) => {
-    const entryDate = new Date(entry.log_date);
-    return entryDate >= goalStartDate;
+    return entry.log_date >= goalStartDate.toISOString().split('T')[0];
   });
 
   const relevantActivities = activities.filter((activity) => {
-    const activityDate = new Date(activity.start_date);
-    return activityDate >= goalStartDate;
+    return activity.start_date >= goalStartDate.toISOString().split('T')[0];
   });
 
   // Calculate total calories consumed
@@ -235,7 +233,12 @@ export function calculateProgressEstimation(
     }
   } else {
     // For weekly/monthly goals, calculate average daily progress
-    const daysElapsed = Math.max(1, periodInfo.daysElapsed);
+    const periodStart =
+      periodInfo.startDate > goalCreationDate ? periodInfo.startDate : goalCreationDate;
+    const daysElapsed = Math.max(
+      1,
+      Math.floor((now.getTime() - periodStart.getTime()) / (1000 * 60 * 60 * 24)) + 1,
+    );
     progressRate = effectiveProgress / daysElapsed;
 
     const remainingProgress = 100 - effectiveProgress;
