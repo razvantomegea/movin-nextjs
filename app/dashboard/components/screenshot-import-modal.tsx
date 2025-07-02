@@ -225,12 +225,6 @@ export function ScreenshotImportModal({
       // This ensures that if only fileNameDate was present, it's now part of extractedData for mapScreenshotToActivity
       extractedData.activityDate = finalActivityDate;
 
-      if (!extractedData.isValidTiming) {
-        throw new Error(
-          'The activity time in the screenshot is invalid. Please ensure the activity was completed today.',
-        );
-      }
-
       return {
         ...fileData,
         extractedData,
@@ -527,7 +521,7 @@ export function ScreenshotImportModal({
                                     Successfully Processed
                                   </span>
                                 </div>
-                                <div className="grid grid-cols-2 gap-2 text-sm">
+                                <div className="flex flex-col sm:grid sm:grid-cols-2 gap-2 text-sm">
                                   <div>
                                     <span className="font-medium">Activity:</span>
                                     <span className="ml-2">{fileData.extractedData.name}</span>
