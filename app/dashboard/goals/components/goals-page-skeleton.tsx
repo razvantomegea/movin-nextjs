@@ -22,34 +22,41 @@ export function GoalsPageSkeleton() {
   return (
     <motion.div className="p-4" initial="hidden" animate="show" variants={container}>
       <motion.div className="mb-6" variants={item}>
-        <div className="flex items-center">
-          <Skeleton className="h-8 w-40 rounded-md" />
-          <Skeleton className="h-8 w-8 rounded-full ml-2" />
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="flex items-center">
+              <Skeleton className="h-8 w-40 rounded-md" />
+              <Skeleton className="h-8 w-8 rounded-full ml-2" />
+            </div>
+            <Skeleton className="h-5 w-64 mt-1 rounded-md" />
+          </div>
+          <Skeleton className="h-8 w-32 rounded-md" />
         </div>
-        <Skeleton className="h-5 w-64 mt-1 rounded-md" />
       </motion.div>
 
       <div className="space-y-6">
+        {/* Daily Goals Skeleton */}
         <motion.div variants={item}>
-          <Skeleton className="h-6 w-32 mb-3 rounded-md" />
+          <Skeleton className="h-6 w-24 mb-3 rounded-md" />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <GoalCardSkeleton />
             <GoalCardSkeleton />
           </div>
         </motion.div>
 
+        {/* Weekly Goals Skeleton */}
         <motion.div variants={item}>
-          <Skeleton className="h-6 w-32 mb-3 rounded-md" />
+          <Skeleton className="h-6 w-28 mb-3 rounded-md" />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <GoalCardSkeleton />
             <GoalCardSkeleton />
           </div>
         </motion.div>
 
+        {/* Monthly Goals Skeleton */}
         <motion.div variants={item}>
           <Skeleton className="h-6 w-32 mb-3 rounded-md" />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <GoalCardSkeleton />
             <GoalCardSkeleton />
           </div>
         </motion.div>

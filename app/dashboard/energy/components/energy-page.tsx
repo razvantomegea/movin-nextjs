@@ -42,9 +42,11 @@ import {
   retryFailedSave,
   removeFailedSave,
 } from '@/lib/redux/slices/failedSavesSlice';
+import { updateGoalProgress, fetchGoals } from '@/lib/redux/slices/goalsSlice';
 import { fetchProfile, updateProfile } from '@/lib/redux/slices/profileSlice';
 import { createPost } from '@/lib/redux/slices/socialFeedSlice';
 import { showSuccessToast, showInfoToast } from '@/lib/redux/slices/toastSlice';
+import type { IActivity } from '@/lib/supabase/activities';
 import { IMeal } from '@/lib/supabase/meals';
 import {
   generateAchievementPostContent,
@@ -124,8 +126,9 @@ export function EnergyPage() {
   // Redux store data
   const { energyEntries, isLoading, error } = useAppSelector((state) => state.energyData);
   const { profile } = useAppSelector((state) => state.profile);
-  const { activities } = useAppSelector((state) => state.activityData);
+  const { activities }: { activities: IActivity[] } = useAppSelector((state) => state.activityData);
   const { failedSaves } = useAppSelector((state) => state.failedSaves);
+  const { goals } = useAppSelector((state) => state.goals);
 
   // Computed nutrition data from energy entries
   const dailyNutrition: DailyNutrition | null = useMemo(() => {
@@ -172,17 +175,17 @@ export function EnergyPage() {
     todayEnd.setHours(23, 59, 59, 999);
 
     // Filter activities for today
-    const todaysActivities = activities.filter((activity) => {
+    const todaysActivities = activities.filter((activity: IActivity) => {
       const activityDate = new Date(activity.start_date);
       return activityDate >= todayStart && activityDate <= todayEnd;
     });
 
     // Calculate total calories burned today
-    const caloriesBurnedToday = todaysActivities.reduce((total, activity) => {
+    const caloriesBurnedToday = todaysActivities.reduce((total: number, activity: IActivity) => {
       return total + (activity.total_energy_burned || 0);
     }, 0);
 
-    // Apply activity factor (default to lightly active 1.2) and add today's burned calories
+    // Apply activity factor and add today's burned calories
     const goal = calculateDailyCalories(bmr) + caloriesBurnedToday;
 
     return {
@@ -205,63 +208,70 @@ export function EnergyPage() {
       };
     }
 
+    // Find the goal for the selected nutrient from database
+    const findGoal = (goalType: string) => {
+      return goals.find((goal) => goal.goalType === goalType && goal.category === 'daily');
+    };
+
     switch (selectedNutrient) {
-      case 'calories':
+      case 'calories': {
+        const caloriesGoal = findGoal('calories');
+        const goalValue = caloriesGoal?.targetValue || dailyCalories.goal;
         return {
           current: dailyNutrition.calories,
-          goal: dailyCalories.goal,
+          goal: goalValue,
           unit: 'kcal',
           displayValue: Math.round(dailyNutrition.calories).toLocaleString(),
-          goalDisplay: Math.round(dailyCalories.goal).toLocaleString(),
-          percentage:
-            dailyCalories.goal > 0 ? (dailyNutrition.calories / dailyCalories.goal) * 100 : 0,
+          goalDisplay: Math.round(goalValue).toLocaleString(),
+          percentage: goalValue > 0 ? (dailyNutrition.calories / goalValue) * 100 : 0,
         };
+      }
       case 'protein': {
-        // Recommended protein: 1.6g per kg body weight or default 50g
-        const proteinGoal = profile?.weight ? profile.weight * 1.6 : 50;
+        const proteinGoal = findGoal('protein');
+        const goalValue = proteinGoal?.targetValue || (profile?.weight ? profile.weight * 2.0 : 50);
         return {
           current: dailyNutrition.protein,
-          goal: proteinGoal,
+          goal: goalValue,
           unit: 'g',
           displayValue: Math.round(dailyNutrition.protein).toString(),
-          goalDisplay: Math.round(proteinGoal).toString(),
-          percentage: proteinGoal > 0 ? (dailyNutrition.protein / proteinGoal) * 100 : 0,
+          goalDisplay: Math.round(goalValue).toString(),
+          percentage: goalValue > 0 ? (dailyNutrition.protein / goalValue) * 100 : 0,
         };
       }
       case 'carbohydrates': {
-        // Recommended carbs: 45-65% of calories, using 50%
-        const carbsGoal = (dailyCalories.goal * 0.5) / 4; // 4 calories per gram of carbs
+        const carbsGoal = findGoal('carbohydrates');
+        const goalValue = carbsGoal?.targetValue || (dailyCalories.goal * 0.5) / 4; // fallback calculation
         return {
           current: dailyNutrition.carbohydrates,
-          goal: carbsGoal,
+          goal: goalValue,
           unit: 'g',
           displayValue: Math.round(dailyNutrition.carbohydrates).toString(),
-          goalDisplay: Math.round(carbsGoal).toString(),
-          percentage: carbsGoal > 0 ? (dailyNutrition.carbohydrates / carbsGoal) * 100 : 0,
+          goalDisplay: Math.round(goalValue).toString(),
+          percentage: goalValue > 0 ? (dailyNutrition.carbohydrates / goalValue) * 100 : 0,
         };
       }
       case 'fats': {
-        // Recommended fats: 20-35% of calories, using 30%
-        const fatsGoal = (dailyCalories.goal * 0.3) / 9; // 9 calories per gram of fat
+        const fatsGoal = findGoal('fats');
+        const goalValue = fatsGoal?.targetValue || (profile?.weight ? profile.weight * 1.0 : 60);
         return {
           current: dailyNutrition.fats,
-          goal: fatsGoal,
+          goal: goalValue,
           unit: 'g',
           displayValue: Math.round(dailyNutrition.fats).toString(),
-          goalDisplay: Math.round(fatsGoal).toString(),
-          percentage: fatsGoal > 0 ? (dailyNutrition.fats / fatsGoal) * 100 : 0,
+          goalDisplay: Math.round(goalValue).toString(),
+          percentage: goalValue > 0 ? (dailyNutrition.fats / goalValue) * 100 : 0,
         };
       }
       case 'fiber': {
-        // Recommended fiber: 25-35g per day
-        const fiberGoal = 30;
+        const fiberGoal = findGoal('fiber');
+        const goalValue = fiberGoal?.targetValue || (profile?.weight ? profile.weight * 0.5 : 30);
         return {
           current: dailyNutrition.fiber,
-          goal: fiberGoal,
+          goal: goalValue,
           unit: 'g',
           displayValue: Math.round(dailyNutrition.fiber).toString(),
-          goalDisplay: fiberGoal.toString(),
-          percentage: fiberGoal > 0 ? (dailyNutrition.fiber / fiberGoal) * 100 : 0,
+          goalDisplay: Math.round(goalValue).toString(),
+          percentage: goalValue > 0 ? (dailyNutrition.fiber / goalValue) * 100 : 0,
         };
       }
       default:
@@ -274,11 +284,23 @@ export function EnergyPage() {
           percentage: 0,
         };
     }
-  }, [dailyNutrition, selectedNutrient, dailyCalories, profile]);
+  }, [dailyNutrition, selectedNutrient, dailyCalories, profile, goals]);
 
-  const handleNutrientClick = useCallback((nutrient: NutrientType) => {
-    setSelectedNutrient(nutrient);
-  }, []);
+  const handleNutrientClick = useCallback(
+    async (nutrient: NutrientType) => {
+      setSelectedNutrient(nutrient);
+
+      // Update goal progress for the selected nutrient
+      if (addressLower) {
+        try {
+          await dispatch(updateGoalProgress({ address: addressLower, category: 'daily' })).unwrap();
+        } catch (goalError) {
+          console.error('Failed to update goal progress:', goalError);
+        }
+      }
+    },
+    [addressLower, dispatch],
+  );
 
   // Initialize data on mount
   useEffect(() => {
@@ -286,6 +308,7 @@ export function EnergyPage() {
       dispatch(fetchEnergyData(addressLower));
       dispatch(fetchProfile(addressLower));
       dispatch(fetchActivities(addressLower));
+      dispatch(fetchGoals(addressLower));
     } else if (!isPremium) {
       // Show premium modal for non-premium users
       setIsPremiumModalOpen(true);
@@ -319,7 +342,7 @@ export function EnergyPage() {
       }
     }
 
-    const hasActivityYesterday = (activities || []).some((activity) =>
+    const hasActivityYesterday = (activities || []).some((activity: IActivity) =>
       isYesterday(new Date(activity.start_date)),
     );
     const hasMealYesterday = (energyEntries || []).some((entry) =>
@@ -368,6 +391,18 @@ export function EnergyPage() {
       }
 
       await dispatch(fetchEnergyData(addressLower)).unwrap();
+
+      // Refresh goals data to get latest calculated nutrition goals
+      await dispatch(fetchGoals(addressLower)).unwrap();
+
+      // Update goal progress after refreshing energy data
+      try {
+        await dispatch(updateGoalProgress({ address: addressLower })).unwrap();
+      } catch (goalError) {
+        console.error('Failed to update goal progress:', goalError);
+        // Don't show error for goal updates as it's not critical
+      }
+
       dispatch(
         showSuccessToast({
           title: 'Energy Data Refreshed',
@@ -450,7 +485,16 @@ export function EnergyPage() {
       await dispatch(
         addEnergyEntry({ address: addressLower, energyData: energyEntryData }),
       ).unwrap();
+
       updateStreakCount();
+
+      // Update goal progress after adding meal
+      try {
+        await dispatch(updateGoalProgress({ address: addressLower, category: 'daily' })).unwrap();
+      } catch (goalError) {
+        console.error('Failed to update goal progress:', goalError);
+      }
+
       dispatch(
         showSuccessToast({
           title: 'Meal Added',

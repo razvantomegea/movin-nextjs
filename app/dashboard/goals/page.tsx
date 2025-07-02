@@ -1,4 +1,4 @@
-import { GoalsPage } from '@/app/dashboard/goals/components/goals-page';
+import { GoalsPage } from './components/goals-page';
 
 export default function Goals() {
   return <GoalsPage />;

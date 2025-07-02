@@ -16,8 +16,8 @@ import {
   Flame,
   ExternalLink,
   Coins,
-  Lock,
   Users,
+  Medal,
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -85,15 +85,15 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       icon: <User className="h-6 w-6 mr-4 text-blue-400" />,
     },
     {
+      name: 'Goals',
+      path: '/dashboard/goals',
+      icon: <Medal className="h-6 w-6 mr-4 text-blue-400" />,
+    },
+    {
       name: 'Settings',
       path: '/dashboard/settings',
       icon: <Settings className="h-6 w-6 mr-4 text-blue-400" />,
     },
-    // {
-    //   name: 'Goals',
-    //   path: '/dashboard/goals',
-    //   icon: <Target className="h-6 w-6 mr-4 text-blue-400" />,
-    // },
     {
       name: 'Subscription',
       path: '/dashboard/subscription',

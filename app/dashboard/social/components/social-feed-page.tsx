@@ -149,7 +149,11 @@ export function SocialFeedPage() {
               {posts.length === 0 ? (
                 <div className="text-center py-8">
                   <p className="text-muted-foreground">
-                    No posts to show. Connect with other users to see their achievements!
+                    No posts to show. Your feed displays posts from you and your confirmed
+                    connections.
+                  </p>
+                  <p className="text-muted-foreground mt-2">
+                    Connect with other users to see their achievements in your feed!
                   </p>
                 </div>
               ) : (
