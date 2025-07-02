@@ -168,8 +168,9 @@ export function MovinDashboard() {
         };
       }
       case 'calories': {
-        const caloriesGoal = findGoal('calories');
-        const goalValue = caloriesGoal?.targetValue || 600;
+        // Note: Dashboard calories metric refers to calories burned from exercises, not intake
+        const caloriesBurnedGoal = findGoal('calories_burned');
+        const goalValue = caloriesBurnedGoal?.targetValue || 300;
         return {
           current: dailyActivity.calories,
           goal: goalValue,

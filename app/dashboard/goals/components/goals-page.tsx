@@ -298,6 +298,7 @@ export function GoalsPage() {
         const achievementTypeMap: Record<string, 'steps' | 'workout' | 'streak' | 'level'> = {
           steps: 'steps',
           calories: 'workout',
+          calories_burned: 'workout',
           protein: 'workout',
           carbohydrates: 'workout',
           fats: 'workout',

@@ -2,7 +2,7 @@
 CREATE TABLE IF NOT EXISTS goals (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   address TEXT NOT NULL REFERENCES profiles(address) ON DELETE CASCADE,
-  goal_type TEXT NOT NULL, -- 'calories', 'protein', 'carbohydrates', 'fats', 'fiber', 'weight', 'fitness', 'steps', 'mets', 'duration'
+  goal_type TEXT NOT NULL, -- 'calories', 'calories_burned', 'protein', 'carbohydrates', 'fats', 'fiber', 'weight', 'fitness', 'steps', 'mets', 'duration'
   target_value NUMERIC NOT NULL,
   current_value NUMERIC DEFAULT 0,
   unit TEXT NOT NULL,
@@ -266,6 +266,7 @@ BEGIN
   INSERT INTO goals (address, goal_type, target_value, unit, category, title, icon, auto_trigger) VALUES
   (user_address, 'steps', 10000, 'steps', 'daily', 'Daily Steps', 'steps', false),
   (user_address, 'duration', 30, 'min', 'daily', 'Active Minutes', 'clock', true),
+  (user_address, 'calories_burned', 300, 'kcal', 'daily', 'Daily Calories Burned', 'flame', false),
   
   -- Weekly goals
   (user_address, 'fitness', 5, 'workouts', 'weekly', 'Weekly Workouts', 'dumbbell', true),
@@ -326,6 +327,12 @@ BEGIN
         FROM energy
         WHERE address = user_address
           AND log_date BETWEEN date_filter_start AND date_filter_end;
+        
+      WHEN 'calories_burned' THEN
+        SELECT COALESCE(SUM(total_energy_burned), 0) INTO current_val
+        FROM activities 
+        WHERE address = user_address 
+        AND DATE(start_date) BETWEEN date_filter_start AND date_filter_end;
         
       WHEN 'protein' THEN
         SELECT COALESCE(SUM(protein), 0) INTO current_val
