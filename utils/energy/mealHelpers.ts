@@ -12,6 +12,7 @@ export interface ApiIngredient {
 
 export interface ApiMealData {
   mealName: string;
+  mealScore: number; // Score from 0-100 based on nutritional quality
   ingredients: ApiIngredient[];
   calories: number;
   carbohydrates: number;
@@ -32,6 +33,7 @@ export interface Ingredient {
 
 export interface DetectedMeal {
   mealName: string;
+  mealScore: number; // Score from 0-100 based on nutritional quality
   ingredients: Ingredient[];
   calories: number;
   carbohydrates: number;
@@ -67,6 +69,7 @@ export function mapApiResponseToDetectedMeal(apiData: ApiMealData): DetectedMeal
 
   return {
     mealName: apiData.mealName,
+    mealScore: apiData.mealScore || 50, // Default to 50 if not provided
     ingredients: mappedIngredients,
     calories: apiData.calories,
     carbohydrates: apiData.carbohydrates,
@@ -114,6 +117,7 @@ export function generateUniqueIngredientId(): string {
 export function mapIMealToDetectedMeal(meal: IMeal): DetectedMeal {
   return {
     mealName: meal.meal_name,
+    mealScore: 50, // Default score for library meals since they don't have AI-calculated scores
     calories: meal.calories,
     protein: meal.protein,
     carbohydrates: meal.carbohydrates,

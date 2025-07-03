@@ -11,6 +11,7 @@ describe('mapApiResponseToDetectedMeal', () => {
   it('maps API meal data to DetectedMeal format', () => {
     const apiData: ApiMealData = {
       mealName: 'Test Meal',
+      mealScore: 75,
       ingredients: [
         { name: 'Chicken', calories: 200, carbohydrates: 0, fats: 5, protein: 30, fiber: 0 },
         { name: 'Rice', calories: 150, carbohydrates: 35, fats: 1, protein: 3, fiber: 1 },
@@ -23,6 +24,7 @@ describe('mapApiResponseToDetectedMeal', () => {
     };
     const result = mapApiResponseToDetectedMeal(apiData);
     expect(result.mealName).toBe('Test Meal');
+    expect(result.mealScore).toBe(75);
     expect(result.ingredients.length).toBe(2);
     expect(result.calories).toBe(350);
     expect(result.carbohydrates).toBe(35);
@@ -32,6 +34,22 @@ describe('mapApiResponseToDetectedMeal', () => {
     result.ingredients.forEach((ingredient) => {
       expect(ingredient.id).toMatch(/^ingredient_/);
     });
+  });
+
+  it('defaults mealScore to 50 if not provided', () => {
+    const apiData = {
+      mealName: 'Test Meal',
+      ingredients: [
+        { name: 'Chicken', calories: 200, carbohydrates: 0, fats: 5, protein: 30, fiber: 0 },
+      ],
+      calories: 200,
+      carbohydrates: 0,
+      fats: 5,
+      protein: 30,
+      fiber: 0,
+    } as ApiMealData;
+    const result = mapApiResponseToDetectedMeal(apiData);
+    expect(result.mealScore).toBe(50);
   });
 });
 
@@ -67,7 +85,7 @@ describe('generateUniqueIngredientId', () => {
 });
 
 describe('mapIMealToDetectedMeal', () => {
-  it('maps IMeal to DetectedMeal with a single ingredient', () => {
+  it('maps IMeal to DetectedMeal with a single ingredient and default score', () => {
     const meal = {
       meal_name: 'Omelette',
       calories: 250,
@@ -78,6 +96,7 @@ describe('mapIMealToDetectedMeal', () => {
     };
     const detected = mapIMealToDetectedMeal(meal as any);
     expect(detected.mealName).toBe('Omelette');
+    expect(detected.mealScore).toBe(50); // Default score for library meals
     expect(detected.calories).toBe(250);
     expect(detected.protein).toBe(15);
     expect(detected.carbohydrates).toBe(2);

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import confetti from 'canvas-confetti';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trophy, Award, Star, Check, Flame, Share2 } from 'lucide-react';
+import { Trophy, Award, Star, Check, Flame, Share2, Salad } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
 import { randomInRange } from '@/utils/randomInRange';
@@ -11,7 +11,7 @@ import { randomInRange } from '@/utils/randomInRange';
 interface CelebrationAnimationProps {
   isOpen: boolean;
   onClose: () => void;
-  achievementType: 'steps' | 'workout' | 'streak' | 'level';
+  achievementType: 'steps' | 'workout' | 'streak' | 'level' | 'meal';
   achievementValue: string;
   achievementTitle: string;
   description?: string;
@@ -106,6 +106,8 @@ export function CelebrationAnimation({
         return <Flame className="h-10 w-10 text-orange-400" />;
       case 'level':
         return <Star className="h-10 w-10 text-blue-400" />;
+      case 'meal':
+        return <Salad className="h-10 w-10 text-green-400" />;
       default:
         return <Check className="h-10 w-10 text-green-400" />;
     }

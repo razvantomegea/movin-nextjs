@@ -7,10 +7,10 @@ import { mapError } from '@/utils/errors';
 
 export async function POST(req: NextRequest) {
   try {
-    const { user, status } = await req.json();
+    const { user, score } = await req.json();
 
-    if (!user || typeof status !== 'boolean') {
-      return NextResponse.json({ message: 'Missing user or status' }, { status: 400 });
+    if (!user || typeof score !== 'number') {
+      return NextResponse.json({ message: 'Missing user or score' }, { status: 400 });
     }
 
     const contractAddress = process.env.NEXT_PUBLIC_MOVIN_EARN_CONTRACT_ADDRESS as `0x${string}`;
@@ -48,8 +48,8 @@ export async function POST(req: NextRequest) {
     const { request } = await client.simulateContract({
       address: contractAddress,
       abi: movinEarnAbi,
-      functionName: 'setTransactionSync',
-      args: [user, status],
+      functionName: 'claimMealRewards',
+      args: [user, score],
       account: ownerAccount,
     });
 

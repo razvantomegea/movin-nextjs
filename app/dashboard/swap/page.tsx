@@ -1,7 +1,7 @@
 'use client';
 
 import { ExternalLink, Droplets, TrendingUp, DollarSign, Users, ArrowUpDown } from 'lucide-react';
-import { useTheme } from 'next-themes';
+import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,18 +16,7 @@ const MVN_TOKEN = {
   logoURI: '/images/logo.png',
 };
 
-const USDC_TOKEN = {
-  chainId: 8453, // Base network
-  address: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
-  name: 'USD Coin',
-  symbol: 'USDC',
-  decimals: 6,
-  logoURI: 'https://ethereum-optimism.github.io/data/USDC/logo.png',
-};
-
 export default function SwapPage() {
-  const { theme } = useTheme();
-
   return (
     <div className="container mx-auto px-4 py-6 space-y-8 max-w-6xl">
       {/* Header */}
@@ -157,7 +146,7 @@ export default function SwapPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <img src="/images/logo.png" alt="MVN" className="h-5 w-5" />
+                <Image src="/images/logo.png" alt="MVN" className="h-5 w-5" />
                 MVN Token Details
               </CardTitle>
             </CardHeader>

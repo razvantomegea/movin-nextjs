@@ -36,6 +36,7 @@ export async function POST(request: NextRequest) {
         Please extract and return ONLY a JSON object with the following structure:
         {
           "mealName": string (descriptive name of the meal/dish),
+          "mealScore": number (nutritional quality score from 0-100, where 100 is extremely healthy),
           "calories": number (total estimated calories),
           "protein": number (protein in grams),
           "carbohydrates": number (carbohydrates in grams),
@@ -62,6 +63,27 @@ export async function POST(request: NextRequest) {
         6. If the image is not clearly food, return an error structure with "error": "Not a food image"
         7. Be specific about cooking methods when relevant (grilled, fried, steamed, etc.)
         8. Return only the JSON object, no additional text or formatting
+
+        Meal Score Guidelines (0-100):
+        - 90-100: Exceptional - High in nutrients, lean proteins, complex carbs, healthy fats, plenty of vegetables/fruits, minimal processing
+        - 80-89: Very Good - Well-balanced with good nutrition, some vegetables, lean proteins, moderate processing
+        - 70-79: Good - Decent nutrition but may lack vegetables or have some processed ingredients
+        - 60-69: Fair - Basic nutrition, limited vegetables, some processed foods, moderate calories
+        - 50-59: Average - Mixed nutritional value, possibly high in calories or lacking essential nutrients
+        - 40-49: Below Average - High in calories/sugar/fat, minimal nutritional value, heavily processed
+        - 30-39: Poor - Junk food, high calories, low nutrients, mostly processed ingredients
+        - 20-29: Very Poor - Fast food, fried foods, high sugar/fat, minimal nutritional benefits
+        - 10-19: Extremely Poor - Deep fried, candy, desserts, very high calories with no nutritional value
+        - 0-9: Terrible - Pure junk, candy bars, sodas, chips with zero nutritional benefits
+
+        Consider these factors for scoring:
+        - Presence of vegetables and fruits (higher score)
+        - Lean proteins vs fatty/processed meats
+        - Whole grains vs refined carbohydrates
+        - Cooking method (grilled/steamed vs fried)
+        - Processing level (fresh vs packaged/processed)
+        - Portion size appropriateness
+        - Overall caloric density vs nutritional density
       `;
 
       // Call Google AI API

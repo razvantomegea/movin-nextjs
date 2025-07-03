@@ -896,24 +896,24 @@ export function useMovinEarn() {
   };
 
   /**
-   * Hook to set transaction sync status by owner
-   * @returns Hook result with set transaction sync function
+   * Hook to claim meal rewards by owner (admin)
+   * @returns Hook result with claimMealRewards function
    */
-  const useSetTransactionSyncByOwner = () => {
+  const useClaimMealRewards = () => {
     const [error, setError] = useState<Error | null>(null);
     const [isPending, setIsPending] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
 
-    const setTransactionSync = async (user: string, status: boolean): Promise<boolean> => {
+    const claimMealRewards = async (user: string, score: number): Promise<boolean> => {
       setIsPending(true);
       setError(null);
       setIsSuccess(false);
 
       try {
-        const response = await fetch('/api/admin/set-transaction-sync', {
+        const response = await fetch('/api/admin/claim-meal-rewards', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ user, status }),
+          body: JSON.stringify({ user, score }),
         });
 
         const data = await response.json();
@@ -939,7 +939,7 @@ export function useMovinEarn() {
         setError(err as Error);
         dispatch(
           showErrorToast({
-            title: 'Error Setting Transaction Sync',
+            title: 'Error Claiming Meal Rewards',
             description: errorMessage,
           }),
         );
@@ -949,10 +949,33 @@ export function useMovinEarn() {
     };
 
     return {
-      setTransactionSync,
+      claimMealRewards,
       error,
       isPending,
       isSuccess,
+    };
+  };
+
+  /**
+   * Gets the last meal claim timestamp for the user
+   * @returns Hook result with last claim timestamp
+   */
+  const useLastMealClaim = (userAddress?: string) => {
+    const addressToUse = userAddress || addressLower;
+    const result = useReadContract({
+      address: CONTRACT_ADDRESS,
+      abi: movinEarnAbi,
+      functionName: 'getLastMealClaim',
+      args: addressToUse ? [addressToUse] : undefined,
+      query: {
+        enabled: !!addressToUse,
+      },
+    });
+    // Format the last claim timestamp
+    const lastClaimTimestamp = result.data ? Number(result.data as bigint) : 0;
+    return {
+      ...result,
+      lastClaimTimestamp,
     };
   };
 
@@ -969,7 +992,7 @@ export function useMovinEarn() {
     useUserReferrals,
     useBaseRates,
     useRewardHalvingTimestamp,
-
+    useLastMealClaim,
     useUserStakes,
     usePremiumStatus,
 
@@ -982,6 +1005,6 @@ export function useMovinEarn() {
     useUnstake,
     useRestake,
     useSetPremiumStatus,
-    useSetTransactionSyncByOwner,
+    useClaimMealRewards,
   };
 }
