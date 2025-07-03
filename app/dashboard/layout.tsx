@@ -27,14 +27,7 @@ import { PremiumUpgradeModal } from '@/components/premium-upgrade-modal';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogTrigger,
-} from '@/components/ui/dialog';
+
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
 import { useMovinEarn } from '@/lib/hooks/useMovinEarn';
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
@@ -281,77 +274,14 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                           </h3>
                           <ul className="space-y-3">
                             <li>
-                              <Dialog>
-                                <DialogTrigger asChild>
-                                  <button className="flex items-center p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 w-full text-left">
-                                    <Coins className="h-6 w-6 mr-4 text-blue-400" />
-                                    <span className="text-base">Get MVN</span>
-                                  </button>
-                                </DialogTrigger>
-                                <DialogContent className="sm:max-w-md">
-                                  <DialogHeader>
-                                    <DialogTitle className="flex items-center gap-2">
-                                      <Coins className="h-6 w-6 text-blue-500" />
-                                      Get MVN Tokens
-                                    </DialogTitle>
-                                    <DialogDescription>
-                                      Choose how you want to get MVN tokens on Uniswap
-                                    </DialogDescription>
-                                  </DialogHeader>
-                                  <div className="space-y-4 pt-4">
-                                    <div className="grid gap-3">
-                                      <Button
-                                        asChild
-                                        variant="outline"
-                                        className="h-12 justify-start"
-                                      >
-                                        <a
-                                          href="https://app.uniswap.org/explore/tokens/base/0x3082c5301afD22543866Fe510C0fB351E3CfF561"
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          className="flex items-center gap-3"
-                                        >
-                                          <div className="flex flex-col items-start">
-                                            <span className="font-medium">Swap for MVN</span>
-                                            <span className="text-sm text-gray-500">
-                                              Buy MVN tokens directly
-                                            </span>
-                                          </div>
-                                          <ExternalLink className="h-4 w-4 ml-auto" />
-                                        </a>
-                                      </Button>
-
-                                      <Button
-                                        asChild
-                                        variant="outline"
-                                        className="h-12 justify-start"
-                                      >
-                                        <a
-                                          href="https://app.uniswap.org/positions/v4/base/69532"
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          className="flex items-center gap-3"
-                                        >
-                                          <div className="flex flex-col items-start">
-                                            <span className="font-medium">Add Liquidity</span>
-                                            <span className="text-sm text-gray-500">
-                                              Provide liquidity and earn fees
-                                            </span>
-                                          </div>
-                                          <ExternalLink className="h-4 w-4 ml-auto" />
-                                        </a>
-                                      </Button>
-                                    </div>
-
-                                    <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950 rounded-lg">
-                                      <p className="text-sm text-blue-700 dark:text-blue-300">
-                                        💡 <strong>Tip:</strong> Adding liquidity earns you trading
-                                        fees while holding MVN tokens!
-                                      </p>
-                                    </div>
-                                  </div>
-                                </DialogContent>
-                              </Dialog>
+                              <Link
+                                href="/dashboard/swap"
+                                className="flex items-center p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+                                onClick={() => setIsSheetOpen(false)}
+                              >
+                                <Coins className="h-6 w-6 mr-4 text-blue-400" />
+                                <span className="text-base">Get MVN</span>
+                              </Link>
                             </li>
                           </ul>
                         </div>

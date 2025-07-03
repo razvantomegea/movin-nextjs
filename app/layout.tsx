@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import './globals.css';
+import '@uniswap/widgets/fonts.css';
 import { Analytics } from '@vercel/analytics/next';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
