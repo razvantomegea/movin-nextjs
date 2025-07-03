@@ -832,10 +832,14 @@ export function MealDetectionResultsModal({
                                       </div>
                                     </div>
                                   </>
+                                ) : secondsToWait > 0 ? (
+                                  <span className="text-orange-500">
+                                    You must wait {Math.ceil(secondsToWait / 60)} minute(s) before
+                                    claiming another meal reward. You can still save the meal.
+                                  </span>
                                 ) : (
                                   <span className="text-orange-500">
-                                    You must wait {Math.ceil(rewardCooldown / 60)} minutes before
-                                    claiming another meal reward.
+                                    You are not eligible for a meal reward at this time (e.g., score too low), but you can still save the meal.
                                   </span>
                                 )}
                               </div>
@@ -1230,9 +1234,7 @@ export function MealDetectionResultsModal({
                   </Button>
                   <Button
                     onClick={handleSaveMealClick}
-                    disabled={
-                      isLoading || !detectedMeal || (sourceType === 'camera' && !canClaimReward)
-                    }
+                    disabled={isLoading || !detectedMeal}
                     className={
                       isEditing
                         ? 'bg-blue-500 hover:bg-blue-600'
