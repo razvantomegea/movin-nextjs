@@ -1,11 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import { useAppKitAccount } from '@reown/appkit/react';
-import { FeeAmount } from '@uniswap/v3-sdk';
 import { ArrowUpDown, Settings, Info, AlertTriangle, Loader2 } from 'lucide-react';
-import { formatUnits } from 'viem';
-import { useWriteContract, useSimulateContract } from 'wagmi';
+import { useSendTransaction } from 'wagmi';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -21,22 +19,15 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
-import { useMovinToken } from '@/lib/hooks/useMovinToken';
 import { useSwapQuote, useTokenBalance } from '@/lib/hooks/useUniswapV3';
 import { useAppDispatch } from '@/lib/redux/hooks';
 import { showErrorToast, showSuccessToast } from '@/lib/redux/slices/toastSlice';
-import {
-  MVN_TOKEN,
-  USDC_TOKEN,
-  formatTokenAmount,
-  SWAP_ROUTER_ADDRESS,
-  UniswapSDKError,
-} from '@/utils/uniswap/sdk';
+import { MVN_TOKEN, USDC_TOKEN, formatTokenAmount, UniswapSDKError } from '@/utils/uniswap/sdk';
 
 const TokenSwap = () => {
   const { address } = useAppKitAccount();
   const dispatch = useAppDispatch();
-  const { writeContract } = useWriteContract();
+  const { sendTransaction } = useSendTransaction();
 
   // Token state
   const [fromToken, setFromToken] = useState(MVN_TOKEN);
@@ -44,7 +35,6 @@ const TokenSwap = () => {
   const [fromAmount, setFromAmount] = useState('');
   const [slippage, setSlippage] = useState(1);
   const [isSwapping, setIsSwapping] = useState(false);
-  const [needsApproval, setNeedsApproval] = useState(false);
 
   // Token balances
   const mvnBalance = useTokenBalance(MVN_TOKEN, address);
@@ -59,7 +49,6 @@ const TokenSwap = () => {
     quote,
     loading: isLoadingQuote,
     error: quoteError,
-    refetch: refetchQuote,
   } = useSwapQuote(fromToken, toToken, fromAmount, {
     recipient: address || '',
     slippageTolerance: slippage,
@@ -95,11 +84,8 @@ const TokenSwap = () => {
     try {
       setIsSwapping(true);
 
-      await writeContract({
-        address: quote.methodParameters.to as `0x${string}`,
-        abi: [],
-        functionName: 'exactInputSingle',
-        args: [],
+      await sendTransaction({
+        to: quote.methodParameters.to as `0x${string}`,
         data: quote.methodParameters.calldata as `0x${string}`,
         value: BigInt(quote.methodParameters.value || '0'),
       });

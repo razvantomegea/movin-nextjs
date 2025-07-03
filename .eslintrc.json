@@ -30,7 +30,6 @@
           "caseInsensitive": true
         }
       }
-    ],
-    "function-paren-newline": ["error", "multiline-arguments"]
+    ]
   }
 }
