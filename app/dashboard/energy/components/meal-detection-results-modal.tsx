@@ -832,11 +832,14 @@ export function MealDetectionResultsModal({
                                       </div>
                                     </div>
                                   </>
+                                ) : secondsToWait > 0 ? (
+                                  <span className="text-orange-500">
+                                    You must wait {Math.ceil(secondsToWait / 60)} minute(s) before
+                                    claiming another meal reward. You can still save the meal.
+                                  </span>
                                 ) : (
                                   <span className="text-orange-500">
-                                    {rewardCooldown > 0
-                                      ? `You must wait ${Math.ceil(rewardCooldown / 60)} minutes before claiming another meal reward. You can still save the meal.`
-                                      : 'You are not eligible for a meal reward at this time, but you can still save the meal.'}
+                                    You are not eligible for a meal reward at this time (e.g., score too low), but you can still save the meal.
                                   </span>
                                 )}
                               </div>
