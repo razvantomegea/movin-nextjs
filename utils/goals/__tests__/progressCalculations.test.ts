@@ -1,14 +1,13 @@
+import { IActivity } from '@/lib/supabase/activities';
+import { IEnergy } from '@/lib/supabase/energy';
+import { IProfile } from '@/lib/supabase/profile';
 import {
   calculateGoalPeriod,
   calculateCalorieBasedWeightProgress,
   calculateProgressEstimation,
   formatEstimationText,
   type ProgressEstimation,
-  type GoalPeriodInfo,
 } from '../progressCalculations';
-import { IEnergy } from '@/lib/supabase/energy';
-import { IActivity } from '@/lib/supabase/activities';
-import { IProfile } from '@/lib/supabase/profile';
 
 // Mock data helpers
 const createMockProfile = (overrides: Partial<IProfile> = {}): IProfile => ({
@@ -136,6 +135,16 @@ describe('calculateGoalPeriod', () => {
 });
 
 describe('calculateCalorieBasedWeightProgress', () => {
+  beforeEach(() => {
+    // Mock current date to 2024-01-15 (Monday)
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date('2024-01-15T12:00:00Z'));
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
   test('calculates weight loss progress correctly', async () => {
     const goalStartDate = new Date('2024-01-10T00:00:00Z');
     const currentWeight = 75;
@@ -163,10 +172,9 @@ describe('calculateCalorieBasedWeightProgress', () => {
       profile,
     );
 
-    expect(result.calorieDeficit).toBeGreaterThan(0); // Should have a calorie deficit
-    expect(result.weightChangeFromCalories).toBeGreaterThan(0); // Should show weight loss
-    expect(result.adjustedProgress).toBeGreaterThan(0);
-    expect(result.adjustedProgress).toBeLessThanOrEqual(100);
+    expect(result.calorieDeficit).toBe(3443.75); // Should have a calorie deficit
+    expect(result.weightChangeFromCalories).toBe(0.4919642857142857); // Should show weight loss
+    expect(result.adjustedProgress).toBe(9.83928571428578);
   });
 
   test('calculates weight gain progress correctly', async () => {
@@ -361,13 +369,19 @@ describe('calculateProgressEstimation', () => {
     const estimation = calculateProgressEstimation(
       25, // current value (basic progress)
       100, // target value
-      'weekly',
+      'monthly',
       '2024-01-15T00:00:00Z',
       calorieBasedProgress,
     );
 
-    expect(estimation.currentProgress).toBe(50); // Uses calorie-based progress
-    expect(estimation.calorieBasedProgress).toEqual(calorieBasedProgress);
+    expect(estimation).toEqual({
+      currentProgress: 50,
+      progressRate: 50,
+      isOnTrack: true,
+      estimatedDaysToCompletion: 1,
+      estimatedCompletionDate: new Date('2024-01-16T12:00:00Z'),
+      calorieBasedProgress,
+    }); // Uses calorie-based progress
   });
 
   test('handles zero progress rate', () => {
