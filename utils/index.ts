@@ -30,11 +30,3 @@ export {
   isPWAInstalled,
   resetServiceWorkerState,
 } from './serviceWorker';
-
-// Export serviceWorkerDebug utilities with prefixed names to avoid conflicts
-export {
-  getServiceWorkerStatus as getServiceWorkerDebugStatus,
-  debugServiceWorker,
-  cleanupServiceWorkers,
-  checkPushConfiguration,
-} from './serviceWorkerDebug';

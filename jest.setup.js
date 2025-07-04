@@ -36,3 +36,6 @@ global.ResizeObserver = class ResizeObserver {
     return null;
   }
 };
+
+global.TextEncoder = require('util').TextEncoder;
+global.TextDecoder = require('util').TextDecoder;
