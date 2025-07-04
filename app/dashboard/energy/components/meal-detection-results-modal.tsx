@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAppKitAccount } from '@reown/appkit/react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Edit2, Plus, Trash2, Save, ArrowRight, BookOpen, Award, Info } from 'lucide-react';
+import { X, Edit2, Plus, Trash2, Save, ArrowRight, BookOpen, Award, Info, Camera, Upload, CheckCircle, XCircle } from 'lucide-react';
 import Image from 'next/image';
 import { useTheme } from 'next-themes';
 import { CelebrationAnimation } from '@/components/celebration-animation';
+import { CameraModal } from '@/components/camera-modal';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
@@ -74,6 +75,19 @@ export function MealDetectionResultsModal({
     title: string;
     description: string;
   } | null>(null);
+
+  // Photo validation states
+  const [showCameraModal, setShowCameraModal] = useState(false);
+  const [uploadedPhoto, setUploadedPhoto] = useState<string | null>(null);
+  const [photoValidation, setPhotoValidation] = useState<{
+    isValid: boolean;
+    confidence: number;
+    reasoning: string;
+    detectedFood: string;
+    matchScore: number;
+  } | null>(null);
+  const [isValidatingPhoto, setIsValidatingPhoto] = useState(false);
+  const [photoValidationReward, setPhotoValidationReward] = useState<string>('0');
 
   const isDark = resolvedTheme === 'dark';
 
@@ -302,6 +316,12 @@ export function MealDetectionResultsModal({
       setEditingIngredientId(null);
       setOriginalIngredientName('');
       setIsAnalyzingIngredient(false);
+      // Reset photo validation states
+      setUploadedPhoto(null);
+      setPhotoValidation(null);
+      setIsValidatingPhoto(false);
+      setPhotoValidationReward('0');
+      setShowCameraModal(false);
       // setSaveToMealLibrary(false); // Or persist user's last choice - current is to reset based on edit state
     }
   }, [
@@ -378,6 +398,133 @@ export function MealDetectionResultsModal({
     (!lastClaimTimestamp || now - lastClaimTimestamp >= 7200) && Number(rewardAmount) > 0;
   const secondsToWait = lastClaimTimestamp ? Math.max(0, 7200 - (now - lastClaimTimestamp)) : 0;
 
+  // Calculate if user can claim photo validation reward (2 hour cooldown and valid photo)
+  const canClaimPhotoReward = canClaimReward && 
+    photoValidation?.isValid && 
+    photoValidation?.confidence >= 70 && 
+    Number(photoValidationReward) > 0;
+
+  // Handlers for photo validation
+  const handlePhotoCapture = useCallback(async (imageData: string) => {
+    setUploadedPhoto(imageData);
+    setShowCameraModal(false);
+    
+    if (detectedMeal && originalDescription) {
+      setIsValidatingPhoto(true);
+      try {
+        const response = await fetch('/api/validate-meal-photo', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            imageData,
+            mealDescription: originalDescription,
+          }),
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+          setPhotoValidation(result.validation);
+          // Calculate reward based on validation score and meal score
+          const baseReward = detectedMeal.mealScore || 0;
+          const validationBonus = result.validation.isValid && result.validation.confidence >= 70 ? 0.5 : 0;
+          const totalReward = ((baseReward / 100) + validationBonus).toFixed(2);
+          setPhotoValidationReward(totalReward);
+          
+          if (result.validation.isValid && result.validation.confidence >= 70) {
+            dispatch(showSuccessToast({
+              title: 'Photo Validated!',
+              description: `Your photo matches the meal description with ${result.validation.confidence}% confidence. You can now claim additional MVN rewards!`,
+            }));
+          } else {
+            dispatch(showErrorToast({
+              title: 'Photo Validation Failed',
+              description: result.validation.reasoning,
+            }));
+          }
+        } else {
+          dispatch(showErrorToast({
+            title: 'Validation Error',
+            description: result.error || 'Failed to validate photo.',
+          }));
+        }
+      } catch (error) {
+        console.error('Photo validation error:', error);
+        dispatch(showErrorToast({
+          title: 'Validation Error',
+          description: 'An error occurred while validating the photo.',
+        }));
+      } finally {
+        setIsValidatingPhoto(false);
+      }
+    }
+  }, [detectedMeal, originalDescription, dispatch]);
+
+  const handleRemovePhoto = useCallback(() => {
+    setUploadedPhoto(null);
+    setPhotoValidation(null);
+    setPhotoValidationReward('0');
+  }, []);
+
+  // Handler for save to meal library checkbox change
+  const handleSaveToMealLibraryChange = useCallback((checked: boolean) => {
+    setSaveToMealLibrary(checked);
+  }, []);
+
+  // Handler for ingredient edit click
+  const handleIngredientEditClick = useCallback((ingredientId: string) => {
+    const ingredient = detectedMeal?.ingredients.find(ing => ing.id === ingredientId);
+    if (ingredient) {
+      setEditingIngredientId(ingredientId);
+      setOriginalIngredientName(ingredient.name);
+    }
+  }, [detectedMeal]);
+
+  // Handler for ingredient name change
+  const handleIngredientNameChange = useCallback((id: string, value: string) => {
+    handleEditIngredientName(id, value);
+  }, [handleEditIngredientName]);
+
+  // Handlers for ingredient numeric field changes
+  const handleIngredientCaloriesChange = useCallback((id: string, value: string) => {
+    handleEditIngredientNumericField(id, 'calories', value);
+  }, [handleEditIngredientNumericField]);
+
+  const handleIngredientCarbsChange = useCallback((id: string, value: string) => {
+    handleEditIngredientNumericField(id, 'carbohydrates', value);
+  }, [handleEditIngredientNumericField]);
+
+  const handleIngredientFatsChange = useCallback((id: string, value: string) => {
+    handleEditIngredientNumericField(id, 'fats', value);
+  }, [handleEditIngredientNumericField]);
+
+  const handleIngredientProteinChange = useCallback((id: string, value: string) => {
+    handleEditIngredientNumericField(id, 'protein', value);
+  }, [handleEditIngredientNumericField]);
+
+  const handleIngredientFiberChange = useCallback((id: string, value: string) => {
+    handleEditIngredientNumericField(id, 'fiber', value);
+  }, [handleEditIngredientNumericField]);
+
+  // Handler for add ingredient click
+  const handleAddIngredientClick = useCallback(() => {
+    handleAddIngredient();
+  }, [handleAddIngredient]);
+
+  // Handler for remove ingredient click
+  const handleRemoveIngredientClick = useCallback((id: string) => {
+    handleRemoveIngredient(id);
+  }, [handleRemoveIngredient]);
+
+  // Handler for celebration close
+  const handleCelebrationClose = useCallback(() => {
+    setShowCelebration(false);
+    if (pendingToast) {
+      dispatch(showSuccessToast(pendingToast));
+      setPendingToast(null);
+    }
+    onClose();
+  }, [pendingToast, dispatch, onClose]);
+
   // This function is called after user confirms in the AlertDialog
   const handleSaveMealClick = async () => {
     if (!detectedMeal || !address) return;
@@ -452,6 +599,23 @@ export function MealDetectionResultsModal({
               }),
             );
           }
+        }
+        return;
+      } else if (sourceType === 'text' && canClaimPhotoReward) {
+        // For text-based meals with valid photo, claim photo validation reward
+        setIsLoading(true);
+        const claimSuccess = await claimMealRewards(address, detectedMeal.mealScore || 0);
+        setIsLoading(false);
+
+        if (claimSuccess) {
+          setShowCelebration(true);
+        } else if (claimError) {
+          dispatch(
+            showErrorToast({
+              title: 'Reward Claim Failed',
+              description: claimError.message || 'Could not claim MVN reward for photo validation.',
+            }),
+          );
         }
         return;
       } else {
@@ -705,6 +869,165 @@ export function MealDetectionResultsModal({
                         <p className={`italic ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
                           &quot;{originalDescription}&quot;
                         </p>
+                      </div>
+                    )}
+
+                    {/* Photo Upload Section for Text-based Meals */}
+                    {sourceType === 'text' && (
+                      <div
+                        className={`p-4 rounded-lg border ${
+                          isDark ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-3">
+                          <div>
+                            <h4 className="font-medium flex items-center">
+                              <Camera className="h-4 w-4 mr-2" />
+                              Add Photo for Validation
+                            </h4>
+                            <p className={`text-xs mt-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                              Upload a photo of your meal to earn additional MVN rewards
+                            </p>
+                          </div>
+                        </div>
+
+                        {!uploadedPhoto ? (
+                          <div className="space-y-3">
+                            <div
+                              className={`p-6 border-2 border-dashed rounded-lg text-center ${
+                                isDark
+                                  ? 'border-gray-600 bg-gray-700/50'
+                                  : 'border-gray-300 bg-gray-100'
+                              }`}
+                            >
+                              <Upload className={`h-8 w-8 mx-auto mb-2 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
+                              <p className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                                Take a photo of your meal to validate it matches your description
+                              </p>
+                            </div>
+                            <Button
+                              onClick={() => setShowCameraModal(true)}
+                              className="w-full"
+                              variant="outline"
+                            >
+                              <Camera className="h-4 w-4 mr-2" />
+                              Take Photo
+                            </Button>
+                            
+                            {/* Reward Information */}
+                            <div
+                              className={`p-3 rounded-lg text-center ${
+                                isDark
+                                  ? 'bg-blue-900/20 border border-blue-800'
+                                  : 'bg-blue-50 border border-blue-100'
+                              }`}
+                            >
+                              <div className="flex items-center justify-center mb-1">
+                                <Award className="h-4 w-4 mr-1 text-blue-500" />
+                                <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
+                                  Bonus Rewards Available
+                                </span>
+                              </div>
+                              <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                                {isLastClaimLoading ? (
+                                  'Checking reward eligibility...'
+                                ) : canClaimReward ? (
+                                  <>If your photo matches the meal description, you can earn up to{' '}
+                                  <span className="font-semibold">
+                                    {((detectedMeal?.mealScore || 0) / 100 + 0.5).toFixed(2)} MVN
+                                  </span>{' '}
+                                  (last meal claimed &gt; 2 hours ago)</>
+                                ) : secondsToWait > 0 ? (
+                                  `You must wait ${Math.ceil(secondsToWait / 60)} minute(s) before claiming another meal reward.`
+                                ) : (
+                                  'You are not eligible for meal rewards at this time.'
+                                )}
+                              </p>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="space-y-3">
+                            {/* Uploaded Photo Display */}
+                            <div className="relative rounded-lg overflow-hidden h-48 bg-gray-200">
+                              <Image
+                                src={uploadedPhoto}
+                                alt="Uploaded meal photo"
+                                fill
+                                sizes="(max-width: 768px) 100vw, 768px"
+                                className="object-cover"
+                                priority
+                              />
+                              <Button
+                                onClick={handleRemovePhoto}
+                                variant="destructive"
+                                size="sm"
+                                className="absolute top-2 right-2"
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+
+                            {/* Validation Status */}
+                            {isValidatingPhoto ? (
+                              <div className="flex items-center justify-center p-4">
+                                <div className="w-6 h-6 border-2 border-t-blue-500 border-b-blue-700 rounded-full animate-spin mr-3" />
+                                <span className="text-sm">Validating photo with AI...</span>
+                              </div>
+                            ) : photoValidation ? (
+                              <div
+                                className={`p-4 rounded-lg border ${
+                                  photoValidation.isValid && photoValidation.confidence >= 70
+                                    ? isDark
+                                      ? 'bg-green-900/20 border-green-800'
+                                      : 'bg-green-50 border-green-200'
+                                    : isDark
+                                    ? 'bg-red-900/20 border-red-800'
+                                    : 'bg-red-50 border-red-200'
+                                }`}
+                              >
+                                <div className="flex items-center mb-2">
+                                  {photoValidation.isValid && photoValidation.confidence >= 70 ? (
+                                    <CheckCircle className="h-5 w-5 mr-2 text-green-500" />
+                                  ) : (
+                                    <XCircle className="h-5 w-5 mr-2 text-red-500" />
+                                  )}
+                                  <span className="font-medium">
+                                    {photoValidation.isValid && photoValidation.confidence >= 70
+                                      ? 'Photo Validated!'
+                                      : 'Validation Failed'}
+                                  </span>
+                                </div>
+                                <p className="text-sm mb-2">
+                                  <strong>Detected:</strong> {photoValidation.detectedFood}
+                                </p>
+                                <p className="text-sm mb-2">
+                                  <strong>Confidence:</strong> {photoValidation.confidence}%
+                                </p>
+                                <p className="text-sm mb-3">
+                                  <strong>Reasoning:</strong> {photoValidation.reasoning}
+                                </p>
+                                
+                                {photoValidation.isValid && photoValidation.confidence >= 70 && canClaimPhotoReward && (
+                                  <div className="text-center p-2 bg-yellow-100 dark:bg-yellow-900/20 rounded border border-yellow-200 dark:border-yellow-800">
+                                    <span className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
+                                      🎉 You can now claim {photoValidationReward} MVN when saving this meal!
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            ) : null}
+
+                            <Button
+                              onClick={() => setShowCameraModal(true)}
+                              variant="outline"
+                              size="sm"
+                              className="w-full"
+                            >
+                              <Camera className="h-4 w-4 mr-2" />
+                              Retake Photo
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     )}
 
@@ -1261,6 +1584,16 @@ export function MealDetectionResultsModal({
         rewardCurrency="MVN"
         onShare={handleShareMealAchievement}
         showShareButton={!!address}
+      />
+
+      {/* Camera Modal for Photo Validation */}
+      <CameraModal
+        isOpen={showCameraModal}
+        onClose={() => setShowCameraModal(false)}
+        onCapture={handlePhotoCapture}
+        title="Take Meal Photo"
+        instruction="Position your meal in the frame to validate it matches your description"
+        confirmText="Validate Photo"
       />
     </>
   );
