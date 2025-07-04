@@ -1,5 +1,3 @@
 export { DataTestIds } from './dataTestIds.mjs';
 
-// Future constants can be exported here
-// export { ApiEndpoints } from './apiEndpoints.enum';
-// export { RouteConstants } from './routes.constants';
+export const GOOGLE_AI_MODEL_NAME = process.env.GOOGLE_AI_MODEL_NAME || 'gemini-2.0-flash-001';

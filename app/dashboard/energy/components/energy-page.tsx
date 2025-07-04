@@ -67,7 +67,7 @@ import {
 } from '@/utils/movin/energyMappers';
 import { EnergyOverviewChart } from './energy-overview-chart';
 import { EnergyPageSkeleton } from './energy-page-skeleton';
-import { MealDetectionResultsModal } from './meal-detection-results-modal';
+import { MealDetectionResultsModal } from './meal-detection-results/meal-detection-results-modal';
 
 const container = {
   hidden: { opacity: 0 },
