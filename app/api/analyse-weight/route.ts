@@ -1,5 +1,6 @@
 import * as Sentry from '@sentry/nextjs';
 import { NextResponse, NextRequest } from 'next/server';
+import { GOOGLE_AI_MODEL_NAME } from '@/constants';
 import {
   initGoogleAI,
   processImageForAI,
@@ -34,7 +35,7 @@ export async function POST(request: NextRequest) {
 
       // Initialize Google AI client
       const ai = initGoogleAI(apiKey);
-      const modelName = 'gemini-2.0-flash-001';
+      const modelName = GOOGLE_AI_MODEL_NAME;
 
       // Prompt for the AI model to extract weight information
       const prompt = `

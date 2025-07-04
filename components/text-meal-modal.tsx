@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { ApiMealData } from '@/utils/energy/mealHelpers';
-import { MealDetectionResultsModal } from '../app/dashboard/energy/components/meal-detection-results-modal';
+import { MealDetectionResultsModal } from '../app/dashboard/energy/components/meal-detection-results/meal-detection-results-modal';
 
 interface TextMealModalProps {
   isOpen: boolean;

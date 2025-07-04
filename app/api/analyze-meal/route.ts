@@ -1,5 +1,6 @@
 import * as Sentry from '@sentry/nextjs';
 import { NextRequest, NextResponse } from 'next/server';
+import { GOOGLE_AI_MODEL_NAME } from '@/constants';
 import {
   initGoogleAI,
   processImageForAI,
@@ -28,7 +29,7 @@ export async function POST(request: NextRequest) {
 
       // Initialize Google AI client
       const ai = initGoogleAI(apiKey);
-      const modelName = 'gemini-2.0-flash-001';
+      const modelName = GOOGLE_AI_MODEL_NAME;
 
       const prompt = `
         Analyze this food image and provide detailed nutritional information. The image should show a meal, dish, or food item. Include only the food(s) in the image.
