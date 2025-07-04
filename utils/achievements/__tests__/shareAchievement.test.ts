@@ -1,9 +1,13 @@
-import { generateAchievementPostContent, createAchievementData } from '../shareAchievement';
+import {
+  generateAchievementPostContent,
+  createAchievementData,
+  AchievementTypeEnum,
+} from '../shareAchievement';
 
 describe('generateAchievementPostContent', () => {
   it('should generate content for steps achievement', () => {
     const achievement = {
-      type: 'steps',
+      type: AchievementTypeEnum.steps,
       value: '10,000 steps',
       title: 'Steps Master',
     };
@@ -14,7 +18,7 @@ describe('generateAchievementPostContent', () => {
 
   it('should generate content for streak achievement', () => {
     const achievement = {
-      type: 'streak',
+      type: AchievementTypeEnum.streak,
       value: '7 days',
       title: 'Streak Star',
       description: 'Kept moving for a week!',
@@ -26,7 +30,7 @@ describe('generateAchievementPostContent', () => {
 
   it('should generate content for workout achievement', () => {
     const achievement = {
-      type: 'workout',
+      type: AchievementTypeEnum.workout,
       value: '',
       title: 'Workout Warrior',
     };
@@ -36,7 +40,7 @@ describe('generateAchievementPostContent', () => {
 
   it('should generate content for activity_rewards achievement', () => {
     const achievement = {
-      type: 'activity_rewards',
+      type: AchievementTypeEnum.activityRewards,
       value: '',
       title: 'Reward Earner',
       rewardAmount: '5',
@@ -49,7 +53,7 @@ describe('generateAchievementPostContent', () => {
 
   it('should generate content for staking_rewards achievement', () => {
     const achievement = {
-      type: 'staking_rewards',
+      type: AchievementTypeEnum.stakingRewards,
       value: '',
       title: 'Staking Pro',
       rewardAmount: '10',
@@ -62,7 +66,7 @@ describe('generateAchievementPostContent', () => {
 
   it('should generate content for level achievement', () => {
     const achievement = {
-      type: 'level',
+      type: AchievementTypeEnum.level,
       value: 'Level 5',
       title: 'Level 5',
       description: 'Reached a new milestone!',
@@ -88,16 +92,16 @@ describe('generateAchievementPostContent', () => {
 describe('createAchievementData', () => {
   it('should create achievement data with all fields', () => {
     const data = createAchievementData(
-      'steps',
+      AchievementTypeEnum.steps,
       '10,000',
       'Steps Master',
       'Great job!',
       '5',
       'MOVIN',
-      'activity_rewards',
+      AchievementTypeEnum.activityRewards,
     );
     expect(data).toEqual({
-      type: 'activity_rewards',
+      type: AchievementTypeEnum.activityRewards,
       value: '10,000',
       title: 'Steps Master',
       description: 'Great job!',
@@ -108,7 +112,7 @@ describe('createAchievementData', () => {
 
   it('should use achievementType as type if customType is not provided', () => {
     const data = createAchievementData(
-      'workout',
+      AchievementTypeEnum.workout,
       '1',
       'Workout Complete',
       undefined,

@@ -21,6 +21,7 @@ import { getProfile, type IProfile } from '@/lib/supabase/profile';
 import {
   createAchievementData,
   generateAchievementPostContent,
+  AchievementTypeEnum,
 } from '@/utils/achievements/shareAchievement';
 import {
   calculateProgressEstimation,
@@ -295,21 +296,21 @@ export function GoalsPage() {
 
       try {
         // Map goal types to achievement types
-        const achievementTypeMap: Record<string, 'steps' | 'workout' | 'streak' | 'level'> = {
-          steps: 'steps',
-          calories: 'workout',
-          calories_burned: 'workout',
-          protein: 'workout',
-          carbohydrates: 'workout',
-          fats: 'workout',
-          fiber: 'workout',
-          weight: 'level',
-          fitness: 'workout',
-          duration: 'workout',
-          mets: 'workout',
+        const achievementTypeMap: Record<string, AchievementTypeEnum> = {
+          steps: AchievementTypeEnum.steps,
+          calories: AchievementTypeEnum.workout,
+          calories_burned: AchievementTypeEnum.workout,
+          protein: AchievementTypeEnum.workout,
+          carbohydrates: AchievementTypeEnum.workout,
+          fats: AchievementTypeEnum.workout,
+          fiber: AchievementTypeEnum.workout,
+          weight: AchievementTypeEnum.level,
+          fitness: AchievementTypeEnum.workout,
+          duration: AchievementTypeEnum.workout,
+          mets: AchievementTypeEnum.workout,
         };
 
-        const achievementType = achievementTypeMap[goalType] || 'workout';
+        const achievementType = achievementTypeMap[goalType] || AchievementTypeEnum.workout;
 
         const achievementData = createAchievementData(
           achievementType,

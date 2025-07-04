@@ -2,8 +2,17 @@
  * Utility functions for sharing achievements as social posts
  */
 
+export enum AchievementTypeEnum {
+  steps = 'steps',
+  workout = 'workout',
+  streak = 'streak',
+  level = 'level',
+  activityRewards = 'activity_rewards',
+  stakingRewards = 'staking_rewards',
+}
+
 export interface AchievementData {
-  type: 'steps' | 'workout' | 'streak' | 'level' | 'activity_rewards' | 'staking_rewards';
+  type: AchievementTypeEnum;
   value: string;
   title: string;
   description?: string;
@@ -21,14 +30,14 @@ export function generateAchievementPostContent(achievement: AchievementData): st
   let emoji = '';
 
   switch (type) {
-    case 'steps':
+    case AchievementTypeEnum.steps:
       emoji = '🏃‍♂️🎯';
       content = `${emoji} Crushed my daily steps goal! Just hit ${value} and feeling unstoppable! 💪
 
 #MovinFitness #StepsGoal #FitnessMotivation #HealthyLifestyle #Achievement`;
       break;
 
-    case 'streak':
+    case AchievementTypeEnum.streak:
       emoji = '🔥📈';
       content = `${emoji} ${value} activity streak! Consistency is key and I'm proving it every single day! 
 
@@ -37,14 +46,14 @@ ${description}
 #MovinFitness #StreakMilestone #Consistency #FitnessJourney #NeverGiveUp`;
       break;
 
-    case 'workout':
+    case AchievementTypeEnum.workout:
       emoji = '💪🏆';
       content = `${emoji} Just completed an amazing workout session! Feeling energized and accomplished! 
 
 #MovinFitness #WorkoutComplete #FitnessGoals #HealthyLifestyle #TrainingDay`;
       break;
 
-    case 'activity_rewards':
+    case AchievementTypeEnum.activityRewards:
       emoji = '🏃‍♂️💰';
       content = `${emoji} Earned ${rewardAmount} ${rewardCurrency} from my daily activities! Getting fit and earning rewards with @MovinApp! 
 
@@ -53,7 +62,7 @@ Staying active has never been more rewarding! 💎
 #MovinFitness #EarnWhileYouBurn #FitnessRewards #Web3Fitness #HealthyLifestyle`;
       break;
 
-    case 'staking_rewards':
+    case AchievementTypeEnum.stakingRewards:
       emoji = '💎🔒';
       content = `${emoji} Just claimed ${rewardAmount} ${rewardCurrency} in staking rewards! Smart investing meets fitness goals with @MovinApp! 
 
@@ -62,7 +71,7 @@ Building wealth while building health! 📈💪
 #MovinFitness #StakingRewards #Web3Fitness #CryptoFitness #InvestInHealth`;
       break;
 
-    case 'level':
+    case AchievementTypeEnum.level:
       emoji = '⭐🆙';
       content = `${emoji} Level up! Just reached ${title}! Each workout brings me closer to my ultimate fitness goals! 
 
@@ -88,13 +97,13 @@ ${description || 'Another milestone reached on my fitness journey!'}
  * Create achievement data object from celebration props
  */
 export function createAchievementData(
-  achievementType: 'steps' | 'workout' | 'streak' | 'level' | 'staking_rewards',
+  achievementType: AchievementTypeEnum,
   achievementValue: string,
   achievementTitle: string,
   description?: string,
   rewardAmount?: string,
   rewardCurrency?: string,
-  customType?: 'activity_rewards' | 'staking_rewards',
+  customType?: AchievementTypeEnum,
 ): AchievementData {
   return {
     type: customType || achievementType,

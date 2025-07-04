@@ -25,6 +25,7 @@ import { IStake } from '@/lib/supabase/stake';
 import {
   generateAchievementPostContent,
   createAchievementData,
+  AchievementTypeEnum,
 } from '@/utils/achievements/shareAchievement';
 import { matchUserStakeWithDB } from '@/utils/staking/matchUserStakeWithDB';
 import { prepareUpdateStakesInDB } from '@/utils/staking/prepareUpdateStakesToDB';
@@ -472,13 +473,13 @@ export function StakingRewards({ refreshing, onDataLoaded }: StakingRewardsProps
 
     try {
       const achievementData = createAchievementData(
-        'staking_rewards',
+        AchievementTypeEnum.stakingRewards,
         `${claimAmount.toFixed(2)} ${displayTokenSymbol}`,
         'Staking Rewards Claimed',
         'Congratulations on claiming your staking rewards!',
         claimAmount.toFixed(2),
         displayTokenSymbol,
-        'staking_rewards',
+        AchievementTypeEnum.stakingRewards,
       );
 
       const postContent = generateAchievementPostContent(achievementData);

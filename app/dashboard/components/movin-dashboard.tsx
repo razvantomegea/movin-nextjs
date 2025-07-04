@@ -59,6 +59,7 @@ import {
 import {
   generateAchievementPostContent,
   createAchievementData,
+  AchievementTypeEnum,
 } from '@/utils/achievements/shareAchievement';
 import {
   sendStepsGoalNotification,
@@ -601,7 +602,7 @@ export function MovinDashboard() {
 
     try {
       const achievementData = createAchievementData(
-        'steps',
+        AchievementTypeEnum.steps,
         '10,000 steps',
         'Daily Steps Goal',
         'Congratulations on reaching your daily steps goal!',
@@ -640,7 +641,7 @@ export function MovinDashboard() {
 
     try {
       const achievementData = createAchievementData(
-        'streak',
+        AchievementTypeEnum.streak,
         `${streakMilestone} days`,
         'Streak Milestone',
         `Congratulations on maintaining a ${streakMilestone}-day activity streak!`,

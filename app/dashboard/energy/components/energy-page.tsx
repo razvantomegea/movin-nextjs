@@ -51,6 +51,7 @@ import { IMeal } from '@/lib/supabase/meals';
 import {
   generateAchievementPostContent,
   createAchievementData,
+  AchievementTypeEnum,
 } from '@/utils/achievements/shareAchievement';
 import { calculateBMR, calculateDailyCalories, calculateAge } from '@/utils/energy/calculateBMR';
 
@@ -580,7 +581,7 @@ export function EnergyPage() {
 
     try {
       const achievementData = createAchievementData(
-        'streak',
+        AchievementTypeEnum.streak,
         `${streakMilestone} days`,
         'Streak Milestone',
         `Congratulations on maintaining a ${streakMilestone}-day activity streak!`,
