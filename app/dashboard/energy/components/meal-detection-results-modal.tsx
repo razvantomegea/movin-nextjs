@@ -70,7 +70,6 @@ export function MealDetectionResultsModal({
   const { claimMealRewards, error: claimError } = useClaimMealRewards();
   const { lastClaimTimestamp, isLoading: isLastClaimLoading } = useLastMealClaim(address);
   const [rewardAmount, setRewardAmount] = useState<string>('0');
-  const [rewardCooldown, setRewardCooldown] = useState<number>(0);
   const [pendingToast, setPendingToast] = useState<{
     title: string;
     description: string;
@@ -453,8 +452,6 @@ export function MealDetectionResultsModal({
               }),
             );
           }
-        } else {
-          setRewardCooldown(secondsToWait);
         }
         return;
       } else {
@@ -839,7 +836,8 @@ export function MealDetectionResultsModal({
                                   </span>
                                 ) : (
                                   <span className="text-orange-500">
-                                    You are not eligible for a meal reward at this time (e.g., score too low), but you can still save the meal.
+                                    You are not eligible for a meal reward at this time (e.g., score
+                                    too low), but you can still save the meal.
                                   </span>
                                 )}
                               </div>
