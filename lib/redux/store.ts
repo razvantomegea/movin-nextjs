@@ -11,6 +11,8 @@ import routeDataReducer from './slices/routeDataSlice';
 import socialFeedReducer from './slices/socialFeedSlice';
 import stakingReducer from './slices/stakingSlice';
 import toastReducer from './slices/toastSlice';
+import workoutsReducer from './slices/workoutsSlice';
+import exercisesReducer from './slices/exercisesSlice';
 
 export const store = configureStore({
   reducer: {
@@ -26,6 +28,8 @@ export const store = configureStore({
     jointTracking: jointTrackingReducer,
     goals: goalsReducer,
     profile: profileReducer,
+    workouts: workoutsReducer,
+    exercises: exercisesReducer,
   },
 });
 

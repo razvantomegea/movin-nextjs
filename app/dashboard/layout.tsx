@@ -18,6 +18,7 @@ import {
   Coins,
   Users,
   Medal,
+  Dumbbell,
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -76,6 +77,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       name: 'Profile',
       path: '/dashboard/profile',
       icon: <User className="h-6 w-6 mr-4 text-blue-400" />,
+    },
+    {
+      name: 'Workouts',
+      path: '/dashboard/workouts',
+      icon: <Dumbbell className="h-6 w-6 mr-4 text-blue-400" />,
     },
     {
       name: 'Goals',
