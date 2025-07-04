@@ -25,6 +25,7 @@ import { mapActivitiesToDaily, mapError, type DailyActivity } from '@/utils';
 import {
   generateAchievementPostContent,
   createAchievementData,
+  AchievementTypeEnum,
 } from '@/utils/achievements/shareAchievement';
 import { calculateMetsFromCalories } from '@/utils/movin/calculateMets';
 import { ActivityRewardsHistory } from './activity-rewards-history';
@@ -279,13 +280,13 @@ export function ActivityRewards({ refreshing, onDataLoaded }: ActivityRewardsPro
 
     try {
       const achievementData = createAchievementData(
-        'workout',
+        AchievementTypeEnum.workout,
         `${rewardsToSave.toFixed(2)} MVN`,
         'Activity Rewards Claimed',
         'Congratulations on claiming your activity rewards!',
         rewardsToSave.toFixed(2),
         'MVN',
-        'activity_rewards',
+        AchievementTypeEnum.activityRewards,
       );
 
       const postContent = generateAchievementPostContent(achievementData);
