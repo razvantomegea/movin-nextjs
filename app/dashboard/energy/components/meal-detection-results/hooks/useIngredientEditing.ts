@@ -7,7 +7,7 @@ import {
   calculateTotals,
   generateUniqueIngredientId,
 } from '@/utils/energy/mealHelpers';
-import { IngredientEditingState } from '../types';
+import { ApiIngredientAnalysisResponse, IngredientEditingState } from '../types';
 
 export function useIngredientEditing() {
   const dispatch = useAppDispatch();
@@ -36,7 +36,7 @@ export function useIngredientEditing() {
           body: JSON.stringify({ ingredientName }),
         });
 
-        let apiResult: any;
+        let apiResult: ApiIngredientAnalysisResponse;
         try {
           apiResult = await response.json();
         } catch (jsonError) {
