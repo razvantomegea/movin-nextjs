@@ -1080,6 +1080,38 @@ export function MealDetectionResultsModal({
                                 }`}
                               />
                               <span className="font-medium">Nutrition Score</span>
+                              <div className="relative group">
+                                <button
+                                  type="button"
+                                  className={`${
+                                    isDark ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'
+                                  } focus:outline-none`}
+                                  aria-label="Meal score information"
+                                >
+                                  <Info className="inline h-4 w-4" />
+                                </button>
+                                <div className="absolute left-1/2 -translate-x-1/2 mt-2 w-80 p-3 rounded-lg bg-gray-900 text-white text-sm shadow-lg opacity-0 group-hover:opacity-100 pointer-events-none z-50 transition-opacity duration-200">
+                                  <div className="font-semibold mb-2">Nutrition Score (0-100)</div>
+                                  <div className="space-y-2">
+                                    <p>This score represents the overall nutritional quality of your meal based on:</p>
+                                    <ul className="list-disc list-inside space-y-1 text-xs">
+                                      <li>Nutrient density and balance</li>
+                                      <li>Protein quality and quantity</li>
+                                      <li>Fiber and micronutrient content</li>
+                                      <li>Processing level of ingredients</li>
+                                    </ul>
+                                    <div className="pt-2 border-t border-gray-700">
+                                      <p className="font-medium text-green-400 mb-1">To improve your score:</p>
+                                      <ul className="list-disc list-inside space-y-1 text-xs">
+                                        <li>Add more vegetables and fruits</li>
+                                        <li>Choose lean proteins and whole grains</li>
+                                        <li>Reduce processed foods and added sugars</li>
+                                        <li>Include healthy fats (nuts, olive oil, avocado)</li>
+                                      </ul>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
                               {isEditingDisabled && (
                                 <span
                                   className={`text-xs px-2 py-1 rounded-full ${
