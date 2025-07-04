@@ -1,7 +1,7 @@
-import { BadgeManager, createBadgeManager, checkNewActivityBadges } from '../badgeManager';
+import { IActivity } from '@/lib/supabase/activities';
 import { IBadge, IUserBadge } from '@/lib/supabase/badges';
 import { IProfile } from '@/lib/supabase/profile';
-import { IActivity } from '@/lib/supabase/activities';
+import { BadgeManager, createBadgeManager, checkNewActivityBadges } from '../badgeManager';
 
 const badge1: IBadge = {
   id: 'b1',
@@ -140,7 +140,6 @@ describe('BadgeManager', () => {
   it('refresh resets and re-initializes', async () => {
     const manager = new BadgeManager('address7');
     await manager.initialize();
-    manager.initialized = true;
     await manager.refresh();
     expect(manager.getAllBadges().length).toBeGreaterThan(0);
   });

@@ -11,8 +11,8 @@ import {
   installPWA,
   onPWAInstalled,
   type PWAInstallationSupport,
-} from '@/utils/pwa';
-import { registerServiceWorker } from '@/utils/serviceWorker';
+} from '@/utils/pwa/pwa';
+import { registerServiceWorker } from '@/utils/pwa/serviceWorker';
 import InstallInstructionsDialog from './install-instructions-dialog';
 
 interface InstallPWAProps {

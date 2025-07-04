@@ -14,7 +14,9 @@ describe('mapUserStakeToDB', () => {
       timeRemaining: 86400 * 30,
       timeRemainingFormatted: '30d 0h',
       canUnstake: false,
-      lastClaimed: 0,
+      lastClaimed: BigInt(0),
+      created_at: new Date(Date.now()).toISOString(),
+      updated_at: new Date(Date.now()).toISOString(),
     };
     const address = 'erd1...';
     const result = mapUserStakeToDB(userStake, address);
@@ -39,7 +41,9 @@ describe('mapUserStakeToDB', () => {
       timeRemaining: 0,
       timeRemainingFormatted: 'Unlocked',
       canUnstake: true,
-      lastClaimed: 0,
+      lastClaimed: BigInt(0),
+      created_at: new Date(Date.now()).toISOString(),
+      updated_at: new Date(Date.now()).toISOString(),
     };
     const address = 'erd1...';
     const result = mapUserStakeToDB(userStake, address, true);

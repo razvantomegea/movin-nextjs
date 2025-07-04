@@ -7,7 +7,11 @@ import { TransactionConfirmationModal } from '@/components/transaction-confirmat
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { getTransactionDetails, formatSubscriptionDate, PlanTypeEnum } from '@/utils/subscription';
+import {
+  getTransactionDetails,
+  formatSubscriptionDate,
+  PlanTypeEnum,
+} from '@/utils/pwa/subscription';
 import { SubscriptionPageSkeleton } from './subscription-page-skeleton';
 import { SubscriptionPlanCard } from './subscription-plan-card';
 import { useSubscription } from '../hooks/useSubscription';

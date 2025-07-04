@@ -12,8 +12,8 @@ import {
   getCurrentPlan,
   isPremiumExpired,
   isPlanCurrent,
-} from '@/utils/subscription';
-import { MONTHLY_SUBSCRIPTION_AMOUNT, YEARLY_SUBSCRIPTION_AMOUNT } from '@/utils/subscription';
+} from '@/utils/pwa/subscription';
+import { MONTHLY_SUBSCRIPTION_AMOUNT, YEARLY_SUBSCRIPTION_AMOUNT } from '@/utils/pwa/subscription';
 
 export function useSubscription() {
   const dispatch = useAppDispatch();

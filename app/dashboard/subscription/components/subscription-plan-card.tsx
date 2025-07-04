@@ -12,7 +12,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { PlanTypeEnum } from '@/utils/subscription';
+import { PlanTypeEnum } from '@/utils/pwa/subscription';
 import { useSubscription } from '../hooks/useSubscription';
 
 interface IPlanCardProps {

@@ -11,7 +11,7 @@ import {
   teardownPushNotifications,
   getCurrentPushSubscription,
   type PushNotificationSupport,
-} from '@/utils/pushNotifications';
+} from '@/utils/pwa/pushNotifications';
 
 interface PushManagerProps {
   onSubscriptionChange?: (subscription: PushSubscription | null) => void;

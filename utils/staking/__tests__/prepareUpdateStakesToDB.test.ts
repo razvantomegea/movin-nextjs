@@ -24,7 +24,7 @@ describe('prepareUpdateStakesInDB', () => {
       timeRemaining: 0,
       timeRemainingFormatted: '',
       canUnstake: true,
-      lastClaimed: 0,
+      lastClaimed: BigInt(0),
     };
     const result = prepareUpdateStakesInDB({
       dbStakes: [],
@@ -49,7 +49,7 @@ describe('prepareUpdateStakesInDB', () => {
       timeRemaining: 0,
       timeRemainingFormatted: '',
       canUnstake: true,
-      lastClaimed: 0,
+      lastClaimed: BigInt(0),
     };
     const dbStake = {
       id: '1',
@@ -61,6 +61,8 @@ describe('prepareUpdateStakesInDB', () => {
       lock_period_months: 1,
       apr: 1,
       is_active: true,
+      created_at: new Date(now).toISOString(),
+      updated_at: new Date(now).toISOString(),
     };
     const result = prepareUpdateStakesInDB({
       dbStakes: [dbStake],
