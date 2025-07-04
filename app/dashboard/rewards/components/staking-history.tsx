@@ -4,7 +4,7 @@ import { useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useMovinToken } from '@/lib/hooks/useMovinToken';
 import { useAppSelector } from '@/lib/redux/hooks';
-import { formatDate } from '@/utils/date';
+import { formatDate } from '@/utils/date/date';
 
 export function StakingHistory() {
   // Get staking history from Supabase via Redux

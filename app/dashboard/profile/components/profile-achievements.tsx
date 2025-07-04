@@ -11,7 +11,7 @@ import { IUserBadge } from '@/lib/supabase/badges';
 import { IProfile } from '@/lib/supabase/profile';
 import { BadgeCheckResult } from '@/utils/badges/badgeChecker';
 import { createBadgeManager, BadgeManager } from '@/utils/badges/badgeManager';
-import { formatDate } from '@/utils/date';
+import { formatDate } from '@/utils/date/date';
 
 // Icon mapping to handle different icon names - moved outside component for performance
 const iconMap: Record<string, LucideIcons.LucideIcon> = {

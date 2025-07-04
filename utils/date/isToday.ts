@@ -31,7 +31,7 @@ export function isTodayMonthDay(dateStr: string): boolean {
 
     return month === today.getMonth() + 1 && day === today.getDate();
   } catch (error) {
-    console.error("Error in isTodayMonthDay:", error);
+    console.error('Error in isTodayMonthDay:', error);
     return false;
   }
 }
