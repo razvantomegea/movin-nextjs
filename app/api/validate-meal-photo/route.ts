@@ -1,5 +1,6 @@
 import * as Sentry from '@sentry/nextjs';
 import { NextRequest, NextResponse } from 'next/server';
+import { GOOGLE_AI_MODEL_NAME } from '@/constants';
 import {
   initGoogleAI,
   processImageForAI,
@@ -22,6 +23,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Image data is required' }, { status: 400 });
     }
 
+    // Validate imageData format (must be a base64 data URL for supported image types)
+    const imageDataUrlPattern = /^data:image\/(png|jpg|jpeg|gif|webp);base64,/;
+    if (typeof imageData !== 'string' || !imageDataUrlPattern.test(imageData)) {
+      return NextResponse.json(
+        {
+          error:
+            'Invalid image format. Must be a base64-encoded image data URL (png, jpg, jpeg, gif, webp).',
+        },
+        { status: 400 },
+      );
+    }
+
     if (!mealDescription) {
       return NextResponse.json({ error: 'Meal description is required' }, { status: 400 });
     }
@@ -32,7 +45,7 @@ export async function POST(request: NextRequest) {
 
       // Initialize Google AI client
       const ai = initGoogleAI(apiKey);
-      const modelName = 'gemini-2.0-flash-001';
+      const modelName = GOOGLE_AI_MODEL_NAME;
 
       const prompt = `
         You are tasked with validating whether a photo matches a meal description. Please analyze the provided image and compare it to the following meal description:

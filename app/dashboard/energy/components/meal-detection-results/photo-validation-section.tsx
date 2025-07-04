@@ -3,6 +3,10 @@ import { Camera, Upload, Award, CheckCircle, XCircle, X } from 'lucide-react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { PhotoValidationSectionProps } from './types';
+import { calculatePhotoValidationReward } from './utils/meal-score-utils';
+
+// Confidence threshold for photo validation
+const PHOTO_VALIDATION_CONFIDENCE_THRESHOLD = 70;
 
 export function PhotoValidationSection({
   sourceType,
@@ -25,7 +29,11 @@ export function PhotoValidationSection({
 
   // Extract validation status box color/border
   let validationBoxClass = '';
-  if (photoValidation && photoValidation.isValid && photoValidation.confidence >= 70) {
+  if (
+    photoValidation &&
+    photoValidation.isValid &&
+    photoValidation.confidence >= PHOTO_VALIDATION_CONFIDENCE_THRESHOLD
+  ) {
     validationBoxClass = isDark
       ? 'bg-green-900/20 border-green-800'
       : 'bg-green-50 border-green-200';
@@ -90,7 +98,12 @@ export function PhotoValidationSection({
                 <>
                   If your photo matches the meal description, you can earn up to{' '}
                   <span className="font-semibold">
-                    {((detectedMeal?.mealScore || 0) / 100 + 0.5).toFixed(2)} MVN
+                    {calculatePhotoValidationReward(
+                      detectedMeal?.mealScore || 0,
+                      true,
+                      PHOTO_VALIDATION_CONFIDENCE_THRESHOLD,
+                    )}{' '}
+                    MVN
                   </span>{' '}
                   (last meal claimed &gt; 2 hours ago)
                 </>
@@ -135,13 +148,15 @@ export function PhotoValidationSection({
           ) : photoValidation ? (
             <div className={`p-4 rounded-lg border ${validationBoxClass}`}>
               <div className="flex items-center mb-2">
-                {photoValidation.isValid && photoValidation.confidence >= 70 ? (
+                {photoValidation.isValid &&
+                photoValidation.confidence >= PHOTO_VALIDATION_CONFIDENCE_THRESHOLD ? (
                   <CheckCircle className="h-5 w-5 mr-2 text-green-500" />
                 ) : (
                   <XCircle className="h-5 w-5 mr-2 text-red-500" />
                 )}
                 <span className="font-medium">
-                  {photoValidation.isValid && photoValidation.confidence >= 70
+                  {photoValidation.isValid &&
+                  photoValidation.confidence >= PHOTO_VALIDATION_CONFIDENCE_THRESHOLD
                     ? 'Photo Validated!'
                     : 'Validation Failed'}
                 </span>
@@ -157,7 +172,7 @@ export function PhotoValidationSection({
               </p>
 
               {photoValidation.isValid &&
-                photoValidation.confidence >= 70 &&
+                photoValidation.confidence >= PHOTO_VALIDATION_CONFIDENCE_THRESHOLD &&
                 canClaimPhotoReward && (
                   <div className="text-center p-2 bg-yellow-100 dark:bg-yellow-900/20 rounded border border-yellow-200 dark:border-yellow-800">
                     <span className="text-sm font-medium text-yellow-800 dark:text-yellow-200">

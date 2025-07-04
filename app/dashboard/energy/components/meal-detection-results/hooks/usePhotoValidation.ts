@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { useAppDispatch } from '@/lib/redux/hooks';
 import { showSuccessToast, showErrorToast } from '@/lib/redux/slices/toastSlice';
 import { DetectedMeal } from '@/utils/energy/mealHelpers';
@@ -17,8 +17,38 @@ export function usePhotoValidation() {
   });
 
   const validatePhoto = useCallback(
-    async (imageData: string, mealDescription: string): Promise<PhotoValidationResult | null> => {
+    async (
+      imageData: string,
+      mealDescription: string,
+      signal?: AbortSignal,
+    ): Promise<PhotoValidationResult | null> => {
+      // Input validation
+      if (!imageData || typeof imageData !== 'string' || imageData.trim() === '') {
+        dispatch(
+          showErrorToast({
+            title: 'Validation Error',
+            description: 'Photo data is missing or invalid.',
+          }),
+        );
+        return null;
+      }
+      if (
+        !mealDescription ||
+        typeof mealDescription !== 'string' ||
+        mealDescription.trim() === ''
+      ) {
+        dispatch(
+          showErrorToast({
+            title: 'Validation Error',
+            description: 'Meal description is missing or invalid.',
+          }),
+        );
+        return null;
+      }
+
       setPhotoValidationState((prev) => ({ ...prev, isValidatingPhoto: true }));
+
+      let didAbort = false;
 
       try {
         const response = await fetch('/api/validate-meal-photo', {
@@ -28,6 +58,7 @@ export function usePhotoValidation() {
             imageData,
             mealDescription,
           }),
+          signal,
         });
 
         const result = await response.json();
@@ -43,21 +74,30 @@ export function usePhotoValidation() {
           );
           return null;
         }
-      } catch (error) {
-        console.error('Photo validation error:', error);
-        dispatch(
-          showErrorToast({
-            title: 'Validation Error',
-            description: 'An error occurred while validating the photo.',
-          }),
-        );
+      } catch (error: unknown) {
+        if (error instanceof Error && error.name === 'AbortError') {
+          didAbort = true;
+        } else {
+          console.error('Photo validation error:', error);
+          dispatch(
+            showErrorToast({
+              title: 'Validation Error',
+              description: 'An error occurred while validating the photo.',
+            }),
+          );
+        }
         return null;
       } finally {
-        setPhotoValidationState((prev) => ({ ...prev, isValidatingPhoto: false }));
+        if (!didAbort) {
+          setPhotoValidationState((prev) => ({ ...prev, isValidatingPhoto: false }));
+        }
       }
     },
     [dispatch],
   );
+
+  // Ref to store the current AbortController for photo validation
+  const photoValidationAbortRef = useRef<AbortController | null>(null);
 
   const handlePhotoCapture = useCallback(
     async (imageData: string, detectedMeal: DetectedMeal | null, originalDescription?: string) => {
@@ -67,8 +107,21 @@ export function usePhotoValidation() {
         showCameraModal: false,
       }));
 
+      // Abort any previous validation in progress
+      if (photoValidationAbortRef.current) {
+        photoValidationAbortRef.current.abort();
+      }
+      const abortController = new AbortController();
+      photoValidationAbortRef.current = abortController;
+
       if (detectedMeal && originalDescription) {
-        const validation = await validatePhoto(imageData, originalDescription);
+        const validation = await validatePhoto(
+          imageData,
+          originalDescription,
+          abortController.signal,
+        );
+
+        if (abortController.signal.aborted) return; // Don't update state if aborted
 
         if (validation) {
           setPhotoValidationState((prev) => ({
@@ -101,6 +154,15 @@ export function usePhotoValidation() {
     },
     [dispatch, validatePhoto],
   );
+
+  // Cleanup: abort validation if component unmounts
+  useEffect(() => {
+    return () => {
+      if (photoValidationAbortRef.current) {
+        photoValidationAbortRef.current.abort();
+      }
+    };
+  }, []);
 
   const handleRemovePhoto = useCallback(() => {
     setPhotoValidationState((prev) => ({

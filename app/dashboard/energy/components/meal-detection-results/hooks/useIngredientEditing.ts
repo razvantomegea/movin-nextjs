@@ -20,6 +20,15 @@ export function useIngredientEditing() {
 
   const analyzeIngredient = useCallback(
     async (ingredientName: string) => {
+      if (typeof ingredientName !== 'string' || ingredientName.trim().length === 0) {
+        dispatch(
+          showErrorToast({
+            title: 'Invalid Ingredient Name',
+            description: 'Please enter a valid ingredient name to analyze.',
+          }),
+        );
+        return null;
+      }
       try {
         const response = await fetch('/api/analyze-ingredient', {
           method: 'POST',
@@ -27,7 +36,32 @@ export function useIngredientEditing() {
           body: JSON.stringify({ ingredientName }),
         });
 
-        const apiResult = await response.json();
+        let apiResult: any;
+        try {
+          apiResult = await response.json();
+        } catch (jsonError) {
+          dispatch(
+            showErrorToast({
+              title: 'Invalid API Response',
+              description: 'Could not parse ingredient analysis response.',
+            }),
+          );
+          return null;
+        }
+
+        if (
+          typeof apiResult !== 'object' ||
+          typeof apiResult.success !== 'boolean' ||
+          (!('data' in apiResult) && !('error' in apiResult))
+        ) {
+          dispatch(
+            showErrorToast({
+              title: 'Unexpected API Response',
+              description: 'The ingredient analysis response was not in the expected format.',
+            }),
+          );
+          return null;
+        }
 
         if (apiResult.success) {
           return apiResult.data;
@@ -64,6 +98,7 @@ export function useIngredientEditing() {
 
   const handleSaveIngredientEdit = useCallback(
     async (detectedMeal: DetectedMeal, setDetectedMeal: (meal: DetectedMeal) => void) => {
+      if (editingState.isAnalyzingIngredient) return;
       if (!editingState.editingIngredientId) return;
 
       const currentIngredient = detectedMeal.ingredients.find(
@@ -77,27 +112,29 @@ export function useIngredientEditing() {
       if (nameChanged && currentIngredient.name.trim()) {
         setEditingState((prev) => ({ ...prev, isAnalyzingIngredient: true }));
 
-        const analyzedData = await analyzeIngredient(currentIngredient.name);
+        try {
+          const analyzedData = await analyzeIngredient(currentIngredient.name);
 
-        if (analyzedData) {
-          const updatedIngredients = detectedMeal.ingredients.map((ing) =>
-            ing.id === editingState.editingIngredientId
-              ? { ...ing, ...analyzedData, name: analyzedData.name }
-              : ing,
-          );
+          if (analyzedData) {
+            const updatedIngredients = detectedMeal.ingredients.map((ing) =>
+              ing.id === editingState.editingIngredientId
+                ? { ...ing, ...analyzedData, name: analyzedData.name }
+                : ing,
+            );
 
-          const totals = calculateTotals(updatedIngredients);
-          setDetectedMeal({ ...detectedMeal, ingredients: updatedIngredients, ...totals });
+            const totals = calculateTotals(updatedIngredients);
+            setDetectedMeal({ ...detectedMeal, ingredients: updatedIngredients, ...totals });
 
-          dispatch(
-            showSuccessToast({
-              title: 'Ingredient Updated',
-              description: `${analyzedData.name} nutritional info updated.`,
-            }),
-          );
+            dispatch(
+              showSuccessToast({
+                title: 'Ingredient Updated',
+                description: `${analyzedData.name} nutritional info updated.`,
+              }),
+            );
+          }
+        } finally {
+          setEditingState((prev) => ({ ...prev, isAnalyzingIngredient: false }));
         }
-
-        setEditingState((prev) => ({ ...prev, isAnalyzingIngredient: false }));
       }
 
       setEditingState({

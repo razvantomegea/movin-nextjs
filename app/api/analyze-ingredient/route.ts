@@ -1,6 +1,7 @@
 import { GoogleGenAI } from '@google/genai';
 import * as Sentry from '@sentry/nextjs';
 import { NextRequest, NextResponse } from 'next/server';
+import { GOOGLE_AI_MODEL_NAME } from '@/constants';
 
 export async function POST(request: NextRequest) {
   try {
@@ -47,7 +48,7 @@ export async function POST(request: NextRequest) {
 
     // Call Google AI API
     const result = await genAI.models.generateContent({
-      model: 'gemini-2.0-flash-001',
+      model: GOOGLE_AI_MODEL_NAME,
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
     });
     const text = result.text ?? '';
