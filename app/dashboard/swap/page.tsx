@@ -47,21 +47,13 @@ export default function SwapPage() {
                   <h4 className="font-medium mb-2">How to Swap:</h4>
                   <ol className="text-sm space-y-1 list-decimal list-inside text-muted-foreground">
                     <li>Connect your wallet to Uniswap</li>
-                    <li>Select MVN token from the token list</li>
+                    <li>
+                      Select MVN token with the correct contract address (check below) from the
+                      token list
+                    </li>
                     <li>Choose your desired trading pair (USDC, ETH, etc.)</li>
                     <li>Enter the amount and confirm the swap</li>
                   </ol>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div className="text-center p-3 bg-green-50 dark:bg-green-950/20 rounded-lg">
-                    <div className="font-medium text-green-700 dark:text-green-300">Network</div>
-                    <div className="text-green-600 dark:text-green-400">Base</div>
-                  </div>
-                  <div className="text-center p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
-                    <div className="font-medium text-blue-700 dark:text-blue-300">Symbol</div>
-                    <div className="text-blue-600 dark:text-blue-400">MVN</div>
-                  </div>
                 </div>
               </div>
 
