@@ -239,10 +239,12 @@ export async function updateGoalProgress({
   address,
   category = 'daily',
   client,
+  checkLevelProgression = false,
 }: {
   address: string;
   category?: GoalCategory;
   client?: SupabaseClient;
+  checkLevelProgression?: boolean;
 }): Promise<void> {
   if (!client) {
     client = getClient();
@@ -255,6 +257,17 @@ export async function updateGoalProgress({
 
   if (error) {
     throw error;
+  }
+
+  // Optionally check for level progression after updating goals
+  if (checkLevelProgression) {
+    try {
+      const { checkAndUpdateLevel } = await import('./levelProgression');
+      await checkAndUpdateLevel({ address, client });
+    } catch (error) {
+      console.warn('Level progression check failed:', error);
+      // Don't throw error to avoid breaking goal updates
+    }
   }
 }
 
@@ -278,6 +291,15 @@ export async function updateAllGoalProgress({
     updateGoalProgress({ address, category: 'weekly', client }),
     updateGoalProgress({ address, category: 'monthly', client }),
   ]);
+
+  // After updating all goals, check for level progression
+  try {
+    const { checkAndUpdateLevel } = await import('./levelProgression');
+    await checkAndUpdateLevel({ address, client });
+  } catch (error) {
+    console.warn('Level progression check failed:', error);
+    // Don't throw error to avoid breaking goal updates
+  }
 }
 
 /**
