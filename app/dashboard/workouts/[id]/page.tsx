@@ -1,29 +1,13 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
 import { useAppKitAccount } from '@reown/appkit/react';
-import { 
-  fetchWorkoutWithExercises, 
-  updateWorkoutAction, 
-  completeWorkoutAction,
-  clearCurrentWorkout,
-  clearError 
-} from '@/lib/redux/slices/workoutsSlice';
 import {
-  fetchExercises,
-  createExerciseAction,
-  updateExerciseAction,
-  deleteExerciseAction,
-  clearError as clearExerciseError
-} from '@/lib/redux/slices/exercisesSlice';
-import { 
-  Plus, 
-  Edit, 
-  Trash2, 
-  CheckCircle, 
-  Clock, 
+  Plus,
+  Edit,
+  Trash2,
+  CheckCircle,
+  Clock,
   ArrowLeft,
   Play,
   Pause,
@@ -32,326 +16,35 @@ import {
   Hash,
   Target,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
 } from 'lucide-react';
+import { useParams, useRouter } from 'next/navigation';
+import { toast } from 'sonner';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { toast } from 'sonner';
-import type { CreateExerciseData, UpdateExerciseData, WorkoutExercise } from '@/lib/supabase/workouts';
-
-interface ExerciseModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  exercise?: WorkoutExercise;
-  workoutId: string;
-  onSave: (data: CreateExerciseData | { exerciseId: string; data: UpdateExerciseData }) => void;
-}
-
-function ExerciseModal({ isOpen, onClose, exercise, workoutId, onSave }: ExerciseModalProps) {
-  const [formData, setFormData] = useState({
-    exercise_name: '',
-    sets: 1,
-    reps: 1,
-    weight: 0,
-    time_under_tension: 0,
-    exercise_duration: 0,
-    rest_time: 60,
-    notes: '',
-  });
-
-  useEffect(() => {
-    if (exercise) {
-      setFormData({
-        exercise_name: exercise.exercise_name,
-        sets: exercise.sets,
-        reps: exercise.reps,
-        weight: exercise.weight,
-        time_under_tension: exercise.time_under_tension,
-        exercise_duration: exercise.exercise_duration,
-        rest_time: exercise.rest_time,
-        notes: exercise.notes || '',
-      });
-    } else {
-      setFormData({
-        exercise_name: '',
-        sets: 1,
-        reps: 1,
-        weight: 0,
-        time_under_tension: 0,
-        exercise_duration: 0,
-        rest_time: 60,
-        notes: '',
-      });
-    }
-  }, [exercise, isOpen]);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (exercise) {
-      onSave({
-        exerciseId: exercise.id,
-        data: formData
-      });
-    } else {
-      onSave({
-        workout_id: workoutId,
-        ...formData
-      } as CreateExerciseData);
-    }
-    
-    onClose();
-  };
-
-  const handleChange = (field: string, value: string | number) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
-
-  return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{exercise ? 'Edit Exercise' : 'Add New Exercise'}</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="exercise-name">Exercise Name</Label>
-            <Input
-              id="exercise-name"
-              value={formData.exercise_name}
-              onChange={(e) => handleChange('exercise_name', e.target.value)}
-              placeholder="e.g., Bench Press, Squats, etc."
-              required
-            />
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="sets">Sets</Label>
-              <Input
-                id="sets"
-                type="number"
-                min="1"
-                value={formData.sets}
-                onChange={(e) => handleChange('sets', parseInt(e.target.value) || 1)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="reps">Reps</Label>
-              <Input
-                id="reps"
-                type="number"
-                min="1"
-                value={formData.reps}
-                onChange={(e) => handleChange('reps', parseInt(e.target.value) || 1)}
-                required
-              />
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="weight">Weight (lbs)</Label>
-              <Input
-                id="weight"
-                type="number"
-                min="0"
-                step="0.5"
-                value={formData.weight}
-                onChange={(e) => handleChange('weight', parseFloat(e.target.value) || 0)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="rest-time">Rest Time (seconds)</Label>
-              <Input
-                id="rest-time"
-                type="number"
-                min="0"
-                value={formData.rest_time}
-                onChange={(e) => handleChange('rest_time', parseInt(e.target.value) || 0)}
-              />
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="time-under-tension">Time Under Tension (seconds)</Label>
-              <Input
-                id="time-under-tension"
-                type="number"
-                min="0"
-                value={formData.time_under_tension}
-                onChange={(e) => handleChange('time_under_tension', parseInt(e.target.value) || 0)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="exercise-duration">Exercise Duration (seconds)</Label>
-              <Input
-                id="exercise-duration"
-                type="number"
-                min="0"
-                value={formData.exercise_duration}
-                onChange={(e) => handleChange('exercise_duration', parseInt(e.target.value) || 0)}
-              />
-            </div>
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="exercise-notes">Notes (Optional)</Label>
-            <Textarea
-              id="exercise-notes"
-              value={formData.notes}
-              onChange={(e) => handleChange('notes', e.target.value)}
-              placeholder="Add any notes about this exercise..."
-              rows={2}
-            />
-          </div>
-          
-          <div className="flex justify-end space-x-2">
-            <Button type="button" variant="outline" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button type="submit">
-              {exercise ? 'Update Exercise' : 'Add Exercise'}
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-interface ExerciseCardProps {
-  exercise: WorkoutExercise;
-  onEdit: (exercise: WorkoutExercise) => void;
-  onDelete: (exerciseId: string) => void;
-  onUpdateProgress: (exerciseId: string, completedSets: number) => void;
-}
-
-function ExerciseCard({ exercise, onEdit, onDelete, onUpdateProgress }: ExerciseCardProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [completedSets, setCompletedSets] = useState(exercise.completed_sets);
-
-  const formatTime = (seconds: number) => {
-    if (seconds < 60) return `${seconds}s`;
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return remainingSeconds > 0 ? `${minutes}m ${remainingSeconds}s` : `${minutes}m`;
-  };
-
-  const volume = exercise.sets * exercise.reps * exercise.weight;
-
-  const handleSetCompletion = (setNumber: number) => {
-    const newCompletedSets = setNumber > completedSets ? setNumber : setNumber - 1;
-    setCompletedSets(newCompletedSets);
-    onUpdateProgress(exercise.id, newCompletedSets);
-  };
-
-  return (
-    <Card className="hover:shadow-md transition-shadow">
-      <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
-        <CollapsibleTrigger asChild>
-          <CardHeader className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <CardTitle className="text-lg">{exercise.exercise_name}</CardTitle>
-                <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                  {exercise.sets} sets × {exercise.reps} reps @ {exercise.weight}lbs
-                </div>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Badge variant={completedSets === exercise.sets ? "default" : "secondary"}>
-                  {completedSets}/{exercise.sets} sets
-                </Badge>
-                {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-              </div>
-            </div>
-          </CardHeader>
-        </CollapsibleTrigger>
-        
-        <CollapsibleContent>
-          <CardContent className="pt-0">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-              <div className="text-center">
-                <div className="text-sm font-medium text-gray-600 dark:text-gray-400">Volume</div>
-                <div className="text-lg font-semibold">{volume.toLocaleString()}</div>
-              </div>
-              {exercise.time_under_tension > 0 && (
-                <div className="text-center">
-                  <div className="text-sm font-medium text-gray-600 dark:text-gray-400">TUT</div>
-                  <div className="text-lg font-semibold">{formatTime(exercise.time_under_tension)}</div>
-                </div>
-              )}
-              {exercise.exercise_duration > 0 && (
-                <div className="text-center">
-                  <div className="text-sm font-medium text-gray-600 dark:text-gray-400">Duration</div>
-                  <div className="text-lg font-semibold">{formatTime(exercise.exercise_duration)}</div>
-                </div>
-              )}
-              {exercise.rest_time > 0 && (
-                <div className="text-center">
-                  <div className="text-sm font-medium text-gray-600 dark:text-gray-400">Rest</div>
-                  <div className="text-lg font-semibold">{formatTime(exercise.rest_time)}</div>
-                </div>
-              )}
-            </div>
-            
-            {/* Set Tracking */}
-            <div className="mb-4">
-              <div className="text-sm font-medium mb-2">Track Sets:</div>
-              <div className="flex flex-wrap gap-2">
-                {Array.from({ length: exercise.sets }, (_, i) => (
-                  <Button
-                    key={i}
-                    variant={i < completedSets ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => handleSetCompletion(i + 1)}
-                    className="w-10 h-10 p-0"
-                  >
-                    {i + 1}
-                  </Button>
-                ))}
-              </div>
-            </div>
-            
-            {exercise.notes && (
-              <div className="mb-4">
-                <div className="text-sm font-medium mb-1">Notes:</div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">{exercise.notes}</div>
-              </div>
-            )}
-            
-            <div className="flex justify-end space-x-2">
-              <Button variant="outline" size="sm" onClick={() => onEdit(exercise)}>
-                <Edit className="h-3 w-3 mr-1" />
-                Edit
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => onDelete(exercise.id)}
-                className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
-              >
-                <Trash2 className="h-3 w-3 mr-1" />
-                Delete
-              </Button>
-            </div>
-          </CardContent>
-        </CollapsibleContent>
-      </Collapsible>
-    </Card>
-  );
-}
+import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
+import {
+  fetchExercises,
+  createExerciseAction,
+  updateExerciseAction,
+  deleteExerciseAction,
+  clearError as clearExerciseError,
+} from '@/lib/redux/slices/exercisesSlice';
+import {
+  fetchWorkoutWithExercises,
+  updateWorkoutAction,
+  completeWorkoutAction,
+  clearCurrentWorkout,
+  clearError,
+} from '@/lib/redux/slices/workoutsSlice';
+import type {
+  CreateExerciseData,
+  UpdateExerciseData,
+  WorkoutExercise,
+} from '@/lib/supabase/workouts';
+import { ExerciseCard } from '../components/ExerciseCard';
+import { ExerciseModal } from '../components/ExerciseModal';
 
 export default function WorkoutPage() {
   const params = useParams();
@@ -360,7 +53,7 @@ export default function WorkoutPage() {
   const { address } = useAppKitAccount();
   const { currentWorkout, loading, error } = useAppSelector((state) => state.workouts);
   const { error: exerciseError } = useAppSelector((state) => state.exercises);
-  
+
   const [showExerciseModal, setShowExerciseModal] = useState(false);
   const [selectedExercise, setSelectedExercise] = useState<WorkoutExercise | undefined>();
   const [workoutStartTime, setWorkoutStartTime] = useState<Date | null>(null);
@@ -372,7 +65,7 @@ export default function WorkoutPage() {
     if (workoutId) {
       dispatch(fetchWorkoutWithExercises(workoutId));
     }
-    
+
     return () => {
       dispatch(clearCurrentWorkout());
     };
@@ -392,10 +85,14 @@ export default function WorkoutPage() {
     }
   }, [exerciseError, dispatch]);
 
-  const handleSaveExercise = async (data: CreateExerciseData | { exerciseId: string; data: UpdateExerciseData }) => {
+  const handleSaveExercise = async (
+    data: CreateExerciseData | { exerciseId: string; data: UpdateExerciseData },
+  ) => {
     try {
       if ('exerciseId' in data) {
-        await dispatch(updateExerciseAction(data)).unwrap();
+        await dispatch(
+          updateExerciseAction({ exerciseId: data.exerciseId, exerciseData: data.data }),
+        ).unwrap();
         toast.success('Exercise updated successfully!');
       } else {
         await dispatch(createExerciseAction(data)).unwrap();
@@ -423,10 +120,12 @@ export default function WorkoutPage() {
 
   const handleUpdateProgress = async (exerciseId: string, completedSets: number) => {
     try {
-      await dispatch(updateExerciseAction({
-        exerciseId,
-        exerciseData: { completed_sets: completedSets }
-      })).unwrap();
+      await dispatch(
+        updateExerciseAction({
+          exerciseId,
+          exerciseData: { completed_sets: completedSets },
+        }),
+      ).unwrap();
     } catch (error) {
       toast.error('Failed to update progress');
     }
@@ -434,7 +133,7 @@ export default function WorkoutPage() {
 
   const handleCompleteWorkout = async () => {
     if (!currentWorkout) return;
-    
+
     try {
       await dispatch(completeWorkoutAction(currentWorkout.id)).unwrap();
       toast.success('Workout completed! Great job! 🎉');
@@ -453,7 +152,7 @@ export default function WorkoutPage() {
   const formatDuration = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
-    
+
     if (hours > 0) {
       return `${hours}h ${minutes}m`;
     }
@@ -523,7 +222,7 @@ export default function WorkoutPage() {
             </p>
           </div>
         </div>
-        
+
         <div className="flex items-center space-x-2">
           {!currentWorkout.is_completed && (
             <>
@@ -540,11 +239,8 @@ export default function WorkoutPage() {
               )}
             </>
           )}
-          
-          <Button 
-            onClick={() => setShowExerciseModal(true)}
-            className="flex items-center gap-2"
-          >
+
+          <Button onClick={() => setShowExerciseModal(true)} className="flex items-center gap-2">
             <Plus className="h-4 w-4" />
             Add Exercise
           </Button>
@@ -566,7 +262,7 @@ export default function WorkoutPage() {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">
@@ -578,7 +274,7 @@ export default function WorkoutPage() {
             <div className="text-xs text-gray-500">lbs lifted</div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">
@@ -586,11 +282,13 @@ export default function WorkoutPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatDuration(currentWorkout.total_duration)}</div>
+            <div className="text-2xl font-bold">
+              {formatDuration(currentWorkout.total_duration)}
+            </div>
             <div className="text-xs text-gray-500">total time</div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">
@@ -607,7 +305,10 @@ export default function WorkoutPage() {
       {/* Status Badge */}
       <div className="flex items-center space-x-2">
         {currentWorkout.is_completed ? (
-          <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">
+          <Badge
+            variant="secondary"
+            className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100"
+          >
             <CheckCircle className="h-3 w-3 mr-1" />
             Completed
           </Badge>
@@ -628,9 +329,11 @@ export default function WorkoutPage() {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-semibold">Exercises</h2>
-          <span className="text-sm text-gray-500">{exercises.length} exercise{exercises.length !== 1 ? 's' : ''}</span>
+          <span className="text-sm text-gray-500">
+            {exercises.length} exercise{exercises.length !== 1 ? 's' : ''}
+          </span>
         </div>
-        
+
         {exercises.length === 0 ? (
           <Card className="text-center py-12">
             <CardContent>

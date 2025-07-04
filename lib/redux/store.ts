@@ -2,6 +2,7 @@ import { configureStore } from '@reduxjs/toolkit';
 import activityDataReducer from './slices/activityDataSlice';
 import activityRewardsReducer from './slices/activityRewardsSlice';
 import energyDataReducer from './slices/energyDataSlice';
+import exercisesReducer from './slices/exercisesSlice';
 import failedSavesReducer from './slices/failedSavesSlice';
 import goalsReducer from './slices/goalsSlice';
 import jointTrackingReducer from './slices/jointTrackingSlice';
@@ -12,7 +13,6 @@ import socialFeedReducer from './slices/socialFeedSlice';
 import stakingReducer from './slices/stakingSlice';
 import toastReducer from './slices/toastSlice';
 import workoutsReducer from './slices/workoutsSlice';
-import exercisesReducer from './slices/exercisesSlice';
 
 export const store = configureStore({
   reducer: {

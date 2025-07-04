@@ -73,9 +73,12 @@ export interface WorkoutWithExercises extends Workout {
 }
 
 // Workout CRUD operations
-export async function createWorkout(userAddress: string, workoutData: CreateWorkoutData): Promise<Workout> {
+export async function createWorkout(
+  userAddress: string,
+  workoutData: CreateWorkoutData,
+): Promise<Workout> {
   const supabase = getClient();
-  
+
   const { data, error } = await supabase
     .from('workouts')
     .insert({
@@ -94,7 +97,7 @@ export async function createWorkout(userAddress: string, workoutData: CreateWork
 
 export async function getWorkouts(userAddress: string): Promise<Workout[]> {
   const supabase = getClient();
-  
+
   const { data, error } = await supabase
     .from('workouts')
     .select('*')
@@ -110,12 +113,8 @@ export async function getWorkouts(userAddress: string): Promise<Workout[]> {
 
 export async function getWorkout(workoutId: string): Promise<Workout> {
   const supabase = getClient();
-  
-  const { data, error } = await supabase
-    .from('workouts')
-    .select('*')
-    .eq('id', workoutId)
-    .single();
+
+  const { data, error } = await supabase.from('workouts').select('*').eq('id', workoutId).single();
 
   if (error) {
     throw error;
@@ -126,13 +125,15 @@ export async function getWorkout(workoutId: string): Promise<Workout> {
 
 export async function getWorkoutWithExercises(workoutId: string): Promise<WorkoutWithExercises> {
   const supabase = getClient();
-  
+
   const { data, error } = await supabase
     .from('workouts')
-    .select(`
+    .select(
+      `
       *,
       workout_exercises (*)
-    `)
+    `,
+    )
     .eq('id', workoutId)
     .single();
 
@@ -142,15 +143,20 @@ export async function getWorkoutWithExercises(workoutId: string): Promise<Workou
 
   // Sort exercises by order_index
   if (data.workout_exercises) {
-    data.workout_exercises.sort((a: WorkoutExercise, b: WorkoutExercise) => a.order_index - b.order_index);
+    data.workout_exercises.sort(
+      (a: WorkoutExercise, b: WorkoutExercise) => a.order_index - b.order_index,
+    );
   }
 
   return data;
 }
 
-export async function updateWorkout(workoutId: string, workoutData: UpdateWorkoutData): Promise<Workout> {
+export async function updateWorkout(
+  workoutId: string,
+  workoutData: UpdateWorkoutData,
+): Promise<Workout> {
   const supabase = getClient();
-  
+
   const { data, error } = await supabase
     .from('workouts')
     .update(workoutData)
@@ -167,11 +173,8 @@ export async function updateWorkout(workoutId: string, workoutData: UpdateWorkou
 
 export async function deleteWorkout(workoutId: string): Promise<void> {
   const supabase = getClient();
-  
-  const { error } = await supabase
-    .from('workouts')
-    .delete()
-    .eq('id', workoutId);
+
+  const { error } = await supabase.from('workouts').delete().eq('id', workoutId);
 
   if (error) {
     throw error;
@@ -188,7 +191,7 @@ export async function completeWorkout(workoutId: string): Promise<Workout> {
 // Exercise CRUD operations
 export async function createExercise(exerciseData: CreateExerciseData): Promise<WorkoutExercise> {
   const supabase = getClient();
-  
+
   // Get the next order index for this workout
   const { data: maxOrderData } = await supabase
     .from('workout_exercises')
@@ -196,10 +199,9 @@ export async function createExercise(exerciseData: CreateExerciseData): Promise<
     .eq('workout_id', exerciseData.workout_id)
     .order('order_index', { ascending: false })
     .limit(1);
-  
-  const nextOrderIndex = maxOrderData && maxOrderData.length > 0 
-    ? maxOrderData[0].order_index + 1 
-    : 0;
+
+  const nextOrderIndex =
+    maxOrderData && maxOrderData.length > 0 ? maxOrderData[0].order_index + 1 : 0;
 
   const { data, error } = await supabase
     .from('workout_exercises')
@@ -219,7 +221,7 @@ export async function createExercise(exerciseData: CreateExerciseData): Promise<
 
 export async function getExercises(workoutId: string): Promise<WorkoutExercise[]> {
   const supabase = getClient();
-  
+
   const { data, error } = await supabase
     .from('workout_exercises')
     .select('*')
@@ -233,9 +235,12 @@ export async function getExercises(workoutId: string): Promise<WorkoutExercise[]
   return data || [];
 }
 
-export async function updateExercise(exerciseId: string, exerciseData: UpdateExerciseData): Promise<WorkoutExercise> {
+export async function updateExercise(
+  exerciseId: string,
+  exerciseData: UpdateExerciseData,
+): Promise<WorkoutExercise> {
   const supabase = getClient();
-  
+
   const { data, error } = await supabase
     .from('workout_exercises')
     .update(exerciseData)
@@ -252,11 +257,8 @@ export async function updateExercise(exerciseId: string, exerciseData: UpdateExe
 
 export async function deleteExercise(exerciseId: string): Promise<void> {
   const supabase = getClient();
-  
-  const { error } = await supabase
-    .from('workout_exercises')
-    .delete()
-    .eq('id', exerciseId);
+
+  const { error } = await supabase.from('workout_exercises').delete().eq('id', exerciseId);
 
   if (error) {
     throw error;
@@ -265,21 +267,25 @@ export async function deleteExercise(exerciseId: string): Promise<void> {
 
 export async function reorderExercises(workoutId: string, exerciseIds: string[]): Promise<void> {
   const supabase = getClient();
-  
+
   // Update order_index for each exercise
-  const updates = exerciseIds.map((exerciseId, index) => 
+  const updates = exerciseIds.map((exerciseId, index) =>
     supabase
       .from('workout_exercises')
       .update({ order_index: index })
       .eq('id', exerciseId)
-      .eq('workout_id', workoutId)
+      .eq('workout_id', workoutId),
   );
 
   await Promise.all(updates);
 }
 
 // Analytics functions
-export async function getWorkoutStats(userAddress: string, startDate?: string, endDate?: string): Promise<{
+export async function getWorkoutStats(
+  userAddress: string,
+  startDate?: string,
+  endDate?: string,
+): Promise<{
   totalWorkouts: number;
   totalVolume: number;
   totalDuration: number;
@@ -287,7 +293,7 @@ export async function getWorkoutStats(userAddress: string, startDate?: string, e
   completedWorkouts: number;
 }> {
   const supabase = getClient();
-  
+
   let query = supabase
     .from('workouts')
     .select('total_volume, total_duration, is_completed')
@@ -307,8 +313,14 @@ export async function getWorkoutStats(userAddress: string, startDate?: string, e
   }
 
   const totalWorkouts = data.length;
-  const totalVolume = data.reduce((sum: number, workout: any) => sum + (workout.total_volume || 0), 0);
-  const totalDuration = data.reduce((sum: number, workout: any) => sum + (workout.total_duration || 0), 0);
+  const totalVolume = data.reduce(
+    (sum: number, workout: any) => sum + (workout.total_volume || 0),
+    0,
+  );
+  const totalDuration = data.reduce(
+    (sum: number, workout: any) => sum + (workout.total_duration || 0),
+    0,
+  );
   const completedWorkouts = data.filter((workout: any) => workout.is_completed).length;
   const averageWorkoutDuration = totalWorkouts > 0 ? totalDuration / totalWorkouts : 0;
 
@@ -321,24 +333,32 @@ export async function getWorkoutStats(userAddress: string, startDate?: string, e
   };
 }
 
-export async function getExerciseProgress(userAddress: string, exerciseName: string, limit = 10): Promise<{
-  date: string;
-  maxWeight: number;
-  totalVolume: number;
-  totalSets: number;
-}[]> {
+export async function getExerciseProgress(
+  userAddress: string,
+  exerciseName: string,
+  limit = 10,
+): Promise<
+  {
+    date: string;
+    maxWeight: number;
+    totalVolume: number;
+    totalSets: number;
+  }[]
+> {
   const supabase = getClient();
-  
+
   const { data, error } = await supabase
     .from('workout_exercises')
-    .select(`
+    .select(
+      `
       *,
       workouts!inner (
         user_address,
         created_at,
         is_completed
       )
-    `)
+    `,
+    )
     .eq('exercise_name', exerciseName)
     .eq('workouts.user_address', userAddress.toLowerCase())
     .eq('workouts.is_completed', true)
@@ -352,7 +372,7 @@ export async function getExerciseProgress(userAddress: string, exerciseName: str
   // Group by date and calculate metrics
   const progressByDate = data.reduce((acc: Record<string, any>, exercise: any) => {
     const date = exercise.workouts.created_at.split('T')[0];
-    
+
     if (!acc[date]) {
       acc[date] = {
         date,
@@ -365,7 +385,7 @@ export async function getExerciseProgress(userAddress: string, exerciseName: str
       acc[date].totalVolume += exercise.sets * exercise.reps * exercise.weight;
       acc[date].totalSets += exercise.sets;
     }
-    
+
     return acc;
   }, {});
 

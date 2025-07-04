@@ -1,8 +1,8 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import type { 
-  Workout, 
-  WorkoutWithExercises, 
-  CreateWorkoutData, 
+import {
+  Workout,
+  WorkoutWithExercises,
+  CreateWorkoutData,
   UpdateWorkoutData,
   getWorkouts,
   getWorkout,
@@ -11,11 +11,8 @@ import type {
   updateWorkout,
   deleteWorkout,
   completeWorkout,
-  getWorkoutStats
+  getWorkoutStats,
 } from '@/lib/supabase/workouts';
-
-// Import the functions - we'll fix the import issue
-import * as workoutAPI from '@/lib/supabase/workouts';
 
 interface WorkoutState {
   workouts: Workout[];
@@ -44,89 +41,102 @@ export const fetchWorkouts = createAsyncThunk(
   'workouts/fetchWorkouts',
   async (userAddress: string, { rejectWithValue }) => {
     try {
-      return await workoutAPI.getWorkouts(userAddress);
+      return await getWorkouts(userAddress);
     } catch (error: any) {
       return rejectWithValue(error.message);
     }
-  }
+  },
 );
 
 export const fetchWorkout = createAsyncThunk(
   'workouts/fetchWorkout',
   async (workoutId: string, { rejectWithValue }) => {
     try {
-      return await workoutAPI.getWorkout(workoutId);
+      return await getWorkout(workoutId);
     } catch (error: any) {
       return rejectWithValue(error.message);
     }
-  }
+  },
 );
 
 export const fetchWorkoutWithExercises = createAsyncThunk(
   'workouts/fetchWorkoutWithExercises',
   async (workoutId: string, { rejectWithValue }) => {
     try {
-      return await workoutAPI.getWorkoutWithExercises(workoutId);
+      return await getWorkoutWithExercises(workoutId);
     } catch (error: any) {
       return rejectWithValue(error.message);
     }
-  }
+  },
 );
 
 export const createWorkoutAction = createAsyncThunk(
   'workouts/createWorkout',
-  async ({ userAddress, workoutData }: { userAddress: string; workoutData: CreateWorkoutData }, { rejectWithValue }) => {
+  async (
+    { userAddress, workoutData }: { userAddress: string; workoutData: CreateWorkoutData },
+    { rejectWithValue },
+  ) => {
     try {
-      return await workoutAPI.createWorkout(userAddress, workoutData);
+      return await createWorkout(userAddress, workoutData);
     } catch (error: any) {
       return rejectWithValue(error.message);
     }
-  }
+  },
 );
 
 export const updateWorkoutAction = createAsyncThunk(
   'workouts/updateWorkout',
-  async ({ workoutId, workoutData }: { workoutId: string; workoutData: UpdateWorkoutData }, { rejectWithValue }) => {
+  async (
+    { workoutId, workoutData }: { workoutId: string; workoutData: UpdateWorkoutData },
+    { rejectWithValue },
+  ) => {
     try {
-      return await workoutAPI.updateWorkout(workoutId, workoutData);
+      return await updateWorkout(workoutId, workoutData);
     } catch (error: any) {
       return rejectWithValue(error.message);
     }
-  }
+  },
 );
 
 export const deleteWorkoutAction = createAsyncThunk(
   'workouts/deleteWorkout',
   async (workoutId: string, { rejectWithValue }) => {
     try {
-      await workoutAPI.deleteWorkout(workoutId);
+      await deleteWorkout(workoutId);
       return workoutId;
     } catch (error: any) {
       return rejectWithValue(error.message);
     }
-  }
+  },
 );
 
 export const completeWorkoutAction = createAsyncThunk(
   'workouts/completeWorkout',
   async (workoutId: string, { rejectWithValue }) => {
     try {
-      return await workoutAPI.completeWorkout(workoutId);
+      return await completeWorkout(workoutId);
     } catch (error: any) {
       return rejectWithValue(error.message);
     }
-  }
+  },
 );
 
 export const fetchWorkoutStats = createAsyncThunk(
   'workouts/fetchStats',
-  async ({ userAddress, startDate, endDate }: { userAddress: string; startDate?: string; endDate?: string }, { rejectWithValue }) => {
+  async (
+    {
+      userAddress,
+      startDate,
+      endDate,
+    }: { userAddress: string; startDate?: string; endDate?: string },
+    { rejectWithValue },
+  ) => {
     try {
-      return await workoutAPI.getWorkoutStats(userAddress, startDate, endDate);
+      return await getWorkoutStats(userAddress, startDate, endDate);
     } catch (error: any) {
       return rejectWithValue(error.message);
     }
-  }
+  },
 );
 
 const workoutsSlice = createSlice({
@@ -140,7 +150,7 @@ const workoutsSlice = createSlice({
       state.error = null;
     },
     updateWorkoutInList: (state, action: PayloadAction<Workout>) => {
-      const index = state.workouts.findIndex(workout => workout.id === action.payload.id);
+      const index = state.workouts.findIndex((workout) => workout.id === action.payload.id);
       if (index !== -1) {
         state.workouts[index] = action.payload;
       }
@@ -161,7 +171,7 @@ const workoutsSlice = createSlice({
         state.loading = false;
         state.error = action.payload as string;
       })
-      
+
       // Fetch single workout
       .addCase(fetchWorkout.pending, (state) => {
         state.loading = true;
@@ -170,7 +180,7 @@ const workoutsSlice = createSlice({
       .addCase(fetchWorkout.fulfilled, (state, action) => {
         state.loading = false;
         // Update the workout in the list if it exists
-        const index = state.workouts.findIndex(workout => workout.id === action.payload.id);
+        const index = state.workouts.findIndex((workout) => workout.id === action.payload.id);
         if (index !== -1) {
           state.workouts[index] = action.payload;
         }
@@ -179,7 +189,7 @@ const workoutsSlice = createSlice({
         state.loading = false;
         state.error = action.payload as string;
       })
-      
+
       // Fetch workout with exercises
       .addCase(fetchWorkoutWithExercises.pending, (state) => {
         state.loading = true;
@@ -193,7 +203,7 @@ const workoutsSlice = createSlice({
         state.loading = false;
         state.error = action.payload as string;
       })
-      
+
       // Create workout
       .addCase(createWorkoutAction.pending, (state) => {
         state.loading = true;
@@ -207,7 +217,7 @@ const workoutsSlice = createSlice({
         state.loading = false;
         state.error = action.payload as string;
       })
-      
+
       // Update workout
       .addCase(updateWorkoutAction.pending, (state) => {
         state.loading = true;
@@ -215,7 +225,7 @@ const workoutsSlice = createSlice({
       })
       .addCase(updateWorkoutAction.fulfilled, (state, action) => {
         state.loading = false;
-        const index = state.workouts.findIndex(workout => workout.id === action.payload.id);
+        const index = state.workouts.findIndex((workout) => workout.id === action.payload.id);
         if (index !== -1) {
           state.workouts[index] = action.payload;
         }
@@ -228,7 +238,7 @@ const workoutsSlice = createSlice({
         state.loading = false;
         state.error = action.payload as string;
       })
-      
+
       // Delete workout
       .addCase(deleteWorkoutAction.pending, (state) => {
         state.loading = true;
@@ -236,7 +246,7 @@ const workoutsSlice = createSlice({
       })
       .addCase(deleteWorkoutAction.fulfilled, (state, action) => {
         state.loading = false;
-        state.workouts = state.workouts.filter(workout => workout.id !== action.payload);
+        state.workouts = state.workouts.filter((workout) => workout.id !== action.payload);
         // Clear current workout if it was deleted
         if (state.currentWorkout && state.currentWorkout.id === action.payload) {
           state.currentWorkout = null;
@@ -246,7 +256,7 @@ const workoutsSlice = createSlice({
         state.loading = false;
         state.error = action.payload as string;
       })
-      
+
       // Complete workout
       .addCase(completeWorkoutAction.pending, (state) => {
         state.loading = true;
@@ -254,7 +264,7 @@ const workoutsSlice = createSlice({
       })
       .addCase(completeWorkoutAction.fulfilled, (state, action) => {
         state.loading = false;
-        const index = state.workouts.findIndex(workout => workout.id === action.payload.id);
+        const index = state.workouts.findIndex((workout) => workout.id === action.payload.id);
         if (index !== -1) {
           state.workouts[index] = action.payload;
         }
@@ -267,7 +277,7 @@ const workoutsSlice = createSlice({
         state.loading = false;
         state.error = action.payload as string;
       })
-      
+
       // Fetch stats
       .addCase(fetchWorkoutStats.pending, (state) => {
         state.loading = true;

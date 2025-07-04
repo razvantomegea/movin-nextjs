@@ -1,35 +1,35 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
 import { useAppKitAccount } from '@reown/appkit/react';
-import { 
-  fetchWorkouts, 
-  createWorkoutAction, 
-  deleteWorkoutAction, 
-  fetchWorkoutStats,
-  clearError 
-} from '@/lib/redux/slices/workoutsSlice';
-import { 
-  Plus, 
-  Edit, 
-  Trash2, 
-  Play, 
-  CheckCircle, 
-  Clock, 
-  TrendingUp, 
+import {
+  Plus,
+  Edit,
+  Trash2,
+  Play,
+  CheckCircle,
+  Clock,
+  TrendingUp,
   Dumbbell,
-  Calendar
+  Calendar,
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { useRouter } from 'next/navigation';
-import { toast } from 'sonner';
+import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
+import {
+  fetchWorkouts,
+  createWorkoutAction,
+  deleteWorkoutAction,
+  fetchWorkoutStats,
+  clearError,
+} from '@/lib/redux/slices/workoutsSlice';
 
 interface CreateWorkoutModalProps {
   isOpen: boolean;
@@ -113,13 +113,15 @@ export default function WorkoutsPage() {
 
   const handleCreateWorkout = async (name: string, notes?: string) => {
     if (!address) return;
-    
+
     try {
-      const result = await dispatch(createWorkoutAction({ 
-        userAddress: address, 
-        workoutData: { name, notes } 
-      })).unwrap();
-      
+      const result = await dispatch(
+        createWorkoutAction({
+          userAddress: address,
+          workoutData: { name, notes },
+        }),
+      ).unwrap();
+
       toast.success('Workout created successfully!');
       router.push(`/dashboard/workouts/${result.id}`);
     } catch (error) {
@@ -141,7 +143,7 @@ export default function WorkoutsPage() {
   const formatDuration = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
-    
+
     if (hours > 0) {
       return `${hours}h ${minutes}m`;
     }
@@ -193,12 +195,10 @@ export default function WorkoutsPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.totalWorkouts}</div>
-              <div className="text-xs text-gray-500">
-                {stats.completedWorkouts} completed
-              </div>
+              <div className="text-xs text-gray-500">{stats.completedWorkouts} completed</div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">
@@ -210,7 +210,7 @@ export default function WorkoutsPage() {
               <div className="text-xs text-gray-500">lbs lifted</div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">
@@ -222,7 +222,7 @@ export default function WorkoutsPage() {
               <div className="text-xs text-gray-500">workout time</div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">
@@ -230,7 +230,9 @@ export default function WorkoutsPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{formatDuration(stats.averageWorkoutDuration)}</div>
+              <div className="text-2xl font-bold">
+                {formatDuration(stats.averageWorkoutDuration)}
+              </div>
               <div className="text-xs text-gray-500">per workout</div>
             </CardContent>
           </Card>
@@ -240,7 +242,7 @@ export default function WorkoutsPage() {
       {/* Workouts List */}
       <div className="space-y-4">
         <h2 className="text-xl font-semibold">Recent Workouts</h2>
-        
+
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {[...Array(6)].map((_, i) => (
@@ -287,7 +289,10 @@ export default function WorkoutsPage() {
                     </div>
                     <div className="flex items-center space-x-1 ml-2">
                       {workout.is_completed ? (
-                        <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">
+                        <Badge
+                          variant="secondary"
+                          className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100"
+                        >
                           <CheckCircle className="h-3 w-3 mr-1" />
                           Completed
                         </Badge>
@@ -304,20 +309,24 @@ export default function WorkoutsPage() {
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
                       <div className="font-medium text-gray-600 dark:text-gray-400">Volume</div>
-                      <div className="text-lg font-semibold">{workout.total_volume.toLocaleString()}</div>
+                      <div className="text-lg font-semibold">
+                        {workout.total_volume.toLocaleString()}
+                      </div>
                     </div>
                     <div>
                       <div className="font-medium text-gray-600 dark:text-gray-400">Duration</div>
-                      <div className="text-lg font-semibold">{formatDuration(workout.total_duration)}</div>
+                      <div className="text-lg font-semibold">
+                        {formatDuration(workout.total_duration)}
+                      </div>
                     </div>
                   </div>
-                  
+
                   {workout.notes && (
                     <div className="mt-3 text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
                       {workout.notes}
                     </div>
                   )}
-                  
+
                   <div className="flex justify-between items-center mt-4">
                     <Button
                       variant="outline"
@@ -340,7 +349,7 @@ export default function WorkoutsPage() {
                         </>
                       )}
                     </Button>
-                    
+
                     <div className="flex items-center space-x-1">
                       <Button
                         variant="ghost"
