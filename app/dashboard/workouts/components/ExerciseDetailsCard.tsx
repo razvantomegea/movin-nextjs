@@ -1,6 +1,6 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar } from 'lucide-react';
 import React from 'react';
+import { Calendar } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { WorkoutExercise } from '@/types/workouts';
 
 interface ExerciseDetailsCardProps {
