@@ -80,7 +80,9 @@ export const ExerciseStatsCards: React.FC<ExerciseStatsCardsProps> = ({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{exerciseStats?.totalVolume.toLocaleString()}</div>
+          <div className="text-2xl font-bold">
+            {exerciseStats?.totalVolume?.toLocaleString() || 0}
+          </div>
           <div className="text-xs text-gray-500">{weightUnit} this session</div>
           {exerciseStats?.currentProgress && (
             <div className="text-xs text-blue-600 mt-1">

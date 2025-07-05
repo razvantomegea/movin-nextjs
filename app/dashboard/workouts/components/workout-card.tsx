@@ -18,7 +18,10 @@ export interface WorkoutCardProps {
 }
 
 export const WorkoutCard: React.FC<WorkoutCardProps> = ({ workout, onView, onDelete }) => (
-  <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+  <Card
+    className="hover:shadow-lg transition-shadow cursor-pointer"
+    onClick={() => onView(workout.id)}
+  >
     <CardHeader>
       <div className="flex items-start justify-between">
         <div className="flex-1">
