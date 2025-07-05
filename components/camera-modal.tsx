@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Camera, RefreshCw, Check, AlertCircle } from 'lucide-react';
 import Image from 'next/image';
 import { useTheme } from 'next-themes';
+import { BaseModal } from '@/components/ui/base-modal';
 import { Button } from '@/components/ui/button';
 
 interface CameraModalProps {
@@ -273,141 +274,111 @@ export function CameraModal({
   };
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <motion.div
-          className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 safe-area"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
+    <BaseModal
+      isOpen={isOpen}
+      onClose={handleClose}
+      title={title}
+      subtitle={undefined}
+      maxWidth="lg"
+      maxHeight="90vh"
+      fullMobile={true}
+      preventBackdropClose={false}
+      contentClassName="p-0"
+      footer={
+        <div
+          className={`p-4 border-t safe-bottom ${isDark ? 'border-gray-800' : 'border-gray-200'}`}
         >
-          <motion.div
-            className="absolute inset-0 bg-black/80 backdrop-blur-sm"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          />
-
-          <motion.div
-            className={`relative w-full h-full sm:max-w-lg sm:h-auto sm:max-h-[90vh] sm:rounded-xl overflow-hidden ${
-              isDark ? 'bg-gray-900' : 'bg-white'
-            } shadow-xl`}
-            initial={{ scale: 0.95, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.95, opacity: 0 }}
-            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-          >
-            {/* Header */}
-            <div
-              className={`sticky top-0 z-10 flex items-center justify-between p-4 border-b safe-top ${
-                isDark ? 'border-gray-800 bg-gray-900' : 'border-gray-200 bg-white'
-              }`}
-            >
-              <h2 className="text-xl font-bold">{title}</h2>
-              <Button variant="ghost" size="icon" onClick={handleClose} className="rounded-full">
-                <X className="h-5 w-5" />
+          {!capturedImage ? (
+            <div className="flex justify-center">
+              <Button
+                disabled={!isCameraReady || !!error || isInitializing}
+                onClick={handleCapture}
+                size="lg"
+                className="rounded-full h-16 w-16 bg-blue-500 hover:bg-blue-600 disabled:opacity-50"
+              >
+                <Camera className="h-8 w-8" />
               </Button>
             </div>
-
-            {/* Camera View / Captured Image */}
-            <div className="relative w-full bg-black h-[65vh] sm:h-auto sm:aspect-[4/3]">
-              {!capturedImage ? (
-                <>
-                  <video
-                    ref={videoRef}
-                    autoPlay
-                    playsInline
-                    muted
-                    className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-300 ${
-                      isCameraReady ? 'opacity-100' : 'opacity-0'
-                    }`}
-                  />
-                  {(isInitializing || (!isCameraReady && !error)) && (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center">
-                      <RefreshCw className="h-10 w-10 text-white animate-spin mb-4" />
-                      <p className="text-white text-sm">Starting camera...</p>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <div className="absolute inset-0 h-full w-full">
-                  <Image
-                    src={capturedImage}
-                    alt="Captured photo"
-                    fill
-                    className="object-cover"
-                    unoptimized={true}
-                  />
-                </div>
-              )}
-
-              {/* Hidden canvas for capturing images */}
-              <canvas ref={canvasRef} className="hidden" />
-
-              {/* Error message */}
-              {error && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/90">
-                  <div className="text-center p-6 max-w-sm">
-                    <AlertCircle className="h-12 w-12 text-red-400 mx-auto mb-4" />
-                    <p className="text-red-400 mb-4 text-sm leading-relaxed">{error}</p>
-                    <div className="space-y-2">
-                      <Button onClick={handleTryAgain} className="w-full">
-                        <RefreshCw className="h-4 w-4 mr-2" />
-                        Try Again
-                      </Button>
-                      <Button variant="outline" onClick={handleClose} className="w-full">
-                        Cancel
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              )}
+          ) : (
+            <div className="flex justify-between">
+              <Button variant="outline" onClick={handleRetake}>
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Retake
+              </Button>
+              <Button onClick={handleConfirm} className="bg-green-500 hover:bg-green-600">
+                <Check className="h-4 w-4 mr-2" />
+                {confirmText}
+              </Button>
             </div>
-
-            {/* Instructions */}
-            <div className="p-4 text-center">
-              {!capturedImage ? (
-                <p className="text-sm text-gray-500 dark:text-gray-400">{instruction}</p>
-              ) : (
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Is this photo clear? Review before continuing.
-                </p>
-              )}
-            </div>
-
-            {/* Action Buttons */}
-            <div
-              className={`p-4 border-t safe-bottom ${
-                isDark ? 'border-gray-800' : 'border-gray-200'
+          )}
+        </div>
+      }
+    >
+      {/* Camera View / Captured Image */}
+      <div className="relative w-full bg-black h-[65vh] sm:h-auto sm:aspect-[4/3]">
+        {!capturedImage ? (
+          <>
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted
+              className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-300 ${
+                isCameraReady ? 'opacity-100' : 'opacity-0'
               }`}
-            >
-              {!capturedImage ? (
-                <div className="flex justify-center">
-                  <Button
-                    disabled={!isCameraReady || !!error || isInitializing}
-                    onClick={handleCapture}
-                    size="lg"
-                    className="rounded-full h-16 w-16 bg-blue-500 hover:bg-blue-600 disabled:opacity-50"
-                  >
-                    <Camera className="h-8 w-8" />
-                  </Button>
-                </div>
-              ) : (
-                <div className="flex justify-between">
-                  <Button variant="outline" onClick={handleRetake}>
-                    <RefreshCw className="h-4 w-4 mr-2" />
-                    Retake
-                  </Button>
-                  <Button onClick={handleConfirm} className="bg-green-500 hover:bg-green-600">
-                    <Check className="h-4 w-4 mr-2" />
-                    {confirmText}
-                  </Button>
-                </div>
-              )}
+            />
+            {(isInitializing || (!isCameraReady && !error)) && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <RefreshCw className="h-10 w-10 text-white animate-spin mb-4" />
+                <p className="text-white text-sm">Starting camera...</p>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="absolute inset-0 h-full w-full">
+            <Image
+              src={capturedImage}
+              alt="Captured photo"
+              fill
+              className="object-cover"
+              unoptimized={true}
+            />
+          </div>
+        )}
+
+        {/* Hidden canvas for capturing images */}
+        <canvas ref={canvasRef} className="hidden" />
+
+        {/* Error message */}
+        {error && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/90">
+            <div className="text-center p-6 max-w-sm">
+              <AlertCircle className="h-12 w-12 text-red-400 mx-auto mb-4" />
+              <p className="text-red-400 mb-4 text-sm leading-relaxed">{error}</p>
+              <div className="space-y-2">
+                <Button onClick={handleTryAgain} className="w-full">
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Try Again
+                </Button>
+                <Button variant="outline" onClick={handleClose} className="w-full">
+                  Cancel
+                </Button>
+              </div>
             </div>
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+          </div>
+        )}
+      </div>
+
+      {/* Instructions */}
+      <div className="p-4 text-center">
+        {!capturedImage ? (
+          <p className="text-sm text-gray-500 dark:text-gray-400">{instruction}</p>
+        ) : (
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Is this photo clear? Review before continuing.
+          </p>
+        )}
+      </div>
+    </BaseModal>
   );
 }

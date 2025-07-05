@@ -125,7 +125,7 @@ export function TransactionConfirmationModal({
             </div>
 
             {/* Content */}
-            <div className="p-6 space-y-6">
+            <div className="p-6 space-y-0">
               {/* Wallet Icon */}
               <div className="flex justify-center">
                 <motion.div

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
+import { BaseModal } from '@/components/ui/base-modal';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -25,41 +25,52 @@ export function CreateWorkoutModal({ isOpen, onClose, onCreateWorkout }: CreateW
     }
   };
 
+  const footer = (
+    <div className="p-6">
+      <div className="flex justify-end space-x-2">
+        <Button type="button" variant="outline" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button type="submit" form="workout-form">
+          Create Workout
+        </Button>
+      </div>
+    </div>
+  );
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>Create New Workout</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="workout-name">Workout Name</Label>
-            <Input
-              id="workout-name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g., Push Day, Full Body, etc."
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="workout-notes">Notes (Optional)</Label>
-            <Textarea
-              id="workout-notes"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Add any notes about this workout..."
-              rows={3}
-            />
-          </div>
-          <div className="flex justify-end space-x-2">
-            <Button type="button" variant="outline" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button type="submit">Create Workout</Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
+    <BaseModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Create New Workout"
+      subtitle="Set up a new workout routine"
+      maxWidth="md"
+      footer={footer}
+      contentClassName="p-6"
+    >
+      <form id="workout-form" onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="workout-name">Workout Name</Label>
+          <Input
+            id="workout-name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="e.g., Push Day, Full Body, etc."
+            required
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="workout-notes">Notes (Optional)</Label>
+          <Textarea
+            id="workout-notes"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="Add any notes about this workout..."
+            rows={3}
+            className="resize-none"
+          />
+        </div>
+      </form>
+    </BaseModal>
   );
 }

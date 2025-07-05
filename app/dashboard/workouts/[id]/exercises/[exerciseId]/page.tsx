@@ -1,20 +1,22 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useAppKitAccount } from '@reown/appkit/react';
+import { motion } from 'framer-motion';
 import { ArrowLeft, TrendingUp, Target, Calendar, Weight, BarChart3, Activity } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
+import { ExerciseProgressChart } from '@/app/dashboard/workouts/components/exercise-progress-chart';
+import { CircularProgress } from '@/components/circular-progress';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
 import { fetchExerciseProgress, setCurrentExercise } from '@/lib/redux/slices/exercisesSlice';
-import { fetchWorkoutWithExercises } from '@/lib/redux/slices/workoutsSlice';
 import { showErrorToast } from '@/lib/redux/slices/toastSlice';
-import { CircularProgress } from '@/components/circular-progress';
-import { ExerciseProgressChart } from '../../components/exercise-progress-chart';
+import { fetchWorkoutWithExercises } from '@/lib/redux/slices/workoutsSlice';
+import type { RootState } from '@/lib/redux/store';
+import type { ExerciseProgress, WorkoutExercise } from '@/types/workouts';
 import { formatDuration } from '@/utils';
 
 const container = {
@@ -37,15 +39,17 @@ export default function ExerciseDetailPage() {
   const router = useRouter();
   const { address } = useAppKitAccount();
   const dispatch = useAppDispatch();
-  
-  const { currentWorkout, loading: workoutLoading } = useAppSelector((state: any) => state.workouts);
-  const { 
-    currentExercise, 
-    loading: exerciseLoading, 
+
+  const { currentWorkout, loading: workoutLoading } = useAppSelector(
+    (state: RootState) => state.workouts,
+  );
+  const {
+    currentExercise,
+    loading: exerciseLoading,
     error: exerciseError,
-    exerciseProgress 
-  } = useAppSelector((state: any) => state.exercises);
-  const { profile } = useAppSelector((state: any) => state.profile);
+    exerciseProgress,
+  } = useAppSelector((state: RootState) => state.exercises);
+  const { profile } = useAppSelector((state: RootState) => state.profile);
 
   const [selectedMetric, setSelectedMetric] = useState<'weight' | 'volume' | 'reps'>('weight');
 
@@ -62,7 +66,9 @@ export default function ExerciseDetailPage() {
   // Set current exercise when workout is loaded
   useEffect(() => {
     if (currentWorkout && exerciseId) {
-      const exercise = currentWorkout.workout_exercises?.find(ex => ex.id === exerciseId);
+      const exercise = currentWorkout.workout_exercises?.find(
+        (ex: WorkoutExercise) => ex.id === exerciseId,
+      );
       if (exercise) {
         dispatch(setCurrentExercise(exercise));
       }
@@ -72,12 +78,14 @@ export default function ExerciseDetailPage() {
   // Fetch exercise progress when exercise is set
   useEffect(() => {
     if (currentExercise && address) {
-      dispatch(fetchExerciseProgress({
-        userAddress: address,
-        workoutId: workoutId,
-        exerciseName: currentExercise.exercise_name,
-        limit: 30 // Last 30 sessions
-      }));
+      dispatch(
+        fetchExerciseProgress({
+          userAddress: address,
+          workoutId: workoutId,
+          exerciseName: currentExercise.exercise_name,
+          limit: 30, // Last 30 sessions
+        }),
+      );
     }
   }, [currentExercise, address, workoutId, dispatch]);
 
@@ -89,24 +97,33 @@ export default function ExerciseDetailPage() {
   }, [exerciseError, dispatch]);
 
   // Get progress data for charts
-  const progressData = exerciseProgress[workoutId]?.[currentExercise?.exercise_name || ''] || [];
+  const progressData = useMemo(
+    () => exerciseProgress[workoutId]?.[currentExercise?.exercise_name || ''] || [],
+    [exerciseProgress, workoutId, currentExercise?.exercise_name],
+  );
 
   // Calculate exercise stats
-  const exerciseStats = React.useMemo(() => {
+  const exerciseStats = useMemo(() => {
     if (!currentExercise) return null;
 
     const totalVolume = currentExercise.sets * currentExercise.reps * currentExercise.weight;
-    const completionPercentage = currentExercise.sets > 0 
-      ? Math.round((currentExercise.completed_sets / currentExercise.sets) * 100)
-      : 0;
+    const completionPercentage =
+      currentExercise.sets > 0
+        ? Math.round((currentExercise.completed_sets / currentExercise.sets) * 100)
+        : 0;
 
     // Calculate progress from historical data
-    const currentProgress = progressData.length > 0 ? {
-      bestWeight: Math.max(...progressData.map((p: any) => p.maxWeight)),
-      bestVolume: Math.max(...progressData.map((p: any) => p.totalVolume)),
-      totalSessions: progressData.length,
-      averageWeight: progressData.reduce((sum: any, p: any) => sum + p.maxWeight, 0) / progressData.length,
-    } : null;
+    const currentProgress =
+      progressData.length > 0
+        ? {
+            bestWeight: Math.max(...progressData.map((p: ExerciseProgress) => p.maxWeight)),
+            bestVolume: Math.max(...progressData.map((p: ExerciseProgress) => p.totalVolume)),
+            totalSessions: progressData.length,
+            averageWeight:
+              progressData.reduce((sum: number, p: ExerciseProgress) => sum + p.maxWeight, 0) /
+              progressData.length,
+          }
+        : null;
 
     return {
       totalVolume,
@@ -151,16 +168,16 @@ export default function ExerciseDetailPage() {
   return (
     <div className="container mx-auto px-4 py-8 space-y-6">
       {/* Header */}
-      <motion.div 
+      <motion.div
         className="flex items-center justify-between"
         variants={item}
         initial="hidden"
         animate="show"
       >
         <div className="flex items-center space-x-4">
-          <Button 
-            variant="ghost" 
-            size="icon" 
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={() => router.push(`/dashboard/workouts/${workoutId}`)}
           >
             <ArrowLeft className="h-4 w-4" />
@@ -178,7 +195,7 @@ export default function ExerciseDetailPage() {
       </motion.div>
 
       {/* Exercise Stats Cards */}
-      <motion.div 
+      <motion.div
         className="grid grid-cols-1 md:grid-cols-4 gap-4"
         variants={container}
         initial="hidden"
@@ -231,7 +248,9 @@ export default function ExerciseDetailPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{exerciseStats?.totalVolume.toLocaleString()}</div>
+              <div className="text-2xl font-bold">
+                {exerciseStats?.totalVolume.toLocaleString()}
+              </div>
               <div className="text-xs text-gray-500">{weightUnit} this session</div>
               {exerciseStats?.currentProgress && (
                 <div className="text-xs text-blue-600 mt-1">
@@ -266,7 +285,7 @@ export default function ExerciseDetailPage() {
       </motion.div>
 
       {/* Exercise Details */}
-      <motion.div 
+      <motion.div
         className="grid grid-cols-1 lg:grid-cols-2 gap-6"
         variants={container}
         initial="hidden"
@@ -283,40 +302,62 @@ export default function ExerciseDetailPage() {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Sets</label>
+                  <label className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                    Sets
+                  </label>
                   <div className="text-lg font-semibold">{currentExercise.sets}</div>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Reps</label>
+                  <label className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                    Reps
+                  </label>
                   <div className="text-lg font-semibold">{currentExercise.reps}</div>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Weight</label>
-                  <div className="text-lg font-semibold">{currentExercise.weight} {weightUnit}</div>
+                  <label className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                    Weight
+                  </label>
+                  <div className="text-lg font-semibold">
+                    {currentExercise.weight} {weightUnit}
+                  </div>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Rest Time</label>
-                  <div className="text-lg font-semibold">{formatDuration(currentExercise.rest_time)}</div>
+                  <label className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                    Rest Time
+                  </label>
+                  <div className="text-lg font-semibold">
+                    {formatDuration(currentExercise.rest_time)}
+                  </div>
                 </div>
               </div>
 
               {currentExercise.time_under_tension > 0 && (
                 <div>
-                  <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Time Under Tension</label>
-                  <div className="text-lg font-semibold">{formatDuration(currentExercise.time_under_tension)}</div>
+                  <label className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                    Time Under Tension
+                  </label>
+                  <div className="text-lg font-semibold">
+                    {formatDuration(currentExercise.time_under_tension)}
+                  </div>
                 </div>
               )}
 
               {currentExercise.exercise_duration > 0 && (
                 <div>
-                  <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Exercise Duration</label>
-                  <div className="text-lg font-semibold">{formatDuration(currentExercise.exercise_duration)}</div>
+                  <label className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                    Exercise Duration
+                  </label>
+                  <div className="text-lg font-semibold">
+                    {formatDuration(currentExercise.exercise_duration)}
+                  </div>
                 </div>
               )}
 
               {currentExercise.notes && (
                 <div>
-                  <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Notes</label>
+                  <label className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                    Notes
+                  </label>
                   <div className="text-sm bg-gray-50 dark:bg-gray-800 p-3 rounded-md mt-1">
                     {currentExercise.notes}
                   </div>
@@ -371,12 +412,7 @@ export default function ExerciseDetailPage() {
       </motion.div>
 
       {/* Progress Charts */}
-      <motion.div 
-        className="space-y-4"
-        variants={item}
-        initial="hidden"
-        animate="show"
-      >
+      <motion.div className="space-y-4" variants={item} initial="hidden" animate="show">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">Progress Over Time</h2>
           <div className="flex space-x-2">

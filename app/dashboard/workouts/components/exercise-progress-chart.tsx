@@ -4,7 +4,7 @@ import { useId, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
 import { useTheme } from 'next-themes';
-import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { Card, CardContent } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { ExerciseProgress } from '@/types/workouts';
@@ -85,6 +85,9 @@ export function ExerciseProgressChart({
 
   const chartColor = getChartColor();
 
+  const metricLabel =
+    selectedMetric === 'weight' ? 'Weight' : selectedMetric === 'volume' ? 'Volume' : 'Total Reps';
+
   return (
     <Card className={isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}>
       <CardContent className="p-6">
@@ -115,8 +118,7 @@ export function ExerciseProgressChart({
                 <ChartContainer
                   config={{
                     [selectedMetric]: {
-                      label: selectedMetric === 'weight' ? 'Weight' : 
-                             selectedMetric === 'volume' ? 'Volume' : 'Total Reps',
+                      label: metricLabel,
                       color: chartColor,
                     },
                   }}
@@ -188,9 +190,11 @@ export function ExerciseProgressChart({
             </div>
             <div className="text-center">
               <div className="text-sm text-gray-500 dark:text-gray-400">Improvement</div>
-              <div className={`text-lg font-bold ${
-                stats.improvement >= 0 ? 'text-green-600' : 'text-red-600'
-              }`}>
+              <div
+                className={`text-lg font-bold ${
+                  stats.improvement >= 0 ? 'text-green-600' : 'text-red-600'
+                }`}
+              >
                 {stats.improvement >= 0 ? '+' : ''}
                 {Math.round(stats.improvement)}%
               </div>

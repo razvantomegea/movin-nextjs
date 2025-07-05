@@ -1,13 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { useAppKitAccount } from '@reown/appkit/react';
+import { Autocomplete } from '@/components/ui/autocomplete';
+import { BaseModal } from '@/components/ui/base-modal';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Autocomplete } from '@/components/ui/autocomplete';
 import { getUniqueExerciseNames } from '@/lib/supabase/workouts';
-import type { CreateExerciseData, UpdateExerciseData, WorkoutExercise, ExerciseSet } from '@/types/workouts';
+import type {
+  CreateExerciseData,
+  UpdateExerciseData,
+  WorkoutExercise,
+  ExerciseSet,
+} from '@/types/workouts';
 
 export interface ExerciseModalProps {
   isOpen: boolean;
@@ -81,7 +86,7 @@ export function ExerciseModal({
         rest_time: exercise.rest_time,
         notes: exercise.notes || '',
       });
-      
+
       // If exercise has set data, parse it, otherwise create default sets
       const setsData = exercise.sets || 1;
       const defaultSets = Array.from({ length: setsData }, (_, index) => ({
@@ -128,10 +133,18 @@ export function ExerciseModal({
     // Calculate totals from sets
     const totalSets = exerciseSets.length;
     const totalReps = exerciseSets.reduce((sum: number, set: ExerciseSet) => sum + set.reps, 0);
-    const averageWeight = exerciseSets.reduce((sum: number, set: ExerciseSet) => sum + set.weight, 0) / totalSets;
-    const totalDuration = exerciseSets.reduce((sum: number, set: ExerciseSet) => sum + set.duration, 0);
-    const totalTimeUnderTension = exerciseSets.reduce((sum: number, set: ExerciseSet) => sum + set.time_under_tension, 0);
-    const averageRestTime = exerciseSets.reduce((sum: number, set: ExerciseSet) => sum + set.rest_time, 0) / totalSets;
+    const averageWeight =
+      exerciseSets.reduce((sum: number, set: ExerciseSet) => sum + set.weight, 0) / totalSets;
+    const totalDuration = exerciseSets.reduce(
+      (sum: number, set: ExerciseSet) => sum + set.duration,
+      0,
+    );
+    const totalTimeUnderTension = exerciseSets.reduce(
+      (sum: number, set: ExerciseSet) => sum + set.time_under_tension,
+      0,
+    );
+    const averageRestTime =
+      exerciseSets.reduce((sum: number, set: ExerciseSet) => sum + set.rest_time, 0) / totalSets;
 
     const exerciseData = {
       ...formData,
@@ -166,11 +179,13 @@ export function ExerciseModal({
     }));
   };
 
-  const handleSetChange = (setIndex: number, field: keyof ExerciseSet, value: string | number | boolean) => {
+  const handleSetChange = (
+    setIndex: number,
+    field: keyof ExerciseSet,
+    value: string | number | boolean,
+  ) => {
     setExerciseSets((prev) =>
-      prev.map((set, index) =>
-        index === setIndex ? { ...set, [field]: value } : set
-      )
+      prev.map((set, index) => (index === setIndex ? { ...set, [field]: value } : set)),
     );
   };
 
@@ -194,106 +209,137 @@ export function ExerciseModal({
     }
   };
 
+  const footer = (
+    <div className="p-6">
+      <div className="flex justify-end space-x-2">
+        <Button type="button" variant="outline" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button type="submit" form="exercise-form">
+          {exercise ? 'Update Exercise' : 'Add Exercise'}
+        </Button>
+      </div>
+    </div>
+  );
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{exercise ? 'Edit Exercise' : 'Add New Exercise'}</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="exercise-name">Exercise Name</Label>
-            <Autocomplete
-              id="exercise-name"
-              value={formData.exercise_name}
-              onChange={(value) => handleChange('exercise_name', value)}
-              suggestions={exerciseNames}
-              placeholder="e.g., Bench Press, Squats, etc."
-              required
-            />
+    <BaseModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={exercise ? 'Edit Exercise' : 'Add New Exercise'}
+      subtitle="Configure your exercise details and sets"
+      maxWidth="2xl"
+      footer={footer}
+      contentClassName="p-6"
+    >
+      <form id="exercise-form" onSubmit={handleSubmit} className="space-y-6">
+        <div className="space-y-2">
+          <Label htmlFor="exercise-name">Exercise Name</Label>
+          <Autocomplete
+            id="exercise-name"
+            value={formData.exercise_name}
+            onChange={(value) => handleChange('exercise_name', value)}
+            suggestions={exerciseNames}
+            placeholder="e.g., Bench Press, Squats, etc."
+            required
+          />
+        </div>
+
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <Label className="text-lg font-semibold">
+              Sets Configuration ({exerciseSets.length})
+            </Label>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={addSet}
+              className="flex items-center gap-1"
+            >
+              <span className="text-lg">+</span>
+              Add Set
+            </Button>
           </div>
 
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <Label className="text-base font-semibold">Sets ({exerciseSets.length})</Label>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={addSet}
-                className="flex items-center gap-1"
-              >
-                <span className="text-lg">+</span>
-                Add Set
-              </Button>
-            </div>
+          {exerciseSets.map((set, index) => (
+            <div
+              key={set.id}
+              className="p-4 border rounded-lg space-y-4 bg-gray-50 dark:bg-gray-800"
+            >
+              <div className="flex items-center justify-between">
+                <h4 className="font-medium text-base">Set {index + 1}</h4>
+                {exerciseSets.length > 1 && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => removeSet(index)}
+                    className="flex items-center gap-1 text-red-600 hover:text-red-700"
+                  >
+                    <span className="text-lg">-</span>
+                    Remove
+                  </Button>
+                )}
+              </div>
 
-            {exerciseSets.map((set, index) => (
-              <div key={set.id} className="p-4 border rounded-lg space-y-3">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-medium">Set {index + 1}</h4>
-                  {exerciseSets.length > 1 && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => removeSet(index)}
-                      className="flex items-center gap-1 text-red-600 hover:text-red-700"
-                    >
-                      <span className="text-lg">-</span>
-                      Remove
-                    </Button>
-                  )}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor={`set-${index}-reps`}>Reps</Label>
+                  <Input
+                    id={`set-${index}-reps`}
+                    type="number"
+                    min="1"
+                    value={set.reps}
+                    onChange={(e) => handleSetChange(index, 'reps', parseInt(e.target.value) || 1)}
+                    required
+                  />
                 </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-2">
-                    <Label htmlFor={`set-${index}-reps`}>Reps</Label>
-                    <Input
-                      id={`set-${index}-reps`}
-                      type="number"
-                      min="1"
-                      value={set.reps}
-                      onChange={(e) => handleSetChange(index, 'reps', parseInt(e.target.value) || 1)}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor={`set-${index}-weight`}>Weight (lbs)</Label>
-                    <Input
-                      id={`set-${index}-weight`}
-                      type="number"
-                      min="0"
-                      step="0.5"
-                      value={set.weight}
-                      onChange={(e) => handleSetChange(index, 'weight', parseFloat(e.target.value) || 0)}
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor={`set-${index}-weight`}>Weight (lbs)</Label>
+                  <Input
+                    id={`set-${index}-weight`}
+                    type="number"
+                    min="0"
+                    step="0.5"
+                    value={set.weight}
+                    onChange={(e) =>
+                      handleSetChange(index, 'weight', parseFloat(e.target.value) || 0)
+                    }
+                  />
                 </div>
+              </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-2">
-                    <Label htmlFor={`set-${index}-duration`}>Duration (seconds)</Label>
-                    <Input
-                      id={`set-${index}-duration`}
-                      type="number"
-                      min="0"
-                      value={set.duration}
-                      onChange={(e) => handleSetChange(index, 'duration', parseInt(e.target.value) || 0)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor={`set-${index}-time-under-tension`}>Time Under Tension (seconds)</Label>
-                    <Input
-                      id={`set-${index}-time-under-tension`}
-                      type="number"
-                      min="0"
-                      value={set.time_under_tension}
-                      onChange={(e) => handleSetChange(index, 'time_under_tension', parseInt(e.target.value) || 0)}
-                    />
-                  </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor={`set-${index}-duration`}>Duration (seconds)</Label>
+                  <Input
+                    id={`set-${index}-duration`}
+                    type="number"
+                    min="0"
+                    value={set.duration}
+                    onChange={(e) =>
+                      handleSetChange(index, 'duration', parseInt(e.target.value) || 0)
+                    }
+                  />
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor={`set-${index}-time-under-tension`}>
+                    Time Under Tension (seconds)
+                  </Label>
+                  <Input
+                    id={`set-${index}-time-under-tension`}
+                    type="number"
+                    min="0"
+                    value={set.time_under_tension}
+                    onChange={(e) =>
+                      handleSetChange(index, 'time_under_tension', parseInt(e.target.value) || 0)
+                    }
+                  />
+                </div>
+              </div>
 
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor={`set-${index}-rest-time`}>Rest Time (seconds)</Label>
                   <Input
@@ -301,10 +347,11 @@ export function ExerciseModal({
                     type="number"
                     min="0"
                     value={set.rest_time}
-                    onChange={(e) => handleSetChange(index, 'rest_time', parseInt(e.target.value) || 0)}
+                    onChange={(e) =>
+                      handleSetChange(index, 'rest_time', parseInt(e.target.value) || 0)
+                    }
                   />
                 </div>
-
                 <div className="space-y-2">
                   <Label htmlFor={`set-${index}-notes`}>Set Notes (Optional)</Label>
                   <Input
@@ -315,28 +362,25 @@ export function ExerciseModal({
                   />
                 </div>
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
+        </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="exercise-notes">Exercise Notes (Optional)</Label>
-            <Textarea
-              id="exercise-notes"
-              value={formData.notes}
-              onChange={(e) => handleChange('notes', e.target.value)}
-              placeholder="Add any notes about this exercise..."
-              rows={2}
-            />
-          </div>
-
-          <div className="flex justify-end space-x-2">
-            <Button type="button" variant="outline" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button type="submit">{exercise ? 'Update Exercise' : 'Add Exercise'}</Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
+        <div className="space-y-2">
+          <Label htmlFor="exercise-notes">Exercise Notes (Optional)</Label>
+          <Textarea
+            id="exercise-notes"
+            value={formData.notes}
+            onChange={(e) => handleChange('notes', e.target.value)}
+            placeholder="Add any notes about this exercise..."
+            rows={3}
+            className="resize-none"
+          />
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            General notes about this exercise that apply to all sets.
+          </p>
+        </div>
+      </form>
+    </BaseModal>
   );
 }

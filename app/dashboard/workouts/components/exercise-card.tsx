@@ -15,7 +15,13 @@ export interface ExerciseCardProps {
   onUpdateProgress: (exerciseId: string, completedSets: number) => void;
 }
 
-export function ExerciseCard({ exercise, workoutId, onEdit, onDelete, onUpdateProgress }: ExerciseCardProps) {
+export function ExerciseCard({
+  exercise,
+  workoutId,
+  onEdit,
+  onDelete,
+  onUpdateProgress,
+}: ExerciseCardProps) {
   const router = useRouter();
   const [isExpanded, setIsExpanded] = useState(false);
   const [completedSets, setCompletedSets] = useState(exercise.completed_sets);
