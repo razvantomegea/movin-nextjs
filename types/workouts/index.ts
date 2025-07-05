@@ -27,6 +27,18 @@ export interface WorkoutExercise {
   completed_sets: number;
 }
 
+// Individual set data structure
+export interface ExerciseSet {
+  id: string;
+  reps: number;
+  weight: number;
+  duration: number;
+  time_under_tension: number;
+  rest_time: number;
+  completed: boolean;
+  notes?: string;
+}
+
 export interface CreateWorkoutData {
   name: string;
   notes?: string;
@@ -49,6 +61,7 @@ export interface CreateExerciseData {
   rest_time?: number;
   notes?: string;
   order_index?: number;
+  exercise_sets?: ExerciseSet[];
 }
 
 export interface UpdateExerciseData {
@@ -63,6 +76,7 @@ export interface UpdateExerciseData {
   notes?: string;
   order_index?: number;
   completed_sets?: number;
+  exercise_sets?: ExerciseSet[];
 }
 
 export interface WorkoutWithExercises extends Workout {
