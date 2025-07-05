@@ -25,17 +25,47 @@ export interface WorkoutExercise {
   created_at: string;
   updated_at: string;
   completed_sets: number;
+  exercise_sets?: ExerciseSet[];
 }
 
-// Individual set data structure
+// Individual set data structure - now matches the exercise_sets table
 export interface ExerciseSet {
   id: string;
+  exercise_id: string;
+  address: string;
+  set_number: number;
   reps: number;
   weight: number;
   duration: number;
   time_under_tension: number;
   rest_time: number;
   completed: boolean;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// Database insert/update types for exercise_sets
+export interface CreateExerciseSetData {
+  exercise_id: string;
+  address: string;
+  set_number: number;
+  reps: number;
+  weight: number;
+  duration?: number;
+  time_under_tension?: number;
+  rest_time?: number;
+  completed?: boolean;
+  notes?: string;
+}
+
+export interface UpdateExerciseSetData {
+  reps?: number;
+  weight?: number;
+  duration?: number;
+  time_under_tension?: number;
+  rest_time?: number;
+  completed?: boolean;
   notes?: string;
 }
 
@@ -53,30 +83,17 @@ export interface CreateExerciseData {
   address: string;
   workout_id: string;
   exercise_name: string;
-  sets: number;
-  reps: number;
-  weight: number;
-  time_under_tension?: number;
-  exercise_duration?: number;
-  rest_time?: number;
   notes?: string;
   order_index?: number;
-  exercise_sets?: ExerciseSet[];
+  exercise_sets?: CreateExerciseSetData[];
 }
 
 export interface UpdateExerciseData {
   address: string;
   exercise_name?: string;
-  sets?: number;
-  reps?: number;
-  weight?: number;
-  time_under_tension?: number;
-  exercise_duration?: number;
-  rest_time?: number;
   notes?: string;
   order_index?: number;
-  completed_sets?: number;
-  exercise_sets?: ExerciseSet[];
+  exercise_sets?: CreateExerciseSetData[];
 }
 
 export interface WorkoutWithExercises extends Workout {
@@ -113,3 +130,15 @@ export type ExerciseProgress = {
   totalSets: number;
   totalReps: number;
 };
+
+// Helper type for UI purposes - temporary set data that doesn't have database IDs yet
+export interface TempExerciseSet {
+  id?: string; // Optional for new sets
+  reps: number;
+  weight: number;
+  duration: number;
+  time_under_tension: number;
+  rest_time: number;
+  completed: boolean;
+  notes?: string;
+}

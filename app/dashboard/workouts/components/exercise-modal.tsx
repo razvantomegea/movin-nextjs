@@ -13,7 +13,7 @@ import type {
   CreateExerciseData,
   UpdateExerciseData,
   WorkoutExercise,
-  ExerciseSet,
+  TempExerciseSet,
 } from '@/types/workouts';
 
 export interface ExerciseModalProps {
@@ -38,17 +38,10 @@ export function ExerciseModal({
   const [formData, setFormData] = useState({
     address: address?.toLowerCase() as string,
     exercise_name: '',
-    sets: 1,
-    reps: 1,
-    weight: 0,
-    time_under_tension: 0,
-    exercise_duration: 0,
-    rest_time: 60,
     notes: '',
   });
-  const [exerciseSets, setExerciseSets] = useState<ExerciseSet[]>([
+  const [exerciseSets, setExerciseSets] = useState<TempExerciseSet[]>([
     {
-      id: '1',
       reps: 1,
       weight: 0,
       duration: 0,
@@ -82,43 +75,44 @@ export function ExerciseModal({
       setFormData({
         address: address?.toLowerCase() as string,
         exercise_name: exercise.exercise_name,
-        sets: exercise.sets,
-        reps: exercise.reps,
-        weight: exercise.weight,
-        time_under_tension: exercise.time_under_tension,
-        exercise_duration: exercise.exercise_duration,
-        rest_time: exercise.rest_time,
         notes: exercise.notes || '',
       });
 
-      // If exercise has set data, parse it, otherwise create default sets
-      const setsData = exercise.sets || 1;
-      const defaultSets = Array.from({ length: setsData }, (_, index) => ({
-        id: (index + 1).toString(),
-        reps: exercise.reps || 1,
-        weight: exercise.weight || 0,
-        duration: exercise.exercise_duration || 0,
-        time_under_tension: exercise.time_under_tension || 0,
-        rest_time: exercise.rest_time || 60,
-        completed: false,
-        notes: '',
-      }));
-      setExerciseSets(defaultSets);
+      // If exercise has set data, use it, otherwise create default sets
+      if (exercise.exercise_sets && exercise.exercise_sets.length > 0) {
+        const setsData = exercise.exercise_sets.map((set) => ({
+          id: set.id,
+          reps: set.reps,
+          weight: set.weight,
+          duration: set.duration,
+          time_under_tension: set.time_under_tension,
+          rest_time: set.rest_time,
+          completed: set.completed,
+          notes: set.notes || '',
+        }));
+        setExerciseSets(setsData);
+      } else {
+        // Create default sets based on exercise summary
+        const defaultSets = Array.from({ length: exercise.sets || 1 }, (_, index) => ({
+          id: `temp-${index + 1}`,
+          reps: Math.round(exercise.reps / (exercise.sets || 1)) || 1,
+          weight: exercise.weight || 0,
+          duration: Math.round(exercise.exercise_duration / (exercise.sets || 1)) || 0,
+          time_under_tension: Math.round(exercise.time_under_tension / (exercise.sets || 1)) || 0,
+          rest_time: exercise.rest_time || 60,
+          completed: false,
+          notes: '',
+        }));
+        setExerciseSets(defaultSets);
+      }
     } else {
       setFormData({
         address: address?.toLowerCase() as string,
         exercise_name: '',
-        sets: 1,
-        reps: 1,
-        weight: 0,
-        time_under_tension: 0,
-        exercise_duration: 0,
-        rest_time: 60,
         notes: '',
       });
       setExerciseSets([
         {
-          id: '1',
           reps: 1,
           weight: 0,
           duration: 0,
@@ -134,32 +128,24 @@ export function ExerciseModal({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Calculate totals from sets
-    const totalSets = exerciseSets.length;
-    const totalReps = exerciseSets.reduce((sum: number, set: ExerciseSet) => sum + set.reps, 0);
-    const averageWeight =
-      exerciseSets.reduce((sum: number, set: ExerciseSet) => sum + set.weight, 0) / totalSets;
-    const totalDuration = exerciseSets.reduce(
-      (sum: number, set: ExerciseSet) => sum + set.duration,
-      0,
-    );
-    const totalTimeUnderTension = exerciseSets.reduce(
-      (sum: number, set: ExerciseSet) => sum + set.time_under_tension,
-      0,
-    );
-    const averageRestTime =
-      exerciseSets.reduce((sum: number, set: ExerciseSet) => sum + set.rest_time, 0) / totalSets;
+    // Create exercise sets data for the database
+    const exerciseSetsData = exerciseSets.map((set) => ({
+      address: address?.toLowerCase() as string,
+      exercise_id: '', // Will be set by the backend
+      set_number: 0, // Will be set by the backend
+      reps: set.reps,
+      weight: set.weight,
+      duration: set.duration,
+      time_under_tension: set.time_under_tension,
+      rest_time: set.rest_time,
+      completed: set.completed,
+      notes: set.notes || undefined,
+    }));
 
     const exerciseData = {
       ...formData,
       address: address?.toLowerCase() as string,
-      sets: totalSets,
-      reps: totalReps,
-      weight: averageWeight,
-      exercise_duration: totalDuration,
-      time_under_tension: totalTimeUnderTension,
-      rest_time: Math.round(averageRestTime),
-      exercise_sets: exerciseSets,
+      exercise_sets: exerciseSetsData,
     };
 
     if (exercise) {
@@ -186,7 +172,7 @@ export function ExerciseModal({
 
   const handleSetChange = (
     setIndex: number,
-    field: keyof ExerciseSet,
+    field: keyof TempExerciseSet,
     value: string | number | boolean,
   ) => {
     setExerciseSets((prev) =>
@@ -195,8 +181,7 @@ export function ExerciseModal({
   };
 
   const addSet = () => {
-    const newSet: ExerciseSet = {
-      id: (exerciseSets.length + 1).toString(),
+    const newSet: TempExerciseSet = {
       reps: exerciseSets[exerciseSets.length - 1]?.reps || 1,
       weight: exerciseSets[exerciseSets.length - 1]?.weight || 0,
       duration: exerciseSets[exerciseSets.length - 1]?.duration || 0,
@@ -290,7 +275,7 @@ export function ExerciseModal({
 
           {exerciseSets.map((set, index) => (
             <div
-              key={set.id}
+              key={set.id || index}
               className="p-4 border rounded-lg space-y-4 bg-gray-50 dark:bg-gray-800"
             >
               <div className="flex items-center justify-between">

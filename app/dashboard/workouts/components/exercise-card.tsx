@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Edit, Trash2, ChevronDown, ChevronUp, BarChart3 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import type { WorkoutExercise } from '@/types/workouts';
+import { updateSetCompletionStatus } from '@/lib/supabase/workouts';
+import type { WorkoutExercise, ExerciseSet } from '@/types/workouts';
 
 export interface ExerciseCardProps {
   exercise: WorkoutExercise;
@@ -26,7 +27,32 @@ export function ExerciseCard({
 }: ExerciseCardProps) {
   const router = useRouter();
   const [isExpanded, setIsExpanded] = useState(false);
-  const [completedSets, setCompletedSets] = useState(exercise.completed_sets);
+  const [exerciseSets, setExerciseSets] = useState<ExerciseSet[]>([]);
+
+  // Initialize exercise sets from the exercise data
+  useEffect(() => {
+    if (exercise.exercise_sets && exercise.exercise_sets.length > 0) {
+      setExerciseSets(exercise.exercise_sets);
+    } else {
+      // Create placeholder sets based on exercise summary for backward compatibility
+      const placeholderSets = Array.from({ length: exercise.sets }, (_, index) => ({
+        id: `placeholder-${index}`,
+        exercise_id: exercise.id,
+        address: '', // Not needed for display
+        set_number: index + 1,
+        reps: Math.round(exercise.reps / exercise.sets) || 1,
+        weight: exercise.weight || 0,
+        duration: Math.round(exercise.exercise_duration / exercise.sets) || 0,
+        time_under_tension: Math.round(exercise.time_under_tension / exercise.sets) || 0,
+        rest_time: exercise.rest_time || 60,
+        completed: index < exercise.completed_sets,
+        notes: '',
+        created_at: '',
+        updated_at: '',
+      }));
+      setExerciseSets(placeholderSets);
+    }
+  }, [exercise]);
 
   const formatTime = (seconds: number) => {
     if (seconds < 60) return `${seconds}s`;
@@ -36,11 +62,29 @@ export function ExerciseCard({
   };
 
   const volume = exercise.sets * exercise.reps * exercise.weight;
+  const completedSets = exerciseSets.filter((set) => set.completed).length;
 
-  const handleSetCompletion = (setNumber: number) => {
-    const newCompletedSets = setNumber === completedSets ? 0 : setNumber;
-    setCompletedSets(newCompletedSets);
-    onUpdateProgress(exercise.id, newCompletedSets);
+  const handleIndividualSetCompletion = async (setIndex: number) => {
+    const set = exerciseSets[setIndex];
+    if (!set) return;
+
+    try {
+      // If this is a real set (not placeholder), update in database
+      if (!set.id.startsWith('placeholder-')) {
+        await updateSetCompletionStatus(set.id, !set.completed);
+      }
+
+      // Update local state
+      const newSets = [...exerciseSets];
+      newSets[setIndex] = { ...set, completed: !set.completed };
+      setExerciseSets(newSets);
+
+      // Update parent component with new completion count
+      const newCompletedCount = newSets.filter((s) => s.completed).length;
+      onUpdateProgress(exercise.id, newCompletedCount);
+    } catch (error) {
+      console.error('Error updating set completion:', error);
+    }
   };
 
   const handleViewDetails = () => {
@@ -107,22 +151,56 @@ export function ExerciseCard({
               )}
             </div>
 
-            {/* Set Tracking */}
+            {/* Individual Set Tracking */}
             <div className="mb-4">
               <div className="text-sm font-medium mb-2">Track Sets:</div>
-              <div className="flex flex-wrap gap-2">
-                {Array.from({ length: exercise.sets }, (_, i) => (
-                  <Button
-                    key={i}
-                    variant={i < completedSets ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => handleSetCompletion(i + 1)}
-                    className="w-10 h-10 p-0"
-                  >
-                    {i + 1}
-                  </Button>
-                ))}
-              </div>
+              {exerciseSets.length > 0 ? (
+                <div className="space-y-2">
+                  {exerciseSets.map((set, index) => (
+                    <div
+                      key={set.id}
+                      className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded-lg"
+                    >
+                      <div className="flex items-center space-x-4">
+                        <Button
+                          variant={set.completed ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => handleIndividualSetCompletion(index)}
+                          className="w-8 h-8 p-0"
+                        >
+                          {index + 1}
+                        </Button>
+                        <div className="text-sm">
+                          <span className="font-medium">{set.reps} reps</span>
+                          {set.weight > 0 && (
+                            <span className="text-gray-500 ml-2">
+                              @ {set.weight}
+                              {weightUnit}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      {set.notes && (
+                        <div className="text-xs text-gray-500 max-w-xs truncate">{set.notes}</div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {Array.from({ length: exercise.sets }, (_, i) => (
+                    <Button
+                      key={i}
+                      variant={i < completedSets ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => handleIndividualSetCompletion(i)}
+                      className="w-10 h-10 p-0"
+                    >
+                      {i + 1}
+                    </Button>
+                  ))}
+                </div>
+              )}
             </div>
 
             {exercise.notes && (

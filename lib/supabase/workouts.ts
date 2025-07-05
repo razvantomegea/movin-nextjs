@@ -2,10 +2,13 @@ import { getClient } from './createClient';
 import type {
   Workout,
   WorkoutExercise,
+  ExerciseSet,
   CreateWorkoutData,
   UpdateWorkoutData,
   CreateExerciseData,
   UpdateExerciseData,
+  CreateExerciseSetData,
+  UpdateExerciseSetData,
   WorkoutWithExercises,
   WorkoutStatsRow,
   ExerciseWithWorkout,
@@ -70,7 +73,10 @@ export async function getWorkoutWithExercises(workoutId: string): Promise<Workou
     .select(
       `
       *,
-      workout_exercises (*)
+      workout_exercises (
+        *,
+        exercise_sets (*)
+      )
     `,
     )
     .eq('id', workoutId)
@@ -80,11 +86,20 @@ export async function getWorkoutWithExercises(workoutId: string): Promise<Workou
     throw error;
   }
 
-  // Sort exercises by order_index
+  // Sort exercises by order_index and sets by set_number
   if (data.workout_exercises) {
     data.workout_exercises.sort(
       (a: WorkoutExercise, b: WorkoutExercise) => a.order_index - b.order_index,
     );
+
+    // Sort exercise sets by set_number
+    data.workout_exercises.forEach((exercise: WorkoutExercise) => {
+      if (exercise.exercise_sets) {
+        exercise.exercise_sets.sort(
+          (a: ExerciseSet, b: ExerciseSet) => a.set_number - b.set_number,
+        );
+      }
+    });
   }
 
   return data;
@@ -135,20 +150,46 @@ export async function createExercise(exerciseData: CreateExerciseData): Promise<
   const nextOrderIndex =
     maxOrderData && maxOrderData.length > 0 ? maxOrderData[0].order_index + 1 : 0;
 
-  const { data, error } = await supabase
+  // Create the exercise first
+  const { data: exercise, error: exerciseError } = await supabase
     .from('workout_exercises')
     .insert({
-      ...exerciseData,
+      address: exerciseData.address.toLowerCase(),
+      workout_id: exerciseData.workout_id,
+      exercise_name: exerciseData.exercise_name,
+      notes: exerciseData.notes,
       order_index: exerciseData.order_index ?? nextOrderIndex,
+      // These will be calculated automatically by triggers
+      sets: 0,
+      reps: 0,
+      weight: 0,
+      time_under_tension: 0,
+      exercise_duration: 0,
+      rest_time: 0,
     })
     .select()
     .single();
 
-  if (error) {
-    throw error;
+  if (exerciseError) {
+    throw exerciseError;
   }
 
-  return data;
+  // Create exercise sets if provided
+  if (exerciseData.exercise_sets && exerciseData.exercise_sets.length > 0) {
+    const setsData = exerciseData.exercise_sets.map((set, index) => ({
+      ...set,
+      exercise_id: exercise.id,
+      set_number: index + 1,
+    }));
+
+    const { error: setsError } = await supabase.from('exercise_sets').insert(setsData);
+
+    if (setsError) {
+      throw setsError;
+    }
+  }
+
+  return exercise;
 }
 
 export async function getExercises(workoutId: string): Promise<WorkoutExercise[]> {
@@ -156,7 +197,12 @@ export async function getExercises(workoutId: string): Promise<WorkoutExercise[]
 
   const { data, error } = await supabase
     .from('workout_exercises')
-    .select('*')
+    .select(
+      `
+      *,
+      exercise_sets (*)
+    `,
+    )
     .eq('workout_id', workoutId)
     .order('order_index', { ascending: true });
 
@@ -164,7 +210,41 @@ export async function getExercises(workoutId: string): Promise<WorkoutExercise[]
     throw error;
   }
 
-  return data || [];
+  // Sort exercise sets by set_number
+  const exercises = data || [];
+  exercises.forEach((exercise: WorkoutExercise) => {
+    if (exercise.exercise_sets) {
+      exercise.exercise_sets.sort((a: ExerciseSet, b: ExerciseSet) => a.set_number - b.set_number);
+    }
+  });
+
+  return exercises;
+}
+
+export async function getExercise(exerciseId: string): Promise<WorkoutExercise> {
+  const supabase = getClient();
+
+  const { data, error } = await supabase
+    .from('workout_exercises')
+    .select(
+      `
+      *,
+      exercise_sets (*)
+    `,
+    )
+    .eq('id', exerciseId)
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  // Sort exercise sets by set_number
+  if (data.exercise_sets) {
+    data.exercise_sets.sort((a: ExerciseSet, b: ExerciseSet) => a.set_number - b.set_number);
+  }
+
+  return data;
 }
 
 export async function updateExercise(
@@ -173,18 +253,44 @@ export async function updateExercise(
 ): Promise<WorkoutExercise> {
   const supabase = getClient();
 
-  const { data, error } = await supabase
+  // Update the exercise
+  const { data: exercise, error: exerciseError } = await supabase
     .from('workout_exercises')
-    .update(exerciseData)
+    .update({
+      exercise_name: exerciseData.exercise_name,
+      notes: exerciseData.notes,
+      order_index: exerciseData.order_index,
+    })
     .eq('id', exerciseId)
     .select()
     .single();
 
-  if (error) {
-    throw error;
+  if (exerciseError) {
+    throw exerciseError;
   }
 
-  return data;
+  // Update exercise sets if provided
+  if (exerciseData.exercise_sets) {
+    // Delete existing sets
+    await supabase.from('exercise_sets').delete().eq('exercise_id', exerciseId);
+
+    // Create new sets
+    if (exerciseData.exercise_sets.length > 0) {
+      const setsData = exerciseData.exercise_sets.map((set, index) => ({
+        ...set,
+        exercise_id: exerciseId,
+        set_number: index + 1,
+      }));
+
+      const { error: setsError } = await supabase.from('exercise_sets').insert(setsData);
+
+      if (setsError) {
+        throw setsError;
+      }
+    }
+  }
+
+  return exercise;
 }
 
 export async function deleteExercise(exerciseId: string): Promise<void> {
@@ -209,6 +315,85 @@ export async function reorderExercises(workoutId: string, exerciseIds: string[])
   if (error) {
     throw error;
   }
+}
+
+// Exercise Set CRUD operations
+export async function createExerciseSet(setData: CreateExerciseSetData): Promise<ExerciseSet> {
+  const supabase = getClient();
+
+  const { data, error } = await supabase.from('exercise_sets').insert(setData).select().single();
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
+
+export async function getExerciseSets(exerciseId: string): Promise<ExerciseSet[]> {
+  const supabase = getClient();
+
+  const { data, error } = await supabase
+    .from('exercise_sets')
+    .select('*')
+    .eq('exercise_id', exerciseId)
+    .order('set_number', { ascending: true });
+
+  if (error) {
+    throw error;
+  }
+
+  return data || [];
+}
+
+export async function updateExerciseSet(
+  setId: string,
+  setData: UpdateExerciseSetData,
+): Promise<ExerciseSet> {
+  const supabase = getClient();
+
+  const { data, error } = await supabase
+    .from('exercise_sets')
+    .update(setData)
+    .eq('id', setId)
+    .select()
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
+
+export async function deleteExerciseSet(setId: string): Promise<void> {
+  const supabase = getClient();
+
+  const { error } = await supabase.from('exercise_sets').delete().eq('id', setId);
+
+  if (error) {
+    throw error;
+  }
+}
+
+export async function updateSetCompletionStatus(
+  setId: string,
+  completed: boolean,
+): Promise<ExerciseSet> {
+  const supabase = getClient();
+
+  const { data, error } = await supabase
+    .from('exercise_sets')
+    .update({ completed })
+    .eq('id', setId)
+    .select()
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
 }
 
 // Analytics functions
