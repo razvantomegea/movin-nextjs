@@ -340,3 +340,22 @@ export async function getExerciseProgress(
 
   return Object.values(progressByDate);
 }
+
+// Get unique exercise names for autocomplete
+export async function getUniqueExerciseNames(address: string): Promise<string[]> {
+  const supabase = getClient();
+
+  const { data, error } = await supabase
+    .from('workout_exercises')
+    .select('exercise_name')
+    .eq('address', address.toLowerCase())
+    .order('exercise_name');
+
+  if (error) {
+    throw error;
+  }
+
+  // Get unique exercise names
+  const uniqueNames = [...new Set((data as { exercise_name: string }[]).map(item => item.exercise_name))];
+  return uniqueNames;
+}
