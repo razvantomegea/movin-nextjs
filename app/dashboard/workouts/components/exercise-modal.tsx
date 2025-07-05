@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useAppKitAccount } from '@reown/appkit/react';
+import { useSelector } from 'react-redux';
 import { Autocomplete } from '@/components/ui/autocomplete';
 import { BaseModal } from '@/components/ui/base-modal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { RootState } from '@/lib/redux/store';
 import { getUniqueExerciseNames } from '@/lib/supabase/workouts';
 import type {
   CreateExerciseData,
@@ -30,6 +32,8 @@ export function ExerciseModal({
   onSave,
 }: ExerciseModalProps) {
   const { address } = useAppKitAccount();
+  const { profile } = useSelector((state: RootState) => state.profile);
+  const weightUnit = profile?.weight_unit || 'kg';
   const [exerciseNames, setExerciseNames] = useState<string[]>([]);
   const [formData, setFormData] = useState({
     address: address as string,
@@ -218,7 +222,6 @@ export function ExerciseModal({
         onClose={onClose}
         title="Wallet Connection Required"
         subtitle="Please connect your wallet to add or edit exercises."
-        maxWidth="sm"
         contentClassName="p-6"
       >
         <div className="text-center text-gray-600 dark:text-gray-300">
@@ -252,7 +255,6 @@ export function ExerciseModal({
       onClose={onClose}
       title={exercise ? 'Edit Exercise' : 'Add New Exercise'}
       subtitle="Configure your exercise details and sets"
-      maxWidth="2xl"
       footer={footer}
       contentClassName="p-6"
     >
@@ -320,7 +322,7 @@ export function ExerciseModal({
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor={`set-${index}-weight`}>Weight (lbs)</Label>
+                  <Label htmlFor={`set-${index}-weight`}>Weight ({weightUnit})</Label>
                   <Input
                     id={`set-${index}-weight`}
                     type="number"
