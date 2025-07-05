@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useAppKitAccount } from '@reown/appkit/react';
-import { Plus, Trash2, Play, Dumbbell, Calendar } from 'lucide-react';
+import { Plus, Dumbbell } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,8 +15,9 @@ import {
   fetchWorkoutStats,
   clearError,
 } from '@/lib/redux/slices/workoutsSlice';
-import { formatDuration, formatDate } from '@/utils';
+import { formatDuration } from '@/utils';
 import { CreateWorkoutModal } from './components/create-workout-modal';
+import { WorkoutCard } from './components/workout-card';
 
 export default function WorkoutsPage() {
   const router = useRouter();
@@ -67,6 +68,13 @@ export default function WorkoutsPage() {
       }
     }
   };
+
+  const handleViewWorkout = useCallback(
+    (workoutId: string) => {
+      router.push(`/dashboard/workouts/${workoutId}`);
+    },
+    [router],
+  );
 
   if (!address) {
     return (
@@ -187,68 +195,12 @@ export default function WorkoutsPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {workouts.map((workout) => (
-              <Card key={workout.id} className="hover:shadow-lg transition-shadow cursor-pointer">
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <CardTitle className="text-lg">{workout.name}</CardTitle>
-                      <div className="flex items-center text-sm text-gray-500 mt-1">
-                        <Calendar className="h-3 w-3 mr-1" />
-                        {formatDate(workout.created_at)}
-                      </div>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <div className="font-medium text-gray-600 dark:text-gray-400">Volume</div>
-                      <div className="text-lg font-semibold">
-                        {workout.total_volume.toLocaleString()}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="font-medium text-gray-600 dark:text-gray-400">Duration</div>
-                      <div className="text-lg font-semibold">
-                        {formatDuration(workout.total_duration)}
-                      </div>
-                    </div>
-                  </div>
-
-                  {workout.notes && (
-                    <div className="mt-3 text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
-                      {workout.notes}
-                    </div>
-                  )}
-
-                  <div className="flex justify-between items-center mt-4">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        router.push(`/dashboard/workouts/${workout.id}`);
-                      }}
-                      className="flex items-center gap-1"
-                    >
-                      <Play className="h-3 w-3" />
-                      View
-                    </Button>
-
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteWorkout(workout.id);
-                      }}
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+              <WorkoutCard
+                key={workout.id}
+                workout={workout}
+                onView={handleViewWorkout}
+                onDelete={handleDeleteWorkout}
+              />
             ))}
           </div>
         )}

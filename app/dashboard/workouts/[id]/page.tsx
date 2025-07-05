@@ -4,7 +4,6 @@ import React, { useEffect, useState } from 'react';
 import { useAppKitAccount } from '@reown/appkit/react';
 import { Plus, Edit, ArrowLeft, Weight } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
-import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
