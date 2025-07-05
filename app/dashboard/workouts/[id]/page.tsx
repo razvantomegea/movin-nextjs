@@ -4,7 +4,18 @@ import React, { useEffect, useState } from 'react';
 import { useAppKitAccount } from '@reown/appkit/react';
 import { Plus, Edit, ArrowLeft, Weight } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
+import { buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -43,6 +54,8 @@ export default function WorkoutPage() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editName, setEditName] = useState('');
   const [editNotes, setEditNotes] = useState('');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [exerciseToDelete, setExerciseToDelete] = useState<string | null>(null);
 
   const workoutId = params.id as string;
 
@@ -97,25 +110,37 @@ export default function WorkoutPage() {
     }
   };
 
-  const handleDeleteExercise = async (exerciseId: string) => {
-    if (confirm('Are you sure you want to delete this exercise?')) {
-      try {
-        await dispatch(deleteExerciseAction(exerciseId)).unwrap();
-        dispatch(showSuccessToast({ title: 'Exercise deleted successfully!' }));
-        // Refresh the workout to get updated totals
-        dispatch(fetchWorkoutWithExercises(workoutId));
-      } catch (error) {
-        dispatch(showErrorToast({ title: 'Failed to delete exercise' }));
-      }
+  const handleDeleteExercise = (exerciseId: string) => {
+    setExerciseToDelete(exerciseId);
+    setShowDeleteConfirm(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!exerciseToDelete) return;
+    try {
+      await dispatch(deleteExerciseAction(exerciseToDelete)).unwrap();
+      dispatch(showSuccessToast({ title: 'Exercise deleted successfully!' }));
+      dispatch(fetchWorkoutWithExercises(workoutId));
+    } catch (error) {
+      dispatch(showErrorToast({ title: 'Failed to delete exercise' }));
     }
+    setShowDeleteConfirm(false);
+    setExerciseToDelete(null);
+  };
+
+  const handleCancelDelete = () => {
+    setShowDeleteConfirm(false);
+    setExerciseToDelete(null);
   };
 
   const handleUpdateProgress = async (exerciseId: string, completedSets: number) => {
+    if (!address) return;
+
     try {
       await dispatch(
         updateExerciseAction({
           exerciseId,
-          exerciseData: { address: address!, completed_sets: completedSets },
+          exerciseData: { address: address.toLowerCase(), completed_sets: completedSets },
         }),
       ).unwrap();
     } catch (error) {
@@ -141,7 +166,7 @@ export default function WorkoutPage() {
   };
 
   // Determine preferred weight unit (default to 'kg')
-  const preferredWeightUnit = profile?.weight_unit === 'lb' ? 'lb' : 'kg';
+  const preferredWeightUnit = profile?.weight_unit || 'kg';
 
   if (loading) {
     return (
@@ -302,6 +327,7 @@ export default function WorkoutPage() {
                 }}
                 onDelete={handleDeleteExercise}
                 onUpdateProgress={handleUpdateProgress}
+                weightUnit={preferredWeightUnit}
               />
             ))}
           </div>
@@ -354,6 +380,28 @@ export default function WorkoutPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Exercise Confirmation Dialog */}
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete this exercise from your
+              workout.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleCancelDelete}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              className={buttonVariants({ variant: 'destructive' })}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

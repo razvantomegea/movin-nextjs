@@ -134,7 +134,7 @@ export default function ExerciseDetailPage() {
   }, [currentExercise, progressData]);
 
   // Get preferred weight unit
-  const weightUnit = profile?.weight_unit === 'lb' ? 'lb' : 'kg';
+  const weightUnit = profile?.weight_unit || 'kg';
 
   if (workoutLoading || exerciseLoading) {
     return (

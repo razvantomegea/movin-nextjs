@@ -13,6 +13,7 @@ export interface ExerciseCardProps {
   onEdit: (exercise: WorkoutExercise) => void;
   onDelete: (exerciseId: string) => void;
   onUpdateProgress: (exerciseId: string, completedSets: number) => void;
+  weightUnit: string;
 }
 
 export function ExerciseCard({
@@ -21,6 +22,7 @@ export function ExerciseCard({
   onEdit,
   onDelete,
   onUpdateProgress,
+  weightUnit,
 }: ExerciseCardProps) {
   const router = useRouter();
   const [isExpanded, setIsExpanded] = useState(false);
@@ -54,7 +56,8 @@ export function ExerciseCard({
               <div className="flex-1">
                 <CardTitle className="text-lg">{exercise.exercise_name}</CardTitle>
                 <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                  {exercise.sets} sets × {exercise.reps} reps @ {exercise.weight}lbs
+                  {exercise.sets} sets × {exercise.reps} reps @ {exercise.weight}
+                  {weightUnit}
                 </div>
               </div>
               <div className="flex items-center space-x-2">

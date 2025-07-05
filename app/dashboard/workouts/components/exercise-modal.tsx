@@ -36,7 +36,7 @@ export function ExerciseModal({
   const weightUnit = profile?.weight_unit || 'kg';
   const [exerciseNames, setExerciseNames] = useState<string[]>([]);
   const [formData, setFormData] = useState({
-    address: address as string,
+    address: address?.toLowerCase() as string,
     exercise_name: '',
     sets: 1,
     reps: 1,
@@ -80,7 +80,7 @@ export function ExerciseModal({
   useEffect(() => {
     if (exercise) {
       setFormData({
-        address: address as string,
+        address: address?.toLowerCase() as string,
         exercise_name: exercise.exercise_name,
         sets: exercise.sets,
         reps: exercise.reps,
@@ -106,7 +106,7 @@ export function ExerciseModal({
       setExerciseSets(defaultSets);
     } else {
       setFormData({
-        address: address as string,
+        address: address?.toLowerCase() as string,
         exercise_name: '',
         sets: 1,
         reps: 1,
@@ -152,9 +152,9 @@ export function ExerciseModal({
 
     const exerciseData = {
       ...formData,
-      address: address as string,
+      address: address?.toLowerCase() as string,
       sets: totalSets,
-      reps: Math.round(totalReps / totalSets), // Average reps per set
+      reps: totalReps,
       weight: averageWeight,
       exercise_duration: totalDuration,
       time_under_tension: totalTimeUnderTension,

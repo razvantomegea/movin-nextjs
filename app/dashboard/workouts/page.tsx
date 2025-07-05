@@ -18,12 +18,14 @@ import {
 import { formatDuration } from '@/utils';
 import { CreateWorkoutModal } from './components/create-workout-modal';
 import { WorkoutCard } from './components/workout-card';
+import { ExerciseCard } from './components/exercise-card';
 
 export default function WorkoutsPage() {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const { address } = useAppKitAccount();
   const { workouts, loading, error, stats } = useAppSelector((state) => state.workouts);
+  const profile = useAppSelector((state) => state.profile.profile);
   const [showCreateModal, setShowCreateModal] = useState(false);
 
   useEffect(() => {
@@ -125,7 +127,7 @@ export default function WorkoutsPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.totalVolume.toLocaleString()}</div>
-              <div className="text-xs text-gray-500">lbs lifted</div>
+              <div className="text-xs text-gray-500">{profile?.weight_unit || 'kg'} lifted</div>
             </CardContent>
           </Card>
 

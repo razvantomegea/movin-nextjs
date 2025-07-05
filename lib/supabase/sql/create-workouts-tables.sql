@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS public.workout_exercises (
     exercise_duration INTEGER DEFAULT 0, -- in seconds
     rest_time INTEGER DEFAULT 0, -- in seconds between sets
     notes TEXT,
+    exercise_sets JSONB DEFAULT '[]',
     order_index INTEGER DEFAULT 0,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),

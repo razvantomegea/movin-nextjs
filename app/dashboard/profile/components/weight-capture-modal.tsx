@@ -17,6 +17,9 @@ interface WeightCaptureModalProps {
   onClose: () => void;
   userAddress: string;
   currentWeightUnit?: string;
+  profile?: {
+    weight_unit?: string;
+  };
 }
 
 export function WeightCaptureModal({
@@ -24,6 +27,7 @@ export function WeightCaptureModal({
   onClose,
   userAddress,
   currentWeightUnit = 'kg',
+  profile,
 }: WeightCaptureModalProps) {
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
@@ -299,14 +303,14 @@ export function WeightCaptureModal({
                         </button>
                         <button
                           type="button"
-                          onClick={() => handleWeightUnitChange('lb')}
+                          onClick={() => handleWeightUnitChange(profile?.weight_unit || 'lb')}
                           className={`px-3 py-1.5 text-xs font-medium bg-white border-t border-b border-r rounded-r-lg ${
-                            weightUnit === 'lb'
+                            weightUnit === (profile?.weight_unit || 'lb')
                               ? 'text-blue-700 border-blue-700 bg-blue-50'
                               : 'text-gray-900 border-gray-200 hover:bg-gray-100 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:hover:bg-gray-600'
                           }`}
                         >
-                          lb
+                          {profile?.weight_unit || 'lb'}
                         </button>
                       </div>
                     </div>

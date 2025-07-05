@@ -288,13 +288,13 @@ export async function getExerciseProgress(
       *,
       workouts!inner (
         address,
-        created_at,
+        created_at
       )
     `,
     )
     .eq('exercise_name', exerciseName)
     .eq('workouts.address', address.toLowerCase())
-    .order('workouts.created_at', { ascending: false })
+    .order('workouts(created_at)', { ascending: false })
     .limit(limit);
 
   if (error) {
