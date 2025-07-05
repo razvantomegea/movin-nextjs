@@ -1,14 +1,11 @@
 import React, { useEffect, useState } from 'react';
+import { useAppKitAccount } from '@reown/appkit/react';
+import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
-import type {
-  CreateExerciseData,
-  UpdateExerciseData,
-  WorkoutExercise,
-} from '@/lib/supabase/workouts';
+import type { CreateExerciseData, UpdateExerciseData, WorkoutExercise } from '@/types/workouts';
 
 export interface ExerciseModalProps {
   isOpen: boolean;
@@ -25,7 +22,9 @@ export function ExerciseModal({
   workoutId,
   onSave,
 }: ExerciseModalProps) {
+  const { address } = useAppKitAccount();
   const [formData, setFormData] = useState({
+    address: address!,
     exercise_name: '',
     sets: 1,
     reps: 1,
@@ -39,6 +38,7 @@ export function ExerciseModal({
   useEffect(() => {
     if (exercise) {
       setFormData({
+        address: address!,
         exercise_name: exercise.exercise_name,
         sets: exercise.sets,
         reps: exercise.reps,
@@ -50,6 +50,7 @@ export function ExerciseModal({
       });
     } else {
       setFormData({
+        address: address!,
         exercise_name: '',
         sets: 1,
         reps: 1,
@@ -60,7 +61,7 @@ export function ExerciseModal({
         notes: '',
       });
     }
-  }, [exercise, isOpen]);
+  }, [exercise, isOpen, address]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

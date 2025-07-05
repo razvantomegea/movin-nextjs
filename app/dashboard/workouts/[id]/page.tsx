@@ -2,30 +2,17 @@
 
 import React, { useEffect, useState } from 'react';
 import { useAppKitAccount } from '@reown/appkit/react';
-import {
-  Plus,
-  Edit,
-  Trash2,
-  CheckCircle,
-  Clock,
-  ArrowLeft,
-  Play,
-  Pause,
-  Timer,
-  Weight,
-  Hash,
-  Target,
-  ChevronDown,
-  ChevronUp,
-} from 'lucide-react';
+import { Plus, Edit, ArrowLeft, Weight } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
 import {
-  fetchExercises,
   createExerciseAction,
   updateExerciseAction,
   deleteExerciseAction,
@@ -34,30 +21,28 @@ import {
 import {
   fetchWorkoutWithExercises,
   updateWorkoutAction,
-  completeWorkoutAction,
   clearCurrentWorkout,
   clearError,
 } from '@/lib/redux/slices/workoutsSlice';
-import type {
-  CreateExerciseData,
-  UpdateExerciseData,
-  WorkoutExercise,
-} from '@/lib/supabase/workouts';
+import type { CreateExerciseData, UpdateExerciseData, WorkoutExercise } from '@/types/workouts';
+import { formatDuration, formatDate } from '@/utils';
 import { ExerciseCard } from '../components/ExerciseCard';
 import { ExerciseModal } from '../components/ExerciseModal';
 
 export default function WorkoutPage() {
   const params = useParams();
   const router = useRouter();
-  const dispatch = useAppDispatch();
   const { address } = useAppKitAccount();
+  const dispatch = useAppDispatch();
   const { currentWorkout, loading, error } = useAppSelector((state) => state.workouts);
   const { error: exerciseError } = useAppSelector((state) => state.exercises);
+  const { profile } = useAppSelector((state) => state.profile);
 
   const [showExerciseModal, setShowExerciseModal] = useState(false);
   const [selectedExercise, setSelectedExercise] = useState<WorkoutExercise | undefined>();
-  const [workoutStartTime, setWorkoutStartTime] = useState<Date | null>(null);
-  const [isWorkoutActive, setIsWorkoutActive] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editNotes, setEditNotes] = useState('');
 
   const workoutId = params.id as string;
 
@@ -84,6 +69,13 @@ export default function WorkoutPage() {
       dispatch(clearExerciseError());
     }
   }, [exerciseError, dispatch]);
+
+  useEffect(() => {
+    if (currentWorkout) {
+      setEditName(currentWorkout.name || '');
+      setEditNotes(currentWorkout.notes || '');
+    }
+  }, [currentWorkout]);
 
   const handleSaveExercise = async (
     data: CreateExerciseData | { exerciseId: string; data: UpdateExerciseData },
@@ -123,7 +115,7 @@ export default function WorkoutPage() {
       await dispatch(
         updateExerciseAction({
           exerciseId,
-          exerciseData: { completed_sets: completedSets },
+          exerciseData: { address: address!, completed_sets: completedSets },
         }),
       ).unwrap();
     } catch (error) {
@@ -131,42 +123,25 @@ export default function WorkoutPage() {
     }
   };
 
-  const handleCompleteWorkout = async () => {
+  const handleEditWorkout = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!currentWorkout) return;
-
     try {
-      await dispatch(completeWorkoutAction(currentWorkout.id)).unwrap();
-      toast.success('Workout completed! Great job! 🎉');
-      setIsWorkoutActive(false);
+      await dispatch(
+        updateWorkoutAction({
+          workoutId: currentWorkout.id,
+          workoutData: { name: editName.trim(), notes: editNotes.trim() || undefined },
+        }),
+      ).unwrap();
+      toast.success('Workout updated successfully!');
+      setShowEditModal(false);
     } catch (error) {
-      toast.error('Failed to complete workout');
+      toast.error('Failed to update workout');
     }
   };
 
-  const startWorkout = () => {
-    setWorkoutStartTime(new Date());
-    setIsWorkoutActive(true);
-    toast.success('Workout started! 💪');
-  };
-
-  const formatDuration = (seconds: number) => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-
-    if (hours > 0) {
-      return `${hours}h ${minutes}m`;
-    }
-    return `${minutes}m`;
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  };
+  // Determine preferred weight unit (default to 'kg')
+  const preferredWeightUnit = profile?.weight_unit === 'lb' ? 'lb' : 'kg';
 
   if (loading) {
     return (
@@ -216,7 +191,12 @@ export default function WorkoutPage() {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
-            <h1 className="text-3xl font-bold">{currentWorkout.name}</h1>
+            <h1 className="text-3xl font-bold flex items-center gap-2">
+              {currentWorkout.name}
+              <Button variant="ghost" size="icon" onClick={() => setShowEditModal(true)}>
+                <Edit className="h-5 w-5" />
+              </Button>
+            </h1>
             <p className="text-gray-600 dark:text-gray-400">
               {formatDate(currentWorkout.created_at)}
             </p>
@@ -224,22 +204,6 @@ export default function WorkoutPage() {
         </div>
 
         <div className="flex items-center space-x-2">
-          {!currentWorkout.is_completed && (
-            <>
-              {!isWorkoutActive ? (
-                <Button onClick={startWorkout} className="flex items-center gap-2">
-                  <Play className="h-4 w-4" />
-                  Start Workout
-                </Button>
-              ) : (
-                <Button onClick={handleCompleteWorkout} className="flex items-center gap-2">
-                  <CheckCircle className="h-4 w-4" />
-                  Complete Workout
-                </Button>
-              )}
-            </>
-          )}
-
           <Button onClick={() => setShowExerciseModal(true)} className="flex items-center gap-2">
             <Plus className="h-4 w-4" />
             Add Exercise
@@ -271,7 +235,7 @@ export default function WorkoutPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{currentWorkout.total_volume.toLocaleString()}</div>
-            <div className="text-xs text-gray-500">lbs lifted</div>
+            <div className="text-xs text-gray-500">{preferredWeightUnit} lifted</div>
           </CardContent>
         </Card>
 
@@ -300,29 +264,6 @@ export default function WorkoutPage() {
             <div className="text-xs text-gray-500">total exercises</div>
           </CardContent>
         </Card>
-      </div>
-
-      {/* Status Badge */}
-      <div className="flex items-center space-x-2">
-        {currentWorkout.is_completed ? (
-          <Badge
-            variant="secondary"
-            className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100"
-          >
-            <CheckCircle className="h-3 w-3 mr-1" />
-            Completed
-          </Badge>
-        ) : isWorkoutActive ? (
-          <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100">
-            <Play className="h-3 w-3 mr-1" />
-            In Progress
-          </Badge>
-        ) : (
-          <Badge variant="outline">
-            <Clock className="h-3 w-3 mr-1" />
-            Not Started
-          </Badge>
-        )}
       </div>
 
       {/* Exercises List */}
@@ -377,6 +318,41 @@ export default function WorkoutPage() {
         workoutId={workoutId}
         onSave={handleSaveExercise}
       />
+
+      {/* Edit Workout Modal */}
+      <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Edit Workout</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleEditWorkout} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-workout-name">Workout Name</Label>
+              <Input
+                id="edit-workout-name"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-workout-notes">Notes (Optional)</Label>
+              <Textarea
+                id="edit-workout-notes"
+                value={editNotes}
+                onChange={(e) => setEditNotes(e.target.value)}
+                rows={3}
+              />
+            </div>
+            <div className="flex justify-end space-x-2">
+              <Button type="button" variant="outline" onClick={() => setShowEditModal(false)}>
+                Cancel
+              </Button>
+              <Button type="submit">Save Changes</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

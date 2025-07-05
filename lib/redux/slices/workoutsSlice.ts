@@ -1,18 +1,19 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import {
-  Workout,
-  WorkoutWithExercises,
-  CreateWorkoutData,
-  UpdateWorkoutData,
   getWorkouts,
   getWorkout,
   getWorkoutWithExercises,
   createWorkout,
   updateWorkout,
   deleteWorkout,
-  completeWorkout,
   getWorkoutStats,
 } from '@/lib/supabase/workouts';
+import type {
+  Workout,
+  WorkoutWithExercises,
+  CreateWorkoutData,
+  UpdateWorkoutData,
+} from '@/types/workouts';
 
 interface WorkoutState {
   workouts: Workout[];
@@ -42,8 +43,8 @@ export const fetchWorkouts = createAsyncThunk(
   async (userAddress: string, { rejectWithValue }) => {
     try {
       return await getWorkouts(userAddress);
-    } catch (error: any) {
-      return rejectWithValue(error.message);
+    } catch (error: unknown) {
+      return rejectWithValue(error instanceof Error ? error.message : 'Unknown error');
     }
   },
 );
@@ -53,8 +54,8 @@ export const fetchWorkout = createAsyncThunk(
   async (workoutId: string, { rejectWithValue }) => {
     try {
       return await getWorkout(workoutId);
-    } catch (error: any) {
-      return rejectWithValue(error.message);
+    } catch (error: unknown) {
+      return rejectWithValue(error instanceof Error ? error.message : 'Unknown error');
     }
   },
 );
@@ -64,8 +65,8 @@ export const fetchWorkoutWithExercises = createAsyncThunk(
   async (workoutId: string, { rejectWithValue }) => {
     try {
       return await getWorkoutWithExercises(workoutId);
-    } catch (error: any) {
-      return rejectWithValue(error.message);
+    } catch (error: unknown) {
+      return rejectWithValue(error instanceof Error ? error.message : 'Unknown error');
     }
   },
 );
@@ -78,8 +79,8 @@ export const createWorkoutAction = createAsyncThunk(
   ) => {
     try {
       return await createWorkout(userAddress, workoutData);
-    } catch (error: any) {
-      return rejectWithValue(error.message);
+    } catch (error: unknown) {
+      return rejectWithValue(error instanceof Error ? error.message : 'Unknown error');
     }
   },
 );
@@ -92,8 +93,8 @@ export const updateWorkoutAction = createAsyncThunk(
   ) => {
     try {
       return await updateWorkout(workoutId, workoutData);
-    } catch (error: any) {
-      return rejectWithValue(error.message);
+    } catch (error: unknown) {
+      return rejectWithValue(error instanceof Error ? error.message : 'Unknown error');
     }
   },
 );
@@ -104,19 +105,8 @@ export const deleteWorkoutAction = createAsyncThunk(
     try {
       await deleteWorkout(workoutId);
       return workoutId;
-    } catch (error: any) {
-      return rejectWithValue(error.message);
-    }
-  },
-);
-
-export const completeWorkoutAction = createAsyncThunk(
-  'workouts/completeWorkout',
-  async (workoutId: string, { rejectWithValue }) => {
-    try {
-      return await completeWorkout(workoutId);
-    } catch (error: any) {
-      return rejectWithValue(error.message);
+    } catch (error: unknown) {
+      return rejectWithValue(error instanceof Error ? error.message : 'Unknown error');
     }
   },
 );
@@ -133,8 +123,8 @@ export const fetchWorkoutStats = createAsyncThunk(
   ) => {
     try {
       return await getWorkoutStats(userAddress, startDate, endDate);
-    } catch (error: any) {
-      return rejectWithValue(error.message);
+    } catch (error: unknown) {
+      return rejectWithValue(error instanceof Error ? error.message : 'Unknown error');
     }
   },
 );
@@ -150,7 +140,9 @@ const workoutsSlice = createSlice({
       state.error = null;
     },
     updateWorkoutInList: (state, action: PayloadAction<Workout>) => {
-      const index = state.workouts.findIndex((workout) => workout.id === action.payload.id);
+      const index = state.workouts.findIndex(
+        (workout: Workout) => workout.id === action.payload.id,
+      );
       if (index !== -1) {
         state.workouts[index] = action.payload;
       }
@@ -180,7 +172,9 @@ const workoutsSlice = createSlice({
       .addCase(fetchWorkout.fulfilled, (state, action) => {
         state.loading = false;
         // Update the workout in the list if it exists
-        const index = state.workouts.findIndex((workout) => workout.id === action.payload.id);
+        const index = state.workouts.findIndex(
+          (workout: Workout) => workout.id === action.payload.id,
+        );
         if (index !== -1) {
           state.workouts[index] = action.payload;
         }
@@ -225,7 +219,9 @@ const workoutsSlice = createSlice({
       })
       .addCase(updateWorkoutAction.fulfilled, (state, action) => {
         state.loading = false;
-        const index = state.workouts.findIndex((workout) => workout.id === action.payload.id);
+        const index = state.workouts.findIndex(
+          (workout: Workout) => workout.id === action.payload.id,
+        );
         if (index !== -1) {
           state.workouts[index] = action.payload;
         }
@@ -246,34 +242,13 @@ const workoutsSlice = createSlice({
       })
       .addCase(deleteWorkoutAction.fulfilled, (state, action) => {
         state.loading = false;
-        state.workouts = state.workouts.filter((workout) => workout.id !== action.payload);
+        state.workouts = state.workouts.filter((workout: Workout) => workout.id !== action.payload);
         // Clear current workout if it was deleted
         if (state.currentWorkout && state.currentWorkout.id === action.payload) {
           state.currentWorkout = null;
         }
       })
       .addCase(deleteWorkoutAction.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload as string;
-      })
-
-      // Complete workout
-      .addCase(completeWorkoutAction.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(completeWorkoutAction.fulfilled, (state, action) => {
-        state.loading = false;
-        const index = state.workouts.findIndex((workout) => workout.id === action.payload.id);
-        if (index !== -1) {
-          state.workouts[index] = action.payload;
-        }
-        // Update current workout if it's the same one
-        if (state.currentWorkout && state.currentWorkout.id === action.payload.id) {
-          state.currentWorkout = { ...state.currentWorkout, ...action.payload };
-        }
-      })
-      .addCase(completeWorkoutAction.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       })

@@ -1,80 +1,19 @@
 import { getClient } from './createClient';
-
-export interface Workout {
-  id: string;
-  user_address: string;
-  name: string;
-  total_volume: number;
-  total_duration: number;
-  created_at: string;
-  updated_at: string;
-  completed_at?: string;
-  is_completed: boolean;
-  notes?: string;
-}
-
-export interface WorkoutExercise {
-  id: string;
-  workout_id: string;
-  exercise_name: string;
-  sets: number;
-  reps: number;
-  weight: number;
-  time_under_tension: number;
-  exercise_duration: number;
-  rest_time: number;
-  notes?: string;
-  order_index: number;
-  created_at: string;
-  updated_at: string;
-  completed_sets: number;
-}
-
-export interface CreateWorkoutData {
-  name: string;
-  notes?: string;
-}
-
-export interface UpdateWorkoutData {
-  name?: string;
-  notes?: string;
-  is_completed?: boolean;
-  completed_at?: string;
-}
-
-export interface CreateExerciseData {
-  workout_id: string;
-  exercise_name: string;
-  sets: number;
-  reps: number;
-  weight: number;
-  time_under_tension?: number;
-  exercise_duration?: number;
-  rest_time?: number;
-  notes?: string;
-  order_index?: number;
-}
-
-export interface UpdateExerciseData {
-  exercise_name?: string;
-  sets?: number;
-  reps?: number;
-  weight?: number;
-  time_under_tension?: number;
-  exercise_duration?: number;
-  rest_time?: number;
-  notes?: string;
-  order_index?: number;
-  completed_sets?: number;
-}
-
-export interface WorkoutWithExercises extends Workout {
-  workout_exercises: WorkoutExercise[];
-}
+import type {
+  Workout,
+  WorkoutExercise,
+  CreateWorkoutData,
+  UpdateWorkoutData,
+  CreateExerciseData,
+  UpdateExerciseData,
+  WorkoutWithExercises,
+  WorkoutStatsRow,
+  ExerciseWithWorkout,
+} from '../../types/workouts';
 
 // Workout CRUD operations
 export async function createWorkout(
-  userAddress: string,
+  address: string,
   workoutData: CreateWorkoutData,
 ): Promise<Workout> {
   const supabase = getClient();
@@ -82,7 +21,7 @@ export async function createWorkout(
   const { data, error } = await supabase
     .from('workouts')
     .insert({
-      user_address: userAddress.toLowerCase(),
+      address: address.toLowerCase(),
       ...workoutData,
     })
     .select()
@@ -95,13 +34,13 @@ export async function createWorkout(
   return data;
 }
 
-export async function getWorkouts(userAddress: string): Promise<Workout[]> {
+export async function getWorkouts(address: string): Promise<Workout[]> {
   const supabase = getClient();
 
   const { data, error } = await supabase
     .from('workouts')
     .select('*')
-    .eq('user_address', userAddress.toLowerCase())
+    .eq('address', address.toLowerCase())
     .order('created_at', { ascending: false });
 
   if (error) {
@@ -179,13 +118,6 @@ export async function deleteWorkout(workoutId: string): Promise<void> {
   if (error) {
     throw error;
   }
-}
-
-export async function completeWorkout(workoutId: string): Promise<Workout> {
-  return updateWorkout(workoutId, {
-    is_completed: true,
-    completed_at: new Date().toISOString(),
-  });
 }
 
 // Exercise CRUD operations
@@ -268,21 +200,20 @@ export async function deleteExercise(exerciseId: string): Promise<void> {
 export async function reorderExercises(workoutId: string, exerciseIds: string[]): Promise<void> {
   const supabase = getClient();
 
-  // Update order_index for each exercise
-  const updates = exerciseIds.map((exerciseId, index) =>
-    supabase
-      .from('workout_exercises')
-      .update({ order_index: index })
-      .eq('id', exerciseId)
-      .eq('workout_id', workoutId),
-  );
+  // Use RPC to reorder exercises atomically
+  const { error } = await supabase.rpc('reorder_workout_exercises', {
+    exercise_ids: exerciseIds,
+    order_indices: exerciseIds.map((_, idx) => idx),
+  });
 
-  await Promise.all(updates);
+  if (error) {
+    throw error;
+  }
 }
 
 // Analytics functions
 export async function getWorkoutStats(
-  userAddress: string,
+  address: string,
   startDate?: string,
   endDate?: string,
 ): Promise<{
@@ -296,8 +227,8 @@ export async function getWorkoutStats(
 
   let query = supabase
     .from('workouts')
-    .select('total_volume, total_duration, is_completed')
-    .eq('user_address', userAddress.toLowerCase());
+    .select('total_volume, total_duration')
+    .eq('address', address.toLowerCase());
 
   if (startDate) {
     query = query.gte('created_at', startDate);
@@ -312,16 +243,18 @@ export async function getWorkoutStats(
     throw error;
   }
 
-  const totalWorkouts = data.length;
-  const totalVolume = data.reduce(
-    (sum: number, workout: any) => sum + (workout.total_volume || 0),
+  const statsData = (data || []) as WorkoutStatsRow[];
+
+  const totalWorkouts = statsData.length;
+  const totalVolume = statsData.reduce(
+    (sum: number, workout: WorkoutStatsRow) => sum + (workout.total_volume || 0),
     0,
   );
-  const totalDuration = data.reduce(
-    (sum: number, workout: any) => sum + (workout.total_duration || 0),
+  const totalDuration = statsData.reduce(
+    (sum: number, workout: WorkoutStatsRow) => sum + (workout.total_duration || 0),
     0,
   );
-  const completedWorkouts = data.filter((workout: any) => workout.is_completed).length;
+  const completedWorkouts = statsData.length;
   const averageWorkoutDuration = totalWorkouts > 0 ? totalDuration / totalWorkouts : 0;
 
   return {
@@ -334,7 +267,7 @@ export async function getWorkoutStats(
 }
 
 export async function getExerciseProgress(
-  userAddress: string,
+  address: string,
   exerciseName: string,
   limit = 10,
 ): Promise<
@@ -353,15 +286,13 @@ export async function getExerciseProgress(
       `
       *,
       workouts!inner (
-        user_address,
+        address,
         created_at,
-        is_completed
       )
     `,
     )
     .eq('exercise_name', exerciseName)
-    .eq('workouts.user_address', userAddress.toLowerCase())
-    .eq('workouts.is_completed', true)
+    .eq('workouts.address', address.toLowerCase())
     .order('workouts.created_at', { ascending: false })
     .limit(limit);
 
@@ -369,25 +300,43 @@ export async function getExerciseProgress(
     throw error;
   }
 
-  // Group by date and calculate metrics
-  const progressByDate = data.reduce((acc: Record<string, any>, exercise: any) => {
-    const date = exercise.workouts.created_at.split('T')[0];
-
-    if (!acc[date]) {
-      acc[date] = {
-        date,
-        maxWeight: exercise.weight,
-        totalVolume: exercise.sets * exercise.reps * exercise.weight,
-        totalSets: exercise.sets,
-      };
-    } else {
-      acc[date].maxWeight = Math.max(acc[date].maxWeight, exercise.weight);
-      acc[date].totalVolume += exercise.sets * exercise.reps * exercise.weight;
-      acc[date].totalSets += exercise.sets;
+  // Group by date and calculate metrics with type safety and volume checks
+  type ProgressAccumulator = Record<
+    string,
+    {
+      date: string;
+      maxWeight: number;
+      totalVolume: number;
+      totalSets: number;
     }
+  >;
 
-    return acc;
-  }, {});
+  const progressByDate = (data as unknown as ExerciseWithWorkout[]).reduce(
+    (acc: ProgressAccumulator, exercise: ExerciseWithWorkout) => {
+      const date = exercise.workouts.created_at.split('T')[0];
+      const sets = typeof exercise.sets === 'number' && exercise.sets > 0 ? exercise.sets : 0;
+      const reps = typeof exercise.reps === 'number' && exercise.reps > 0 ? exercise.reps : 0;
+      const weight =
+        typeof exercise.weight === 'number' && exercise.weight > 0 ? exercise.weight : 0;
+      const volume = sets * reps * weight;
+
+      if (!acc[date]) {
+        acc[date] = {
+          date,
+          maxWeight: weight,
+          totalVolume: volume,
+          totalSets: sets,
+        };
+      } else {
+        acc[date].maxWeight = Math.max(acc[date].maxWeight, weight);
+        acc[date].totalVolume += volume;
+        acc[date].totalSets += sets;
+      }
+
+      return acc;
+    },
+    {} as ProgressAccumulator,
+  );
 
   return Object.values(progressByDate);
 }

@@ -1,8 +1,5 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import {
-  WorkoutExercise,
-  CreateExerciseData,
-  UpdateExerciseData,
   getExercises,
   createExercise,
   updateExercise,
@@ -10,6 +7,12 @@ import {
   reorderExercises,
   getExerciseProgress,
 } from '@/lib/supabase/workouts';
+import type {
+  WorkoutExercise,
+  CreateExerciseData,
+  UpdateExerciseData,
+  ExerciseProgress,
+} from '@/types/workouts';
 
 interface ExerciseState {
   exercises: WorkoutExercise[];
@@ -17,12 +20,14 @@ interface ExerciseState {
   error: string | null;
   currentExercise: WorkoutExercise | null;
   exerciseProgress: {
-    [exerciseName: string]: {
-      date: string;
-      maxWeight: number;
-      totalVolume: number;
-      totalSets: number;
-    }[];
+    [workoutId: string]: {
+      [exerciseName: string]: {
+        date: string;
+        maxWeight: number;
+        totalVolume: number;
+        totalSets: number;
+      }[];
+    };
   };
 }
 
@@ -35,84 +40,78 @@ const initialState: ExerciseState = {
 };
 
 // Async thunks
-export const fetchExercises = createAsyncThunk(
+export const fetchExercises = createAsyncThunk<WorkoutExercise[], string, { rejectValue: string }>(
   'exercises/fetchExercises',
-  async (workoutId: string, { rejectWithValue }: any) => {
+  async (workoutId, { rejectWithValue }) => {
     try {
       return await getExercises(workoutId);
-    } catch (error: any) {
-      return rejectWithValue(error.message);
+    } catch (error: unknown) {
+      return rejectWithValue(error instanceof Error ? error.message : 'Unknown error');
     }
   },
 );
 
-export const createExerciseAction = createAsyncThunk(
-  'exercises/createExercise',
-  async (exerciseData: CreateExerciseData, { rejectWithValue }: any) => {
-    try {
-      return await createExercise(exerciseData);
-    } catch (error: any) {
-      return rejectWithValue(error.message);
-    }
-  },
-);
+export const createExerciseAction = createAsyncThunk<
+  WorkoutExercise,
+  CreateExerciseData,
+  { rejectValue: string }
+>('exercises/createExercise', async (exerciseData, { rejectWithValue }) => {
+  try {
+    return await createExercise(exerciseData);
+  } catch (error: unknown) {
+    return rejectWithValue(error instanceof Error ? error.message : 'Unknown error');
+  }
+});
 
-export const updateExerciseAction = createAsyncThunk(
-  'exercises/updateExercise',
-  async (
-    { exerciseId, exerciseData }: { exerciseId: string; exerciseData: UpdateExerciseData },
-    { rejectWithValue }: any,
-  ) => {
-    try {
-      return await updateExercise(exerciseId, exerciseData);
-    } catch (error: any) {
-      return rejectWithValue(error.message);
-    }
-  },
-);
+export const updateExerciseAction = createAsyncThunk<
+  WorkoutExercise,
+  { exerciseId: string; exerciseData: UpdateExerciseData },
+  { rejectValue: string }
+>('exercises/updateExercise', async ({ exerciseId, exerciseData }, { rejectWithValue }) => {
+  try {
+    return await updateExercise(exerciseId, exerciseData);
+  } catch (error: unknown) {
+    return rejectWithValue(error instanceof Error ? error.message : 'Unknown error');
+  }
+});
 
-export const deleteExerciseAction = createAsyncThunk(
+export const deleteExerciseAction = createAsyncThunk<string, string, { rejectValue: string }>(
   'exercises/deleteExercise',
-  async (exerciseId: string, { rejectWithValue }: any) => {
+  async (exerciseId, { rejectWithValue }) => {
     try {
       await deleteExercise(exerciseId);
       return exerciseId;
-    } catch (error: any) {
-      return rejectWithValue(error.message);
+    } catch (error: unknown) {
+      return rejectWithValue(error instanceof Error ? error.message : 'Unknown error');
     }
   },
 );
 
-export const reorderExercisesAction = createAsyncThunk(
-  'exercises/reorderExercises',
-  async (
-    { workoutId, exerciseIds }: { workoutId: string; exerciseIds: string[] },
-    { rejectWithValue }: any,
-  ) => {
-    try {
-      await reorderExercises(workoutId, exerciseIds);
-      return exerciseIds;
-    } catch (error: any) {
-      return rejectWithValue(error.message);
-    }
-  },
-);
+export const reorderExercisesAction = createAsyncThunk<
+  string[],
+  { workoutId: string; exerciseIds: string[] },
+  { rejectValue: string }
+>('exercises/reorderExercises', async ({ workoutId, exerciseIds }, { rejectWithValue }) => {
+  try {
+    await reorderExercises(workoutId, exerciseIds);
+    return exerciseIds;
+  } catch (error: unknown) {
+    return rejectWithValue(error instanceof Error ? error.message : 'Unknown error');
+  }
+});
 
-export const fetchExerciseProgress = createAsyncThunk(
+export const fetchExerciseProgress = createAsyncThunk<
+  { workoutId: string; exerciseName: string; progress: ExerciseProgress[] },
+  { userAddress: string; workoutId: string; exerciseName: string; limit?: number },
+  { rejectValue: string }
+>(
   'exercises/fetchProgress',
-  async (
-    {
-      userAddress,
-      exerciseName,
-      limit,
-    }: { userAddress: string; exerciseName: string; limit?: number },
-    { rejectWithValue }: any,
-  ) => {
+  async ({ userAddress, workoutId, exerciseName, limit }, { rejectWithValue }) => {
     try {
       const progress = await getExerciseProgress(userAddress, exerciseName, limit);
-      return { exerciseName, progress };
-    } catch (error: any) {
-      return rejectWithValue(error.message);
+      return { workoutId, exerciseName, progress };
+    } catch (error: unknown) {
+      return rejectWithValue(error instanceof Error ? error.message : 'Unknown error');
     }
   },
 );
@@ -137,13 +136,16 @@ const exercisesSlice = createSlice({
       }
     },
     reorderExercisesLocal: (state, action: PayloadAction<string[]>) => {
-      const reorderedExercises = action.payload
-        .map((id, index) => {
-          const exercise = state.exercises.find((ex) => ex.id === id);
-          return exercise ? { ...exercise, order_index: index } : null;
-        })
-        .filter(Boolean) as WorkoutExercise[];
-
+      // Validate all IDs exist
+      const missingIds = action.payload.filter((id) => !state.exercises.some((ex) => ex.id === id));
+      if (missingIds.length > 0) {
+        state.error = `Invalid exercise IDs: ${missingIds.join(', ')}`;
+        return;
+      }
+      const reorderedExercises = action.payload.map((id, index) => {
+        const exercise = state.exercises.find((ex) => ex.id === id);
+        return { ...exercise!, order_index: index };
+      });
       state.exercises = reorderedExercises;
     },
   },
@@ -223,14 +225,19 @@ const exercisesSlice = createSlice({
       })
       .addCase(reorderExercisesAction.fulfilled, (state, action) => {
         state.loading = false;
+        // Validate all IDs exist
+        const missingIds = action.payload.filter(
+          (id: string) => !state.exercises.some((ex) => ex.id === id),
+        );
+        if (missingIds.length > 0) {
+          state.error = `Invalid exercise IDs: ${missingIds.join(', ')}`;
+          return;
+        }
         // Reorder exercises based on the new order
-        const reorderedExercises = action.payload
-          .map((id: string, index: number) => {
-            const exercise = state.exercises.find((ex) => ex.id === id);
-            return exercise ? { ...exercise, order_index: index } : null;
-          })
-          .filter(Boolean) as WorkoutExercise[];
-
+        const reorderedExercises = action.payload.map((id: string, index: number) => {
+          const exercise = state.exercises.find((ex) => ex.id === id);
+          return { ...exercise!, order_index: index };
+        });
         state.exercises = reorderedExercises;
       })
       .addCase(reorderExercisesAction.rejected, (state, action) => {
@@ -245,8 +252,11 @@ const exercisesSlice = createSlice({
       })
       .addCase(fetchExerciseProgress.fulfilled, (state, action) => {
         state.loading = false;
-        const { exerciseName, progress } = action.payload;
-        state.exerciseProgress[exerciseName] = progress;
+        const { workoutId, exerciseName, progress } = action.payload;
+        if (!state.exerciseProgress[workoutId]) {
+          state.exerciseProgress[workoutId] = {};
+        }
+        state.exerciseProgress[workoutId][exerciseName] = progress;
       })
       .addCase(fetchExerciseProgress.rejected, (state, action) => {
         state.loading = false;

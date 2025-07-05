@@ -2,20 +2,9 @@
 
 import React, { useEffect, useState } from 'react';
 import { useAppKitAccount } from '@reown/appkit/react';
-import {
-  Plus,
-  Edit,
-  Trash2,
-  Play,
-  CheckCircle,
-  Clock,
-  TrendingUp,
-  Dumbbell,
-  Calendar,
-} from 'lucide-react';
+import { Plus, Trash2, Play, Dumbbell, Calendar } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -30,6 +19,7 @@ import {
   fetchWorkoutStats,
   clearError,
 } from '@/lib/redux/slices/workoutsSlice';
+import { formatDuration, formatDate } from '@/utils';
 
 interface CreateWorkoutModalProps {
   isOpen: boolean;
@@ -138,24 +128,6 @@ export default function WorkoutsPage() {
         toast.error('Failed to delete workout');
       }
     }
-  };
-
-  const formatDuration = (seconds: number) => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-
-    if (hours > 0) {
-      return `${hours}h ${minutes}m`;
-    }
-    return `${minutes}m`;
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
   };
 
   if (!address) {
@@ -287,22 +259,6 @@ export default function WorkoutsPage() {
                         {formatDate(workout.created_at)}
                       </div>
                     </div>
-                    <div className="flex items-center space-x-1 ml-2">
-                      {workout.is_completed ? (
-                        <Badge
-                          variant="secondary"
-                          className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100"
-                        >
-                          <CheckCircle className="h-3 w-3 mr-1" />
-                          Completed
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline">
-                          <Clock className="h-3 w-3 mr-1" />
-                          In Progress
-                        </Badge>
-                      )}
-                    </div>
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -337,42 +293,21 @@ export default function WorkoutsPage() {
                       }}
                       className="flex items-center gap-1"
                     >
-                      {workout.is_completed ? (
-                        <>
-                          <TrendingUp className="h-3 w-3" />
-                          View Details
-                        </>
-                      ) : (
-                        <>
-                          <Play className="h-3 w-3" />
-                          Continue
-                        </>
-                      )}
+                      <Play className="h-3 w-3" />
+                      View
                     </Button>
 
-                    <div className="flex items-center space-x-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          router.push(`/dashboard/workouts/${workout.id}/edit`);
-                        }}
-                      >
-                        <Edit className="h-3 w-3" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteWorkout(workout.id);
-                        }}
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteWorkout(workout.id);
+                      }}
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
