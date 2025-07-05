@@ -18,6 +18,7 @@ import {
   deleteExerciseAction,
   clearError as clearExerciseError,
 } from '@/lib/redux/slices/exercisesSlice';
+import { showSuccessToast, showErrorToast } from '@/lib/redux/slices/toastSlice';
 import {
   fetchWorkoutWithExercises,
   updateWorkoutAction,
@@ -26,8 +27,8 @@ import {
 } from '@/lib/redux/slices/workoutsSlice';
 import type { CreateExerciseData, UpdateExerciseData, WorkoutExercise } from '@/types/workouts';
 import { formatDuration, formatDate } from '@/utils';
-import { ExerciseCard } from '../components/ExerciseCard';
-import { ExerciseModal } from '../components/ExerciseModal';
+import { ExerciseCard } from '../components/exercise-card';
+import { ExerciseModal } from '../components/exercise-modal';
 
 export default function WorkoutPage() {
   const params = useParams();
@@ -58,14 +59,14 @@ export default function WorkoutPage() {
 
   useEffect(() => {
     if (error) {
-      toast.error(error);
+      dispatch(showErrorToast({ title: 'Error', description: error }));
       dispatch(clearError());
     }
   }, [error, dispatch]);
 
   useEffect(() => {
     if (exerciseError) {
-      toast.error(exerciseError);
+      dispatch(showErrorToast({ title: 'Error', description: exerciseError }));
       dispatch(clearExerciseError());
     }
   }, [exerciseError, dispatch]);
@@ -85,15 +86,15 @@ export default function WorkoutPage() {
         await dispatch(
           updateExerciseAction({ exerciseId: data.exerciseId, exerciseData: data.data }),
         ).unwrap();
-        toast.success('Exercise updated successfully!');
+        dispatch(showSuccessToast({ title: 'Exercise updated successfully!' }));
       } else {
         await dispatch(createExerciseAction(data)).unwrap();
-        toast.success('Exercise added successfully!');
+        dispatch(showSuccessToast({ title: 'Exercise added successfully!' }));
       }
       // Refresh the workout to get updated totals
       dispatch(fetchWorkoutWithExercises(workoutId));
     } catch (error) {
-      toast.error('Failed to save exercise');
+      dispatch(showErrorToast({ title: 'Failed to save exercise' }));
     }
   };
 
@@ -101,11 +102,11 @@ export default function WorkoutPage() {
     if (confirm('Are you sure you want to delete this exercise?')) {
       try {
         await dispatch(deleteExerciseAction(exerciseId)).unwrap();
-        toast.success('Exercise deleted successfully!');
+        dispatch(showSuccessToast({ title: 'Exercise deleted successfully!' }));
         // Refresh the workout to get updated totals
         dispatch(fetchWorkoutWithExercises(workoutId));
       } catch (error) {
-        toast.error('Failed to delete exercise');
+        dispatch(showErrorToast({ title: 'Failed to delete exercise' }));
       }
     }
   };
@@ -119,7 +120,7 @@ export default function WorkoutPage() {
         }),
       ).unwrap();
     } catch (error) {
-      toast.error('Failed to update progress');
+      dispatch(showErrorToast({ title: 'Failed to update progress' }));
     }
   };
 
@@ -133,10 +134,10 @@ export default function WorkoutPage() {
           workoutData: { name: editName.trim(), notes: editNotes.trim() || undefined },
         }),
       ).unwrap();
-      toast.success('Workout updated successfully!');
+      dispatch(showSuccessToast({ title: 'Workout updated successfully!' }));
       setShowEditModal(false);
     } catch (error) {
-      toast.error('Failed to update workout');
+      dispatch(showErrorToast({ title: 'Failed to update workout' }));
     }
   };
 

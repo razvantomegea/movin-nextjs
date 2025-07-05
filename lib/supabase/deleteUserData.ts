@@ -11,6 +11,13 @@ export interface UserDataSummary {
     staking: number;
     meals: number;
     energy: number;
+    goals: number;
+    social_posts: number;
+    connections: number;
+    post_likes: number;
+    post_comments: number;
+    workouts: number;
+    workout_exercises: number;
     total_rewards: number;
     total_staked: number;
     // Profile fields
@@ -45,6 +52,13 @@ export interface DeleteResult {
     staking: number;
     meals: number;
     energy: number;
+    goals: number;
+    social_posts: number;
+    connections: number;
+    post_likes: number;
+    post_comments: number;
+    workouts: number;
+    workout_exercises: number;
     profile: number;
   };
 }
@@ -105,6 +119,13 @@ export async function getUserDataSummary({
             staking: 0,
             meals: 0,
             energy: 0,
+            goals: 0,
+            social_posts: 0,
+            connections: 0,
+            post_likes: 0,
+            post_comments: 0,
+            workouts: 0,
+            workout_exercises: 0,
             total_rewards: 0,
             total_staked: 0,
           },
@@ -112,27 +133,64 @@ export async function getUserDataSummary({
       }
 
       // Get counts for each table
-      const [activitiesRes, rewardsRes, badgesRes, stakingRes, mealsRes, energyRes] =
-        await Promise.all([
-          client
-            .from('activities')
-            .select('id', { count: 'exact', head: true })
-            .eq('address', address),
-          client
-            .from('activity_rewards')
-            .select('id', { count: 'exact', head: true })
-            .eq('address', address),
-          client
-            .from('user_badges')
-            .select('id', { count: 'exact', head: true })
-            .eq('address', address),
-          client
-            .from('staking')
-            .select('id', { count: 'exact', head: true })
-            .eq('address', address),
-          client.from('meals').select('id', { count: 'exact', head: true }).eq('address', address),
-          client.from('energy').select('id', { count: 'exact', head: true }).eq('address', address),
-        ]);
+      const [
+        activitiesRes,
+        rewardsRes,
+        badgesRes,
+        stakingRes,
+        mealsRes,
+        energyRes,
+        goalsRes,
+        socialPostsRes,
+        connectionsRequesterRes,
+        connectionsAddresseeRes,
+        postLikesRes,
+        postCommentsRes,
+        workoutsRes,
+        workoutExercisesRes,
+      ] = await Promise.all([
+        client
+          .from('activities')
+          .select('id', { count: 'exact', head: true })
+          .eq('address', address),
+        client
+          .from('activity_rewards')
+          .select('id', { count: 'exact', head: true })
+          .eq('address', address),
+        client
+          .from('user_badges')
+          .select('id', { count: 'exact', head: true })
+          .eq('address', address),
+        client.from('staking').select('id', { count: 'exact', head: true }).eq('address', address),
+        client.from('meals').select('id', { count: 'exact', head: true }).eq('address', address),
+        client.from('energy').select('id', { count: 'exact', head: true }).eq('address', address),
+        client.from('goals').select('id', { count: 'exact', head: true }).eq('address', address),
+        client
+          .from('social_posts')
+          .select('id', { count: 'exact', head: true })
+          .eq('address', address),
+        client
+          .from('connections')
+          .select('id', { count: 'exact', head: true })
+          .eq('requester_address', address),
+        client
+          .from('connections')
+          .select('id', { count: 'exact', head: true })
+          .eq('addressee_address', address),
+        client
+          .from('post_likes')
+          .select('id', { count: 'exact', head: true })
+          .eq('address', address),
+        client
+          .from('post_comments')
+          .select('id', { count: 'exact', head: true })
+          .eq('address', address),
+        client.from('workouts').select('id', { count: 'exact', head: true }).eq('address', address),
+        client
+          .from('workout_exercises')
+          .select('id', { count: 'exact', head: true })
+          .eq('address', address),
+      ]);
 
       // Get reward totals
       const { data: rewardData } = await client
@@ -149,6 +207,10 @@ export async function getUserDataSummary({
       const totalRewards = rewardData?.reduce((sum, r) => sum + Number(r.rewards || 0), 0) || 0;
       const totalStaked = stakingData?.reduce((sum, s) => sum + Number(s.amount || 0), 0) || 0;
 
+      // Calculate total connections (both as requester and addressee)
+      const totalConnections =
+        (connectionsRequesterRes.count || 0) + (connectionsAddresseeRes.count || 0);
+
       return {
         exists: true,
         summary: {
@@ -158,6 +220,13 @@ export async function getUserDataSummary({
           staking: stakingRes.count || 0,
           meals: mealsRes.count || 0,
           energy: energyRes.count || 0,
+          goals: goalsRes.count || 0,
+          social_posts: socialPostsRes.count || 0,
+          connections: totalConnections,
+          post_likes: postLikesRes.count || 0,
+          post_comments: postCommentsRes.count || 0,
+          workouts: workoutsRes.count || 0,
+          workout_exercises: workoutExercisesRes.count || 0,
           total_rewards: totalRewards,
           total_staked: totalStaked,
           // Profile fields
@@ -279,6 +348,13 @@ export async function deleteAllUserData({
             staking: 0,
             meals: 0,
             energy: 0,
+            goals: 0,
+            social_posts: 0,
+            connections: 0,
+            post_likes: 0,
+            post_comments: 0,
+            workouts: 0,
+            workout_exercises: 0,
             profile: 0,
           },
         };
@@ -305,6 +381,13 @@ export async function deleteAllUserData({
         const { error: sqlError } = await client.rpc('execute_transaction', {
           sql_commands: `
             BEGIN;
+            DELETE FROM post_likes WHERE address = '${address}';
+            DELETE FROM post_comments WHERE address = '${address}';
+            DELETE FROM social_posts WHERE address = '${address}';
+            DELETE FROM connections WHERE requester_address = '${address}' OR addressee_address = '${address}';
+            DELETE FROM workout_exercises WHERE address = '${address}';
+            DELETE FROM workouts WHERE address = '${address}';
+            DELETE FROM goals WHERE address = '${address}';
             DELETE FROM activities WHERE address = '${address}';
             DELETE FROM activity_rewards WHERE address = '${address}';
             DELETE FROM user_badges WHERE address = '${address}';
@@ -321,6 +404,17 @@ export async function deleteAllUserData({
           console.warn('SQL transaction failed, falling back to sequential operations:', sqlError);
 
           // Delete data in correct order (respecting foreign keys)
+          await client.from('post_likes').delete().eq('address', address);
+          await client.from('post_comments').delete().eq('address', address);
+          await client.from('social_posts').delete().eq('address', address);
+          // For connections, delete both where user is requester or addressee
+          await client
+            .from('connections')
+            .delete()
+            .or(`requester_address.eq.${address},addressee_address.eq.${address}`);
+          await client.from('workout_exercises').delete().eq('address', address);
+          await client.from('workouts').delete().eq('address', address);
+          await client.from('goals').delete().eq('address', address);
           await client.from('activities').delete().eq('address', address);
           await client.from('activity_rewards').delete().eq('address', address);
           await client.from('user_badges').delete().eq('address', address);
@@ -341,6 +435,13 @@ export async function deleteAllUserData({
           staking: summary.summary.staking,
           meals: summary.summary.meals,
           energy: summary.summary.energy,
+          goals: summary.summary.goals,
+          social_posts: summary.summary.social_posts,
+          connections: summary.summary.connections,
+          post_likes: summary.summary.post_likes,
+          post_comments: summary.summary.post_comments,
+          workouts: summary.summary.workouts,
+          workout_exercises: summary.summary.workout_exercises,
           profile: 1,
         },
       };
@@ -355,6 +456,13 @@ export async function deleteAllUserData({
           staking: 0,
           meals: 0,
           energy: 0,
+          goals: 0,
+          social_posts: 0,
+          connections: 0,
+          post_likes: 0,
+          post_comments: 0,
+          workouts: 0,
+          workout_exercises: 0,
           profile: 0,
         },
       };
@@ -382,13 +490,35 @@ export async function userHasData({
     return false;
   }
 
-  const { activities, activity_rewards, user_badges, staking, meals, energy } = summary.summary;
+  const {
+    activities,
+    activity_rewards,
+    user_badges,
+    staking,
+    meals,
+    energy,
+    goals,
+    social_posts,
+    connections,
+    post_likes,
+    post_comments,
+    workouts,
+    workout_exercises,
+  } = summary.summary;
+
   return (
     activities > 0 ||
     activity_rewards > 0 ||
     user_badges > 0 ||
     staking > 0 ||
     meals > 0 ||
-    energy > 0
+    energy > 0 ||
+    goals > 0 ||
+    social_posts > 0 ||
+    connections > 0 ||
+    post_likes > 0 ||
+    post_comments > 0 ||
+    workouts > 0 ||
+    workout_exercises > 0
   );
 }
