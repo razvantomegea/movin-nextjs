@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Edit, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Edit, Trash2, ChevronDown, ChevronUp, BarChart3 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,12 +9,14 @@ import type { WorkoutExercise } from '@/types/workouts';
 
 export interface ExerciseCardProps {
   exercise: WorkoutExercise;
+  workoutId: string;
   onEdit: (exercise: WorkoutExercise) => void;
   onDelete: (exerciseId: string) => void;
   onUpdateProgress: (exerciseId: string, completedSets: number) => void;
 }
 
-export function ExerciseCard({ exercise, onEdit, onDelete, onUpdateProgress }: ExerciseCardProps) {
+export function ExerciseCard({ exercise, workoutId, onEdit, onDelete, onUpdateProgress }: ExerciseCardProps) {
+  const router = useRouter();
   const [isExpanded, setIsExpanded] = useState(false);
   const [completedSets, setCompletedSets] = useState(exercise.completed_sets);
 
@@ -30,6 +33,10 @@ export function ExerciseCard({ exercise, onEdit, onDelete, onUpdateProgress }: E
     const newCompletedSets = setNumber > completedSets ? setNumber : setNumber - 1;
     setCompletedSets(newCompletedSets);
     onUpdateProgress(exercise.id, newCompletedSets);
+  };
+
+  const handleViewDetails = () => {
+    router.push(`/dashboard/workouts/${workoutId}/exercises/${exercise.id}`);
   };
 
   return (
@@ -117,6 +124,10 @@ export function ExerciseCard({ exercise, onEdit, onDelete, onUpdateProgress }: E
             )}
 
             <div className="flex justify-end space-x-2">
+              <Button variant="outline" size="sm" onClick={handleViewDetails}>
+                <BarChart3 className="h-3 w-3 mr-1" />
+                View Details
+              </Button>
               <Button variant="outline" size="sm" onClick={() => onEdit(exercise)}>
                 <Edit className="h-3 w-3 mr-1" />
                 Edit

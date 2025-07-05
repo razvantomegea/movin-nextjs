@@ -295,6 +295,7 @@ export default function WorkoutPage() {
               <ExerciseCard
                 key={exercise.id}
                 exercise={exercise}
+                workoutId={workoutId}
                 onEdit={(ex) => {
                   setSelectedExercise(ex);
                   setShowExerciseModal(true);
