@@ -94,6 +94,7 @@ export function Autocomplete({
       aria-haspopup="listbox"
       aria-owns={listboxId}
       aria-expanded={isOpen}
+      aria-controls={listboxId}
     >
       <Input
         ref={inputRef}

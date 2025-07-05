@@ -1,16 +1,25 @@
-import { motion } from 'framer-motion';
+import React from 'react';
+import { motion, Variants } from 'framer-motion';
 import { Target, Weight, BarChart3, Activity } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import React from 'react';
-import type { ExerciseStats, WorkoutExercise } from '@/types/workouts';
+import type { WorkoutExercise } from '@/types/workouts';
 
 interface ExerciseStatsCardsProps {
-  exerciseStats: ExerciseStats | null;
+  exerciseStats: {
+    completionPercentage: number;
+    currentProgress: {
+      bestWeight: number;
+      bestVolume: number;
+      totalSessions: number;
+      averageWeight: number;
+    } | null;
+    totalVolume: number;
+  } | null;
   currentExercise: WorkoutExercise;
   weightUnit: string;
-  containerVariants: any;
-  itemVariants: any;
+  containerVariants: Variants;
+  itemVariants: Variants;
 }
 
 export const ExerciseStatsCards: React.FC<ExerciseStatsCardsProps> = ({

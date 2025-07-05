@@ -1,11 +1,20 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import React from 'react';
 import { TrendingUp } from 'lucide-react';
 import { CircularProgress } from '@/components/circular-progress';
-import React from 'react';
-import type { ExerciseStats, WorkoutExercise } from '@/types/workouts';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import type { WorkoutExercise } from '@/types/workouts';
 
 interface ExerciseProgressSummaryProps {
-  exerciseStats: ExerciseStats | null;
+  exerciseStats: {
+    completionPercentage: number;
+    currentProgress: {
+      bestWeight: number;
+      bestVolume: number;
+      totalSessions: number;
+      averageWeight: number;
+    } | null;
+    totalVolume: number;
+  } | null;
   currentExercise: WorkoutExercise;
   weightUnit: string;
 }

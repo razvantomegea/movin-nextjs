@@ -1,8 +1,8 @@
-import { motion } from 'framer-motion';
+import React from 'react';
+import { motion, Variants } from 'framer-motion';
 import { ArrowLeft } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import React from 'react';
 
 interface ExerciseHeaderProps {
   exerciseName: string;
@@ -11,7 +11,7 @@ interface ExerciseHeaderProps {
   completedSets: number;
   sets: number;
   onBack: () => void;
-  variants: any;
+  variants: Variants;
 }
 
 export const ExerciseHeader: React.FC<ExerciseHeaderProps> = ({
