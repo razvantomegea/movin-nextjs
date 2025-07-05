@@ -8,6 +8,15 @@ import { useTheme } from 'next-themes';
 import { BaseModal } from '@/components/ui/base-modal';
 import { Button } from '@/components/ui/button';
 
+// Helper to detect iOS PWA standalone mode
+function isIosStandalone() {
+  if (typeof window === 'undefined') return false;
+  const ua = window.navigator.userAgent;
+  const isIOS = /iPad|iPhone|iPod/.test(ua);
+  const isStandalone = (window.navigator as unknown as { standalone: boolean }).standalone === true;
+  return isIOS && isStandalone;
+}
+
 interface CameraModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -34,6 +43,7 @@ export function CameraModal({
   const [isCameraReady, setIsCameraReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isInitializing, setIsInitializing] = useState(false);
+  const [showIosPwaWarning, setShowIosPwaWarning] = useState(false);
 
   const stopCamera = useCallback(() => {
     if (stream) {
@@ -61,18 +71,13 @@ export function CameraModal({
 
   const initializeCamera = useCallback(async () => {
     try {
-      // Reset states
       setError(null);
       setCapturedImage(null);
       setIsCameraReady(false);
       setIsInitializing(true);
-
-      // Check camera support first
+      setShowIosPwaWarning(false);
       checkCameraSupport();
-
       console.log('PWA Camera: Requesting camera access...');
-
-      // Try different camera constraints, starting with the most preferred
       const constraints = [
         // Preferred: Rear camera with high quality
         {
@@ -106,11 +111,8 @@ export function CameraModal({
           audio: false,
         },
       ];
-
       let mediaStream: MediaStream | null = null;
       let lastError: Error | null = null;
-
-      // Try each constraint configuration
       for (const constraint of constraints) {
         try {
           console.log('PWA Camera: Trying constraint:', constraint);
@@ -124,55 +126,37 @@ export function CameraModal({
           continue;
         }
       }
-
       if (!mediaStream) {
         throw lastError || new Error('Could not access camera with any configuration');
       }
-
       setStream(mediaStream);
-
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
-
-        // Handle video load events
-        const handleLoadedMetadata = () => {
-          console.log('PWA Camera: Video metadata loaded');
-          setTimeout(() => {
-            setIsCameraReady(true);
-            setIsInitializing(false);
-          }, 500); // Small delay to ensure camera is fully ready
-        };
-
-        const handleCanPlay = () => {
-          console.log('PWA Camera: Video can play');
-        };
-
-        const handleError = (e: Event) => {
-          console.error('PWA Camera: Video error:', e);
-          setError('Failed to display camera feed');
-          setIsInitializing(false);
-        };
-
-        videoRef.current.addEventListener('loadedmetadata', handleLoadedMetadata);
-        videoRef.current.addEventListener('canplay', handleCanPlay);
-        videoRef.current.addEventListener('error', handleError);
-
-        // Try to play the video
-        try {
-          await videoRef.current.play();
-        } catch (playError) {
-          console.warn('PWA Camera: Auto-play failed:', playError);
-          // Auto-play failure is not critical, user can interact to start
-        }
-
-        // Cleanup function for the event listeners
-        return () => {
-          if (videoRef.current) {
-            videoRef.current.removeEventListener('loadedmetadata', handleLoadedMetadata);
-            videoRef.current.removeEventListener('canplay', handleCanPlay);
-            videoRef.current.removeEventListener('error', handleError);
+        // Retry mechanism for video.play() (iOS PWA workaround)
+        let playResolved = false;
+        for (let i = 0; i < 5; i++) {
+          try {
+            await new Promise((res) => setTimeout(res, 300 * i));
+            await videoRef.current.play();
+            playResolved = true;
+            break;
+          } catch (e) {
+            // Try again
           }
-        };
+        }
+        if (!playResolved) {
+          // iOS PWA bug likely
+          if (isIosStandalone()) {
+            setShowIosPwaWarning(true);
+            setError(
+              'Camera preview failed to start. This is a known iOS PWA limitation. For best results, open this page in Safari.',
+            );
+          } else {
+            setError('Camera preview failed to start. Please check permissions and try again.');
+          }
+          setIsInitializing(false);
+          return;
+        }
       }
     } catch (err) {
       console.error('PWA Camera: Error accessing camera:', err);
@@ -200,15 +184,40 @@ export function CameraModal({
     }
   }, []);
 
+  // Add useEffect for video event listeners
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !stream) return;
+
+    const handleLoadedMetadata = () => {
+      console.log('PWA Camera: Video metadata loaded');
+      setTimeout(() => {
+        setIsCameraReady(true);
+        setIsInitializing(false);
+      }, 500);
+    };
+    const handleCanPlay = () => {
+      console.log('PWA Camera: Video can play');
+    };
+    const handleError = (e: Event) => {
+      console.error('PWA Camera: Video error:', e);
+      setError('Failed to display camera feed');
+      setIsInitializing(false);
+    };
+    video.addEventListener('loadedmetadata', handleLoadedMetadata);
+    video.addEventListener('canplay', handleCanPlay);
+    video.addEventListener('error', handleError);
+    return () => {
+      video.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      video.removeEventListener('canplay', handleCanPlay);
+      video.removeEventListener('error', handleError);
+    };
+  }, [stream]);
+
   // Initialize camera when modal opens
   useEffect(() => {
     if (isOpen && !capturedImage) {
-      const cleanup = initializeCamera();
-      return () => {
-        if (cleanup) {
-          cleanup.then((cleanupFn) => cleanupFn?.());
-        }
-      };
+      initializeCamera();
     }
   }, [isOpen, capturedImage, initializeCamera]);
 
@@ -278,9 +287,6 @@ export function CameraModal({
       onClose={handleClose}
       title={title}
       subtitle={undefined}
-      maxWidth="lg"
-      maxHeight="90vh"
-      fullMobile={true}
       preventBackdropClose={false}
       contentClassName="p-0"
       footer={
@@ -315,6 +321,22 @@ export function CameraModal({
     >
       {/* Camera View / Captured Image */}
       <div className="relative w-full bg-black h-[65vh] sm:h-auto sm:aspect-[4/3]">
+        {showIosPwaWarning && (
+          <div className="absolute top-0 left-0 right-0 z-20 bg-yellow-200 text-yellow-900 p-3 text-center text-sm font-semibold">
+            <span>
+              Camera preview may not work in iOS PWA mode. For best results, open this page in
+              Safari.{' '}
+              <a
+                href="https://bugs.webkit.org/show_bug.cgi?id=252465"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline"
+              >
+                Learn more
+              </a>
+            </span>
+          </div>
+        )}
         {!capturedImage ? (
           <>
             <video

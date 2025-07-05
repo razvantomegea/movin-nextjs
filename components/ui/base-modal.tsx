@@ -10,9 +10,6 @@ interface BaseModalProps {
   onClose: () => void;
   title: string;
   subtitle?: string;
-  maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl';
-  maxHeight?: string;
-  fullMobile?: boolean;
   children: React.ReactNode;
   footer?: React.ReactNode;
   className?: string;
@@ -20,6 +17,7 @@ interface BaseModalProps {
   headerClassName?: string;
   footerClassName?: string;
   preventBackdropClose?: boolean;
+  fullMobile?: boolean;
 }
 
 const maxWidthClasses = {
@@ -37,9 +35,6 @@ export function BaseModal({
   onClose,
   title,
   subtitle,
-  maxWidth = 'lg',
-  maxHeight = '90vh',
-  fullMobile = false,
   children,
   footer,
   className,
@@ -47,6 +42,7 @@ export function BaseModal({
   headerClassName,
   footerClassName,
   preventBackdropClose = false,
+  fullMobile = true,
 }: BaseModalProps) {
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
@@ -78,16 +74,15 @@ export function BaseModal({
           {/* Modal Content */}
           <motion.div
             className={cn(
-              'relative w-full h-full rounded-none flex flex-col',
+              fullMobile && 'w-full h-full rounded-none',
+              'relative flex flex-col',
               'sm:h-auto',
-              maxWidthClasses[maxWidth],
+              maxWidthClasses.xl,
+              'max-h-[100vh]',
               'sm:rounded-xl',
               isDark ? 'bg-gray-900' : 'bg-white',
               className,
             )}
-            style={{
-              maxHeight: fullMobile ? '100vh' : maxHeight,
-            }}
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.95, opacity: 0 }}
