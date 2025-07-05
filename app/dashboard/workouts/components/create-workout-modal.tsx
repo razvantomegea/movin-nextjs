@@ -44,7 +44,6 @@ export function CreateWorkoutModal({ isOpen, onClose, onCreateWorkout }: CreateW
       onClose={onClose}
       title="Create New Workout"
       subtitle="Set up a new workout routine"
-      maxWidth="md"
       footer={footer}
       contentClassName="p-6"
     >

@@ -231,7 +231,6 @@ export function RouteTypeModal({
       onClose={onClose}
       title="Route Tracking"
       subtitle={step === 'select' ? 'Choose your tracking mode' : 'Find Nearby Users'}
-      maxWidth="md"
       footer={currentStep.footer}
       contentClassName="p-6"
     >

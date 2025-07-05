@@ -25,7 +25,6 @@ export function MealLoggingTypeModal({
       onClose={onClose}
       title="Log Your Meal"
       subtitle="Choose how you'd like to log your meal"
-      maxWidth="md"
       contentClassName="p-6"
     >
       <div className="space-y-4">

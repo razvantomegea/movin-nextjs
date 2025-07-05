@@ -109,7 +109,6 @@ export function TextMealModal({ isOpen, onClose, onAnalyze }: TextMealModalProps
         onClose={onClose}
         title="Describe Your Meal"
         subtitle="Tell us what you ate and we'll analyze the nutrition for you"
-        maxWidth="lg"
         footer={footer}
         contentClassName="p-6"
       >
