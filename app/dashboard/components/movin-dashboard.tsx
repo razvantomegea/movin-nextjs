@@ -14,8 +14,10 @@ import {
   ChevronDown,
   ChevronUp,
   AlertTriangle,
+  BarChart3,
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
+import { useRouter } from 'next/navigation';
 import { ActivityColumnChart } from '@/app/dashboard/components/activity-column-chart';
 import { CelebrationAnimation } from '@/components/celebration-animation';
 import { CircularProgress } from '@/components/circular-progress';
@@ -89,6 +91,7 @@ const item = {
 type MetricType = 'steps' | 'calories' | 'duration' | 'mets';
 
 export function MovinDashboard() {
+  const router = useRouter();
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
   const [refreshing, setRefreshing] = useState(true);
@@ -913,7 +916,18 @@ export function MovinDashboard() {
 
         {/* Activity Chart */}
         <motion.div className="space-y-4" variants={item}>
-          <h2 className="text-lg font-medium">Activity Overview</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-medium">Activity Overview</h2>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push('/dashboard/exercises')}
+              className="flex items-center space-x-2"
+            >
+              <BarChart3 className="h-4 w-4" />
+              <span>View Detailed Analytics</span>
+            </Button>
+          </div>
           <ActivityColumnChart
             weeklyData={weeklyChartData}
             monthlyData={monthlyChartData}

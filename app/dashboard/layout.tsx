@@ -19,6 +19,7 @@ import {
   Users,
   Medal,
   Dumbbell,
+  BarChart3,
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -77,6 +78,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       name: 'Profile',
       path: '/dashboard/profile',
       icon: <User className="h-6 w-6 mr-4 text-blue-400" />,
+    },
+    {
+      name: 'Exercise Analytics',
+      path: '/dashboard/exercises',
+      icon: <BarChart3 className="h-6 w-6 mr-4 text-blue-400" />,
     },
     {
       name: 'Workouts',
