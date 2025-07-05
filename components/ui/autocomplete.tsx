@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Input } from './input';
 import { cn } from '@/lib/cn';
+import { Input } from './input';
 
 interface AutocompleteProps {
   value: string;
@@ -28,11 +28,12 @@ export function Autocomplete({
   const [activeSuggestion, setActiveSuggestion] = useState(-1);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const listboxId = id ? `${id}-autocomplete-listbox` : 'autocomplete-listbox';
 
   useEffect(() => {
     if (value.length > 0) {
-      const filtered = suggestions.filter(suggestion =>
-        suggestion.toLowerCase().includes(value.toLowerCase())
+      const filtered = suggestions.filter((suggestion) =>
+        suggestion.toLowerCase().includes(value.toLowerCase()),
       );
       setFilteredSuggestions(filtered);
       setIsOpen(filtered.length > 0);
@@ -61,12 +62,12 @@ export function Autocomplete({
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      setActiveSuggestion((prev: number) => 
-        prev < filteredSuggestions.length - 1 ? prev + 1 : prev
+      setActiveSuggestion((prev: number) =>
+        prev < filteredSuggestions.length - 1 ? prev + 1 : prev,
       );
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      setActiveSuggestion((prev: number) => prev > 0 ? prev - 1 : -1);
+      setActiveSuggestion((prev: number) => (prev > 0 ? prev - 1 : -1));
     } else if (e.key === 'Enter') {
       e.preventDefault();
       if (activeSuggestion >= 0 && activeSuggestion < filteredSuggestions.length) {
@@ -86,7 +87,14 @@ export function Autocomplete({
   };
 
   return (
-    <div ref={containerRef} className="relative">
+    <div
+      ref={containerRef}
+      className="relative"
+      role="combobox"
+      aria-haspopup="listbox"
+      aria-owns={listboxId}
+      aria-expanded={isOpen}
+    >
       <Input
         ref={inputRef}
         id={id}
@@ -97,18 +105,25 @@ export function Autocomplete({
         className={className}
         required={required}
         autoComplete="off"
+        aria-autocomplete="list"
+        aria-expanded={isOpen}
+        aria-controls={listboxId}
       />
       {isOpen && filteredSuggestions.length > 0 && (
-        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+        <div
+          className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto dark:bg-gray-800 dark:border-gray-700 dark:shadow-black"
+          role="listbox"
+          id={listboxId}
+        >
           {filteredSuggestions.map((suggestion: string, index: number) => (
             <div
               key={suggestion}
+              role="option"
+              aria-selected={index === activeSuggestion}
               onClick={() => handleSuggestionClick(suggestion)}
               className={cn(
                 'px-3 py-2 cursor-pointer text-sm',
-                index === activeSuggestion
-                  ? 'bg-blue-100 text-blue-900'
-                  : 'hover:bg-gray-100'
+                index === activeSuggestion ? 'bg-blue-100 text-blue-900' : 'hover:bg-gray-100',
               )}
             >
               {suggestion}

@@ -24,7 +24,9 @@ export function ResponsiveTooltip({
     return (
       <Popover>
         <PopoverTrigger asChild>{children}</PopoverTrigger>
-        <PopoverContent className={className}>{content}</PopoverContent>
+        <PopoverContent side={side} sideOffset={sideOffset} className={className}>
+          {content}
+        </PopoverContent>
       </Popover>
     );
   }

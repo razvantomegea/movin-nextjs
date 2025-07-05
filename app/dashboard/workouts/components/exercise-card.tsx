@@ -36,7 +36,7 @@ export function ExerciseCard({
   const volume = exercise.sets * exercise.reps * exercise.weight;
 
   const handleSetCompletion = (setNumber: number) => {
-    const newCompletedSets = setNumber > completedSets ? setNumber : setNumber - 1;
+    const newCompletedSets = setNumber === completedSets ? 0 : setNumber;
     setCompletedSets(newCompletedSets);
     onUpdateProgress(exercise.id, newCompletedSets);
   };

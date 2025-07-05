@@ -95,6 +95,7 @@ export type ProgressByDate = Record<
     maxWeight: number;
     totalVolume: number;
     totalSets: number;
+    totalReps: number;
   }
 >;
 
@@ -110,4 +111,5 @@ export type ExerciseProgress = {
   maxWeight: number;
   totalVolume: number;
   totalSets: number;
+  totalReps: number;
 };

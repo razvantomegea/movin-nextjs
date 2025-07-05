@@ -32,7 +32,7 @@ export function ExerciseModal({
   const { address } = useAppKitAccount();
   const [exerciseNames, setExerciseNames] = useState<string[]>([]);
   const [formData, setFormData] = useState({
-    address: address!,
+    address: address as string,
     exercise_name: '',
     sets: 1,
     reps: 1,
@@ -76,7 +76,7 @@ export function ExerciseModal({
   useEffect(() => {
     if (exercise) {
       setFormData({
-        address: address!,
+        address: address as string,
         exercise_name: exercise.exercise_name,
         sets: exercise.sets,
         reps: exercise.reps,
@@ -102,7 +102,7 @@ export function ExerciseModal({
       setExerciseSets(defaultSets);
     } else {
       setFormData({
-        address: address!,
+        address: address as string,
         exercise_name: '',
         sets: 1,
         reps: 1,
@@ -148,6 +148,7 @@ export function ExerciseModal({
 
     const exerciseData = {
       ...formData,
+      address: address as string,
       sets: totalSets,
       reps: Math.round(totalReps / totalSets), // Average reps per set
       weight: averageWeight,
@@ -208,6 +209,29 @@ export function ExerciseModal({
       setExerciseSets(exerciseSets.filter((_, index) => index !== setIndex));
     }
   };
+
+  // If address is not available, show a message and do not render the modal content
+  if (!address) {
+    return isOpen ? (
+      <BaseModal
+        isOpen={isOpen}
+        onClose={onClose}
+        title="Wallet Connection Required"
+        subtitle="Please connect your wallet to add or edit exercises."
+        maxWidth="sm"
+        contentClassName="p-6"
+      >
+        <div className="text-center text-gray-600 dark:text-gray-300">
+          You need to connect your wallet to use this feature.
+        </div>
+        <div className="flex justify-end mt-6">
+          <Button type="button" variant="outline" onClick={onClose}>
+            Close
+          </Button>
+        </div>
+      </BaseModal>
+    ) : null;
+  }
 
   const footer = (
     <div className="p-6">

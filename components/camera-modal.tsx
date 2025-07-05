@@ -2,8 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import * as Sentry from '@sentry/nextjs';
-import { motion, AnimatePresence } from 'framer-motion';
-import { X, Camera, RefreshCw, Check, AlertCircle } from 'lucide-react';
+import { Camera, RefreshCw, Check, AlertCircle } from 'lucide-react';
 import Image from 'next/image';
 import { useTheme } from 'next-themes';
 import { BaseModal } from '@/components/ui/base-modal';

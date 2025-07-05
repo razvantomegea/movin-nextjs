@@ -16,6 +16,15 @@ interface ExerciseProgressChartProps {
   isLoading: boolean;
 }
 
+interface ChartDataPoint {
+  session: number;
+  date: string;
+  weight: number;
+  volume: number;
+  reps: number;
+  displayDate: string;
+}
+
 const chartAnimationVariants = {
   hidden: { opacity: 0, scale: 0.95 },
   visible: { opacity: 1, scale: 1 },
@@ -33,13 +42,13 @@ export function ExerciseProgressChart({
   const uniqueGradientId = useId();
 
   // Transform progress data for the chart
-  const chartData = useMemo(() => {
+  const chartData: ChartDataPoint[] = useMemo(() => {
     return progressData.map((progress, index) => ({
       session: index + 1,
       date: new Date(progress.date).toLocaleDateString(),
       weight: progress.maxWeight,
       volume: progress.totalVolume,
-      reps: progress.totalSets, // Using totalSets as a proxy for reps
+      reps: progress.totalReps,
       displayDate: new Date(progress.date).toLocaleDateString('en-US', {
         month: 'short',
         day: 'numeric',
@@ -53,7 +62,7 @@ export function ExerciseProgressChart({
   const getMetricStats = () => {
     if (!hasData) return { current: 0, best: 0, improvement: 0, unit: '' };
 
-    const values = chartData.map((d: any) => d[selectedMetric]);
+    const values = chartData.map((d: ChartDataPoint) => d[selectedMetric]);
     const current = values[values.length - 1] || 0;
     const best = Math.max(...values);
     const first = values[0] || 0;

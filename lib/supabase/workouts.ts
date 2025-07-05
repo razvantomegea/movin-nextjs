@@ -276,6 +276,7 @@ export async function getExerciseProgress(
     maxWeight: number;
     totalVolume: number;
     totalSets: number;
+    totalReps: number;
   }[]
 > {
   const supabase = getClient();
@@ -308,6 +309,7 @@ export async function getExerciseProgress(
       maxWeight: number;
       totalVolume: number;
       totalSets: number;
+      totalReps: number;
     }
   >;
 
@@ -326,11 +328,13 @@ export async function getExerciseProgress(
           maxWeight: weight,
           totalVolume: volume,
           totalSets: sets,
+          totalReps: sets * reps,
         };
       } else {
         acc[date].maxWeight = Math.max(acc[date].maxWeight, weight);
         acc[date].totalVolume += volume;
         acc[date].totalSets += sets;
+        acc[date].totalReps += sets * reps;
       }
 
       return acc;
@@ -356,6 +360,8 @@ export async function getUniqueExerciseNames(address: string): Promise<string[]>
   }
 
   // Get unique exercise names
-  const uniqueNames = [...new Set((data as { exercise_name: string }[]).map(item => item.exercise_name))];
+  const uniqueNames = [
+    ...new Set((data as { exercise_name: string }[]).map((item) => item.exercise_name)),
+  ];
   return uniqueNames;
 }

@@ -85,11 +85,16 @@ export function BaseModal({
               isDark ? 'bg-gray-900' : 'bg-white',
               className,
             )}
-            style={{ maxHeight: fullMobile ? undefined : maxHeight }}
+            style={{
+              maxHeight: fullMobile ? '100vh' : maxHeight,
+            }}
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.95, opacity: 0 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            tabIndex={-1}
+            role="region"
+            aria-labelledby="base-modal-title"
           >
             {/* Header */}
             <div
@@ -100,7 +105,9 @@ export function BaseModal({
               )}
             >
               <div className="flex-1 pr-4">
-                <h2 className="text-xl font-bold truncate leading-tight">{title}</h2>
+                <h2 id="base-modal-title" className="text-xl font-bold truncate leading-tight">
+                  {title}
+                </h2>
                 {subtitle && (
                   <p
                     className={cn(
