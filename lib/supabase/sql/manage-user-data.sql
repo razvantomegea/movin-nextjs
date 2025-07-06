@@ -13,6 +13,13 @@ DECLARE
   staking_data JSONB;
   meals_data JSONB;
   energy_data JSONB;
+  goals_data JSONB;
+  social_posts_data JSONB;
+  connections_data JSONB;
+  post_likes_data JSONB;
+  post_comments_data JSONB;
+  workouts_data JSONB;
+  workout_exercises_data JSONB;
 BEGIN
   -- Security check: ensure user can only export their own data
   IF (auth.jwt() ->> 'sub') != user_address THEN
@@ -26,6 +33,21 @@ BEGIN
   SELECT jsonb_agg(to_jsonb(s)) INTO staking_data FROM staking s WHERE s.address = user_address;
   SELECT jsonb_agg(to_jsonb(m)) INTO meals_data FROM meals m WHERE m.address = user_address;
   SELECT jsonb_agg(to_jsonb(e)) INTO energy_data FROM energy e WHERE e.address = user_address;
+  SELECT jsonb_agg(to_jsonb(g)) INTO goals_data FROM goals g WHERE g.address = user_address;
+  SELECT jsonb_agg(to_jsonb(sp)) INTO social_posts_data FROM social_posts sp WHERE sp.address = user_address;
+  
+  -- For connections, get both where user is requester or addressee
+  SELECT jsonb_agg(to_jsonb(c)) INTO connections_data 
+  FROM connections c 
+  WHERE c.requester_address = user_address OR c.addressee_address = user_address;
+  
+  -- For likes and comments, use the address field
+  SELECT jsonb_agg(to_jsonb(pl)) INTO post_likes_data FROM post_likes pl WHERE pl.address = user_address;
+  SELECT jsonb_agg(to_jsonb(pc)) INTO post_comments_data FROM post_comments pc WHERE pc.address = user_address;
+  
+  -- Get workouts data
+  SELECT jsonb_agg(to_jsonb(w)) INTO workouts_data FROM workouts w WHERE w.address = user_address;
+  SELECT jsonb_agg(to_jsonb(we)) INTO workout_exercises_data FROM workout_exercises we WHERE we.address = user_address;
 
   result := jsonb_build_object(
     'profile', COALESCE(profile_data, '{}'::jsonb),
@@ -34,7 +56,14 @@ BEGIN
     'user_badges', COALESCE(badges_data, '[]'::jsonb),
     'staking', COALESCE(staking_data, '[]'::jsonb),
     'meals', COALESCE(meals_data, '[]'::jsonb),
-    'energy', COALESCE(energy_data, '[]'::jsonb)
+    'energy', COALESCE(energy_data, '[]'::jsonb),
+    'goals', COALESCE(goals_data, '[]'::jsonb),
+    'social_posts', COALESCE(social_posts_data, '[]'::jsonb),
+    'connections', COALESCE(connections_data, '[]'::jsonb),
+    'post_likes', COALESCE(post_likes_data, '[]'::jsonb),
+    'post_comments', COALESCE(post_comments_data, '[]'::jsonb),
+    'workouts', COALESCE(workouts_data, '[]'::jsonb),
+    'workout_exercises', COALESCE(workout_exercises_data, '[]'::jsonb)
   );
 
   RETURN result;
@@ -59,6 +88,13 @@ BEGIN
   DELETE FROM staking WHERE address = user_address;
   DELETE FROM meals WHERE address = user_address;
   DELETE FROM energy WHERE address = user_address;
+  DELETE FROM goals WHERE address = user_address;
+  DELETE FROM post_likes WHERE address = user_address;
+  DELETE FROM post_comments WHERE address = user_address;
+  DELETE FROM social_posts WHERE address = user_address;
+  DELETE FROM connections WHERE requester_address = user_address OR addressee_address = user_address;
+  DELETE FROM workout_exercises WHERE address = user_address;
+  DELETE FROM workouts WHERE address = user_address;
   -- We don't delete the profile, we update it.
 
   -- Import profile
@@ -179,6 +215,130 @@ BEGIN
     );
   END LOOP;
 
+  -- Import goals
+  FOR item IN SELECT * FROM jsonb_array_elements(import_data -> 'goals')
+  LOOP
+    INSERT INTO goals (id, address, goal_type, target_value, current_value, unit, category, title, icon, auto_trigger, is_active, created_at, updated_at)
+    VALUES (
+      (item ->> 'id')::UUID,
+      user_address,
+      item ->> 'goal_type',
+      (item ->> 'target_value')::NUMERIC,
+      (item ->> 'current_value')::NUMERIC,
+      item ->> 'unit',
+      item ->> 'category',
+      item ->> 'title',
+      item ->> 'icon',
+      (item ->> 'auto_trigger')::BOOLEAN,
+      (item ->> 'is_active')::BOOLEAN,
+      (item ->> 'created_at')::TIMESTAMPTZ,
+      (item ->> 'updated_at')::TIMESTAMPTZ
+    );
+  END LOOP;
+
+  -- Import social_posts
+  FOR item IN SELECT * FROM jsonb_array_elements(import_data -> 'social_posts')
+  LOOP
+    INSERT INTO social_posts (id, address, content, image_url, created_at, updated_at)
+    VALUES (
+      (item ->> 'id')::UUID,
+      user_address,
+      item ->> 'content',
+      item ->> 'image_url',
+      (item ->> 'created_at')::TIMESTAMPTZ,
+      (item ->> 'updated_at')::TIMESTAMPTZ
+    );
+  END LOOP;
+
+  -- Import connections
+  FOR item IN SELECT * FROM jsonb_array_elements(import_data -> 'connections')
+  LOOP
+    -- Only import connections where the current user is the requester
+    IF (item ->> 'requester_address') = user_address THEN
+      INSERT INTO connections (id, requester_address, addressee_address, status, created_at, updated_at)
+      VALUES (
+        (item ->> 'id')::UUID,
+        user_address,
+        item ->> 'addressee_address',
+        item ->> 'status',
+        (item ->> 'created_at')::TIMESTAMPTZ,
+        (item ->> 'updated_at')::TIMESTAMPTZ
+      );
+    END IF;
+  END LOOP;
+
+  -- Import post_likes
+  FOR item IN SELECT * FROM jsonb_array_elements(import_data -> 'post_likes')
+  LOOP
+    INSERT INTO post_likes (id, post_id, address, is_like, created_at, updated_at)
+    VALUES (
+      (item ->> 'id')::UUID,
+      (item ->> 'post_id')::UUID,
+      user_address,
+      (item ->> 'is_like')::BOOLEAN,
+      (item ->> 'created_at')::TIMESTAMPTZ,
+      (item ->> 'updated_at')::TIMESTAMPTZ
+    );
+  END LOOP;
+
+  -- Import post_comments
+  FOR item IN SELECT * FROM jsonb_array_elements(import_data -> 'post_comments')
+  LOOP
+    INSERT INTO post_comments (id, post_id, address, content, parent_comment_id, created_at, updated_at)
+    VALUES (
+      (item ->> 'id')::UUID,
+      (item ->> 'post_id')::UUID,
+      user_address,
+      item ->> 'content',
+      (item ->> 'parent_comment_id')::UUID,
+      (item ->> 'created_at')::TIMESTAMPTZ,
+      (item ->> 'updated_at')::TIMESTAMPTZ
+    );
+  END LOOP;
+
+  -- Import workouts
+  FOR item IN SELECT * FROM jsonb_array_elements(import_data -> 'workouts')
+  LOOP
+    INSERT INTO workouts (id, address, name, total_volume, total_duration, created_at, updated_at, notes)
+    VALUES (
+      (item ->> 'id')::UUID,
+      user_address,
+      item ->> 'name',
+      (item ->> 'total_volume')::DECIMAL,
+      (item ->> 'total_duration')::INTEGER,
+      (item ->> 'created_at')::TIMESTAMPTZ,
+      (item ->> 'updated_at')::TIMESTAMPTZ,
+      item ->> 'notes'
+    );
+  END LOOP;
+
+  -- Import workout_exercises
+  FOR item IN SELECT * FROM jsonb_array_elements(import_data -> 'workout_exercises')
+  LOOP
+    INSERT INTO workout_exercises (
+      id, workout_id, address, exercise_name, sets, reps, weight, 
+      time_under_tension, exercise_duration, rest_time, notes, 
+      order_index, created_at, updated_at, completed_sets
+    )
+    VALUES (
+      (item ->> 'id')::UUID,
+      (item ->> 'workout_id')::UUID,
+      user_address,
+      item ->> 'exercise_name',
+      (item ->> 'sets')::INTEGER,
+      (item ->> 'reps')::INTEGER,
+      (item ->> 'weight')::DECIMAL,
+      (item ->> 'time_under_tension')::INTEGER,
+      (item ->> 'exercise_duration')::INTEGER,
+      (item ->> 'rest_time')::INTEGER,
+      item ->> 'notes',
+      (item ->> 'order_index')::INTEGER,
+      (item ->> 'created_at')::TIMESTAMPTZ,
+      (item ->> 'updated_at')::TIMESTAMPTZ,
+      (item ->> 'completed_sets')::INTEGER
+    );
+  END LOOP;
+
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
@@ -194,6 +354,13 @@ DECLARE
   stakes_count INTEGER;
   meals_count INTEGER;
   energy_count INTEGER;
+  goals_count INTEGER;
+  social_posts_count INTEGER;
+  connections_count INTEGER;
+  post_likes_count INTEGER;
+  post_comments_count INTEGER;
+  workouts_count INTEGER;
+  workout_exercises_count INTEGER;
   total_rewards DECIMAL;
   total_staked DECIMAL;
   profile_exists BOOLEAN;
@@ -215,6 +382,18 @@ BEGIN
   SELECT COUNT(*) INTO stakes_count FROM staking WHERE address = user_address;
   SELECT COUNT(*) INTO meals_count FROM meals WHERE address = user_address;
   SELECT COUNT(*) INTO energy_count FROM energy WHERE address = user_address;
+  SELECT COUNT(*) INTO goals_count FROM goals WHERE address = user_address;
+  SELECT COUNT(*) INTO social_posts_count FROM social_posts WHERE address = user_address;
+  
+  -- For connections, count both where user is requester or addressee
+  SELECT COUNT(*) INTO connections_count 
+  FROM connections 
+  WHERE requester_address = user_address OR addressee_address = user_address;
+  
+  SELECT COUNT(*) INTO post_likes_count FROM post_likes WHERE address = user_address;
+  SELECT COUNT(*) INTO post_comments_count FROM post_comments WHERE address = user_address;
+  SELECT COUNT(*) INTO workouts_count FROM workouts WHERE address = user_address;
+  SELECT COUNT(*) INTO workout_exercises_count FROM workout_exercises WHERE address = user_address;
   
   -- Calculate totals
   SELECT COALESCE(SUM(rewards), 0) INTO total_rewards FROM activity_rewards WHERE address = user_address;
@@ -228,6 +407,13 @@ BEGIN
     'staking', stakes_count,
     'meals', meals_count,
     'energy', energy_count,
+    'goals', goals_count,
+    'social_posts', social_posts_count,
+    'connections', connections_count,
+    'post_likes', post_likes_count,
+    'post_comments', post_comments_count,
+    'workouts', workouts_count,
+    'workout_exercises', workout_exercises_count,
     'total_rewards', total_rewards,
     'total_staked', total_staked
   );
@@ -252,6 +438,13 @@ DECLARE
   stakes_count INTEGER;
   meals_count INTEGER;
   energy_count INTEGER;
+  goals_count INTEGER;
+  social_posts_count INTEGER;
+  connections_count INTEGER;
+  post_likes_count INTEGER;
+  post_comments_count INTEGER;
+  workouts_count INTEGER;
+  workout_exercises_count INTEGER;
   profile_exists BOOLEAN;
   current_user_address TEXT;
 BEGIN
@@ -284,9 +477,24 @@ BEGIN
   SELECT COUNT(*) INTO stakes_count FROM staking WHERE address = user_address;
   SELECT COUNT(*) INTO meals_count FROM meals WHERE address = user_address;
   SELECT COUNT(*) INTO energy_count FROM energy WHERE address = user_address;
+  SELECT COUNT(*) INTO goals_count FROM goals WHERE address = user_address;
+  SELECT COUNT(*) INTO social_posts_count FROM social_posts WHERE address = user_address;
+  SELECT COUNT(*) INTO connections_count FROM connections 
+    WHERE requester_address = user_address OR addressee_address = user_address;
+  SELECT COUNT(*) INTO post_likes_count FROM post_likes WHERE address = user_address;
+  SELECT COUNT(*) INTO post_comments_count FROM post_comments WHERE address = user_address;
+  SELECT COUNT(*) INTO workouts_count FROM workouts WHERE address = user_address;
+  SELECT COUNT(*) INTO workout_exercises_count FROM workout_exercises WHERE address = user_address;
 
   -- Delete all user data (order matters for foreign key constraints)
   -- Delete dependent records first, then the profile
+  DELETE FROM post_likes WHERE address = user_address;
+  DELETE FROM post_comments WHERE address = user_address;
+  DELETE FROM social_posts WHERE address = user_address;
+  DELETE FROM connections WHERE requester_address = user_address OR addressee_address = user_address;
+  DELETE FROM workout_exercises WHERE address = user_address;
+  DELETE FROM workouts WHERE address = user_address;
+  DELETE FROM goals WHERE address = user_address;
   DELETE FROM activities WHERE address = user_address;
   DELETE FROM activity_rewards WHERE address = user_address;
   DELETE FROM user_badges WHERE address = user_address;
@@ -303,6 +511,13 @@ BEGIN
     'staking', stakes_count,
     'meals', meals_count,
     'energy', energy_count,
+    'goals', goals_count,
+    'social_posts', social_posts_count,
+    'connections', connections_count,
+    'post_likes', post_likes_count,
+    'post_comments', post_comments_count,
+    'workouts', workouts_count,
+    'workout_exercises', workout_exercises_count,
     'profile', 1
   );
 

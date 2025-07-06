@@ -87,6 +87,9 @@ export function MealDetectionResultsModal({
     pendingToast: null,
   });
 
+  // Track if we're currently claiming rewards (vs initial loading)
+  const [isClaimingRewards, setIsClaimingRewards] = useState(false);
+
   const { useClaimMealRewards, useLastMealClaim } = useMovinEarn();
   const { claimMealRewards, error: claimError } = useClaimMealRewards();
   const { lastClaimTimestamp, isLoading: isLastClaimLoading } = useLastMealClaim(address);
@@ -129,6 +132,7 @@ export function MealDetectionResultsModal({
       // Reset all states when modal is closed
       resetPhotoValidation();
       resetEditingState();
+      setIsClaimingRewards(false);
       setRewardState({
         rewardAmount: '0',
         lastMeal: null,
@@ -303,12 +307,14 @@ export function MealDetectionResultsModal({
 
       if (sourceType === 'camera') {
         if (canClaim) {
+          setIsClaimingRewards(true);
           setIsLoading(true);
           const claimSuccess = await claimMealRewards(
             address,
             mealState.detectedMeal.mealScore || 0,
           );
           setIsLoading(false);
+          setIsClaimingRewards(false);
 
           if (claimSuccess) {
             setRewardState((prev) => ({ ...prev, showCelebration: true }));
@@ -323,9 +329,11 @@ export function MealDetectionResultsModal({
         }
         return;
       } else if (sourceType === 'text' && canClaimPhotoReward) {
+        setIsClaimingRewards(true);
         setIsLoading(true);
         const claimSuccess = await claimMealRewards(address, mealState.detectedMeal.mealScore || 0);
         setIsLoading(false);
+        setIsClaimingRewards(false);
 
         if (claimSuccess) {
           setRewardState((prev) => ({ ...prev, showCelebration: true }));
@@ -421,9 +429,9 @@ export function MealDetectionResultsModal({
   };
 
   let loadingMessage = 'Analyzing your meal...';
-  if (claimError && sourceType === 'camera' && canClaim) {
+  if (isClaimingRewards && claimError && sourceType === 'camera' && canClaim) {
     loadingMessage = 'Claiming reward failed. Please try again.';
-  } else if (sourceType === 'camera' && canClaim) {
+  } else if (isClaimingRewards && sourceType === 'camera' && canClaim) {
     loadingMessage = 'Claiming your meal reward...';
   }
 
@@ -478,7 +486,7 @@ export function MealDetectionResultsModal({
                     <div className="w-16 h-16 border-4 border-t-blue-500 border-b-blue-700 rounded-full animate-spin mb-4"></div>
                     <p className="text-lg font-medium">{loadingMessage}</p>
                     <p className={`text-sm mt-2 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                      {sourceType === 'camera' && canClaim
+                      {isClaimingRewards && sourceType === 'camera' && canClaim
                         ? 'Please wait while we process your reward claim.'
                         : 'Our AI is identifying ingredients and calculating nutrition information'}
                     </p>

@@ -21,7 +21,7 @@ import { useTheme } from 'next-themes';
 import { useGoogleMapsStatus } from '@/app/contexts/google-maps-provider';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { ResponsiveTooltip } from '@/components/ui/responsive-tooltip';
 import { useToast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/cn';
 import { IActivity } from '@/lib/supabase/activities';
@@ -963,74 +963,61 @@ export function RouteTrackingModal({
               {/* Action Buttons */}
               {permissionState === 'granted' && !error && (
                 <div className={`p-4 border-t ${isDark ? 'border-gray-800' : 'border-gray-200'}`}>
-                  <TooltipProvider>
-                    <div className="flex justify-around items-center">
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="outline"
-                            onClick={() => resetTracking()}
-                            disabled={isTracking && routePath.length === 0}
-                          >
-                            <RotateCw className="h-4 w-4" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Reset tracking data</p>
-                        </TooltipContent>
-                      </Tooltip>
+                  <div className="flex justify-around items-center">
+                    <ResponsiveTooltip content={<p>Reset tracking data</p>}>
+                      <Button
+                        variant="outline"
+                        onClick={() => resetTracking()}
+                        disabled={isTracking && routePath.length === 0}
+                      >
+                        <RotateCw className="h-4 w-4" />
+                      </Button>
+                    </ResponsiveTooltip>
 
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="outline"
-                            onClick={() => setIsScreenAwakeEnabled(!isScreenAwakeEnabled)}
-                          >
-                            {isScreenAwakeEnabled ? (
-                              <LightbulbOff className="h-4 w-4 text-amber-500" />
-                            ) : (
-                              <Lightbulb className="h-4 w-4" />
-                            )}
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>
-                            {isScreenAwakeEnabled
-                              ? 'Disable keep screen awake during tracking'
-                              : 'Enable keep screen awake during tracking'}
-                          </p>
-                        </TooltipContent>
-                      </Tooltip>
+                    <ResponsiveTooltip
+                      content={
+                        <p>
+                          {isScreenAwakeEnabled
+                            ? 'Disable keep screen awake during tracking'
+                            : 'Enable keep screen awake during tracking'}
+                        </p>
+                      }
+                    >
+                      <Button
+                        variant="outline"
+                        onClick={() => setIsScreenAwakeEnabled(!isScreenAwakeEnabled)}
+                      >
+                        {isScreenAwakeEnabled ? (
+                          <LightbulbOff className="h-4 w-4 text-amber-500" />
+                        ) : (
+                          <Lightbulb className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </ResponsiveTooltip>
 
-                      {!isTracking ? (
-                        <Button onClick={startTracking} className="bg-green-500 hover:bg-green-600">
-                          <Play className="h-4 w-4 mr-2" />
-                          Start
-                        </Button>
-                      ) : (
-                        <Button onClick={stopTracking} className="bg-amber-500 hover:bg-amber-600">
-                          <Pause className="h-4 w-4 mr-2" />
-                          Pause
-                        </Button>
-                      )}
+                    {!isTracking ? (
+                      <Button onClick={startTracking} className="bg-green-500 hover:bg-green-600">
+                        <Play className="h-4 w-4 mr-2" />
+                        Start
+                      </Button>
+                    ) : (
+                      <Button onClick={stopTracking} className="bg-amber-500 hover:bg-amber-600">
+                        <Pause className="h-4 w-4 mr-2" />
+                        Pause
+                      </Button>
+                    )}
 
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            onClick={saveRoute}
-                            className="bg-blue-500 hover:bg-blue-600"
-                            disabled={isTracking || routePath.length < 2}
-                          >
-                            <Save className="h-4 w-4 mr-2" />
-                            Save
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Save route to your activity history</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </div>
-                  </TooltipProvider>
+                    <ResponsiveTooltip content={<p>Save route to your activity history</p>}>
+                      <Button
+                        onClick={saveRoute}
+                        className="bg-blue-500 hover:bg-blue-600"
+                        disabled={isTracking || routePath.length < 2}
+                      >
+                        <Save className="h-4 w-4 mr-2" />
+                        Save
+                      </Button>
+                    </ResponsiveTooltip>
+                  </div>
                 </div>
               )}
             </div>

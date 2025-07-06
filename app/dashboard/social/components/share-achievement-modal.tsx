@@ -3,14 +3,8 @@
 import { useState, useRef } from 'react';
 import { X, Upload } from 'lucide-react';
 import Image from 'next/image';
+import { BaseModal } from '@/components/ui/base-modal';
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
@@ -130,117 +124,14 @@ export function ShareAchievementModal({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Share Your Achievement</DialogTitle>
-        </DialogHeader>
-
-        <div className="space-y-4 py-4">
-          <div>
-            <Label htmlFor="post-content">What did you accomplish?</Label>
-            <Textarea
-              id="post-content"
-              placeholder="Share your fitness achievement..."
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              className="mt-2"
-              rows={3}
-            />
-          </div>
-
-          <div>
-            <Label className="mb-2 block">Add a photo (optional)</Label>
-
-            {/* Custom file upload */}
-            <div className="mb-4">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleFileSelect}
-                className="hidden"
-              />
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => fileInputRef.current?.click()}
-                className="w-full mb-2"
-                disabled={isUploadingImage}
-              >
-                <Upload className="h-4 w-4 mr-2" />
-                {isUploadingImage ? 'Uploading...' : 'Upload Custom Image'}
-              </Button>
-            </div>
-
-            {/* Show selected custom image */}
-            {selectedFile && selectedImage && (
-              <div className="mb-4">
-                <div className="relative w-full h-32 rounded-md overflow-hidden border-2 border-blue-500">
-                  <Image src={selectedImage} alt="Selected image" fill className="object-cover" />
-                  <div className="absolute top-2 right-2">
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => {
-                        setSelectedImage(null);
-                        setSelectedFile(null);
-                        if (fileInputRef.current) {
-                          fileInputRef.current.value = '';
-                        }
-                      }}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Preset images - only show if no custom image is selected */}
-            {!selectedFile && (
-              <div>
-                <Label className="mb-2 block text-sm text-muted-foreground">
-                  Or choose from preset images:
-                </Label>
-                <div className="grid grid-cols-3 gap-2">
-                  {achievementImages.map((image, index) => (
-                    <div
-                      key={index}
-                      className={`relative aspect-square rounded-md overflow-hidden cursor-pointer border-2 ${
-                        selectedImage === image ? 'border-blue-500' : 'border-transparent'
-                      }`}
-                      onClick={() => setSelectedImage(image === selectedImage ? null : image)}
-                    >
-                      <Image
-                        src={image || '/placeholder.svg'}
-                        alt={`Achievement ${index + 1}`}
-                        fill
-                        className="object-cover"
-                      />
-                      {selectedImage === image && (
-                        <div className="absolute inset-0 bg-blue-500/20 flex items-center justify-center">
-                          <div className="bg-blue-500 rounded-full p-1">
-                            <X
-                              className="h-4 w-4 text-white"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedImage(null);
-                              }}
-                            />
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <DialogFooter>
+    <BaseModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Share Your Achievement"
+      className="sm:max-w-md"
+      contentClassName="space-y-4 py-4"
+      footer={
+        <>
           <Button variant="outline" onClick={onClose} disabled={isSubmitting || isUploadingImage}>
             Cancel
           </Button>
@@ -250,8 +141,110 @@ export function ShareAchievementModal({
           >
             {isUploadingImage ? 'Uploading Image...' : isSubmitting ? 'Sharing...' : 'Share'}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </>
+      }
+    >
+      <div>
+        <Label htmlFor="post-content">What did you accomplish?</Label>
+        <Textarea
+          id="post-content"
+          placeholder="Share your fitness achievement..."
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          className="mt-2"
+          rows={3}
+        />
+      </div>
+
+      <div>
+        <Label className="mb-2 block">Add a photo (optional)</Label>
+
+        {/* Custom file upload */}
+        <div className="mb-4">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleFileSelect}
+            className="hidden"
+          />
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => fileInputRef.current?.click()}
+            className="w-full mb-2"
+            disabled={isUploadingImage}
+          >
+            <Upload className="h-4 w-4 mr-2" />
+            {isUploadingImage ? 'Uploading...' : 'Upload Custom Image'}
+          </Button>
+        </div>
+
+        {/* Show selected custom image */}
+        {selectedFile && selectedImage && (
+          <div className="mb-4">
+            <div className="relative w-full h-32 rounded-md overflow-hidden border-2 border-blue-500">
+              <Image src={selectedImage} alt="Selected image" fill className="object-cover" />
+              <div className="absolute top-2 right-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => {
+                    setSelectedImage(null);
+                    setSelectedFile(null);
+                    if (fileInputRef.current) {
+                      fileInputRef.current.value = '';
+                    }
+                  }}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Preset images - only show if no custom image is selected */}
+        {!selectedFile && (
+          <div>
+            <Label className="mb-2 block text-sm text-muted-foreground">
+              Or choose from preset images:
+            </Label>
+            <div className="grid grid-cols-3 gap-2">
+              {achievementImages.map((image, index) => (
+                <div
+                  key={index}
+                  className={`relative aspect-square rounded-md overflow-hidden cursor-pointer border-2 ${
+                    selectedImage === image ? 'border-blue-500' : 'border-transparent'
+                  }`}
+                  onClick={() => setSelectedImage(image === selectedImage ? null : image)}
+                >
+                  <Image
+                    src={image || '/placeholder.svg'}
+                    alt={`Achievement ${index + 1}`}
+                    fill
+                    className="object-cover"
+                  />
+                  {selectedImage === image && (
+                    <div className="absolute inset-0 bg-blue-500/20 flex items-center justify-center">
+                      <div className="bg-blue-500 rounded-full p-1">
+                        <X
+                          className="h-4 w-4 text-white"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedImage(null);
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </BaseModal>
   );
 }

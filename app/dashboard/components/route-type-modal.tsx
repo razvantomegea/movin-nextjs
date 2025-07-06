@@ -1,10 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { X, User, Users, MapPin, Search, UserPlus, Check, Clock } from 'lucide-react';
-import { useTheme } from 'next-themes';
+import { User, Users, MapPin, Search, UserPlus, Check, Clock } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { BaseModal } from '@/components/ui/base-modal';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
@@ -29,10 +28,7 @@ export function RouteTypeModal({
   onSelectSingle,
   onSelectJoint,
 }: RouteTypeModalProps) {
-  const { resolvedTheme } = useTheme();
-  const isDark = resolvedTheme === 'dark';
   const dispatch = useAppDispatch();
-
   const [step, setStep] = useState<'select' | 'search' | 'invite'>('select');
 
   const { nearbyUsers, invitedUsers, joinedUsers, isSearching, error } = useAppSelector(
@@ -75,78 +71,75 @@ export function RouteTypeModal({
 
   // Render the selection step
   const renderSelectionStep = () => (
-    <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
-      <h3 className="text-lg sm:text-xl font-semibold text-center mb-4">Choose Tracking Mode</h3>
-
+    <div className="space-y-6">
       <div className="space-y-3">
         {/* Single Tracking Option */}
-        <motion.div
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+        <Card
+          className="cursor-pointer transition-all duration-150 ease-out hover:bg-gray-50 dark:hover:bg-gray-700 hover:scale-[1.02] active:scale-[0.98]"
+          onClick={onSelectSingle}
         >
-          <Card
-            className={`cursor-pointer transition-colors ${
-              isDark
-                ? 'bg-gray-800 hover:bg-gray-700 border-gray-700'
-                : 'bg-gray-50 hover:bg-gray-100 border-gray-200'
-            }`}
-            onClick={onSelectSingle}
-          >
-            <CardContent className="p-4">
-              <div className="flex items-center space-x-4">
-                <div className="bg-blue-500/20 p-3 rounded-full">
-                  <User className="h-6 w-6 text-blue-500" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold">Single</h3>
-                  <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                    Track your route individually
-                  </p>
-                </div>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-4">
+              <div className="bg-blue-500/20 p-3 rounded-full">
+                <User className="h-6 w-6 text-blue-500" />
               </div>
-            </CardContent>
-          </Card>
-        </motion.div>
+              <div className="flex-1">
+                <h3 className="font-semibold">Single</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Track your route individually
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Joint Tracking Option */}
-        <motion.div
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          transition={{ type: 'spring', stiffness: 400, damping: 17 }}
-        >
-          <Card
-            className={`cursor-pointer transition-colors opacity-70 ${
-              isDark
-                ? 'bg-gray-800 hover:bg-gray-700 border-gray-700'
-                : 'bg-gray-50 hover:bg-gray-100 border-gray-200'
-            }`}
-          >
-            <CardContent className="p-4">
-              <div className="flex items-center space-x-4">
-                <div className="bg-green-500/20 p-3 rounded-full">
-                  <Users className="h-6 w-6 text-green-500" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold">Joint</h3>
-                  <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                    Track with friends nearby
-                  </p>
-                  <p className="text-sm font-medium text-amber-500 mt-1">Coming Soon</p>
-                </div>
+        <Card className="cursor-pointer transition-colors opacity-70 hover:bg-gray-50 dark:hover:bg-gray-700">
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-4">
+              <div className="bg-green-500/20 p-3 rounded-full">
+                <Users className="h-6 w-6 text-green-500" />
               </div>
-            </CardContent>
-          </Card>
-        </motion.div>
+              <div className="flex-1">
+                <h3 className="font-semibold">Joint</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Track with friends nearby
+                </p>
+                <p className="text-sm font-medium text-amber-500 mt-1">Coming Soon</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
 
-  // Render the search step
-  const renderSearchStep = () => (
-    <div className="p-4 sm:p-6 space-y-4">
-      <h3 className="text-lg sm:text-xl font-semibold text-center mb-2">Find Nearby Users</h3>
+  // Render the search step with footer
+  const renderSearchStep = () => {
+    const searchFooter = (
+      <div className="p-6">
+        <div className="flex flex-col sm:flex-row gap-3 sm:justify-between">
+          <Button variant="outline" onClick={() => setStep('select')} className="w-full sm:w-auto">
+            Back
+          </Button>
+          <Button
+            onClick={handleStartJointTracking}
+            className="bg-green-500 hover:bg-green-600 w-full sm:w-auto"
+            disabled={joinedUsers.length === 0}
+          >
+            <MapPin className="h-4 w-4 mr-2" />
+            <span className="hidden sm:inline">Start Joint Tracking ({joinedUsers.length})</span>
+            <span className="sm:hidden">Start ({joinedUsers.length})</span>
+          </Button>
+        </div>
+      </div>
+    );
 
+    return { content: renderSearchContent(), footer: searchFooter };
+  };
+
+  const renderSearchContent = () => (
+    <div className="space-y-4">
       {isSearching ? (
         <div className="flex flex-col items-center justify-center py-8">
           <Search className="h-10 w-10 text-blue-500 animate-pulse mb-4" />
@@ -173,9 +166,7 @@ export function RouteTypeModal({
             {nearbyUsers.map((user) => (
               <div
                 key={user.id}
-                className={`flex items-center justify-between p-3 rounded-lg ${
-                  isDark ? 'bg-gray-800' : 'bg-gray-100'
-                }`}
+                className="flex items-center justify-between p-3 rounded-lg bg-gray-100 dark:bg-gray-800"
               >
                 <div className="flex items-center space-x-3 min-w-0 flex-1">
                   <Avatar className="flex-shrink-0">
@@ -226,73 +217,24 @@ export function RouteTypeModal({
               </div>
             ))}
           </div>
-
-          <div className="pt-4 flex flex-col sm:flex-row gap-3 sm:justify-between">
-            <Button
-              variant="outline"
-              onClick={() => setStep('select')}
-              className="w-full sm:w-auto"
-            >
-              Back
-            </Button>
-            <Button
-              onClick={handleStartJointTracking}
-              className="bg-green-500 hover:bg-green-600 w-full sm:w-auto"
-              disabled={joinedUsers.length === 0}
-            >
-              <MapPin className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">Start Joint Tracking ({joinedUsers.length})</span>
-              <span className="sm:hidden">Start ({joinedUsers.length})</span>
-            </Button>
-          </div>
         </>
       )}
     </div>
   );
 
+  const currentStep =
+    step === 'select' ? { content: renderSelectionStep(), footer: null } : renderSearchStep();
+
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <motion.div
-          className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-        >
-          <motion.div
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-          />
-
-          <motion.div
-            className={`relative w-full max-w-md mx-auto rounded-xl overflow-hidden ${
-              isDark ? 'bg-gray-900' : 'bg-white'
-            } shadow-xl max-h-[90vh] overflow-y-auto`}
-            initial={{ scale: 0.95, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.95, opacity: 0 }}
-            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-          >
-            {/* Header */}
-            <div
-              className={`flex items-center justify-between p-3 sm:p-4 border-b ${
-                isDark ? 'border-gray-800' : 'border-gray-200'
-              }`}
-            >
-              <h2 className="text-lg sm:text-xl font-bold">Route Tracking</h2>
-              <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full">
-                <X className="h-5 w-5" />
-              </Button>
-            </div>
-
-            {/* Content */}
-            {step === 'select' ? renderSelectionStep() : renderSearchStep()}
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+    <BaseModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Route Tracking"
+      subtitle={step === 'select' ? 'Choose your tracking mode' : 'Find Nearby Users'}
+      footer={currentStep.footer}
+      contentClassName="p-6"
+    >
+      {currentStep.content}
+    </BaseModal>
   );
 }
