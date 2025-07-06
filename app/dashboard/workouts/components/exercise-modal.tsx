@@ -128,6 +128,37 @@ export function ExerciseModal({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Validate required fields
+    if (!formData.exercise_name.trim()) {
+      alert('Exercise name is required');
+      return;
+    }
+
+    // Validate each set
+    for (let i = 0; i < exerciseSets.length; i++) {
+      const set = exerciseSets[i];
+      if (!set.reps || set.reps <= 0) {
+        alert(`Set ${i + 1}: Reps must be greater than 0`);
+        return;
+      }
+      if (!set.weight || set.weight <= 0) {
+        alert(`Set ${i + 1}: Weight must be greater than 0`);
+        return;
+      }
+      if (!set.duration || set.duration <= 0) {
+        alert(`Set ${i + 1}: Duration must be greater than 0`);
+        return;
+      }
+      if (set.time_under_tension < 0) {
+        alert(`Set ${i + 1}: Time Under Tension cannot be negative`);
+        return;
+      }
+      if (set.rest_time < 0) {
+        alert(`Set ${i + 1}: Rest Time cannot be negative`);
+        return;
+      }
+    }
+
     // Create exercise sets data for the database
     const exerciseSetsData = exerciseSets.map((set) => ({
       address: address?.toLowerCase() as string,
@@ -244,8 +275,14 @@ export function ExerciseModal({
       contentClassName="p-6"
     >
       <form id="exercise-form" onSubmit={handleSubmit} className="space-y-6">
+        <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+          <p className="text-sm text-blue-800 dark:text-blue-200">
+            <span className="font-semibold">*</span> indicates required fields
+          </p>
+        </div>
+
         <div className="space-y-2">
-          <Label htmlFor="exercise-name">Exercise Name</Label>
+          <Label htmlFor="exercise-name">Exercise Name *</Label>
           <Autocomplete
             id="exercise-name"
             value={formData.exercise_name}
@@ -296,7 +333,7 @@ export function ExerciseModal({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor={`set-${index}-reps`}>Reps</Label>
+                  <Label htmlFor={`set-${index}-reps`}>Reps *</Label>
                   <Input
                     id={`set-${index}-reps`}
                     type="number"
@@ -307,36 +344,38 @@ export function ExerciseModal({
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor={`set-${index}-weight`}>Weight ({weightUnit})</Label>
+                  <Label htmlFor={`set-${index}-weight`}>Weight ({weightUnit}) *</Label>
                   <Input
                     id={`set-${index}-weight`}
                     type="number"
-                    min="0"
+                    min="1"
                     step="0.5"
                     value={set.weight}
                     onChange={(e) =>
-                      handleSetChange(index, 'weight', parseFloat(e.target.value) || 0)
+                      handleSetChange(index, 'weight', parseFloat(e.target.value) || 1)
                     }
+                    required
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor={`set-${index}-duration`}>Duration (seconds)</Label>
+                  <Label htmlFor={`set-${index}-duration`}>Duration (seconds) *</Label>
                   <Input
                     id={`set-${index}-duration`}
                     type="number"
-                    min="0"
+                    min="1"
                     value={set.duration}
                     onChange={(e) =>
-                      handleSetChange(index, 'duration', parseInt(e.target.value) || 0)
+                      handleSetChange(index, 'duration', parseInt(e.target.value) || 1)
                     }
+                    required
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor={`set-${index}-time-under-tension`}>
-                    Time Under Tension (seconds)
+                    Time Under Tension (seconds) *
                   </Label>
                   <Input
                     id={`set-${index}-time-under-tension`}
@@ -346,13 +385,14 @@ export function ExerciseModal({
                     onChange={(e) =>
                       handleSetChange(index, 'time_under_tension', parseInt(e.target.value) || 0)
                     }
+                    required
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor={`set-${index}-rest-time`}>Rest Time (seconds)</Label>
+                  <Label htmlFor={`set-${index}-rest-time`}>Rest Time (seconds) *</Label>
                   <Input
                     id={`set-${index}-rest-time`}
                     type="number"
@@ -361,6 +401,7 @@ export function ExerciseModal({
                     onChange={(e) =>
                       handleSetChange(index, 'rest_time', parseInt(e.target.value) || 0)
                     }
+                    required
                   />
                 </div>
                 <div className="space-y-2">

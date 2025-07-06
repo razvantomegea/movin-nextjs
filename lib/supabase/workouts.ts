@@ -150,6 +150,19 @@ export async function createExercise(exerciseData: CreateExerciseData): Promise<
   const nextOrderIndex =
     maxOrderData && maxOrderData.length > 0 ? maxOrderData[0].order_index + 1 : 0;
 
+  // Calculate aggregate values from exercise sets
+  const setsCount = exerciseData.exercise_sets?.length || 1;
+  const totalReps = exerciseData.exercise_sets?.reduce((sum, set) => sum + set.reps, 0) || 1;
+  const maxWeight =
+    exerciseData.exercise_sets?.reduce((max, set) => Math.max(max, set.weight || 0), 0) || 0;
+  const totalDuration =
+    exerciseData.exercise_sets?.reduce((sum, set) => sum + (set.duration || 0), 0) || 0;
+  const totalTimeUnderTension =
+    exerciseData.exercise_sets?.reduce((sum, set) => sum + (set.time_under_tension || 0), 0) || 0;
+  const totalRestTime =
+    exerciseData.exercise_sets?.reduce((sum, set) => sum + (set.rest_time || 0), 0) || 0;
+  const avgRestTime = setsCount > 0 ? totalRestTime / setsCount : 0;
+
   // Create the exercise first
   const { data: exercise, error: exerciseError } = await supabase
     .from('workout_exercises')
@@ -159,13 +172,12 @@ export async function createExercise(exerciseData: CreateExerciseData): Promise<
       exercise_name: exerciseData.exercise_name,
       notes: exerciseData.notes,
       order_index: exerciseData.order_index ?? nextOrderIndex,
-      // These will be calculated automatically by triggers
-      sets: 0,
-      reps: 0,
-      weight: 0,
-      time_under_tension: 0,
-      exercise_duration: 0,
-      rest_time: 0,
+      sets: setsCount,
+      reps: totalReps,
+      weight: maxWeight,
+      time_under_tension: totalTimeUnderTension,
+      exercise_duration: totalDuration,
+      rest_time: avgRestTime,
     })
     .select()
     .single();

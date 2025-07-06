@@ -145,7 +145,9 @@ export function ExerciseCard({
               )}
               {exercise.rest_time > 0 && (
                 <div className="text-center">
-                  <div className="text-sm font-medium text-gray-600 dark:text-gray-400">Rest</div>
+                  <div className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                    Avg. Rest Time
+                  </div>
                   <div className="text-lg font-semibold">{formatTime(exercise.rest_time)}</div>
                 </div>
               )}

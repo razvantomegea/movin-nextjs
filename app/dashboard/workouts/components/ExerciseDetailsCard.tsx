@@ -38,7 +38,9 @@ export const ExerciseDetailsCard: React.FC<ExerciseDetailsCardProps> = ({
           </div>
         </div>
         <div>
-          <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Rest Time</label>
+          <label className="text-sm font-medium text-gray-600 dark:text-gray-400">
+            Average Rest Time
+          </label>
           <div className="text-lg font-semibold">{formatDuration(currentExercise.rest_time)}</div>
         </div>
       </div>
