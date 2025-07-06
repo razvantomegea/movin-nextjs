@@ -289,8 +289,8 @@ export async function updateExercise(
       .select('*')
       .eq('exercise_id', exerciseId);
     if (fetchError) throw fetchError;
-    const existingSetsByNumber = new Map<number, any>();
-    (existingSets || []).forEach((set: any) => {
+    const existingSetsByNumber = new Map<number, ExerciseSet>();
+    (existingSets || []).forEach((set: ExerciseSet) => {
       existingSetsByNumber.set(set.set_number, set);
     });
 
@@ -305,7 +305,7 @@ export async function updateExercise(
       const existing = existingSetsByNumber.get(set_number);
       if (existing) {
         // Update, preserve completion unless explicitly provided
-        const updateData: any = {
+        const updateData: Partial<ExerciseSet> = {
           reps: incoming.reps,
           weight: incoming.weight,
           duration: incoming.duration,

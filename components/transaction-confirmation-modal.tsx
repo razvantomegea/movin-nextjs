@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { X, CheckCircle, XCircle, AlertCircle, HelpCircle, Wallet, Clock } from 'lucide-react';
+import { CheckCircle, XCircle, AlertCircle, HelpCircle, Wallet, Clock } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { BaseModal } from '@/components/ui/base-modal';
 import { Button } from '@/components/ui/button';
