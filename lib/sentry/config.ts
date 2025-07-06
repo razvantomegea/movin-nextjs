@@ -1,5 +1,20 @@
 import * as Sentry from '@sentry/nextjs';
 
+// Add this utility at the top of lib/sentry/config.ts
+function isLocalhost() {
+  if (typeof window !== 'undefined') {
+    // Client-side
+    return window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  }
+  // Server-side
+  return (
+    process.env.HOST?.includes('localhost') ||
+    process.env.HOST?.includes('127.0.0.1') ||
+    process.env.VERCEL_URL?.includes('localhost') ||
+    process.env.NODE_ENV === 'development'
+  );
+}
+
 // Centralized Sentry configuration
 export const SENTRY_CONFIG = {
   dsn:
@@ -24,10 +39,15 @@ export const SENTRY_CONFIG = {
 
     // Browser-specific integrations
     beforeSend: (event: Sentry.Event) => {
+      if (isLocalhost()) {
+        return null;
+      }
+
       // Filter out non-error events in production
       if (process.env.NODE_ENV === 'production' && event.level !== 'error') {
         return null;
       }
+
       return event;
     },
   },
@@ -37,9 +57,11 @@ export const SENTRY_CONFIG = {
     // Server-specific settings
     beforeSend: (event: Sentry.Event) => {
       // Log server errors for debugging
-      if (process.env.NODE_ENV === 'development') {
+      if (process.env.NODE_ENV === 'development' || isLocalhost()) {
         console.error('Sentry Server Error:', event);
+        return null;
       }
+
       return event;
     },
   },
@@ -48,6 +70,10 @@ export const SENTRY_CONFIG = {
   edge: {
     // Edge runtime specific settings
     beforeSend: (event: Sentry.Event) => {
+      if (isLocalhost()) {
+        return null;
+      }
+
       // Edge runtime error handling
       return event;
     },
