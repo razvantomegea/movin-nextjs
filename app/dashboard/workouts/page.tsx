@@ -18,7 +18,6 @@ import {
 import { formatDuration } from '@/utils';
 import { CreateWorkoutModal } from './components/create-workout-modal';
 import { WorkoutCard } from './components/workout-card';
-import { ExerciseCard } from './components/exercise-card';
 
 export default function WorkoutsPage() {
   const router = useRouter();

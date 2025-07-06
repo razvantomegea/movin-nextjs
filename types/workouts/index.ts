@@ -94,6 +94,7 @@ export interface UpdateExerciseData {
   notes?: string;
   order_index?: number;
   exercise_sets?: CreateExerciseSetData[];
+  completed_sets?: number;
 }
 
 export interface WorkoutWithExercises extends Workout {

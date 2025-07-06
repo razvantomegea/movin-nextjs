@@ -271,21 +271,66 @@ export async function updateExercise(
 
   // Update exercise sets if provided
   if (exerciseData.exercise_sets) {
-    // Delete existing sets
-    await supabase.from('exercise_sets').delete().eq('exercise_id', exerciseId);
+    // Fetch existing sets
+    const { data: existingSets, error: fetchError } = await supabase
+      .from('exercise_sets')
+      .select('*')
+      .eq('exercise_id', exerciseId);
+    if (fetchError) throw fetchError;
+    const existingSetsByNumber = new Map<number, any>();
+    (existingSets || []).forEach((set: any) => {
+      existingSetsByNumber.set(set.set_number, set);
+    });
 
-    // Create new sets
-    if (exerciseData.exercise_sets.length > 0) {
-      const setsData = exerciseData.exercise_sets.map((set, index) => ({
-        ...set,
-        exercise_id: exerciseId,
-        set_number: index + 1,
-      }));
+    // Track set_numbers in update
+    const incomingSetNumbers = new Set<number>();
 
-      const { error: setsError } = await supabase.from('exercise_sets').insert(setsData);
+    // Update or insert sets
+    for (let i = 0; i < exerciseData.exercise_sets.length; i++) {
+      const incoming = exerciseData.exercise_sets[i];
+      const set_number = i + 1;
+      incomingSetNumbers.add(set_number);
+      const existing = existingSetsByNumber.get(set_number);
+      if (existing) {
+        // Update, preserve completion unless explicitly provided
+        const updateData: any = {
+          reps: incoming.reps,
+          weight: incoming.weight,
+          duration: incoming.duration,
+          time_under_tension: incoming.time_under_tension,
+          rest_time: incoming.rest_time,
+          notes: incoming.notes,
+        };
+        if (typeof incoming.completed !== 'undefined') {
+          updateData.completed = incoming.completed;
+        } else {
+          updateData.completed = existing.completed;
+        }
+        const { error: updateError } = await supabase
+          .from('exercise_sets')
+          .update(updateData)
+          .eq('id', existing.id);
+        if (updateError) throw updateError;
+      } else {
+        // Insert new set
+        const insertData = {
+          ...incoming,
+          exercise_id: exerciseId,
+          set_number,
+        };
+        const { error: insertError } = await supabase.from('exercise_sets').insert(insertData);
+        if (insertError) throw insertError;
+      }
+    }
 
-      if (setsError) {
-        throw setsError;
+    // Delete sets not present in update
+    for (const set of existingSets || []) {
+      if (!incomingSetNumbers.has(set.set_number)) {
+        const { error: deleteError } = await supabase
+          .from('exercise_sets')
+          .delete()
+          .eq('id', set.id);
+        if (deleteError) throw deleteError;
       }
     }
   }
