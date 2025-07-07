@@ -3,7 +3,7 @@ import { motion, Variants } from 'framer-motion';
 import { Target, Weight, BarChart3, Activity } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import type { WorkoutExercise } from '@/types/workouts';
+import type { WorkoutExercise, ExerciseSet } from '@/types/workouts';
 
 interface ExerciseStatsCardsProps {
   exerciseStats: {
@@ -28,49 +28,62 @@ export const ExerciseStatsCards: React.FC<ExerciseStatsCardsProps> = ({
   weightUnit,
   containerVariants,
   itemVariants,
-}) => (
-  <motion.div
-    className="grid grid-cols-1 md:grid-cols-4 gap-4"
-    variants={containerVariants}
-    initial="hidden"
-    animate="show"
-  >
-    <motion.div variants={itemVariants}>
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400 flex items-center">
-            <Target className="h-4 w-4 mr-2" />
-            Current Progress
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{exerciseStats?.completionPercentage}%</div>
-          <div className="text-xs text-gray-500 mb-2">
-            {currentExercise.completed_sets}/{currentExercise.sets} sets
-          </div>
-          <Progress value={exerciseStats?.completionPercentage} className="h-2" />
-        </CardContent>
-      </Card>
-    </motion.div>
-    <motion.div variants={itemVariants}>
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400 flex items-center">
-            <Weight className="h-4 w-4 mr-2" />
-            Current Weight
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{currentExercise.weight}</div>
-          <div className="text-xs text-gray-500">{weightUnit}</div>
-          {exerciseStats?.currentProgress && (
-            <div className="text-xs text-green-600 mt-1">
-              Best: {exerciseStats.currentProgress.bestWeight} {weightUnit}
+}) => {
+  // Calculate current max weight from all sets in the current exercise
+  const getCurrentMaxWeight = () => {
+    if (currentExercise.exercise_sets && currentExercise.exercise_sets.length > 0) {
+      // Find the maximum weight from all individual sets
+      return Math.max(...currentExercise.exercise_sets.map((set: ExerciseSet) => set.weight));
+    }
+    // Fall back to the single weight value if no individual sets
+    return currentExercise.weight;
+  };
+
+  const currentMaxWeight = getCurrentMaxWeight();
+
+  return (
+    <motion.div
+      className="grid grid-cols-1 md:grid-cols-4 gap-4"
+      variants={containerVariants}
+      initial="hidden"
+      animate="show"
+    >
+      <motion.div variants={itemVariants}>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400 flex items-center">
+              <Target className="h-4 w-4 mr-2" />
+              Current Progress
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{exerciseStats?.completionPercentage}%</div>
+            <div className="text-xs text-gray-500 mb-2">
+              {currentExercise.completed_sets}/{currentExercise.sets} sets
             </div>
-          )}
-        </CardContent>
-      </Card>
-    </motion.div>
+            <Progress value={exerciseStats?.completionPercentage} className="h-2" />
+          </CardContent>
+        </Card>
+      </motion.div>
+      <motion.div variants={itemVariants}>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400 flex items-center">
+              <Weight className="h-4 w-4 mr-2" />
+              Current Weight
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{currentMaxWeight}</div>
+            <div className="text-xs text-gray-500">{weightUnit}</div>
+            {exerciseStats?.currentProgress && (
+              <div className="text-xs text-green-600 mt-1">
+                Best: {exerciseStats.currentProgress.bestWeight} {weightUnit}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </motion.div>
     <motion.div variants={itemVariants}>
       <Card>
         <CardHeader className="pb-2">
@@ -114,4 +127,5 @@ export const ExerciseStatsCards: React.FC<ExerciseStatsCardsProps> = ({
       </Card>
     </motion.div>
   </motion.div>
-);
+  );
+};
