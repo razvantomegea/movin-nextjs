@@ -142,154 +142,158 @@ export function ConnectionsTab({ connections, userAddress, isLoading }: Connecti
   }
 
   return (
-    <div className="space-y-6">
-      {/* Pending Connection Requests */}
-      {pendingConnections.received.length > 0 && (
+    <>
+      <div className="space-y-6">
+        {/* Pending Connection Requests */}
+        {pendingConnections.received.length > 0 && (
+          <div>
+            <h3 className="text-lg font-semibold mb-4">Connection Requests</h3>
+            <div className="space-y-3">
+              {pendingConnections.received.map((connection) => {
+                const profile = connection.requester_profile;
+                return (
+                  <Card key={connection.id}>
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-3">
+                        <Avatar>
+                          <AvatarImage src={profile?.avatar_url || '/placeholder.svg'} />
+                          <AvatarFallback>
+                            {profile?.username?.charAt(0).toUpperCase() || 'U'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium truncate max-w-[160px]">
+                            {profile?.username || 'Unknown User'}
+                          </div>
+                          <div className="text-sm text-muted-foreground truncate max-w-[180px]">
+                            Wants to connect with you
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button size="sm" onClick={() => handleAcceptConnection(connection.id)}>
+                            Accept
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleDeclineConnection(connection.id)}
+                          >
+                            Decline
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Current Connections */}
         <div>
-          <h3 className="text-lg font-semibold mb-4">Connection Requests</h3>
-          <div className="space-y-3">
-            {pendingConnections.received.map((connection) => {
-              const profile = connection.requester_profile;
-              return (
-                <Card key={connection.id}>
+          <h3 className="text-lg font-semibold mb-4">Your Connections ({connections.length})</h3>
+
+          {connections.length === 0 ? (
+            <Card>
+              <CardContent className="p-8 text-center">
+                <UserCheck className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                <p className="text-muted-foreground">
+                  No connections yet. Search for people to connect with!
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-3">
+              {connections.map((connection) => (
+                <Card key={connection.address}>
                   <CardContent className="p-4">
                     <div className="flex items-center gap-3">
                       <Avatar>
-                        <AvatarImage src={profile?.avatar_url || '/placeholder.svg'} />
+                        <AvatarImage src={connection.avatar_url || '/placeholder.svg'} />
                         <AvatarFallback>
-                          {profile?.username?.charAt(0).toUpperCase() || 'U'}
+                          {connection.username.charAt(0).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
                         <div className="font-medium truncate max-w-[160px]">
-                          {profile?.username || 'Unknown User'}
+                          {connection.username}
                         </div>
-                        <div className="text-sm text-muted-foreground truncate max-w-[180px]">
-                          Wants to connect with you
-                        </div>
+                        {connection.address && (
+                          <div className="text-sm text-muted-foreground truncate max-w-[180px]">
+                            {connection.address.slice(0, 6)}...{connection.address.slice(-4)}
+                          </div>
+                        )}
+                        {!connection.address && (
+                          <div className="text-sm text-muted-foreground">Connected</div>
+                        )}
                       </div>
                       <div className="flex gap-2">
-                        <Button size="sm" onClick={() => handleAcceptConnection(connection.id)}>
-                          Accept
+                        <Button size="sm" variant="outline" disabled>
+                          <MessageCircle className="h-4 w-4 mr-1" />
+                          Message
                         </Button>
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => handleDeclineConnection(connection.id)}
+                          onClick={() =>
+                            connection.connection_id &&
+                            openRemoveDialog(connection.connection_id, 'Remove Connection')
+                          }
                         >
-                          Decline
+                          <UserMinus className="h-4 w-4 mr-1" />
+                          Remove
                         </Button>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
-              );
-            })}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
-      )}
 
-      {/* Current Connections */}
-      <div>
-        <h3 className="text-lg font-semibold mb-4">Your Connections ({connections.length})</h3>
-
-        {connections.length === 0 ? (
-          <Card>
-            <CardContent className="p-8 text-center">
-              <UserCheck className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-              <p className="text-muted-foreground">
-                No connections yet. Search for people to connect with!
-              </p>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="space-y-3">
-            {connections.map((connection) => (
-              <Card key={connection.address}>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-3">
-                    <Avatar>
-                      <AvatarImage src={connection.avatar_url || '/placeholder.svg'} />
-                      <AvatarFallback>{connection.username.charAt(0).toUpperCase()}</AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium truncate max-w-[160px]">
-                        {connection.username}
-                      </div>
-                      {connection.address && (
-                        <div className="text-sm text-muted-foreground truncate max-w-[180px]">
-                          {connection.address.slice(0, 6)}...{connection.address.slice(-4)}
+        {/* Sent Requests */}
+        {pendingConnections.sent.length > 0 && (
+          <div>
+            <h3 className="text-lg font-semibold mb-4">Pending Requests</h3>
+            <div className="space-y-3">
+              {pendingConnections.sent.map((connection) => {
+                const profile = connection.addressee_profile;
+                return (
+                  <Card key={connection.id}>
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-3">
+                        <Avatar>
+                          <AvatarImage src={profile?.avatar_url || '/placeholder.svg'} />
+                          <AvatarFallback>
+                            {profile?.username?.charAt(0).toUpperCase() || 'U'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium truncate max-w-[160px]">
+                            {profile?.username || 'Unknown User'}
+                          </div>
+                          <div className="text-sm text-muted-foreground truncate max-w-[180px]">
+                            Request pending
+                          </div>
                         </div>
-                      )}
-                      {!connection.address && (
-                        <div className="text-sm text-muted-foreground">Connected</div>
-                      )}
-                    </div>
-                    <div className="flex gap-2">
-                      <Button size="sm" variant="outline" disabled>
-                        <MessageCircle className="h-4 w-4 mr-1" />
-                        Message
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() =>
-                          connection.connection_id &&
-                          openRemoveDialog(connection.connection_id, 'Remove Connection')
-                        }
-                      >
-                        <UserMinus className="h-4 w-4 mr-1" />
-                        Remove
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => openRemoveDialog(connection.id, 'Cancel Request')}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
           </div>
         )}
       </div>
-
-      {/* Sent Requests */}
-      {pendingConnections.sent.length > 0 && (
-        <div>
-          <h3 className="text-lg font-semibold mb-4">Pending Requests</h3>
-          <div className="space-y-3">
-            {pendingConnections.sent.map((connection) => {
-              const profile = connection.addressee_profile;
-              return (
-                <Card key={connection.id}>
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-3">
-                      <Avatar>
-                        <AvatarImage src={profile?.avatar_url || '/placeholder.svg'} />
-                        <AvatarFallback>
-                          {profile?.username?.charAt(0).toUpperCase() || 'U'}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium truncate max-w-[160px]">
-                          {profile?.username || 'Unknown User'}
-                        </div>
-                        <div className="text-sm text-muted-foreground truncate max-w-[180px]">
-                          Request pending
-                        </div>
-                      </div>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => openRemoveDialog(connection.id, 'Cancel Request')}
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        </div>
-      )}
 
       {/* Confirmation Dialog for Remove/Cancel */}
       <Dialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
@@ -325,6 +329,6 @@ export function ConnectionsTab({ connections, userAddress, isLoading }: Connecti
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   );
 }

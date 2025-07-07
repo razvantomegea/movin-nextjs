@@ -57,14 +57,14 @@ export function BaseModal({
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          className="fixed inset-0 z-50 flex items-center justify-center h-screen"
+          className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
         >
           {/* Backdrop */}
           <motion.div
-            className="absolute inset-0 bg-black/80 backdrop-blur-sm h-screen"
+            className="absolute inset-0 bg-black/80 backdrop-blur-sm"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -74,13 +74,14 @@ export function BaseModal({
           {/* Modal Content */}
           <motion.div
             className={cn(
-              fullMobile && 'w-full h-full rounded-none',
+              fullMobile && 'w-full h-full sm:h-auto sm:rounded-xl',
+              !fullMobile && 'w-full h-auto',
               'relative flex flex-col',
-              'sm:h-auto',
               maxWidthClasses.xl,
-              'max-h-[100vh]',
-              'sm:rounded-xl',
+              'rounded-none sm:rounded-xl',
+              'overflow-hidden',
               isDark ? 'bg-gray-900' : 'bg-white',
+              'shadow-xl',
               className,
             )}
             initial={{ scale: 0.95, opacity: 0 }}
@@ -131,7 +132,7 @@ export function BaseModal({
             {footer && (
               <div
                 className={cn(
-                  'flex-shrink-0 border-t',
+                  'flex-shrink-0 border-t safe-bottom',
                   isDark ? 'border-gray-800' : 'border-gray-200',
                   footerClassName,
                 )}
@@ -139,6 +140,9 @@ export function BaseModal({
                 {footer}
               </div>
             )}
+
+            {/* Mobile-only bottom padding for safe area when no footer */}
+            {!footer && <div className="h-4 sm:hidden safe-bottom"></div>}
           </motion.div>
         </motion.div>
       )}

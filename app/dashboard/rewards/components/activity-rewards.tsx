@@ -356,65 +356,66 @@ export function ActivityRewards({ refreshing, onDataLoaded }: ActivityRewardsPro
   }
 
   return (
-    <div className="space-y-6">
-      <Card className="bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900 border-gray-300 dark:border-gray-700">
-        <CardContent className="p-6">
-          <h2 className="text-2xl font-bold text-center mb-6">Activity Rewards</h2>
+    <>
+      <div className="space-y-6">
+        <Card className="bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900 border-gray-300 dark:border-gray-700">
+          <CardContent className="p-6">
+            <h2 className="text-2xl font-bold text-center mb-6">Activity Rewards</h2>
 
-          <div className="flex flex-col items-center mb-8">
-            <div className="flex items-center mb-2">
-              <CircleDollarSign className="h-6 w-6 text-blue-600 dark:text-blue-400 mr-2" />
-              <span className="text-4xl font-bold text-blue-600 dark:text-blue-400">
-                {totalRewards.toFixed(2)}
-              </span>
-              <span className="text-xl ml-2 text-gray-500 dark:text-gray-400">MVN</span>
+            <div className="flex flex-col items-center mb-8">
+              <div className="flex items-center mb-2">
+                <CircleDollarSign className="h-6 w-6 text-blue-600 dark:text-blue-400 mr-2" />
+                <span className="text-4xl font-bold text-blue-600 dark:text-blue-400">
+                  {totalRewards.toFixed(2)}
+                </span>
+                <span className="text-xl ml-2 text-gray-500 dark:text-gray-400">MVN</span>
+              </div>
+              <span className="text-sm text-gray-500 dark:text-gray-400">Total earned today</span>
+              {totalRewards > 0 && expirationTimestamp && (
+                <RewardCountdownTimer
+                  expirationTimestamp={expirationTimestamp}
+                  hasRewards={totalRewards > 0}
+                />
+              )}
             </div>
-            <span className="text-sm text-gray-500 dark:text-gray-400">Total earned today</span>
-            {totalRewards > 0 && expirationTimestamp && (
-              <RewardCountdownTimer
-                expirationTimestamp={expirationTimestamp}
-                hasRewards={totalRewards > 0}
-              />
-            )}
-          </div>
 
-          <LoadingButton
-            className="w-full py-6 text-lg bg-blue-500 hover:bg-blue-600"
-            loading={isClaiming}
-            loadingText="Preparing Transaction..."
-            onClick={handleClaimActivityRewards}
-            disabled={totalRewards <= 0 || isClaiming}
-          >
-            Claim Rewards
-          </LoadingButton>
-        </CardContent>
-      </Card>
-
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-medium">Reward Breakdown</h2>
-        </div>
-
-        <Card className="bg-gray-100 dark:bg-gray-900 border-gray-300 dark:border-gray-800">
-          <CardContent className="p-4">
-            <div className="space-y-4">
-              {rewardBreakdown.map((reward, index) => (
-                <div key={index}>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm">{reward.type}</span>
-                    <span className="font-medium">{reward.amount.toFixed(2)} MVN</span>
-                  </div>
-                  <Progress value={reward.percentage} className="h-2" />
-                </div>
-              ))}
-            </div>
+            <LoadingButton
+              className="w-full py-6 text-lg bg-blue-500 hover:bg-blue-600"
+              loading={isClaiming}
+              loadingText="Preparing Transaction..."
+              onClick={handleClaimActivityRewards}
+              disabled={totalRewards <= 0 || isClaiming}
+            >
+              Claim Rewards
+            </LoadingButton>
           </CardContent>
         </Card>
+
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-medium">Reward Breakdown</h2>
+          </div>
+
+          <Card className="bg-gray-100 dark:bg-gray-900 border-gray-300 dark:border-gray-800">
+            <CardContent className="p-4">
+              <div className="space-y-4">
+                {rewardBreakdown.map((reward, index) => (
+                  <div key={index}>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm">{reward.type}</span>
+                      <span className="font-medium">{reward.amount.toFixed(2)} MVN</span>
+                    </div>
+                    <Progress value={reward.percentage} className="h-2" />
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Activity Rewards History */}
+        <ActivityRewardsHistory />
       </div>
-
-      {/* Activity Rewards History */}
-      <ActivityRewardsHistory />
-
       {/* Transaction Confirmation Modal */}
       <TransactionConfirmationModal
         isOpen={isConfirmModalOpen}
@@ -441,6 +442,6 @@ export function ActivityRewards({ refreshing, onDataLoaded }: ActivityRewardsPro
         onShare={handleShareActivityRewards}
         showShareButton={!!addressLower}
       />
-    </div>
+    </>
   );
 }

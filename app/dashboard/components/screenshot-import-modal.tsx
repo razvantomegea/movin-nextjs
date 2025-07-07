@@ -6,6 +6,7 @@ import { X, Upload, Image as ImageIcon, AlertTriangle, CheckCircle, Loader2 } fr
 import Image from 'next/image';
 import { useTheme } from 'next-themes';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { BaseModal } from '@/components/ui/base-modal';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
@@ -343,286 +344,227 @@ export function ScreenshotImportModal({
   const hasUnprocessedFiles = files.some((file) => !file.extractedData && !file.error);
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <motion.div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-        >
-          <motion.div
-            className="absolute inset-0 bg-black/80 backdrop-blur-sm"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={handleClose}
-          />
+    <BaseModal
+      isOpen={isOpen}
+      onClose={handleClose}
+      title="Import Workouts"
+      subtitle="Upload multiple screenshots of your fitness apps or smartwatch"
+      contentClassName="flex-1 p-6 overflow-y-auto min-h-0"
+      footer={
+        <div className="flex justify-between">
+          <Button variant="outline" onClick={handleClose}>
+            Cancel
+          </Button>
+          <div className="flex space-x-3">
+            {hasUnprocessedFiles && (
+              <Button
+                onClick={processAllScreenshots}
+                disabled={isProcessing || files.length === 0}
+                className="bg-green-500 hover:bg-green-600 disabled:opacity-50"
+              >
+                {isProcessing ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Analyzing...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    Analyze All ({files.length})
+                  </>
+                )}
+              </Button>
+            )}
+            {hasValidActivities && (
+              <Button
+                onClick={handleSaveAll}
+                disabled={isSaving}
+                className="bg-blue-500 hover:bg-blue-600 disabled:opacity-50"
+              >
+                {isSaving ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  `Save All Activities (${files.filter((f) => f.extractedData && !f.error).length})`
+                )}
+              </Button>
+            )}
+          </div>
+        </div>
+      }
+    >
+      {/* Instructions */}
+      <Alert className="mb-6">
+        <AlertTriangle className="h-4 w-4" />
+        <AlertDescription>
+          <strong>For best results, ensure your screenshots clearly show:</strong>
+          <ul className="list-disc list-inside mt-2 space-y-1 text-sm">
+            <li>Activity date (must be today)</li>
+            <li>Device time at the top of the screen</li>
+            <li>Completion time</li>
+            <li>Workout name</li>
+            <li>Calories burned (if available)</li>
+            <li>Steps count and distance (if available)</li>
+            <li>Heart rate data (if available)</li>
+          </ul>
+          <p className="mt-2 text-sm font-medium">
+            Only activities from today will be accepted. The workout must be completed before the
+            current device time.
+          </p>
+        </AlertDescription>
+      </Alert>
 
-          <motion.div
-            className={`relative w-full max-w-4xl max-h-[90vh] overflow-hidden rounded-xl shadow-xl ${
-              isDark ? 'bg-gray-900' : 'bg-white'
-            } flex flex-col`}
-            initial={{ scale: 0.95, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.95, opacity: 0 }}
-            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-          >
-            {/* Header */}
-            <div
-              className={`flex items-center justify-between p-6 border-b ${
-                isDark ? 'border-gray-800' : 'border-gray-200'
-              }`}
-            >
-              <div>
-                <h2 className="text-xl font-bold">Import Workouts from Screenshots</h2>
-                <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'} mt-1`}>
-                  Upload multiple screenshots of your fitness apps or smartwatch
-                </p>
-              </div>
-              <Button variant="ghost" size="icon" onClick={handleClose} className="rounded-full">
-                <X className="h-5 w-5" />
+      {/* Global Error Display */}
+      {globalError && (
+        <Alert variant="destructive" className="mb-6">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>{globalError}</AlertDescription>
+        </Alert>
+      )}
+
+      {/* File Upload Area */}
+      {files.length === 0 && (
+        <div
+          className={cn(
+            'border-2 border-dashed rounded-lg p-8 text-center transition-colors',
+            isDark
+              ? 'border-gray-700 hover:border-gray-600'
+              : 'border-gray-300 hover:border-gray-400',
+          )}
+          tabIndex={0}
+          onPaste={handlePaste}
+        >
+          <Upload className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+          <h3 className="text-lg font-medium mb-2">Upload Screenshots</h3>
+          <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'} mb-4`}>
+            Click to browse, select multiple files, or paste from clipboard (Ctrl+V / Cmd+V)
+          </p>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            onChange={handleFileInput}
+            className="hidden"
+          />
+          <Button className="bg-blue-500 hover:bg-blue-600" onClick={handleChooseFileClick}>
+            <ImageIcon className="h-4 w-4 mr-2" />
+            Choose Files
+          </Button>
+        </div>
+      )}
+
+      {/* Files List */}
+      {files.length > 0 && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-medium">Selected Images ({files.length})</h3>
+            <div className="flex space-x-2">
+              <Button variant="outline" size="sm" onClick={handleChooseFileClick}>
+                Add More
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleRemoveAllFiles}>
+                Remove All
               </Button>
             </div>
+          </div>
 
-            {/* Content */}
-            <div className="flex-1 p-6 overflow-y-auto min-h-0">
-              {/* Instructions */}
-              <Alert className="mb-6">
-                <AlertTriangle className="h-4 w-4" />
-                <AlertDescription>
-                  <strong>For best results, ensure your screenshots clearly show:</strong>
-                  <ul className="list-disc list-inside mt-2 space-y-1 text-sm">
-                    <li>Activity date (must be today)</li>
-                    <li>Device time at the top of the screen</li>
-                    <li>Completion time</li>
-                    <li>Workout name</li>
-                    <li>Calories burned (if available)</li>
-                    <li>Steps count and distance (if available)</li>
-                    <li>Heart rate data (if available)</li>
-                  </ul>
-                  <p className="mt-2 text-sm font-medium">
-                    Only activities from today will be accepted. The workout must be completed
-                    before the current device time.
-                  </p>
-                </AlertDescription>
-              </Alert>
-
-              {/* Global Error Display */}
-              {globalError && (
-                <Alert variant="destructive" className="mb-6">
-                  <AlertTriangle className="h-4 w-4" />
-                  <AlertDescription>{globalError}</AlertDescription>
-                </Alert>
-              )}
-
-              {/* File Upload Area */}
-              {files.length === 0 && (
-                <div
-                  className={cn(
-                    'border-2 border-dashed rounded-lg p-8 text-center transition-colors',
-                    isDark
-                      ? 'border-gray-700 hover:border-gray-600'
-                      : 'border-gray-300 hover:border-gray-400',
-                  )}
-                  tabIndex={0}
-                  onPaste={handlePaste}
-                >
-                  <Upload className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                  <h3 className="text-lg font-medium mb-2">Upload Screenshots</h3>
-                  <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'} mb-4`}>
-                    Click to browse, select multiple files, or paste from clipboard (Ctrl+V / Cmd+V)
-                  </p>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    onChange={handleFileInput}
-                    className="hidden"
-                  />
-                  <Button className="bg-blue-500 hover:bg-blue-600" onClick={handleChooseFileClick}>
-                    <ImageIcon className="h-4 w-4 mr-2" />
-                    Choose Files
-                  </Button>
-                </div>
-              )}
-
-              {/* Files List */}
-              {files.length > 0 && (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-medium">Selected Images ({files.length})</h3>
-                    <div className="flex space-x-2">
-                      <Button variant="outline" size="sm" onClick={handleChooseFileClick}>
-                        Add More
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={handleRemoveAllFiles}>
-                        Remove All
-                      </Button>
-                    </div>
+          {files.map((fileData, index) => (
+            <Card key={index} className={isDark ? 'bg-gray-800' : 'bg-gray-50'}>
+              <CardContent className="p-4">
+                <div className="flex items-start space-x-4">
+                  {/* Preview */}
+                  <div className="flex-shrink-0">
+                    <Image
+                      src={fileData.preview}
+                      alt={`Screenshot ${index + 1}`}
+                      width={120}
+                      height={120}
+                      className="rounded-lg object-cover"
+                      unoptimized
+                    />
                   </div>
 
-                  {files.map((fileData, index) => (
-                    <Card key={index} className={isDark ? 'bg-gray-800' : 'bg-gray-50'}>
-                      <CardContent className="p-4">
-                        <div className="flex items-start space-x-4">
-                          {/* Preview */}
-                          <div className="flex-shrink-0">
-                            <Image
-                              src={fileData.preview}
-                              alt={`Screenshot ${index + 1}`}
-                              width={120}
-                              height={120}
-                              className="rounded-lg object-cover"
-                              unoptimized
-                            />
-                          </div>
+                  {/* Content */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium truncate">{fileData.file.name}</span>
+                      <Button variant="ghost" size="sm" onClick={() => handleRemoveFile(index)}>
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
 
-                          {/* Content */}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="text-sm font-medium truncate">
-                                {fileData.file.name}
-                              </span>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleRemoveFile(index)}
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
-                            </div>
+                    {/* Processing State */}
+                    {fileData.isProcessing && (
+                      <div className="flex items-center space-x-2 text-sm text-blue-600">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span>Processing...</span>
+                      </div>
+                    )}
 
-                            {/* Processing State */}
-                            {fileData.isProcessing && (
-                              <div className="flex items-center space-x-2 text-sm text-blue-600">
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                                <span>Processing...</span>
-                              </div>
-                            )}
+                    {/* Error */}
+                    {fileData.error && (
+                      <Alert variant="destructive" className="mt-2">
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertDescription className="text-sm">{fileData.error}</AlertDescription>
+                      </Alert>
+                    )}
 
-                            {/* Error */}
-                            {fileData.error && (
-                              <Alert variant="destructive" className="mt-2">
-                                <AlertTriangle className="h-4 w-4" />
-                                <AlertDescription className="text-sm">
-                                  {fileData.error}
-                                </AlertDescription>
-                              </Alert>
-                            )}
-
-                            {/* Extracted Data */}
-                            {fileData.extractedData && !fileData.error && (
-                              <div className="mt-2 p-3 rounded-lg bg-green-50 dark:bg-green-900/20">
-                                <div className="flex items-center space-x-2 mb-2">
-                                  <CheckCircle className="h-4 w-4 text-green-600" />
-                                  <span className="text-sm font-medium text-green-800 dark:text-green-200">
-                                    Successfully Processed
-                                  </span>
-                                </div>
-                                <div className="flex flex-col sm:grid sm:grid-cols-2 gap-2 text-sm">
-                                  <div>
-                                    <span className="font-medium">Activity:</span>
-                                    <span className="ml-2">{fileData.extractedData.name}</span>
-                                  </div>
-                                  <div>
-                                    <span className="font-medium">Duration:</span>
-                                    <span className="ml-2">
-                                      {Math.floor(fileData.extractedData.duration / 60)}m{' '}
-                                      {fileData.extractedData.duration % 60}s
-                                    </span>
-                                  </div>
-                                  <div>
-                                    <span className="font-medium">Calories:</span>
-                                    <span className="ml-2">
-                                      {fileData.extractedData.calories} kcal
-                                    </span>
-                                  </div>
-                                  {fileData.extractedData.distance && (
-                                    <div>
-                                      <span className="font-medium">Distance:</span>
-                                      <span className="ml-2">
-                                        {(fileData.extractedData.distance / 1000).toFixed(2)} km
-                                      </span>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            )}
-                          </div>
+                    {/* Extracted Data */}
+                    {fileData.extractedData && !fileData.error && (
+                      <div className="mt-2 p-3 rounded-lg bg-green-50 dark:bg-green-900/20">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <CheckCircle className="h-4 w-4 text-green-600" />
+                          <span className="text-sm font-medium text-green-800 dark:text-green-200">
+                            Successfully Processed
+                          </span>
                         </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-
-                  {/* Hidden file input for adding more files */}
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    onChange={handleFileInput}
-                    className="hidden"
-                  />
+                        <div className="flex flex-col sm:grid sm:grid-cols-2 gap-2 text-sm">
+                          <div>
+                            <span className="font-medium">Activity:</span>
+                            <span className="ml-2">{fileData.extractedData.name}</span>
+                          </div>
+                          <div>
+                            <span className="font-medium">Duration:</span>
+                            <span className="ml-2">
+                              {Math.floor(fileData.extractedData.duration / 60)}m{' '}
+                              {fileData.extractedData.duration % 60}s
+                            </span>
+                          </div>
+                          <div>
+                            <span className="font-medium">Calories:</span>
+                            <span className="ml-2">{fileData.extractedData.calories} kcal</span>
+                          </div>
+                          {fileData.extractedData.distance && (
+                            <div>
+                              <span className="font-medium">Distance:</span>
+                              <span className="ml-2">
+                                {(fileData.extractedData.distance / 1000).toFixed(2)} km
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              )}
-            </div>
+              </CardContent>
+            </Card>
+          ))}
 
-            {/* Footer */}
-            <div
-              className={`flex-shrink-0 p-6 border-t ${
-                isDark ? 'border-gray-800' : 'border-gray-200'
-              }`}
-            >
-              <div className="flex justify-between">
-                <Button variant="outline" onClick={handleClose}>
-                  Cancel
-                </Button>
-                <div className="flex space-x-3">
-                  {hasUnprocessedFiles && (
-                    <Button
-                      onClick={processAllScreenshots}
-                      disabled={isProcessing || files.length === 0}
-                      className="bg-green-500 hover:bg-green-600 disabled:opacity-50"
-                    >
-                      {isProcessing ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Analyzing...
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle className="h-4 w-4 mr-2" />
-                          Analyze All ({files.length})
-                        </>
-                      )}
-                    </Button>
-                  )}
-                  {hasValidActivities && (
-                    <Button
-                      onClick={handleSaveAll}
-                      disabled={isSaving}
-                      className="bg-blue-500 hover:bg-blue-600 disabled:opacity-50"
-                    >
-                      {isSaving ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Saving...
-                        </>
-                      ) : (
-                        `Save All Activities (${
-                          files.filter((f) => f.extractedData && !f.error).length
-                        })`
-                      )}
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        </motion.div>
+          {/* Hidden file input for adding more files */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            onChange={handleFileInput}
+            className="hidden"
+          />
+        </div>
       )}
-    </AnimatePresence>
+    </BaseModal>
   );
 }

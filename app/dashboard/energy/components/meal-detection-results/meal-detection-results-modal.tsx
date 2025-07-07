@@ -624,7 +624,7 @@ export function MealDetectionResultsModal({
 
               {/* Footer */}
               <div
-                className={`flex-shrink-0 p-6 border-t ${
+                className={`flex-shrink-0 p-6 border-t safe-bottom ${
                   isDark ? 'border-gray-800' : 'border-gray-200'
                 }`}
               >
