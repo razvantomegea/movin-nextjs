@@ -146,7 +146,7 @@ export function ProfileHeader({
 
             {/* Stats section */}
             <div className="col-span-12">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
                 {/* Token Balance */}
                 <motion.div
                   className={`p-4 rounded-xl flex flex-col items-center justify-center shadow-sm ${
@@ -160,6 +160,23 @@ export function ProfileHeader({
                     Balance
                   </span>
                   <span className="text-xl font-bold">{balance}</span>
+                </motion.div>
+
+                {/* Total Earned */}
+                <motion.div
+                  className={`p-4 rounded-xl flex flex-col items-center justify-center shadow-sm ${
+                    isDark ? 'bg-emerald-900/20' : 'bg-emerald-50'
+                  }`}
+                  whileHover={{ scale: 1.02 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <span className="text-sm text-gray-500 dark:text-gray-300 mb-1 flex items-center">
+                    <Star className="h-3.5 w-3.5 mr-1" />
+                    Total Earned
+                  </span>
+                  <span className="text-xl font-bold">
+                    {(profile.total_earned || 0).toFixed(2)} MVN
+                  </span>
                 </motion.div>
 
                 {/* Weight */}

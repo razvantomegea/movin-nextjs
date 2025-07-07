@@ -19,7 +19,6 @@ export function PhotoValidationSection({
   isLastClaimLoading,
   secondsToWait,
   photoValidationReward,
-  canClaimPhotoReward,
 }: PhotoValidationSectionProps) {
   const { uploadedPhoto, photoValidation, isValidatingPhoto } = photoValidationState;
 
@@ -173,7 +172,7 @@ export function PhotoValidationSection({
 
               {photoValidation.isValid &&
                 photoValidation.confidence >= PHOTO_VALIDATION_CONFIDENCE_THRESHOLD &&
-                canClaimPhotoReward && (
+                canClaimReward && (
                   <div className="text-center p-2 bg-yellow-100 dark:bg-yellow-900/20 rounded border border-yellow-200 dark:border-yellow-800">
                     <span className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
                       🎉 You can now claim {photoValidationReward} MVN when saving this meal!

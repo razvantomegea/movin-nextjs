@@ -129,9 +129,9 @@ export function ShareAchievementModal({
       onClose={onClose}
       title="Share Your Achievement"
       className="sm:max-w-md"
-      contentClassName="space-y-4 py-4"
+      contentClassName="space-y-4 py-4 px-6"
       footer={
-        <>
+        <div className="flex justify-between px-6 py-4">
           <Button variant="outline" onClick={onClose} disabled={isSubmitting || isUploadingImage}>
             Cancel
           </Button>
@@ -141,7 +141,7 @@ export function ShareAchievementModal({
           >
             {isUploadingImage ? 'Uploading Image...' : isSubmitting ? 'Sharing...' : 'Share'}
           </Button>
-        </>
+        </div>
       }
     >
       <div>

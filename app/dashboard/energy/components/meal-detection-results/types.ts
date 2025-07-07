@@ -83,7 +83,6 @@ export interface PhotoValidationSectionProps {
   isLastClaimLoading: boolean;
   secondsToWait: number;
   photoValidationReward: string;
-  canClaimPhotoReward: boolean;
 }
 
 export interface IngredientsListProps {

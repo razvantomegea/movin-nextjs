@@ -18,9 +18,11 @@ import {
   fetchRecentMeals,
   updateMealInLibrary,
 } from '@/lib/redux/slices/mealsSlice';
+import { fetchProfile } from '@/lib/redux/slices/profileSlice';
 import { createPost } from '@/lib/redux/slices/socialFeedSlice';
 import { showSuccessToast, showErrorToast } from '@/lib/redux/slices/toastSlice';
 import { IMeal } from '@/lib/supabase/meals';
+import { updateProfileWithEarnings } from '@/lib/supabase/profile';
 import { formatCountdown } from '@/utils/date/date';
 import { Ingredient } from '@/utils/energy/mealHelpers';
 import { getTodayDateString } from '@/utils/movin/energyMappers';
@@ -103,15 +105,19 @@ export function MealDetectionResultsModal({
   );
 
   // Calculate reward eligibility
-  const canClaim = canClaimReward(lastClaimTimestamp, contractRewardAmount);
+  const baseCanClaim = canClaimReward(lastClaimTimestamp, contractRewardAmount);
   const secondsToWait = getSecondsToWait(lastClaimTimestamp);
 
-  // For text meals, keep photo validation reward logic
-  const canClaimPhotoReward = Boolean(
-    canClaim &&
-      photoValidationState.photoValidation?.isValid &&
-      (photoValidationState.photoValidation?.confidence ?? 0) >= 70 &&
-      Number(photoValidationState.photoValidationReward) > 0,
+  // Unified reward eligibility check for both camera and text meals
+  const canClaim = Boolean(
+    baseCanClaim &&
+      // Camera-based meal
+      (sourceType === 'camera' ||
+        // Text-based meal with valid photo validation
+        (sourceType === 'text' &&
+          photoValidationState.photoValidation?.isValid &&
+          (photoValidationState.photoValidation?.confidence ?? 0) >= 70 &&
+          Number(photoValidationState.photoValidationReward) > 0)),
   );
 
   // Check if editing should be disabled (camera-based meals)
@@ -315,6 +321,7 @@ export function MealDetectionResultsModal({
 
       setRewardState((prev) => ({ ...prev, lastMeal: mealState.detectedMeal }));
 
+      // Handle reward claiming for both camera and text meal sources
       if (canClaim) {
         setIsClaimingRewards(true);
         setIsLoading(true);
@@ -323,12 +330,35 @@ export function MealDetectionResultsModal({
         setIsClaimingRewards(false);
 
         if (claimSuccess) {
+          // Update profile with earnings to increase level and total_earned
+          try {
+            // Use appropriate reward amount based on source type
+            const mvnEarned =
+              sourceType === 'camera'
+                ? parseFloat(rewardState.rewardAmount)
+                : parseFloat(photoValidationState.photoValidationReward);
+
+            await updateProfileWithEarnings({
+              address: address.toLowerCase(),
+              mvnEarned,
+            });
+            // Refresh profile data to get updated level
+            await dispatch(fetchProfile(address.toLowerCase())).unwrap();
+          } catch (profileError) {
+            console.error('Failed to update profile with earnings:', profileError);
+            // Don't show error to user as the main reward claim succeeded
+          }
           setRewardState((prev) => ({ ...prev, showCelebration: true }));
         } else if (claimError) {
+          const errorDescription =
+            sourceType === 'camera'
+              ? 'Could not claim MVN reward for this meal.'
+              : 'Could not claim MVN reward for photo validation.';
+
           dispatch(
             showErrorToast({
               title: 'Reward Claim Failed',
-              description: claimError.message || 'Could not claim MVN reward for this meal.',
+              description: claimError.message || errorDescription,
             }),
           );
         }
@@ -523,11 +553,10 @@ export function MealDetectionResultsModal({
                       onRemovePhoto={handleRemovePhoto}
                       onShowCameraModal={handleShowCameraModal}
                       isDark={isDark}
-                      canClaimReward={sourceType === 'text' ? canClaimPhotoReward : canClaim}
+                      canClaimReward={canClaim}
                       isLastClaimLoading={isLastClaimLoading}
                       secondsToWait={secondsToWait}
                       photoValidationReward={photoValidationState.photoValidationReward}
-                      canClaimPhotoReward={canClaimPhotoReward}
                     />
 
                     {/* Meal Name and Score */}
@@ -572,7 +601,7 @@ export function MealDetectionResultsModal({
                         isDark={isDark}
                         isEditingDisabled={isEditingDisabled}
                         sourceType={sourceType}
-                        canClaimReward={sourceType === 'text' ? canClaimPhotoReward : canClaim}
+                        canClaimReward={canClaim}
                         rewardAmount={rewardState.rewardAmount}
                         isLastClaimLoading={isLastClaimLoading}
                         secondsToWait={secondsToWait}

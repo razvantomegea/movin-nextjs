@@ -18,9 +18,11 @@ import {
   fetchActivityRewards,
   recordActivityReward,
 } from '@/lib/redux/slices/activityRewardsSlice';
+import { fetchProfile } from '@/lib/redux/slices/profileSlice';
 import { createPost } from '@/lib/redux/slices/socialFeedSlice';
 import { showSuccessToast, showErrorToast } from '@/lib/redux/slices/toastSlice';
 import { RootState } from '@/lib/redux/store';
+import { updateProfileWithEarnings } from '@/lib/supabase/profile';
 import { mapActivitiesToDaily, mapError, type DailyActivity } from '@/utils';
 import {
   generateAchievementPostContent,
@@ -190,6 +192,15 @@ export function ActivityRewards({ refreshing, onDataLoaded }: ActivityRewardsPro
           rewards: rewardsToSave,
         }),
       ).unwrap();
+
+      // Update profile with earnings to increase level and total_earned
+      await updateProfileWithEarnings({
+        address: addressLower,
+        mvnEarned: rewardsToSave,
+      });
+
+      // Refresh profile data to get updated level
+      await dispatch(fetchProfile(addressLower)).unwrap();
     } catch (error) {
       console.error('Error recording activity reward:', error);
       dispatch(

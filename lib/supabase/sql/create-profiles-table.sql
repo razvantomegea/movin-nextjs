@@ -7,7 +7,8 @@ ADD COLUMN IF NOT EXISTS "weight_unit" VARCHAR
   DEFAULT 'kg'
   CHECK (lower("weight_unit") IN ('kg','lb')),
 ADD COLUMN IF NOT EXISTS "biological_sex" VARCHAR
-  CHECK (lower("biological_sex") IN ('male','female'));
+  CHECK (lower("biological_sex") IN ('male','female')),
+ADD COLUMN IF NOT EXISTS "total_earned" NUMERIC(10,2) DEFAULT 0.00 CHECK ("total_earned" >= 0);
 
 -- INSERT Policy
 create policy "Allow address-based insert"
