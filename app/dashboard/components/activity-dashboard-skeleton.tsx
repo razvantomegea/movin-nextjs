@@ -23,8 +23,8 @@ export function ActivityDashboardSkeleton() {
               </div>
               <Skeleton className="h-2 w-full mt-3" />
 
-              <div className="grid grid-cols-3 gap-4 mt-6">
-                {[1, 2, 3].map((i) => (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6">
+                {[1, 2, 3, 4].map((i) => (
                   <div key={i} className="flex flex-col items-center">
                     <Skeleton className="h-8 w-8 rounded-full mb-2" />
                     <Skeleton className="h-5 w-12" />
@@ -34,8 +34,8 @@ export function ActivityDashboardSkeleton() {
               </div>
             </div>
 
-            <div className="ml-6">
-              <Skeleton className="h-24 w-24 rounded-full" />
+            <div className="ml-4 flex-shrink-0 max-w-full">
+              <Skeleton className="w-20 h-20 sm:w-24 sm:h-24 rounded-full max-w-full" />
             </div>
           </div>
         </CardContent>

@@ -227,13 +227,6 @@ export default function WorkoutPage() {
             </p>
           </div>
         </div>
-
-        <div className="flex items-center space-x-2">
-          <Button onClick={() => setShowExerciseModal(true)} className="flex items-center gap-2">
-            <Plus className="h-4 w-4" />
-            Add Exercise
-          </Button>
-        </div>
       </div>
 
       {/* Workout Stats */}
@@ -295,10 +288,14 @@ export default function WorkoutPage() {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-semibold">Exercises</h2>
-          <span className="text-sm text-gray-500">
-            {exercises.length} exercise{exercises.length !== 1 ? 's' : ''}
-          </span>
+          <Button onClick={() => setShowExerciseModal(true)} className="flex items-center gap-2">
+            <Plus className="h-4 w-4" />
+            Add Exercise
+          </Button>
         </div>
+        <span className="text-sm text-gray-500">
+          {exercises.length} exercise{exercises.length !== 1 ? 's' : ''}
+        </span>
 
         {exercises.length === 0 ? (
           <Card className="text-center py-12">

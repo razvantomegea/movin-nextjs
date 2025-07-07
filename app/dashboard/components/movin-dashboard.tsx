@@ -886,7 +886,7 @@ export function MovinDashboard() {
                       </div>
                     </div>
 
-                    <div className="ml-6">
+                    <div className="ml-4 flex-shrink-0 max-w-full">
                       <CircularProgress
                         value={Math.round(getMetricData.percentage)}
                         size={100}

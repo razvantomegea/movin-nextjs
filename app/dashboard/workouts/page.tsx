@@ -97,10 +97,6 @@ export default function WorkoutsPage() {
             Track your fitness progress and manage your workouts
           </p>
         </div>
-        <Button onClick={() => setShowCreateModal(true)} className="flex items-center gap-2">
-          <Plus className="h-4 w-4" />
-          New Workout
-        </Button>
       </div>
 
       {/* Stats Cards */}
@@ -160,7 +156,13 @@ export default function WorkoutsPage() {
 
       {/* Workouts List */}
       <div className="space-y-4">
-        <h2 className="text-xl font-semibold">Recent Workouts</h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-semibold">Recent Workouts</h2>
+          <Button onClick={() => setShowCreateModal(true)} className="flex items-center gap-2">
+            <Plus className="h-4 w-4" />
+            New Workout
+          </Button>
+        </div>
 
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
