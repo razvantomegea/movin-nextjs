@@ -663,8 +663,18 @@ export async function getExerciseProgress(
       const date = exercise.workouts.created_at.split('T')[0];
       const sets = typeof exercise.sets === 'number' && exercise.sets > 0 ? exercise.sets : 0;
       const reps = typeof exercise.reps === 'number' && exercise.reps > 0 ? exercise.reps : 0;
-      const weight =
-        typeof exercise.weight === 'number' && exercise.weight > 0 ? exercise.weight : 0;
+      
+      // Calculate max weight from individual sets if available, otherwise use legacy weight field
+      let maxWeight = 0;
+      if (exercise.exercise_sets && exercise.exercise_sets.length > 0) {
+        // Find the maximum weight from all individual sets
+        maxWeight = exercise.exercise_sets.reduce((max: number, set: ExerciseSet) => {
+          return Math.max(max, set.weight || 0);
+        }, 0);
+      } else {
+        // Fall back to legacy weight field for backwards compatibility
+        maxWeight = typeof exercise.weight === 'number' && exercise.weight > 0 ? exercise.weight : 0;
+      }
       
       // Calculate volume from individual sets if available, otherwise use legacy calculation
       let volume = 0;
@@ -675,19 +685,19 @@ export async function getExerciseProgress(
         }, 0);
       } else {
         // Fall back to legacy calculation for backwards compatibility
-        volume = sets * reps * weight;
+        volume = sets * reps * maxWeight;
       }
 
       if (!acc[date]) {
         acc[date] = {
           date,
-          maxWeight: weight,
+          maxWeight: maxWeight,
           totalVolume: volume,
           totalSets: sets,
           totalReps: sets * reps,
         };
       } else {
-        acc[date].maxWeight = Math.max(acc[date].maxWeight, weight);
+        acc[date].maxWeight = Math.max(acc[date].maxWeight, maxWeight);
         acc[date].totalVolume += volume;
         acc[date].totalSets += sets;
         acc[date].totalReps += sets * reps;
