@@ -446,9 +446,9 @@ export function MealDetectionResultsModal({
   };
 
   let loadingMessage = 'Analyzing your meal...';
-  if (isClaimingRewards && claimError && sourceType === 'camera' && canClaim) {
+  if (isClaimingRewards && claimError && canClaim) {
     loadingMessage = 'Claiming reward failed. Please try again.';
-  } else if (isClaimingRewards && sourceType === 'camera' && canClaim) {
+  } else if (isClaimingRewards && canClaim) {
     loadingMessage = 'Claiming your meal reward...';
   }
 
