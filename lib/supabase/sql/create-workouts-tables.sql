@@ -91,9 +91,15 @@ BEGIN
     UPDATE public.workouts 
     SET 
         total_volume = (
-            SELECT COALESCE(SUM(sets * reps * weight), 0)
-            FROM public.workout_exercises 
-            WHERE workout_id = COALESCE(NEW.workout_id, OLD.workout_id)
+            SELECT COALESCE(SUM(
+                CASE 
+                    WHEN (SELECT COUNT(*) FROM public.exercise_sets WHERE exercise_id = we.id) > 0
+                    THEN (SELECT SUM(es.reps * es.weight) FROM public.exercise_sets es WHERE es.exercise_id = we.id)
+                    ELSE we.sets * we.reps * we.weight
+                END
+            ), 0)
+            FROM public.workout_exercises we
+            WHERE we.workout_id = COALESCE(NEW.workout_id, OLD.workout_id)
         ),
         total_duration = (
             SELECT COALESCE(SUM(exercise_duration), 0)

@@ -630,6 +630,7 @@ export async function getExerciseProgress(
     .select(
       `
       *,
+      exercise_sets (*),
       workouts!inner (
         address,
         created_at
@@ -657,14 +658,25 @@ export async function getExerciseProgress(
     }
   >;
 
-  const progressByDate = (data as unknown as ExerciseWithWorkout[]).reduce(
-    (acc: ProgressAccumulator, exercise: ExerciseWithWorkout) => {
+  const progressByDate = (data as unknown as (ExerciseWithWorkout & { exercise_sets?: ExerciseSet[] })[]).reduce(
+    (acc: ProgressAccumulator, exercise: ExerciseWithWorkout & { exercise_sets?: ExerciseSet[] }) => {
       const date = exercise.workouts.created_at.split('T')[0];
       const sets = typeof exercise.sets === 'number' && exercise.sets > 0 ? exercise.sets : 0;
       const reps = typeof exercise.reps === 'number' && exercise.reps > 0 ? exercise.reps : 0;
       const weight =
         typeof exercise.weight === 'number' && exercise.weight > 0 ? exercise.weight : 0;
-      const volume = sets * reps * weight;
+      
+      // Calculate volume from individual sets if available, otherwise use legacy calculation
+      let volume = 0;
+      if (exercise.exercise_sets && exercise.exercise_sets.length > 0) {
+        // Sum volume from each individual set (reps * weight per set)
+        volume = exercise.exercise_sets.reduce((sum: number, set: ExerciseSet) => {
+          return sum + (set.reps * set.weight);
+        }, 0);
+      } else {
+        // Fall back to legacy calculation for backwards compatibility
+        volume = sets * reps * weight;
+      }
 
       if (!acc[date]) {
         acc[date] = {
