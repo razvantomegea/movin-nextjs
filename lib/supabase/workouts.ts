@@ -419,6 +419,9 @@ export async function createExerciseSet(setData: CreateExerciseSetData): Promise
     throw error;
   }
 
+  // Recalculate exercise aggregates after creating a new set
+  await recalculateExerciseAggregates(supabase, data.exercise_id);
+
   return data;
 }
 
@@ -455,16 +458,35 @@ export async function updateExerciseSet(
     throw error;
   }
 
+  // Recalculate exercise aggregates after updating a set
+  await recalculateExerciseAggregates(supabase, data.exercise_id);
+
   return data;
 }
 
 export async function deleteExerciseSet(setId: string): Promise<void> {
   const supabase = getClient();
 
+  // Get the exercise_id before deleting the set
+  const { data: setData, error: fetchError } = await supabase
+    .from('exercise_sets')
+    .select('exercise_id')
+    .eq('id', setId)
+    .single();
+
+  if (fetchError) {
+    throw fetchError;
+  }
+
   const { error } = await supabase.from('exercise_sets').delete().eq('id', setId);
 
   if (error) {
     throw error;
+  }
+
+  // Recalculate exercise aggregates after deleting a set
+  if (setData) {
+    await recalculateExerciseAggregates(supabase, setData.exercise_id);
   }
 }
 
@@ -486,6 +508,51 @@ export async function updateSetCompletionStatus(
   }
 
   return data;
+}
+
+// Helper function to recalculate exercise aggregate values when sets are modified
+async function recalculateExerciseAggregates(supabase: any, exerciseId: string): Promise<void> {
+  // Fetch all current sets for this exercise
+  const { data: sets, error: setsError } = await supabase
+    .from('exercise_sets')
+    .select('*')
+    .eq('exercise_id', exerciseId);
+
+  if (setsError) {
+    throw setsError;
+  }
+
+  if (!sets || sets.length === 0) {
+    return;
+  }
+
+  // Calculate aggregate values
+  const setsCount = sets.length;
+  const totalReps = sets.reduce((sum: number, set: ExerciseSet) => sum + set.reps, 0);
+  const maxWeight = sets.reduce((max: number, set: ExerciseSet) => Math.max(max, set.weight || 0), 0);
+  const totalDuration = sets.reduce((sum: number, set: ExerciseSet) => sum + (set.duration || 0), 0);
+  const totalTimeUnderTension = sets.reduce((sum: number, set: ExerciseSet) => sum + (set.time_under_tension || 0), 0);
+  const totalRestTime = sets.reduce((sum: number, set: ExerciseSet) => sum + (set.rest_time || 0), 0);
+  const avgRestTime = setsCount > 0 ? totalRestTime / setsCount : 0;
+  const completedSets = sets.filter((set: ExerciseSet) => set.completed).length;
+
+  // Update the exercise with recalculated values
+  const { error: updateError } = await supabase
+    .from('workout_exercises')
+    .update({
+      sets: setsCount,
+      reps: totalReps,
+      weight: maxWeight,
+      time_under_tension: totalTimeUnderTension,
+      exercise_duration: totalDuration,
+      rest_time: avgRestTime,
+      completed_sets: completedSets,
+    })
+    .eq('id', exerciseId);
+
+  if (updateError) {
+    throw updateError;
+  }
 }
 
 // Analytics functions
