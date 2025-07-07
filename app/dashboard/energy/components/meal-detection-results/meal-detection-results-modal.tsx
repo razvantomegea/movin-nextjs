@@ -21,6 +21,7 @@ import {
 import { createPost } from '@/lib/redux/slices/socialFeedSlice';
 import { showSuccessToast, showErrorToast } from '@/lib/redux/slices/toastSlice';
 import { IMeal } from '@/lib/supabase/meals';
+import { formatCountdown } from '@/utils/date/date';
 import { Ingredient } from '@/utils/energy/mealHelpers';
 import { getTodayDateString } from '@/utils/movin/energyMappers';
 import { useIngredientEditing } from './hooks/useIngredientEditing';
@@ -90,22 +91,31 @@ export function MealDetectionResultsModal({
   // Track if we're currently claiming rewards (vs initial loading)
   const [isClaimingRewards, setIsClaimingRewards] = useState(false);
 
-  const { useClaimMealRewards, useLastMealClaim } = useMovinEarn();
+  const { useClaimMealRewards, useLastMealClaim, useGetMealRewards } = useMovinEarn();
   const { claimMealRewards, error: claimError } = useClaimMealRewards();
   const { lastClaimTimestamp, isLoading: isLastClaimLoading } = useLastMealClaim(address);
 
-  // Check if editing should be disabled (camera-based meals)
-  const isEditingDisabled = sourceType === 'camera';
+  // Get actual reward from contract if picture is present and mealScore exists
+  const mealScore = mealState.detectedMeal?.mealScore || 0;
+  const { rewardAmount: contractRewardAmount, isLoading: isRewardLoading } = useGetMealRewards(
+    mealScore,
+    address,
+  );
 
   // Calculate reward eligibility
-  const canClaim = canClaimReward(lastClaimTimestamp, rewardState.rewardAmount);
+  const canClaim = canClaimReward(lastClaimTimestamp, contractRewardAmount);
   const secondsToWait = getSecondsToWait(lastClaimTimestamp);
+
+  // For text meals, keep photo validation reward logic
   const canClaimPhotoReward = Boolean(
     canClaim &&
       photoValidationState.photoValidation?.isValid &&
-      photoValidationState.photoValidation?.confidence >= 70 &&
+      (photoValidationState.photoValidation?.confidence ?? 0) >= 70 &&
       Number(photoValidationState.photoValidationReward) > 0,
   );
+
+  // Check if editing should be disabled (camera-based meals)
+  const isEditingDisabled = sourceType === 'camera';
 
   // Initialize meal data when modal opens or props change
   useEffect(() => {
@@ -305,30 +315,7 @@ export function MealDetectionResultsModal({
 
       setRewardState((prev) => ({ ...prev, lastMeal: mealState.detectedMeal }));
 
-      if (sourceType === 'camera') {
-        if (canClaim) {
-          setIsClaimingRewards(true);
-          setIsLoading(true);
-          const claimSuccess = await claimMealRewards(
-            address,
-            mealState.detectedMeal.mealScore || 0,
-          );
-          setIsLoading(false);
-          setIsClaimingRewards(false);
-
-          if (claimSuccess) {
-            setRewardState((prev) => ({ ...prev, showCelebration: true }));
-          } else if (claimError) {
-            dispatch(
-              showErrorToast({
-                title: 'Reward Claim Failed',
-                description: claimError.message || 'Could not claim MVN reward for this meal.',
-              }),
-            );
-          }
-        }
-        return;
-      } else if (sourceType === 'text' && canClaimPhotoReward) {
+      if (canClaim) {
         setIsClaimingRewards(true);
         setIsLoading(true);
         const claimSuccess = await claimMealRewards(address, mealState.detectedMeal.mealScore || 0);
@@ -341,7 +328,7 @@ export function MealDetectionResultsModal({
           dispatch(
             showErrorToast({
               title: 'Reward Claim Failed',
-              description: claimError.message || 'Could not claim MVN reward for photo validation.',
+              description: claimError.message || 'Could not claim MVN reward for this meal.',
             }),
           );
         }
@@ -536,7 +523,7 @@ export function MealDetectionResultsModal({
                       onRemovePhoto={handleRemovePhoto}
                       onShowCameraModal={handleShowCameraModal}
                       isDark={isDark}
-                      canClaimReward={canClaim}
+                      canClaimReward={sourceType === 'text' ? canClaimPhotoReward : canClaim}
                       isLastClaimLoading={isLastClaimLoading}
                       secondsToWait={secondsToWait}
                       photoValidationReward={photoValidationState.photoValidationReward}
@@ -585,7 +572,7 @@ export function MealDetectionResultsModal({
                         isDark={isDark}
                         isEditingDisabled={isEditingDisabled}
                         sourceType={sourceType}
-                        canClaimReward={canClaim}
+                        canClaimReward={sourceType === 'text' ? canClaimPhotoReward : canClaim}
                         rewardAmount={rewardState.rewardAmount}
                         isLastClaimLoading={isLastClaimLoading}
                         secondsToWait={secondsToWait}
@@ -628,6 +615,22 @@ export function MealDetectionResultsModal({
                   isDark ? 'border-gray-800' : 'border-gray-200'
                 }`}
               >
+                {/* Reward Info */}
+                {sourceType === 'camera' && mealScore > 0 && (
+                  <div className="mb-4">
+                    {isRewardLoading ? (
+                      <span className="text-sm text-gray-500">Checking reward...</span>
+                    ) : Number(contractRewardAmount) > 0 && canClaim ? (
+                      <span className="text-sm text-green-600 font-semibold">
+                        You will earn {contractRewardAmount} MVN for this meal!
+                      </span>
+                    ) : (
+                      <span className="text-sm text-yellow-600 font-semibold">
+                        No rewards available now. Next claim in {formatCountdown(secondsToWait)}
+                      </span>
+                    )}
+                  </div>
+                )}
                 {/* Save Options */}
                 <div className="mb-4">
                   <div className="flex items-center space-x-3">

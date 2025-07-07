@@ -4,6 +4,7 @@ import {
   formatLockPeriod,
   getTodayDate,
   getCurrentDayHour,
+  formatCountdown,
 } from '../date';
 
 describe('date utils', () => {
@@ -69,6 +70,27 @@ describe('date utils', () => {
       const day = String(now.getDate()).padStart(2, '0');
       const hour = String(now.getHours()).padStart(2, '0');
       expect(getCurrentDayHour()).toBe(`${day} ${hour}`);
+    });
+  });
+
+  describe('formatCountdown', () => {
+    it('formats 0 seconds as 00:00:00', () => {
+      expect(formatCountdown(0)).toBe('00:00:00');
+    });
+    it('formats less than 1 minute', () => {
+      expect(formatCountdown(42)).toBe('00:00:42');
+    });
+    it('formats less than 1 hour', () => {
+      expect(formatCountdown(125)).toBe('00:02:05');
+    });
+    it('formats more than 1 hour', () => {
+      expect(formatCountdown(3661)).toBe('01:01:01');
+    });
+    it('formats large values', () => {
+      expect(formatCountdown(25 * 3600 + 5 * 60 + 7)).toBe('25:05:07');
+    });
+    it('handles negative values as 00:00:00', () => {
+      expect(formatCountdown(-10)).toBe('00:00:00');
     });
   });
 });

@@ -85,3 +85,20 @@ export function getCurrentDayHour(): string {
   const hour = String(now.getHours()).padStart(2, '0');
   return `${day} ${hour}`;
 }
+
+/**
+ * Format a countdown in hh:mm:ss from seconds
+ * @param seconds Number of seconds
+ * @returns Formatted string as hh:mm:ss
+ */
+export function formatCountdown(seconds: number): string {
+  if (seconds <= 0) return '00:00:00';
+  const h = Math.floor(seconds / 3600)
+    .toString()
+    .padStart(2, '0');
+  const m = Math.floor((seconds % 3600) / 60)
+    .toString()
+    .padStart(2, '0');
+  const s = (seconds % 60).toString().padStart(2, '0');
+  return `${h}:${m}:${s}`;
+}

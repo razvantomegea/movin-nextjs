@@ -979,6 +979,31 @@ export function useMovinEarn() {
     };
   };
 
+  /**
+   * Gets the meal rewards for a user and score
+   * @param userAddress The user's address (defaults to connected wallet)
+   * @param score The meal score
+   * @returns Hook result with meal reward amount
+   */
+  const useGetMealRewards = (score: number, userAddress?: string) => {
+    const addressToUse = userAddress || addressLower;
+    const result = useReadContract({
+      address: CONTRACT_ADDRESS,
+      abi: movinEarnAbi,
+      functionName: 'getMealRewards',
+      args: addressToUse && score !== undefined ? [addressToUse, score] : undefined,
+      query: {
+        enabled: !!addressToUse && score !== undefined && score > 0,
+      },
+    });
+    // Format the reward amount
+    const rewardAmount = result.data ? formatUnits(result.data as bigint, 18) : '0';
+    return {
+      ...result,
+      rewardAmount,
+    };
+  };
+
   return {
     // Utility functions
     getContractAddress,
@@ -995,6 +1020,7 @@ export function useMovinEarn() {
     useLastMealClaim,
     useUserStakes,
     usePremiumStatus,
+    useGetMealRewards,
 
     // Write hooks
     useRegisterReferral,
