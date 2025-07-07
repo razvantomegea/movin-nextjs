@@ -265,22 +265,6 @@ export async function updateExercise(
 ): Promise<WorkoutExercise> {
   const supabase = getClient();
 
-  // Update the exercise
-  const { data: exercise, error: exerciseError } = await supabase
-    .from('workout_exercises')
-    .update({
-      exercise_name: exerciseData.exercise_name,
-      notes: exerciseData.notes,
-      order_index: exerciseData.order_index,
-    })
-    .eq('id', exerciseId)
-    .select()
-    .single();
-
-  if (exerciseError) {
-    throw exerciseError;
-  }
-
   // Update exercise sets if provided
   if (exerciseData.exercise_sets) {
     // Fetch existing sets
@@ -345,9 +329,60 @@ export async function updateExercise(
         if (deleteError) throw deleteError;
       }
     }
-  }
 
-  return exercise;
+    // Calculate aggregate values from updated exercise sets
+    const setsCount = exerciseData.exercise_sets.length;
+    const totalReps = exerciseData.exercise_sets.reduce((sum, set) => sum + set.reps, 0);
+    const maxWeight = exerciseData.exercise_sets.reduce((max, set) => Math.max(max, set.weight || 0), 0);
+    const totalDuration = exerciseData.exercise_sets.reduce((sum, set) => sum + (set.duration || 0), 0);
+    const totalTimeUnderTension = exerciseData.exercise_sets.reduce((sum, set) => sum + (set.time_under_tension || 0), 0);
+    const totalRestTime = exerciseData.exercise_sets.reduce((sum, set) => sum + (set.rest_time || 0), 0);
+    const avgRestTime = setsCount > 0 ? totalRestTime / setsCount : 0;
+
+    // Update the exercise with recalculated aggregate values
+    const { data: exercise, error: exerciseError } = await supabase
+      .from('workout_exercises')
+      .update({
+        exercise_name: exerciseData.exercise_name,
+        notes: exerciseData.notes,
+        order_index: exerciseData.order_index,
+        sets: setsCount,
+        reps: totalReps,
+        weight: maxWeight,
+        time_under_tension: totalTimeUnderTension,
+        exercise_duration: totalDuration,
+        rest_time: avgRestTime,
+        completed_sets: exerciseData.completed_sets,
+      })
+      .eq('id', exerciseId)
+      .select()
+      .single();
+
+    if (exerciseError) {
+      throw exerciseError;
+    }
+
+    return exercise;
+  } else {
+    // Update the exercise without touching sets
+    const { data: exercise, error: exerciseError } = await supabase
+      .from('workout_exercises')
+      .update({
+        exercise_name: exerciseData.exercise_name,
+        notes: exerciseData.notes,
+        order_index: exerciseData.order_index,
+        completed_sets: exerciseData.completed_sets,
+      })
+      .eq('id', exerciseId)
+      .select()
+      .single();
+
+    if (exerciseError) {
+      throw exerciseError;
+    }
+
+    return exercise;
+  }
 }
 
 export async function deleteExercise(exerciseId: string): Promise<void> {
