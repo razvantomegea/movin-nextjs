@@ -108,7 +108,18 @@ export default function ExerciseDetailPage() {
   const exerciseStats = useMemo(() => {
     if (!currentExercise) return null;
 
-    const totalVolume = currentExercise.sets * currentExercise.reps * currentExercise.weight;
+    // Calculate total volume from individual sets if available, otherwise use legacy calculation
+    let totalVolume = 0;
+    if (currentExercise.exercise_sets && currentExercise.exercise_sets.length > 0) {
+      // Sum volume from each individual set (reps * weight per set)
+      totalVolume = currentExercise.exercise_sets.reduce((sum: number, set: any) => {
+        return sum + (set.reps * set.weight);
+      }, 0);
+    } else {
+      // Fall back to legacy calculation for backwards compatibility
+      totalVolume = currentExercise.sets * currentExercise.reps * currentExercise.weight;
+    }
+
     const completionPercentage =
       currentExercise.sets > 0
         ? Math.round((currentExercise.completed_sets / currentExercise.sets) * 100)

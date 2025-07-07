@@ -61,7 +61,18 @@ export function ExerciseCard({
     return remainingSeconds > 0 ? `${minutes}m ${remainingSeconds}s` : `${minutes}m`;
   };
 
-  const volume = exercise.sets * exercise.reps * exercise.weight;
+  // Calculate total volume from individual sets if available, otherwise use legacy calculation
+  let volume = 0;
+  if (exerciseSets && exerciseSets.length > 0) {
+    // Sum volume from each individual set (reps * weight per set)
+    volume = exerciseSets.reduce((sum: number, set: ExerciseSet) => {
+      return sum + (set.reps * set.weight);
+    }, 0);
+  } else {
+    // Fall back to legacy calculation for backwards compatibility
+    volume = exercise.sets * exercise.reps * exercise.weight;
+  }
+  
   const completedSets = exerciseSets.filter((set) => set.completed).length;
 
   const handleIndividualSetCompletion = async (setIndex: number) => {
