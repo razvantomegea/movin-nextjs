@@ -59,6 +59,45 @@ export async function updateProfileWithEarnings({
   return data[0];
 }
 
+export interface ILeaderboardUser {
+  address: string;
+  username: string;
+  avatar_url: string;
+  level: number;
+  streak_days: number;
+  total_earned?: number;
+  created_at: string;
+}
+
+/**
+ * Get leaderboard data - top users by level
+ */
+export async function getLeaderboard({
+  limit = 50,
+  client,
+}: {
+  limit?: number;
+  client?: SupabaseClient;
+} = {}): Promise<ILeaderboardUser[]> {
+  if (!client) {
+    client = getClient();
+  }
+
+  const { data, error } = await client
+    .from('profiles')
+    .select('address, username, avatar_url, level, streak_days, total_earned, created_at')
+    .order('level', { ascending: false })
+    .order('total_earned', { ascending: false })
+    .order('created_at', { ascending: true })
+    .limit(limit);
+
+  if (error) {
+    throw error;
+  }
+
+  return data || [];
+}
+
 export interface IProfile {
   id: string;
   username: string;

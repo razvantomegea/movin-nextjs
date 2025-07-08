@@ -19,6 +19,7 @@ import {
   Users,
   Medal,
   Dumbbell,
+  Trophy,
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -87,6 +88,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       name: 'Goals',
       path: '/dashboard/goals',
       icon: <Medal className="h-6 w-6 mr-4 text-blue-400" />,
+    },
+    {
+      name: 'Leaderboard',
+      path: '/dashboard/leaderboard',
+      icon: <Trophy className="h-6 w-6 mr-4 text-blue-400" />,
     },
     {
       name: 'Settings',
