@@ -350,7 +350,7 @@ export function ScreenshotImportModal({
       subtitle="Upload multiple screenshots of your fitness apps or smartwatch"
       contentClassName="flex-1 p-6 overflow-y-auto min-h-0"
       footer={
-        <div className="flex justify-between">
+        <div className="flex justify-between p-6">
           <Button variant="outline" onClick={handleClose}>
             Cancel
           </Button>
