@@ -16,7 +16,7 @@ import { fetchExerciseProgress, setCurrentExercise } from '@/lib/redux/slices/ex
 import { showErrorToast } from '@/lib/redux/slices/toastSlice';
 import { fetchWorkoutWithExercises } from '@/lib/redux/slices/workoutsSlice';
 import type { RootState } from '@/lib/redux/store';
-import type { ExerciseProgress, WorkoutExercise } from '@/types/workouts';
+import type { ExerciseProgress, ExerciseSet, WorkoutExercise } from '@/types/workouts';
 import { formatDuration } from '@/utils';
 
 const container = {
@@ -112,7 +112,7 @@ export default function ExerciseDetailPage() {
     let totalVolume = 0;
     if (currentExercise.exercise_sets && currentExercise.exercise_sets.length > 0) {
       // Sum volume from each individual set (reps * weight per set)
-      totalVolume = currentExercise.exercise_sets.reduce((sum: number, set: any) => {
+      totalVolume = currentExercise.exercise_sets.reduce((sum: number, set: ExerciseSet) => {
         return sum + set.reps * set.weight;
       }, 0);
     } else {
