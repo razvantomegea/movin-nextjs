@@ -5,6 +5,7 @@ import { useAppKitAccount } from '@reown/appkit/react';
 import { motion } from 'framer-motion';
 import {
   AlertTriangle,
+  ArrowLeft,
   Database,
   Trash2,
   RefreshCw,
@@ -129,6 +130,12 @@ export default function DeleteDataPage() {
   if (isLoading) {
     return (
       <div className="p-4">
+        <div className="flex items-center mb-6">
+          <Button variant="ghost" onClick={() => router.back()}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back
+          </Button>
+        </div>
         <div className="flex items-center justify-center py-12">
           <RefreshCw className="h-8 w-8 animate-spin text-gray-400" />
         </div>
@@ -139,6 +146,12 @@ export default function DeleteDataPage() {
   if (!dataSummary?.exists) {
     return (
       <div className="p-4">
+        <div className="flex items-center mb-6">
+          <Button variant="ghost" onClick={() => router.back()}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back
+          </Button>
+        </div>
         <Card>
           <CardContent className="p-8 text-center">
             <Database className="h-12 w-12 mx-auto mb-4 text-gray-400" />
@@ -152,9 +165,14 @@ export default function DeleteDataPage() {
 
   return (
     <motion.div className="p-4" initial="hidden" animate="show" variants={container}>
-      <motion.div className="flex items-center mb-6" variants={item}>
+      <div className="flex items-center mb-6">
+        <Button variant="ghost" onClick={() => router.back()}>
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back
+        </Button>
+
         <h1 className="text-2xl font-bold ml-4">Delete All Data</h1>
-      </motion.div>
+      </div>
 
       <div className="max-w-2xl mx-auto space-y-6">
         {/* Warning Alert */}
