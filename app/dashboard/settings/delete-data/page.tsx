@@ -166,10 +166,6 @@ export default function DeleteDataPage() {
   return (
     <motion.div className="p-4" initial="hidden" animate="show" variants={container}>
       <motion.div className="flex items-center mb-6" variants={item}>
-        <Button variant="ghost" onClick={() => router.back()}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back
-        </Button>
         <h1 className="text-2xl font-bold ml-4">Delete All Data</h1>
       </motion.div>
 
@@ -202,27 +198,56 @@ export default function DeleteDataPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex justify-between">
                   <span>Activities:</span>
-                  <Badge variant="outline">{dataSummary.summary.activities}</Badge>
+                  <Badge variant="outline">{dataSummary.summary.activities ?? 0}</Badge>
                 </div>
                 <div className="flex justify-between">
                   <span>Badges Earned:</span>
-                  <Badge variant="outline">{dataSummary.summary.user_badges}</Badge>
+                  <Badge variant="outline">{dataSummary.summary.user_badges ?? 0}</Badge>
                 </div>
                 <div className="flex justify-between">
                   <span>Reward Claims:</span>
-                  <Badge variant="outline">{dataSummary.summary.activity_rewards}</Badge>
+                  <Badge variant="outline">{dataSummary.summary.activity_rewards ?? 0}</Badge>
                 </div>
                 <div className="flex justify-between">
                   <span>Staking Records:</span>
-                  <Badge variant="outline">{dataSummary.summary.staking}</Badge>
+                  <Badge variant="outline">{dataSummary.summary.staking ?? 0}</Badge>
                 </div>
                 <div className="flex justify-between">
                   <span>Meals Logged:</span>
-                  <Badge variant="outline">{dataSummary.summary.meals}</Badge>
+                  <Badge variant="outline">{dataSummary.summary.meals ?? 0}</Badge>
                 </div>
                 <div className="flex justify-between">
                   <span>Energy Entries:</span>
-                  <Badge variant="outline">{dataSummary.summary.energy}</Badge>
+                  <Badge variant="outline">{dataSummary.summary.energy ?? 0}</Badge>
+                </div>
+                {/* --- Add missing fields below --- */}
+                <div className="flex justify-between">
+                  <span>Workouts:</span>
+                  <Badge variant="outline">{dataSummary.summary.workouts ?? 0}</Badge>
+                </div>
+                <div className="flex justify-between">
+                  <span>Workout Exercises:</span>
+                  <Badge variant="outline">{dataSummary.summary.workout_exercises ?? 0}</Badge>
+                </div>
+                <div className="flex justify-between">
+                  <span>Exercise Sets:</span>
+                  <Badge variant="outline">{dataSummary.summary.exercise_sets ?? 0}</Badge>
+                </div>
+                <div className="flex justify-between">
+                  <span>Social Posts:</span>
+                  <Badge variant="outline">{dataSummary.summary.social_posts ?? 0}</Badge>
+                </div>
+                <div className="flex justify-between">
+                  <span>Connections:</span>
+                  <Badge variant="outline">{dataSummary.summary.connections ?? 0}</Badge>
+                </div>
+                <div className="flex justify-between">
+                  <span>Post Likes:</span>
+                  <Badge variant="outline">{dataSummary.summary.post_likes ?? 0}</Badge>
+                </div>
+                <div className="flex justify-between">
+                  <span>Post Comments:</span>
+                  <Badge variant="outline">{dataSummary.summary.post_comments ?? 0}</Badge>
                 </div>
               </div>
 
@@ -265,12 +290,6 @@ export default function DeleteDataPage() {
                       <span>{dataSummary.summary.streak_days}</span>
                     </div>
                   )}
-                  {dataSummary.summary.last_streak_update && (
-                    <div className="flex justify-between">
-                      <span>Last Streak Update:</span>
-                      <span>{dataSummary.summary.last_streak_update}</span>
-                    </div>
-                  )}
                   {dataSummary.summary.is_premium !== undefined && (
                     <div className="flex justify-between">
                       <span>Premium:</span>
@@ -283,12 +302,6 @@ export default function DeleteDataPage() {
                       <span>
                         {dataSummary.summary.weight} {dataSummary.summary.weight_unit || ''}
                       </span>
-                    </div>
-                  )}
-                  {dataSummary.summary.weight_updated_at && (
-                    <div className="flex justify-between">
-                      <span>Weight Updated At:</span>
-                      <span>{dataSummary.summary.weight_updated_at}</span>
                     </div>
                   )}
                   {dataSummary.summary.height !== undefined && (
@@ -313,24 +326,6 @@ export default function DeleteDataPage() {
                     <div className="flex justify-between">
                       <span>Bio:</span>
                       <span>{dataSummary.summary.bio}</span>
-                    </div>
-                  )}
-                  {dataSummary.summary.website && (
-                    <div className="flex justify-between">
-                      <span>Website:</span>
-                      <span>{dataSummary.summary.website}</span>
-                    </div>
-                  )}
-                  {dataSummary.summary.created_at && (
-                    <div className="flex justify-between">
-                      <span>Created At:</span>
-                      <span>{dataSummary.summary.created_at}</span>
-                    </div>
-                  )}
-                  {dataSummary.summary.updated_at && (
-                    <div className="flex justify-between">
-                      <span>Updated At:</span>
-                      <span>{dataSummary.summary.updated_at}</span>
                     </div>
                   )}
                   {dataSummary.summary.avatar_url && (
@@ -527,12 +522,22 @@ export default function DeleteDataPage() {
                     </p>
                     <div className="bg-green-50 dark:bg-green-950/20 p-4 rounded-lg">
                       <div className="grid grid-cols-2 gap-2 text-sm">
-                        <div>Activities: {deleteResult.deleted_counts.activities}</div>
-                        <div>Badges: {deleteResult.deleted_counts.user_badges}</div>
-                        <div>Rewards: {deleteResult.deleted_counts.activity_rewards}</div>
-                        <div>Stakes: {deleteResult.deleted_counts.staking}</div>
-                        <div>Meals: {deleteResult.deleted_counts.meals}</div>
-                        <div>Energy: {deleteResult.deleted_counts.energy}</div>
+                        <div>Activities: {deleteResult.deleted_counts.activities ?? 0}</div>
+                        <div>Badges: {deleteResult.deleted_counts.user_badges ?? 0}</div>
+                        <div>Rewards: {deleteResult.deleted_counts.activity_rewards ?? 0}</div>
+                        <div>Stakes: {deleteResult.deleted_counts.staking ?? 0}</div>
+                        <div>Meals: {deleteResult.deleted_counts.meals ?? 0}</div>
+                        <div>Energy: {deleteResult.deleted_counts.energy ?? 0}</div>
+                        {/* --- Add missing fields below --- */}
+                        <div>Workouts: {deleteResult.deleted_counts.workouts ?? 0}</div>
+                        <div>
+                          Workout Exercises: {deleteResult.deleted_counts.workout_exercises ?? 0}
+                        </div>
+                        <div>Exercise Sets: {deleteResult.deleted_counts.exercise_sets ?? 0}</div>
+                        <div>Social Posts: {deleteResult.deleted_counts.social_posts ?? 0}</div>
+                        <div>Connections: {deleteResult.deleted_counts.connections ?? 0}</div>
+                        <div>Post Likes: {deleteResult.deleted_counts.post_likes ?? 0}</div>
+                        <div>Post Comments: {deleteResult.deleted_counts.post_comments ?? 0}</div>
                       </div>
                     </div>
                   </>

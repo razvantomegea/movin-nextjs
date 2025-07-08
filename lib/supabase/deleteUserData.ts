@@ -18,6 +18,7 @@ export interface UserDataSummary {
     post_comments: number;
     workouts: number;
     workout_exercises: number;
+    exercise_sets: number;
     total_rewards: number;
     total_staked: number;
     // Profile fields
@@ -59,6 +60,7 @@ export interface DeleteResult {
     post_comments: number;
     workouts: number;
     workout_exercises: number;
+    exercise_sets: number;
     profile: number;
   };
 }
@@ -126,6 +128,7 @@ export async function getUserDataSummary({
             post_comments: 0,
             workouts: 0,
             workout_exercises: 0,
+            exercise_sets: 0,
             total_rewards: 0,
             total_staked: 0,
           },
@@ -148,6 +151,7 @@ export async function getUserDataSummary({
         postCommentsRes,
         workoutsRes,
         workoutExercisesRes,
+        exerciseSetsRes,
       ] = await Promise.all([
         client
           .from('activities')
@@ -190,6 +194,10 @@ export async function getUserDataSummary({
           .from('workout_exercises')
           .select('id', { count: 'exact', head: true })
           .eq('address', address),
+        client
+          .from('exercise_sets')
+          .select('id', { count: 'exact', head: true })
+          .eq('address', address),
       ]);
 
       // Get reward totals
@@ -227,6 +235,7 @@ export async function getUserDataSummary({
           post_comments: postCommentsRes.count || 0,
           workouts: workoutsRes.count || 0,
           workout_exercises: workoutExercisesRes.count || 0,
+          exercise_sets: exerciseSetsRes.count || 0,
           total_rewards: totalRewards,
           total_staked: totalStaked,
           // Profile fields
@@ -355,6 +364,7 @@ export async function deleteAllUserData({
             post_comments: 0,
             workouts: 0,
             workout_exercises: 0,
+            exercise_sets: 0,
             profile: 0,
           },
         };
@@ -394,6 +404,7 @@ export async function deleteAllUserData({
             DELETE FROM staking WHERE address = '${address}';
             DELETE FROM meals WHERE address = '${address}';
             DELETE FROM energy WHERE address = '${address}';
+            DELETE FROM exercise_sets WHERE address = '${address}';
             DELETE FROM profiles WHERE address = '${address}';
             COMMIT;
           `,
@@ -421,6 +432,7 @@ export async function deleteAllUserData({
           await client.from('staking').delete().eq('address', address);
           await client.from('meals').delete().eq('address', address);
           await client.from('energy').delete().eq('address', address);
+          await client.from('exercise_sets').delete().eq('address', address);
           await client.from('profiles').delete().eq('address', address);
         }
       }
@@ -442,6 +454,7 @@ export async function deleteAllUserData({
           post_comments: summary.summary.post_comments,
           workouts: summary.summary.workouts,
           workout_exercises: summary.summary.workout_exercises,
+          exercise_sets: summary.summary.exercise_sets,
           profile: 1,
         },
       };
@@ -463,6 +476,7 @@ export async function deleteAllUserData({
           post_comments: 0,
           workouts: 0,
           workout_exercises: 0,
+          exercise_sets: 0,
           profile: 0,
         },
       };
@@ -504,6 +518,7 @@ export async function userHasData({
     post_comments,
     workouts,
     workout_exercises,
+    exercise_sets,
   } = summary.summary;
 
   return (
@@ -519,6 +534,7 @@ export async function userHasData({
     post_likes > 0 ||
     post_comments > 0 ||
     workouts > 0 ||
-    workout_exercises > 0
+    workout_exercises > 0 ||
+    exercise_sets > 0
   );
 }

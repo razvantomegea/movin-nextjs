@@ -20,6 +20,7 @@ DECLARE
   post_comments_data JSONB;
   workouts_data JSONB;
   workout_exercises_data JSONB;
+  exercise_sets_data JSONB;
 BEGIN
   -- Security check: ensure user can only export their own data
   IF (auth.jwt() ->> 'sub') != user_address THEN
@@ -48,6 +49,7 @@ BEGIN
   -- Get workouts data
   SELECT jsonb_agg(to_jsonb(w)) INTO workouts_data FROM workouts w WHERE w.address = user_address;
   SELECT jsonb_agg(to_jsonb(we)) INTO workout_exercises_data FROM workout_exercises we WHERE we.address = user_address;
+  SELECT jsonb_agg(to_jsonb(es)) INTO exercise_sets_data FROM exercise_sets es WHERE es.address = user_address;
 
   result := jsonb_build_object(
     'profile', COALESCE(profile_data, '{}'::jsonb),
@@ -63,7 +65,8 @@ BEGIN
     'post_likes', COALESCE(post_likes_data, '[]'::jsonb),
     'post_comments', COALESCE(post_comments_data, '[]'::jsonb),
     'workouts', COALESCE(workouts_data, '[]'::jsonb),
-    'workout_exercises', COALESCE(workout_exercises_data, '[]'::jsonb)
+    'workout_exercises', COALESCE(workout_exercises_data, '[]'::jsonb),
+    'exercise_sets', COALESCE(exercise_sets_data, '[]'::jsonb)
   );
 
   RETURN result;
@@ -95,6 +98,7 @@ BEGIN
   DELETE FROM connections WHERE requester_address = user_address OR addressee_address = user_address;
   DELETE FROM workout_exercises WHERE address = user_address;
   DELETE FROM workouts WHERE address = user_address;
+  DELETE FROM exercise_sets WHERE address = user_address;
   -- We don't delete the profile, we update it.
 
   -- Import profile
@@ -339,6 +343,29 @@ BEGIN
     );
   END LOOP;
 
+  -- Import exercise_sets
+  FOR item IN SELECT * FROM jsonb_array_elements(import_data -> 'exercise_sets')
+  LOOP
+    INSERT INTO exercise_sets (
+      id, exercise_id, address, set_number, reps, weight, duration, time_under_tension, rest_time, completed, notes, created_at, updated_at
+    )
+    VALUES (
+      (item ->> 'id')::UUID,
+      (item ->> 'exercise_id')::UUID,
+      user_address,
+      (item ->> 'set_number')::INTEGER,
+      (item ->> 'reps')::INTEGER,
+      (item ->> 'weight')::DECIMAL,
+      (item ->> 'duration')::INTEGER,
+      (item ->> 'time_under_tension')::INTEGER,
+      (item ->> 'rest_time')::INTEGER,
+      (item ->> 'completed')::BOOLEAN,
+      item ->> 'notes',
+      (item ->> 'created_at')::TIMESTAMPTZ,
+      (item ->> 'updated_at')::TIMESTAMPTZ
+    );
+  END LOOP;
+
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
@@ -361,9 +388,27 @@ DECLARE
   post_comments_count INTEGER;
   workouts_count INTEGER;
   workout_exercises_count INTEGER;
+  exercise_sets_count INTEGER;
   total_rewards DECIMAL;
   total_staked DECIMAL;
   profile_exists BOOLEAN;
+  p_username TEXT;
+  p_email TEXT;
+  p_level INTEGER;
+  p_streak_days INTEGER;
+  p_last_streak_update TIMESTAMPTZ;
+  p_is_premium BOOLEAN;
+  p_weight DECIMAL;
+  p_weight_unit TEXT;
+  p_weight_updated_at TIMESTAMPTZ;
+  p_height DECIMAL;
+  p_date_of_birth TEXT;
+  p_biological_sex TEXT;
+  p_bio TEXT;
+  p_website TEXT;
+  p_created_at TIMESTAMPTZ;
+  p_updated_at TIMESTAMPTZ;
+  p_avatar_url TEXT;
 BEGIN
   -- Check if user exists
   SELECT EXISTS(SELECT 1 FROM profiles WHERE address = user_address) INTO profile_exists;
@@ -374,6 +419,11 @@ BEGIN
       'summary', jsonb_build_object()
     );
   END IF;
+
+  -- Fetch profile fields
+  SELECT username, email, level, streak_days, last_streak_update, is_premium, weight, weight_unit, weight_updated_at, height, date_of_birth, biological_sex, bio, website, created_at, updated_at, avatar_url
+    INTO p_username, p_email, p_level, p_streak_days, p_last_streak_update, p_is_premium, p_weight, p_weight_unit, p_weight_updated_at, p_height, p_date_of_birth, p_biological_sex, p_bio, p_website, p_created_at, p_updated_at, p_avatar_url
+    FROM profiles WHERE address = user_address;
 
   -- Count all user data
   SELECT COUNT(*) INTO activities_count FROM activities WHERE address = user_address;
@@ -394,6 +444,7 @@ BEGIN
   SELECT COUNT(*) INTO post_comments_count FROM post_comments WHERE address = user_address;
   SELECT COUNT(*) INTO workouts_count FROM workouts WHERE address = user_address;
   SELECT COUNT(*) INTO workout_exercises_count FROM workout_exercises WHERE address = user_address;
+  SELECT COUNT(*) INTO exercise_sets_count FROM exercise_sets WHERE address = user_address;
   
   -- Calculate totals
   SELECT COALESCE(SUM(rewards), 0) INTO total_rewards FROM activity_rewards WHERE address = user_address;
@@ -401,21 +452,40 @@ BEGIN
 
   -- Build summary
   summary := jsonb_build_object(
-    'activities', activities_count,
-    'activity_rewards', rewards_count,
-    'user_badges', badges_count,
-    'staking', stakes_count,
-    'meals', meals_count,
-    'energy', energy_count,
-    'goals', goals_count,
-    'social_posts', social_posts_count,
-    'connections', connections_count,
-    'post_likes', post_likes_count,
-    'post_comments', post_comments_count,
-    'workouts', workouts_count,
-    'workout_exercises', workout_exercises_count,
-    'total_rewards', total_rewards,
-    'total_staked', total_staked
+    'activities', COALESCE(activities_count, 0),
+    'activity_rewards', COALESCE(rewards_count, 0),
+    'user_badges', COALESCE(badges_count, 0),
+    'staking', COALESCE(stakes_count, 0),
+    'meals', COALESCE(meals_count, 0),
+    'energy', COALESCE(energy_count, 0),
+    'goals', COALESCE(goals_count, 0),
+    'social_posts', COALESCE(social_posts_count, 0),
+    'connections', COALESCE(connections_count, 0),
+    'post_likes', COALESCE(post_likes_count, 0),
+    'post_comments', COALESCE(post_comments_count, 0),
+    'workouts', COALESCE(workouts_count, 0),
+    'workout_exercises', COALESCE(workout_exercises_count, 0),
+    'exercise_sets', COALESCE(exercise_sets_count, 0),
+    'total_rewards', COALESCE(total_rewards, 0),
+    'total_staked', COALESCE(total_staked, 0),
+    -- Profile fields
+    'username', p_username,
+    'email', p_email,
+    'level', p_level,
+    'streak_days', p_streak_days,
+    'last_streak_update', p_last_streak_update,
+    'is_premium', p_is_premium,
+    'weight', p_weight,
+    'weight_unit', p_weight_unit,
+    'weight_updated_at', p_weight_updated_at,
+    'height', p_height,
+    'date_of_birth', p_date_of_birth,
+    'biological_sex', p_biological_sex,
+    'bio', p_bio,
+    'website', p_website,
+    'created_at', p_created_at,
+    'updated_at', p_updated_at,
+    'avatar_url', p_avatar_url
   );
 
   RETURN jsonb_build_object(
@@ -445,6 +515,7 @@ DECLARE
   post_comments_count INTEGER;
   workouts_count INTEGER;
   workout_exercises_count INTEGER;
+  exercise_sets_count INTEGER;
   profile_exists BOOLEAN;
   current_user_address TEXT;
 BEGIN
@@ -485,6 +556,7 @@ BEGIN
   SELECT COUNT(*) INTO post_comments_count FROM post_comments WHERE address = user_address;
   SELECT COUNT(*) INTO workouts_count FROM workouts WHERE address = user_address;
   SELECT COUNT(*) INTO workout_exercises_count FROM workout_exercises WHERE address = user_address;
+  SELECT COUNT(*) INTO exercise_sets_count FROM exercise_sets WHERE address = user_address;
 
   -- Delete all user data (order matters for foreign key constraints)
   -- Delete dependent records first, then the profile
@@ -494,6 +566,7 @@ BEGIN
   DELETE FROM connections WHERE requester_address = user_address OR addressee_address = user_address;
   DELETE FROM workout_exercises WHERE address = user_address;
   DELETE FROM workouts WHERE address = user_address;
+  DELETE FROM exercise_sets WHERE address = user_address;
   DELETE FROM goals WHERE address = user_address;
   DELETE FROM activities WHERE address = user_address;
   DELETE FROM activity_rewards WHERE address = user_address;
@@ -518,6 +591,7 @@ BEGIN
     'post_comments', post_comments_count,
     'workouts', workouts_count,
     'workout_exercises', workout_exercises_count,
+    'exercise_sets', exercise_sets_count,
     'profile', 1
   );
 
