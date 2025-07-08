@@ -84,48 +84,48 @@ export const ExerciseStatsCards: React.FC<ExerciseStatsCardsProps> = ({
           </CardContent>
         </Card>
       </motion.div>
-    <motion.div variants={itemVariants}>
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400 flex items-center">
-            <BarChart3 className="h-4 w-4 mr-2" />
-            Total Volume
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">
-            {exerciseStats?.totalVolume?.toLocaleString() || 0}
-          </div>
-          <div className="text-xs text-gray-500">{weightUnit} this session</div>
-          {exerciseStats?.currentProgress && (
-            <div className="text-xs text-blue-600 mt-1">
-              Best: {exerciseStats.currentProgress.bestVolume.toLocaleString()} {weightUnit}
+      <motion.div variants={itemVariants}>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400 flex items-center">
+              <BarChart3 className="h-4 w-4 mr-2" />
+              Total Volume
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {exerciseStats?.totalVolume?.toLocaleString() || 0}
             </div>
-          )}
-        </CardContent>
-      </Card>
-    </motion.div>
-    <motion.div variants={itemVariants}>
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400 flex items-center">
-            <Activity className="h-4 w-4 mr-2" />
-            Total Sessions
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">
-            {exerciseStats?.currentProgress?.totalSessions || 1}
-          </div>
-          <div className="text-xs text-gray-500">workout sessions</div>
-          {exerciseStats?.currentProgress && (
-            <div className="text-xs text-purple-600 mt-1">
-              Avg: {Math.round(exerciseStats.currentProgress.averageWeight)} {weightUnit}
+            <div className="text-xs text-gray-500">{weightUnit} this session</div>
+            {exerciseStats?.currentProgress && (
+              <div className="text-xs text-blue-600 mt-1">
+                Best: {exerciseStats.currentProgress.bestVolume.toLocaleString()} {weightUnit}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </motion.div>
+      <motion.div variants={itemVariants}>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400 flex items-center">
+              <Activity className="h-4 w-4 mr-2" />
+              Total Sessions
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {exerciseStats?.currentProgress?.totalSessions || 1}
             </div>
-          )}
-        </CardContent>
-      </Card>
+            <div className="text-xs text-gray-500">workout sessions</div>
+            {exerciseStats?.currentProgress && (
+              <div className="text-xs text-purple-600 mt-1">
+                Avg: {Math.round(exerciseStats.currentProgress.averageWeight)} {weightUnit}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </motion.div>
     </motion.div>
-  </motion.div>
   );
 };

@@ -1,3 +1,4 @@
+import { SupabaseClient } from '@supabase/supabase-js';
 import { getClient } from './createClient';
 import type {
   Workout,
@@ -333,10 +334,22 @@ export async function updateExercise(
     // Calculate aggregate values from updated exercise sets
     const setsCount = exerciseData.exercise_sets.length;
     const totalReps = exerciseData.exercise_sets.reduce((sum, set) => sum + set.reps, 0);
-    const maxWeight = exerciseData.exercise_sets.reduce((max, set) => Math.max(max, set.weight || 0), 0);
-    const totalDuration = exerciseData.exercise_sets.reduce((sum, set) => sum + (set.duration || 0), 0);
-    const totalTimeUnderTension = exerciseData.exercise_sets.reduce((sum, set) => sum + (set.time_under_tension || 0), 0);
-    const totalRestTime = exerciseData.exercise_sets.reduce((sum, set) => sum + (set.rest_time || 0), 0);
+    const maxWeight = exerciseData.exercise_sets.reduce(
+      (max, set) => Math.max(max, set.weight || 0),
+      0,
+    );
+    const totalDuration = exerciseData.exercise_sets.reduce(
+      (sum, set) => sum + (set.duration || 0),
+      0,
+    );
+    const totalTimeUnderTension = exerciseData.exercise_sets.reduce(
+      (sum, set) => sum + (set.time_under_tension || 0),
+      0,
+    );
+    const totalRestTime = exerciseData.exercise_sets.reduce(
+      (sum, set) => sum + (set.rest_time || 0),
+      0,
+    );
     const avgRestTime = setsCount > 0 ? totalRestTime / setsCount : 0;
 
     // Update the exercise with recalculated aggregate values
@@ -511,7 +524,10 @@ export async function updateSetCompletionStatus(
 }
 
 // Helper function to recalculate exercise aggregate values when sets are modified
-async function recalculateExerciseAggregates(supabase: any, exerciseId: string): Promise<void> {
+async function recalculateExerciseAggregates(
+  supabase: SupabaseClient,
+  exerciseId: string,
+): Promise<void> {
   // Fetch all current sets for this exercise
   const { data: sets, error: setsError } = await supabase
     .from('exercise_sets')
@@ -529,10 +545,22 @@ async function recalculateExerciseAggregates(supabase: any, exerciseId: string):
   // Calculate aggregate values
   const setsCount = sets.length;
   const totalReps = sets.reduce((sum: number, set: ExerciseSet) => sum + set.reps, 0);
-  const maxWeight = sets.reduce((max: number, set: ExerciseSet) => Math.max(max, set.weight || 0), 0);
-  const totalDuration = sets.reduce((sum: number, set: ExerciseSet) => sum + (set.duration || 0), 0);
-  const totalTimeUnderTension = sets.reduce((sum: number, set: ExerciseSet) => sum + (set.time_under_tension || 0), 0);
-  const totalRestTime = sets.reduce((sum: number, set: ExerciseSet) => sum + (set.rest_time || 0), 0);
+  const maxWeight = sets.reduce(
+    (max: number, set: ExerciseSet) => Math.max(max, set.weight || 0),
+    0,
+  );
+  const totalDuration = sets.reduce(
+    (sum: number, set: ExerciseSet) => sum + (set.duration || 0),
+    0,
+  );
+  const totalTimeUnderTension = sets.reduce(
+    (sum: number, set: ExerciseSet) => sum + (set.time_under_tension || 0),
+    0,
+  );
+  const totalRestTime = sets.reduce(
+    (sum: number, set: ExerciseSet) => sum + (set.rest_time || 0),
+    0,
+  );
   const avgRestTime = setsCount > 0 ? totalRestTime / setsCount : 0;
   const completedSets = sets.filter((set: ExerciseSet) => set.completed).length;
 
@@ -658,12 +686,17 @@ export async function getExerciseProgress(
     }
   >;
 
-  const progressByDate = (data as unknown as (ExerciseWithWorkout & { exercise_sets?: ExerciseSet[] })[]).reduce(
-    (acc: ProgressAccumulator, exercise: ExerciseWithWorkout & { exercise_sets?: ExerciseSet[] }) => {
+  const progressByDate = (
+    data as unknown as (ExerciseWithWorkout & { exercise_sets?: ExerciseSet[] })[]
+  ).reduce(
+    (
+      acc: ProgressAccumulator,
+      exercise: ExerciseWithWorkout & { exercise_sets?: ExerciseSet[] },
+    ) => {
       const date = exercise.workouts.created_at.split('T')[0];
       const sets = typeof exercise.sets === 'number' && exercise.sets > 0 ? exercise.sets : 0;
       const reps = typeof exercise.reps === 'number' && exercise.reps > 0 ? exercise.reps : 0;
-      
+
       // Calculate max weight from individual sets if available, otherwise use legacy weight field
       let maxWeight = 0;
       if (exercise.exercise_sets && exercise.exercise_sets.length > 0) {
@@ -673,15 +706,16 @@ export async function getExerciseProgress(
         }, 0);
       } else {
         // Fall back to legacy weight field for backwards compatibility
-        maxWeight = typeof exercise.weight === 'number' && exercise.weight > 0 ? exercise.weight : 0;
+        maxWeight =
+          typeof exercise.weight === 'number' && exercise.weight > 0 ? exercise.weight : 0;
       }
-      
+
       // Calculate volume from individual sets if available, otherwise use legacy calculation
       let volume = 0;
       if (exercise.exercise_sets && exercise.exercise_sets.length > 0) {
         // Sum volume from each individual set (reps * weight per set)
         volume = exercise.exercise_sets.reduce((sum: number, set: ExerciseSet) => {
-          return sum + (set.reps * set.weight);
+          return sum + set.reps * set.weight;
         }, 0);
       } else {
         // Fall back to legacy calculation for backwards compatibility

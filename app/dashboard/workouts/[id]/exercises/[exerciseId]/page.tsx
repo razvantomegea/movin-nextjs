@@ -113,7 +113,7 @@ export default function ExerciseDetailPage() {
     if (currentExercise.exercise_sets && currentExercise.exercise_sets.length > 0) {
       // Sum volume from each individual set (reps * weight per set)
       totalVolume = currentExercise.exercise_sets.reduce((sum: number, set: any) => {
-        return sum + (set.reps * set.weight);
+        return sum + set.reps * set.weight;
       }, 0);
     } else {
       // Fall back to legacy calculation for backwards compatibility
