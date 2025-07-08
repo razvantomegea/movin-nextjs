@@ -7,6 +7,14 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const limit = parseInt(searchParams.get('limit') || '50');
 
+    // Validate limit: must be a number between 1 and 100
+    if (isNaN(limit) || limit < 1 || limit > 100) {
+      return NextResponse.json(
+        { error: 'Invalid limit parameter. Must be an integer between 1 and 100.' },
+        { status: 400 },
+      );
+    }
+
     // Create a public Supabase client (no auth required)
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,

@@ -192,7 +192,7 @@ export default function LeaderboardPage() {
                               </span>
                             </div>
                           )}
-                          {Boolean(user.total_earned) && (
+                          {user.total_earned != null && (
                             <div className="flex items-center gap-1">
                               <Star className="h-3 w-3 text-yellow-500" />
                               <span>{user.total_earned?.toFixed(2)} MVN</span>

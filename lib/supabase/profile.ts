@@ -79,6 +79,11 @@ export async function getLeaderboard({
   limit?: number;
   client?: SupabaseClient;
 } = {}): Promise<ILeaderboardUser[]> {
+  // Validate limit parameter
+  if (limit <= 0 || limit > 1000) {
+    throw new Error('Limit must be between 1 and 1000');
+  }
+
   if (!client) {
     client = getClient();
   }
@@ -88,7 +93,7 @@ export async function getLeaderboard({
     .select('address, username, avatar_url, level, streak_days, total_earned, created_at')
     .order('level', { ascending: false })
     .order('total_earned', { ascending: false })
-    .order('created_at', { ascending: true })
+    .order('created_at', { ascending: false })
     .limit(limit);
 
   if (error) {
