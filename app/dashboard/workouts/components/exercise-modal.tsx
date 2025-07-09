@@ -44,13 +44,18 @@ export function ExerciseModal({
     {
       reps: 1,
       weight: 0,
-      duration: 0,
+      duration: 0, // This will be auto-calculated
       time_under_tension: 0,
       rest_time: 60,
       completed: false,
       notes: '',
     },
   ]);
+
+  // Auto-calculate duration for each set based on rest_time + time_under_tension
+  const calculateDuration = (restTime: number, timeUnderTension: number): number => {
+    return restTime + timeUnderTension;
+  };
 
   // Load exercise names for autocomplete
   useEffect(() => {
@@ -84,7 +89,7 @@ export function ExerciseModal({
           id: set.id,
           reps: set.reps,
           weight: set.weight,
-          duration: set.duration,
+          duration: calculateDuration(set.rest_time, set.time_under_tension), // Auto-calculated from existing data
           time_under_tension: set.time_under_tension,
           rest_time: set.rest_time,
           completed: set.completed,
@@ -93,13 +98,15 @@ export function ExerciseModal({
         setExerciseSets(setsData);
       } else {
         // Create default sets based on exercise summary
+        const timeUnderTension = Math.round(exercise.time_under_tension / (exercise.sets || 1)) || 0;
+        const restTime = exercise.rest_time || 60;
         const defaultSets = Array.from({ length: exercise.sets || 1 }, (_, index) => ({
           id: `temp-${index + 1}`,
           reps: Math.round(exercise.reps / (exercise.sets || 1)) || 1,
           weight: exercise.weight || 0,
-          duration: Math.round(exercise.exercise_duration / (exercise.sets || 1)) || 0,
-          time_under_tension: Math.round(exercise.time_under_tension / (exercise.sets || 1)) || 0,
-          rest_time: exercise.rest_time || 60,
+          duration: calculateDuration(restTime, timeUnderTension), // Auto-calculated
+          time_under_tension: timeUnderTension,
+          rest_time: restTime,
           completed: false,
           notes: '',
         }));
@@ -115,7 +122,7 @@ export function ExerciseModal({
         {
           reps: 1,
           weight: 0,
-          duration: 0,
+          duration: calculateDuration(60, 0), // Auto-calculated (rest_time: 60, time_under_tension: 0)
           time_under_tension: 0,
           rest_time: 60,
           completed: false,
@@ -145,10 +152,6 @@ export function ExerciseModal({
         alert(`Set ${i + 1}: Weight must be greater than 0`);
         return;
       }
-      if (!set.duration || set.duration <= 0) {
-        alert(`Set ${i + 1}: Duration must be greater than 0`);
-        return;
-      }
       if (set.time_under_tension < 0) {
         alert(`Set ${i + 1}: Time Under Tension cannot be negative`);
         return;
@@ -159,14 +162,14 @@ export function ExerciseModal({
       }
     }
 
-    // Create exercise sets data for the database
+    // Create exercise sets data for the database with auto-calculated duration
     const exerciseSetsData = exerciseSets.map((set) => ({
       address: address?.toLowerCase() as string,
       exercise_id: '', // Will be set by the backend
       set_number: 0, // Will be set by the backend
       reps: set.reps,
       weight: set.weight,
-      duration: set.duration,
+      duration: calculateDuration(set.rest_time, set.time_under_tension), // Auto-calculated
       time_under_tension: set.time_under_tension,
       rest_time: set.rest_time,
       completed: set.completed,
@@ -207,17 +210,28 @@ export function ExerciseModal({
     value: string | number | boolean,
   ) => {
     setExerciseSets((prev) =>
-      prev.map((set, index) => (index === setIndex ? { ...set, [field]: value } : set)),
+      prev.map((set, index) => {
+        if (index === setIndex) {
+          const updatedSet = { ...set, [field]: value };
+          // Auto-calculate duration when rest_time or time_under_tension changes
+          if (field === 'rest_time' || field === 'time_under_tension') {
+            updatedSet.duration = calculateDuration(updatedSet.rest_time, updatedSet.time_under_tension);
+          }
+          return updatedSet;
+        }
+        return set;
+      }),
     );
   };
 
   const addSet = () => {
+    const lastSet = exerciseSets[exerciseSets.length - 1];
     const newSet: TempExerciseSet = {
-      reps: exerciseSets[exerciseSets.length - 1]?.reps || 1,
-      weight: exerciseSets[exerciseSets.length - 1]?.weight || 0,
-      duration: exerciseSets[exerciseSets.length - 1]?.duration || 0,
-      time_under_tension: exerciseSets[exerciseSets.length - 1]?.time_under_tension || 0,
-      rest_time: exerciseSets[exerciseSets.length - 1]?.rest_time || 60,
+      reps: lastSet?.reps || 1,
+      weight: lastSet?.weight || 0,
+      duration: calculateDuration(lastSet?.rest_time || 60, lastSet?.time_under_tension || 0), // Auto-calculated
+      time_under_tension: lastSet?.time_under_tension || 0,
+      rest_time: lastSet?.rest_time || 60,
       completed: false,
       notes: '',
     };
@@ -361,19 +375,6 @@ export function ExerciseModal({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor={`set-${index}-duration`}>Duration (seconds) *</Label>
-                  <Input
-                    id={`set-${index}-duration`}
-                    type="number"
-                    min="1"
-                    value={set.duration}
-                    onChange={(e) =>
-                      handleSetChange(index, 'duration', parseInt(e.target.value) || 1)
-                    }
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
                   <Label htmlFor={`set-${index}-time-under-tension`}>
                     Time Under Tension (seconds) *
                   </Label>
@@ -388,9 +389,6 @@ export function ExerciseModal({
                     required
                   />
                 </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor={`set-${index}-rest-time`}>Rest Time (seconds) *</Label>
                   <Input
@@ -403,6 +401,22 @@ export function ExerciseModal({
                     }
                     required
                   />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor={`set-${index}-total-time`}>Total Time (auto-calculated)</Label>
+                  <Input
+                    id={`set-${index}-total-time`}
+                    type="number"
+                    value={calculateDuration(set.rest_time, set.time_under_tension)}
+                    disabled
+                    className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400"
+                  />
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Rest Time + Time Under Tension
+                  </p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor={`set-${index}-notes`}>Set Notes (Optional)</Label>
