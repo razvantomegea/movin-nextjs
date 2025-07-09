@@ -44,7 +44,7 @@ export function ExerciseModal({
     {
       reps: 1,
       weight: 0,
-      duration: 0, // This will be auto-calculated
+      duration: 0,
       time_under_tension: 0,
       rest_time: 60,
       completed: false,
@@ -52,12 +52,10 @@ export function ExerciseModal({
     },
   ]);
 
-  // Auto-calculate duration for each set based on rest_time + time_under_tension
   const calculateDuration = (restTime: number, timeUnderTension: number): number => {
     return restTime + timeUnderTension;
   };
 
-  // Load exercise names for autocomplete
   useEffect(() => {
     const loadExerciseNames = async () => {
       if (address) {
@@ -83,13 +81,12 @@ export function ExerciseModal({
         notes: exercise.notes || '',
       });
 
-      // If exercise has set data, use it, otherwise create default sets
       if (exercise.exercise_sets && exercise.exercise_sets.length > 0) {
         const setsData = exercise.exercise_sets.map((set) => ({
           id: set.id,
           reps: set.reps,
           weight: set.weight,
-          duration: calculateDuration(set.rest_time, set.time_under_tension), // Auto-calculated from existing data
+          duration: calculateDuration(set.rest_time, set.time_under_tension),
           time_under_tension: set.time_under_tension,
           rest_time: set.rest_time,
           completed: set.completed,
@@ -97,14 +94,14 @@ export function ExerciseModal({
         }));
         setExerciseSets(setsData);
       } else {
-        // Create default sets based on exercise summary
-        const timeUnderTension = Math.round(exercise.time_under_tension / (exercise.sets || 1)) || 0;
+        const timeUnderTension =
+          Math.round(exercise.time_under_tension / (exercise.sets || 1)) || 0;
         const restTime = exercise.rest_time || 60;
         const defaultSets = Array.from({ length: exercise.sets || 1 }, (_, index) => ({
           id: `temp-${index + 1}`,
           reps: Math.round(exercise.reps / (exercise.sets || 1)) || 1,
           weight: exercise.weight || 0,
-          duration: calculateDuration(restTime, timeUnderTension), // Auto-calculated
+          duration: calculateDuration(restTime, timeUnderTension),
           time_under_tension: timeUnderTension,
           rest_time: restTime,
           completed: false,
@@ -122,7 +119,7 @@ export function ExerciseModal({
         {
           reps: 1,
           weight: 0,
-          duration: calculateDuration(60, 0), // Auto-calculated (rest_time: 60, time_under_tension: 0)
+          duration: calculateDuration(60, 0),
           time_under_tension: 0,
           rest_time: 60,
           completed: false,
@@ -162,7 +159,6 @@ export function ExerciseModal({
       }
     }
 
-    // Create exercise sets data for the database with auto-calculated duration
     const exerciseSetsData = exerciseSets.map((set) => ({
       address: address?.toLowerCase() as string,
       exercise_id: '', // Will be set by the backend
@@ -213,9 +209,11 @@ export function ExerciseModal({
       prev.map((set, index) => {
         if (index === setIndex) {
           const updatedSet = { ...set, [field]: value };
-          // Auto-calculate duration when rest_time or time_under_tension changes
           if (field === 'rest_time' || field === 'time_under_tension') {
-            updatedSet.duration = calculateDuration(updatedSet.rest_time, updatedSet.time_under_tension);
+            updatedSet.duration = calculateDuration(
+              updatedSet.rest_time,
+              updatedSet.time_under_tension,
+            );
           }
           return updatedSet;
         }
@@ -229,7 +227,7 @@ export function ExerciseModal({
     const newSet: TempExerciseSet = {
       reps: lastSet?.reps || 1,
       weight: lastSet?.weight || 0,
-      duration: calculateDuration(lastSet?.rest_time || 60, lastSet?.time_under_tension || 0), // Auto-calculated
+      duration: calculateDuration(lastSet?.rest_time || 60, lastSet?.time_under_tension || 0),
       time_under_tension: lastSet?.time_under_tension || 0,
       rest_time: lastSet?.rest_time || 60,
       completed: false,
@@ -244,7 +242,6 @@ export function ExerciseModal({
     }
   };
 
-  // If address is not available, show a message and do not render the modal content
   if (!address) {
     return isOpen ? (
       <BaseModal
