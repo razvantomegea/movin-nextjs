@@ -18,8 +18,9 @@ interface CelebrationAnimationProps {
   rewardAmount?: string;
   rewardCurrency?: string;
   showReward?: boolean;
-  onShare?: () => void;
+  onShare?: (imageData?: string | null) => void;
   showShareButton?: boolean;
+  imageData?: string | null;
 }
 
 export function CelebrationAnimation({
@@ -34,6 +35,7 @@ export function CelebrationAnimation({
   showReward = true,
   onShare,
   showShareButton = false,
+  imageData,
 }: CelebrationAnimationProps) {
   const [confettiTriggered, setConfettiTriggered] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
@@ -117,7 +119,7 @@ export function CelebrationAnimation({
     if (onShare) {
       setIsSharing(true);
       try {
-        await onShare();
+        await onShare(imageData);
         // Don't close automatically, let the share callback handle it
       } catch (error) {
         console.error('Failed to share achievement:', error);

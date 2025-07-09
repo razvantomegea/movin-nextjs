@@ -19,7 +19,7 @@ import {
   updateMealInLibrary,
 } from '@/lib/redux/slices/mealsSlice';
 import { fetchProfile } from '@/lib/redux/slices/profileSlice';
-import { createPost } from '@/lib/redux/slices/socialFeedSlice';
+import { createPost, uploadPostImageAsync } from '@/lib/redux/slices/socialFeedSlice';
 import { showSuccessToast, showErrorToast } from '@/lib/redux/slices/toastSlice';
 import { IMeal } from '@/lib/supabase/meals';
 import { updateProfileWithEarnings } from '@/lib/supabase/profile';
@@ -415,16 +415,33 @@ export function MealDetectionResultsModal({
   };
 
   // Auto-share handler for celebration modal
-  const handleShareMealAchievement = async () => {
+  const handleShareMealAchievement = async (shareImageData?: string | null) => {
     if (!address || !rewardState.lastMeal) return;
     try {
       const mealName = rewardState.lastMeal.mealName;
       const mealScore = rewardState.lastMeal.mealScore;
       const postContent = `I just logged a meal: ${mealName} (Nutrition Score: ${mealScore}/100)! #movin #nutrition`;
+
+      let postImageUrl: string | undefined;
+      if (shareImageData) {
+        // Convert base64 image data to File object
+        const response = await fetch(shareImageData);
+        const blob = await response.blob();
+        const file = new File([blob], 'meal-image.jpg', { type: 'image/jpeg' });
+
+        // Upload image and get URL
+        postImageUrl = await dispatch(
+          uploadPostImageAsync({ file, userId: address.toLowerCase() }),
+        ).unwrap();
+      }
+
       await dispatch(
         createPost({
           address: address.toLowerCase(),
-          postData: { content: postContent },
+          postData: {
+            content: postContent,
+            image_url: postImageUrl,
+          },
         }),
       ).unwrap();
       dispatch(
@@ -727,6 +744,7 @@ export function MealDetectionResultsModal({
         rewardCurrency="MVN"
         onShare={handleShareMealAchievement}
         showShareButton={!!address}
+        imageData={sourceType === 'camera' ? imageData : photoValidationState.uploadedPhoto}
       />
 
       {/* Camera Modal for Photo Validation */}
