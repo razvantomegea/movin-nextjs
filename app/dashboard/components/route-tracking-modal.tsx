@@ -1022,16 +1022,14 @@ export function RouteTrackingModal({
                       </Button>
                     )}
 
-                    <ResponsiveTooltip content={<p>Save route to your activity history</p>}>
-                      <Button
-                        onClick={saveRoute}
-                        className="bg-blue-500 hover:bg-blue-600"
-                        disabled={isTracking || routePath.length < 2}
-                      >
-                        <Save className="h-4 w-4 mr-2" />
-                        Save
-                      </Button>
-                    </ResponsiveTooltip>
+                    <Button
+                      onClick={saveRoute}
+                      className="bg-blue-500 hover:bg-blue-600"
+                      disabled={isTracking || routePath.length < 2}
+                    >
+                      <Save className="h-4 w-4 mr-2" />
+                      Save
+                    </Button>
                   </div>
                 </div>
               )}
