@@ -194,15 +194,27 @@ export function ScreenshotImportModal({
       const fileNameDate = extractDateFromText(fileData.file.name);
       const imageDate = extractedData.activityDate; // This is already expected to be YYYY-MM-DD
 
+      // Helper function to extract month and day from date string
+      const getMonthDay = (dateStr: string): string | null => {
+        const parts = dateStr.split('-');
+        if (parts.length === 3) {
+          return `${parts[1]}-${parts[2]}`; // MM-DD
+        }
+        return null;
+      };
+
       let finalActivityDate: string | null = null;
 
       if (fileNameDate && imageDate) {
-        if (fileNameDate !== imageDate) {
+        const fileMonthDay = getMonthDay(fileNameDate);
+        const imageMonthDay = getMonthDay(imageDate);
+        
+        if (fileMonthDay && imageMonthDay && fileMonthDay !== imageMonthDay) {
           throw new Error(
-            `Date mismatch: File name suggests ${fileNameDate}, but screenshot says ${imageDate}.`,
+            `Date mismatch: File name suggests ${fileMonthDay}, but screenshot says ${imageMonthDay}.`,
           );
         }
-        finalActivityDate = fileNameDate; // or imageDate, they are the same
+        finalActivityDate = imageDate; // Prefer the image date as it might be more accurate
       } else if (fileNameDate) {
         finalActivityDate = fileNameDate;
       } else if (imageDate) {
