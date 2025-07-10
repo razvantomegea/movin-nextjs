@@ -8,11 +8,11 @@
     "type": "git",
     "url": "https://github.com/razvantomegea/movin-nextjs"
   },
-  "version": "1.8.3",
+  "version": "1.8.4",
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "tsc && next build",
     "start": "next start",
     "lint": "next lint",
     "lint:fix": "next lint --fix",

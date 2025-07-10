@@ -135,6 +135,32 @@ export function RouteTrackingModal({
   // Simulated joint tracking state
   const [sarrahPosition, setSarrahPosition] = useState<google.maps.LatLngLiteral | null>(null);
 
+  // Stop tracking
+  const stopTracking = useCallback(() => {
+    if (watchIdRef.current) {
+      navigator.geolocation.clearWatch(watchIdRef.current);
+      watchIdRef.current = null;
+    }
+
+    setIsTracking(false);
+  }, []);
+
+  // Reset tracking
+  const resetTracking = useCallback(
+    (resetSpeedWarning: boolean = true) => {
+      stopTracking();
+      setRoutePath([]);
+      setDistance(0);
+      setDuration(0);
+      setStartTime(null);
+      setSpeedValidationChecked(false);
+      if (resetSpeedWarning) {
+        setShowSpeedWarning(false);
+      }
+    },
+    [stopTracking],
+  );
+
   // Reset modal state when closed
   useEffect(() => {
     if (!isOpen) {
@@ -351,32 +377,6 @@ export function RouteTrackingModal({
 
     return () => clearInterval(interval);
   }, [isTracking, startTime]);
-
-  // Stop tracking
-  const stopTracking = useCallback(() => {
-    if (watchIdRef.current) {
-      navigator.geolocation.clearWatch(watchIdRef.current);
-      watchIdRef.current = null;
-    }
-
-    setIsTracking(false);
-  }, []);
-
-  // Reset tracking
-  const resetTracking = useCallback(
-    (resetSpeedWarning: boolean = true) => {
-      stopTracking();
-      setRoutePath([]);
-      setDistance(0);
-      setDuration(0);
-      setStartTime(null);
-      setSpeedValidationChecked(false);
-      if (resetSpeedWarning) {
-        setShowSpeedWarning(false);
-      }
-    },
-    [stopTracking],
-  );
 
   // Validate speed after 1 minute of tracking
   const validateSpeed = useCallback(() => {
