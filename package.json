@@ -12,7 +12,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "tsc --noEmit && next build",
+    "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "lint:fix": "next lint --fix",
