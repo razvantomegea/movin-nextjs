@@ -7,9 +7,9 @@ import { BaseModal } from '@/components/ui/base-modal';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { useToast } from '@/components/ui/use-toast';
 import { useAppDispatch } from '@/lib/redux/hooks';
 import { uploadPostImageAsync } from '@/lib/redux/slices/socialFeedSlice';
+import { showSuccessToast, showErrorToast } from '@/lib/redux/slices/toastSlice';
 
 interface ShareAchievementModalProps {
   isOpen: boolean;
@@ -25,7 +25,6 @@ export function ShareAchievementModal({
   userAddress,
 }: ShareAchievementModalProps) {
   const dispatch = useAppDispatch();
-  const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [content, setContent] = useState('');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -48,22 +47,24 @@ export function ShareAchievementModal({
       // Validate file type
       const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
       if (!allowedTypes.includes(file.type)) {
-        toast({
-          title: 'Invalid file type',
-          description: 'Please select a valid image file (JPEG, PNG, WebP, or GIF)',
-          variant: 'destructive',
-        });
+        dispatch(
+          showErrorToast({
+            title: 'Invalid file type',
+            description: 'Please select a valid image file (JPEG, PNG, WebP, or GIF)',
+          }),
+        );
         return;
       }
 
       // Validate file size (5MB)
       const maxSize = 5 * 1024 * 1024;
       if (file.size > maxSize) {
-        toast({
-          title: 'File too large',
-          description: 'File size must be less than 5MB',
-          variant: 'destructive',
-        });
+        dispatch(
+          showErrorToast({
+            title: 'File too large',
+            description: 'File size must be less than 5MB',
+          }),
+        );
         return;
       }
 
@@ -95,11 +96,12 @@ export function ShareAchievementModal({
           ).unwrap();
         } catch (error) {
           console.error('Failed to upload image:', error);
-          toast({
-            title: 'Image upload failed',
-            description: 'Failed to upload image. Please try again.',
-            variant: 'destructive',
-          });
+          dispatch(
+            showErrorToast({
+              title: 'Image upload failed',
+              description: 'Failed to upload image. Please try again.',
+            }),
+          );
           return;
         } finally {
           setIsUploadingImage(false);
@@ -118,6 +120,12 @@ export function ShareAchievementModal({
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
+      dispatch(
+        showSuccessToast({
+          title: 'Achievement shared',
+          description: 'Your achievement has been shared!',
+        }),
+      );
     } finally {
       setIsSubmitting(false);
     }

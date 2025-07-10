@@ -10,12 +10,12 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
-import { useToast } from '@/components/ui/use-toast';
 import {
   deleteCommentAsync,
   createCommentAsync,
   type PostComment,
 } from '@/lib/redux/slices/socialFeedSlice';
+import { showErrorToast } from '@/lib/redux/slices/toastSlice';
 import { AppDispatch } from '@/lib/redux/store';
 import { formatTimeAgo } from '@/utils/time/formatTimeAgo';
 
@@ -29,7 +29,6 @@ export default function CommentItem({
   currentUserAddress: string;
 }) {
   const dispatch = useDispatch<AppDispatch>();
-  const { toast } = useToast();
   const [isReplying, setIsReplying] = useState(false);
   const [replyText, setReplyText] = useState('');
 
@@ -45,11 +44,12 @@ export default function CommentItem({
         ).unwrap();
       } catch (error) {
         console.error('Failed to delete comment:', error);
-        toast({
-          title: 'Error',
-          description: 'Failed to delete comment. Please try again.',
-          variant: 'destructive',
-        });
+        dispatch(
+          showErrorToast({
+            title: 'Error',
+            description: 'Failed to delete comment. Please try again.',
+          }),
+        );
       }
     }
   };
@@ -71,11 +71,12 @@ export default function CommentItem({
         setIsReplying(false);
       } catch (error) {
         console.error('Failed to post reply:', error);
-        toast({
-          title: 'Error',
-          description: 'Failed to post reply. Please try again.',
-          variant: 'destructive',
-        });
+        dispatch(
+          showErrorToast({
+            title: 'Error',
+            description: 'Failed to post reply. Please try again.',
+          }),
+        );
       }
     }
   };

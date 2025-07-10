@@ -4,12 +4,13 @@ import { useState, useCallback, useRef } from 'react';
 import { X, Upload, Image as ImageIcon, AlertTriangle, CheckCircle, Loader2 } from 'lucide-react';
 import Image from 'next/image';
 import { useTheme } from 'next-themes';
+import { useDispatch } from 'react-redux';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { BaseModal } from '@/components/ui/base-modal';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { useToast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/cn';
+import { showSuccessToast, showErrorToast } from '@/lib/redux/slices/toastSlice';
 import { IActivity } from '@/lib/supabase/activities';
 import { doesActivityOverlap } from '@/utils';
 import { extractDateFromText, isTodayMonthDay } from '@/utils';
@@ -24,6 +25,7 @@ interface ScreenshotImportModalProps {
   onSaveActivity: (activityData: Partial<IActivity>) => Promise<void>;
   userAddress: string;
   activities: IActivity[];
+  onCelebration?: (savedActivities: string[]) => void;
 }
 
 interface FileData {
@@ -40,10 +42,11 @@ export function ScreenshotImportModal({
   onSaveActivity,
   userAddress,
   activities,
+  onCelebration,
 }: ScreenshotImportModalProps) {
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
-  const { toast } = useToast();
+  const dispatch = useDispatch();
 
   const [files, setFiles] = useState<FileData[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -308,20 +311,28 @@ export function ScreenshotImportModal({
 
     // Show results
     if (savedActivities.length > 0) {
-      toast({
-        title: 'Workouts Imported',
-        description: `Successfully imported ${savedActivities.length} workout${
-          savedActivities.length > 1 ? 's' : ''
-        }: ${savedActivities.join(', ')}`,
-      });
+      // Enhanced success toast notification
+      dispatch(
+        showSuccessToast({
+          title: '🎉 Workouts Successfully Imported!',
+          description: `${savedActivities.length} workout${
+            savedActivities.length > 1 ? 's' : ''
+          } added to your activity log: ${savedActivities.join(', ')}`,
+          duration: 5000, // Show longer for success
+        }),
+      );
+
+      // Trigger celebration modal
+      onCelebration?.(savedActivities);
     }
 
     if (failedActivities.length > 0) {
-      toast({
-        title: 'Some Imports Failed',
-        description: `Failed to import: ${failedActivities.join(', ')}`,
-        variant: 'destructive',
-      });
+      dispatch(
+        showErrorToast({
+          title: 'Some Imports Failed',
+          description: `Failed to import: ${failedActivities.join(', ')}`,
+        }),
+      );
     }
 
     if (savedActivities.length > 0 && failedActivities.length === 0) {

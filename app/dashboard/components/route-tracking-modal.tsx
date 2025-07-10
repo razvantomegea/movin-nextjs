@@ -18,12 +18,13 @@ import {
   LightbulbOff,
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
+import { useDispatch } from 'react-redux';
 import { useGoogleMapsStatus } from '@/app/contexts/google-maps-provider';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { ResponsiveTooltip } from '@/components/ui/responsive-tooltip';
-import { useToast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/cn';
+import { showSuccessToast, showErrorToast } from '@/lib/redux/slices/toastSlice';
 import { IActivity } from '@/lib/supabase/activities';
 import { formatDistance, formatDuration } from '@/utils';
 import { doesActivityOverlap } from '@/utils';
@@ -112,7 +113,7 @@ export function RouteTrackingModal({
   const mapRef = useRef<google.maps.Map | null>(null);
   const watchIdRef = useRef<number | null>(null);
   const { isLoaded: mapsLoaded, loadError: mapsError } = useGoogleMapsStatus();
-  const { toast } = useToast();
+  const dispatch = useDispatch();
 
   const [isTracking, setIsTracking] = useState(false);
   const [currentPosition, setCurrentPosition] = useState<google.maps.LatLngLiteral | null>(null);
@@ -275,15 +276,19 @@ export function RouteTrackingModal({
       manageScreenAwake();
       // Show toast when toggled
       if (isScreenAwakeEnabled) {
-        toast({
-          title: 'Keep Screen Awake Enabled',
-          description: 'Your device will try to keep the screen on during route tracking.',
-        });
+        dispatch(
+          showSuccessToast({
+            title: 'Keep Screen Awake Enabled',
+            description: 'Your device will try to keep the screen on during route tracking.',
+          }),
+        );
       } else {
-        toast({
-          title: 'Keep Screen Awake Disabled',
-          description: 'Your device will allow the screen to turn off as usual.',
-        });
+        dispatch(
+          showSuccessToast({
+            title: 'Keep Screen Awake Disabled',
+            description: 'Your device will allow the screen to turn off as usual.',
+          }),
+        );
       }
     }
 
@@ -291,7 +296,7 @@ export function RouteTrackingModal({
     return () => {
       releaseWakeLock();
     };
-  }, [isScreenAwakeEnabled, isOpen, toast]);
+  }, [isScreenAwakeEnabled, isOpen, dispatch]);
 
   // Request permission and get position
   const requestLocationPermission = () => {
@@ -530,12 +535,13 @@ export function RouteTrackingModal({
       activities,
     );
     if (overlap) {
-      toast({
-        title: 'Activity Overlap',
-        description:
-          'An activity already exists during this time. Please check your activities and try again.',
-        variant: 'destructive',
-      });
+      dispatch(
+        showErrorToast({
+          title: 'Activity Overlap',
+          description:
+            'An activity already exists during this time. Please check your activities and try again.',
+        }),
+      );
       return;
     }
 
@@ -547,12 +553,13 @@ export function RouteTrackingModal({
       // This catch block might not be needed if onSaveRoute handles errors internally
       // but we'll keep it as a fallback
       console.error('Failed to save route:', error);
-      toast({
-        title: 'Route Save Failed',
-        description:
-          'Route has been queued for retry. Check your connection and try refreshing the Activities page.',
-        variant: 'destructive',
-      });
+      dispatch(
+        showErrorToast({
+          title: 'Route Save Failed',
+          description:
+            'Route has been queued for retry. Check your connection and try refreshing the Activities page.',
+        }),
+      );
       // Don't close the modal so user can see the error
     }
   };

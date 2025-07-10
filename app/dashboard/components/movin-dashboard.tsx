@@ -98,6 +98,8 @@ export function MovinDashboard() {
   const [isScreenshotImportModalOpen, setIsScreenshotImportModalOpen] = useState(false);
   const [showStepsCelebration, setShowStepsCelebration] = useState(false);
   const [showStreakCelebration, setShowStreakCelebration] = useState(false);
+  const [showWorkoutImportCelebration, setShowWorkoutImportCelebration] = useState(false);
+  const [importedWorkouts, setImportedWorkouts] = useState<string[]>([]);
   const [streakMilestone, setStreakMilestone] = useState(0);
   const [showFailedSavesDetails, setShowFailedSavesDetails] = useState(false);
   const [selectedMetric, setSelectedMetric] = useState<MetricType>('steps');
@@ -596,6 +598,16 @@ export function MovinDashboard() {
     setShowStreakCelebration(false);
   }, []);
 
+  const handleWorkoutImportCelebration = useCallback((savedActivities: string[]) => {
+    setImportedWorkouts(savedActivities);
+    setShowWorkoutImportCelebration(true);
+  }, []);
+
+  const handleCloseWorkoutImportCelebration = useCallback(() => {
+    setShowWorkoutImportCelebration(false);
+    setImportedWorkouts([]);
+  }, []);
+
   // Achievement sharing handlers
   const handleShareStepsAchievement = useCallback(async () => {
     if (!addressLower || !dailyActivity) return;
@@ -674,6 +686,45 @@ export function MovinDashboard() {
       );
     }
   }, [addressLower, streakMilestone, dispatch]);
+
+  const handleShareWorkoutImportAchievement = useCallback(async () => {
+    if (!addressLower || !importedWorkouts.length) return;
+
+    try {
+      const achievementData = createAchievementData(
+        AchievementTypeEnum.workout,
+        `${importedWorkouts.length} workout${importedWorkouts.length > 1 ? 's' : ''}`,
+        'Workouts Imported',
+        `Successfully imported ${importedWorkouts.join(', ')} from screenshots!`,
+      );
+
+      const postContent = generateAchievementPostContent(achievementData);
+
+      await dispatch(
+        createPost({
+          address: addressLower,
+          postData: { content: postContent },
+        }),
+      ).unwrap();
+
+      dispatch(
+        showSuccessToast({
+          title: 'Achievement Shared!',
+          description: 'Your workout import achievement has been shared with your connections.',
+        }),
+      );
+
+      setShowWorkoutImportCelebration(false);
+    } catch (error) {
+      console.error('Failed to share workout import achievement:', error);
+      dispatch(
+        showInfoToast({
+          title: 'Share Failed',
+          description: 'Unable to share achievement. Please try again.',
+        }),
+      );
+    }
+  }, [addressLower, importedWorkouts, dispatch]);
 
   // Handle individual retry of failed save
   const handleRetryFailedSave = useCallback(
@@ -1184,6 +1235,7 @@ export function MovinDashboard() {
         onSaveActivity={handleSaveImportedActivity}
         userAddress={addressLower || ''}
         activities={activities}
+        onCelebration={handleWorkoutImportCelebration}
       />
 
       {/* Steps Goal Celebration */}
@@ -1209,6 +1261,25 @@ export function MovinDashboard() {
         description={`Congratulations on maintaining a ${streakMilestone}-day activity streak!`}
         showReward={false}
         onShare={handleShareStreakAchievement}
+        showShareButton={!!addressLower}
+      />
+
+      {/* Workout Import Celebration */}
+      <CelebrationAnimation
+        isOpen={showWorkoutImportCelebration}
+        onClose={handleCloseWorkoutImportCelebration}
+        achievementType="workout"
+        achievementValue={`${importedWorkouts.length} workout${
+          importedWorkouts.length > 1 ? 's' : ''
+        }`}
+        achievementTitle="Workouts Imported Successfully!"
+        description={`Great job! You've successfully imported ${importedWorkouts.join(
+          ', ',
+        )} from your screenshots.`}
+        showReward={true}
+        rewardAmount="2.0"
+        rewardCurrency="MVN"
+        onShare={handleShareWorkoutImportAchievement}
         showShareButton={!!addressLower}
       />
     </>

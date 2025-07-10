@@ -3,8 +3,9 @@
 import { useEffect, useState } from 'react';
 import { useAppKitAccount } from '@reown/appkit/react';
 import { Bell, BellOff } from 'lucide-react';
+import { useDispatch } from 'react-redux';
 import { Button } from '@/components/ui/button';
-import { useToast } from '@/components/ui/use-toast';
+import { showSuccessToast, showErrorToast } from '@/lib/redux/slices/toastSlice';
 import {
   checkPushNotificationSupport,
   setupPushNotifications,
@@ -28,7 +29,7 @@ export default function PushManager({ onSubscriptionChange }: PushManagerProps) 
     vapidConfigured: false,
   });
   const { address, isConnected } = useAppKitAccount();
-  const { toast } = useToast();
+  const dispatch = useDispatch();
 
   useEffect(() => {
     // Check support and existing subscription
@@ -60,20 +61,22 @@ export default function PushManager({ onSubscriptionChange }: PushManagerProps) 
       if (!support.notificationSupported) issues.push('Notifications');
       if (!support.vapidConfigured) issues.push('Push configuration');
 
-      toast({
-        title: 'Not Supported',
-        description: `Missing support for: ${issues.join(', ')}`,
-        variant: 'destructive',
-      });
+      dispatch(
+        showErrorToast({
+          title: 'Not Supported',
+          description: `Missing support for: ${issues.join(', ')}`,
+        }),
+      );
       return;
     }
 
     if (!isConnected || !address) {
-      toast({
-        title: 'Wallet Not Connected',
-        description: 'Please connect your wallet to enable push notifications.',
-        variant: 'destructive',
-      });
+      dispatch(
+        showErrorToast({
+          title: 'Wallet Not Connected',
+          description: 'Please connect your wallet to enable push notifications.',
+        }),
+      );
       return;
     }
 
@@ -86,24 +89,28 @@ export default function PushManager({ onSubscriptionChange }: PushManagerProps) 
         setSubscription(result.subscription);
         onSubscriptionChange?.(result.subscription);
 
-        toast({
-          title: 'Notifications Enabled',
-          description: "You'll now receive push notifications for important updates.",
-        });
+        dispatch(
+          showSuccessToast({
+            title: 'Notifications Enabled',
+            description: "You'll now receive push notifications for important updates.",
+          }),
+        );
       } else {
-        toast({
-          title: 'Subscription Failed',
-          description: result.error || 'Unable to enable push notifications. Please try again.',
-          variant: 'destructive',
-        });
+        dispatch(
+          showErrorToast({
+            title: 'Subscription Failed',
+            description: result.error || 'Unable to enable push notifications. Please try again.',
+          }),
+        );
       }
     } catch (error) {
       console.error('Subscription failed:', error);
-      toast({
-        title: 'Subscription Failed',
-        description: 'Unable to enable push notifications. Please try again.',
-        variant: 'destructive',
-      });
+      dispatch(
+        showErrorToast({
+          title: 'Subscription Failed',
+          description: 'Unable to enable push notifications. Please try again.',
+        }),
+      );
     } finally {
       setLoading(false);
     }
@@ -121,24 +128,28 @@ export default function PushManager({ onSubscriptionChange }: PushManagerProps) 
         setSubscription(null);
         onSubscriptionChange?.(null);
 
-        toast({
-          title: 'Notifications Disabled',
-          description: 'You will no longer receive push notifications.',
-        });
+        dispatch(
+          showSuccessToast({
+            title: 'Notifications Disabled',
+            description: 'You will no longer receive push notifications.',
+          }),
+        );
       } else {
-        toast({
-          title: 'Error',
-          description: 'Failed to disable notifications. Please try again.',
-          variant: 'destructive',
-        });
+        dispatch(
+          showErrorToast({
+            title: 'Error',
+            description: 'Failed to disable notifications. Please try again.',
+          }),
+        );
       }
     } catch (error) {
       console.error('Unsubscription failed:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to disable notifications. Please try again.',
-        variant: 'destructive',
-      });
+      dispatch(
+        showErrorToast({
+          title: 'Error',
+          description: 'Failed to disable notifications. Please try again.',
+        }),
+      );
     } finally {
       setLoading(false);
     }
