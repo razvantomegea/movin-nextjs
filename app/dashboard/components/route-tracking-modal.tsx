@@ -135,6 +135,21 @@ export function RouteTrackingModal({
   // Simulated joint tracking state
   const [sarrahPosition, setSarrahPosition] = useState<google.maps.LatLngLiteral | null>(null);
 
+  // Reset modal state when closed
+  useEffect(() => {
+    if (!isOpen) {
+      // Reset all tracking state when modal is closed
+      resetTracking();
+      setError(null);
+      setPermissionState('unknown');
+      setSelectedUser(null);
+      setIsScreenAwakeEnabled(false);
+      // Reset position states
+      setCurrentPosition(null);
+      setSarrahPosition(null);
+    }
+  }, [isOpen, resetTracking]);
+
   // Initialize permission check
   useEffect(() => {
     if (!isOpen) return;
