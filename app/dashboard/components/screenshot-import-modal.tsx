@@ -208,7 +208,7 @@ export function ScreenshotImportModal({
       if (fileNameDate && imageDate) {
         const fileMonthDay = getMonthDay(fileNameDate);
         const imageMonthDay = getMonthDay(imageDate);
-        
+
         if (fileMonthDay && imageMonthDay && fileMonthDay !== imageMonthDay) {
           throw new Error(
             `Date mismatch: File name suggests ${fileMonthDay}, but screenshot says ${imageMonthDay}.`,
