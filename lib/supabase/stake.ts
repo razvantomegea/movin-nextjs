@@ -1,6 +1,6 @@
 import { SupabaseClient } from '@supabase/supabase-js';
-import { getClient } from './createClient';
 import { handleAuthError } from '@/utils/auth';
+import { getClient } from './createClient';
 
 export interface IStake {
   id: string;
