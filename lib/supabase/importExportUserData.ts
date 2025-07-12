@@ -1,5 +1,6 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { getClient } from './createClient';
+import { handleAuthError } from '@/utils/auth';
 
 export async function exportUserData({
   address,
@@ -9,7 +10,9 @@ export async function exportUserData({
   client?: SupabaseClient;
 }): Promise<unknown> {
   if (!address) {
-    throw new Error('Address is required to export data');
+    const error = new Error('Address is required to export data');
+    handleAuthError(error, 'exportUserData');
+    throw error;
   }
   if (!client) {
     client = getClient();
@@ -20,6 +23,7 @@ export async function exportUserData({
   });
 
   if (error) {
+    handleAuthError(error instanceof Error ? error : new Error(String(error)), 'exportUserData');
     throw error;
   }
   return data;
@@ -35,7 +39,9 @@ export async function importUserData({
   client?: SupabaseClient;
 }): Promise<void> {
   if (!address) {
-    throw new Error('Address is required to import data');
+    const error = new Error('Address is required to import data');
+    handleAuthError(error, 'importUserData');
+    throw error;
   }
   if (!client) {
     client = getClient();
@@ -47,6 +53,7 @@ export async function importUserData({
   });
 
   if (error) {
+    handleAuthError(error instanceof Error ? error : new Error(String(error)), 'importUserData');
     throw error;
   }
 }

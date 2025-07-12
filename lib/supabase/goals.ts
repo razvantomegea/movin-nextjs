@@ -1,5 +1,6 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { getClient } from './createClient';
+import { handleAuthError } from '@/utils/auth';
 
 export type GoalType =
   | 'calories'
@@ -72,6 +73,7 @@ export async function getUserGoals({
   const { data, error } = await query;
 
   if (error) {
+    handleAuthError(error instanceof Error ? error : new Error(String(error)), 'getUserGoals');
     throw error;
   }
 
@@ -106,6 +108,7 @@ export async function getGoalById({
     if (error.code === 'PGRST116') {
       return null; // Goal not found
     }
+    handleAuthError(error instanceof Error ? error : new Error(String(error)), 'getGoalById');
     throw error;
   }
 
@@ -139,6 +142,7 @@ export async function createGoal({
     .single();
 
   if (error) {
+    handleAuthError(error instanceof Error ? error : new Error(String(error)), 'createGoal');
     throw error;
   }
 
@@ -173,6 +177,7 @@ export async function updateGoal({
     .single();
 
   if (error) {
+    handleAuthError(error instanceof Error ? error : new Error(String(error)), 'updateGoal');
     throw error;
   }
 
@@ -202,6 +207,7 @@ export async function deleteGoal({
     .eq('address', address.toLowerCase());
 
   if (error) {
+    handleAuthError(error instanceof Error ? error : new Error(String(error)), 'deleteGoal');
     throw error;
   }
 }
@@ -225,6 +231,10 @@ export async function createDefaultGoals({
   });
 
   if (error) {
+    handleAuthError(
+      error instanceof Error ? error : new Error(String(error)),
+      'createDefaultGoals',
+    );
     throw error;
   }
 
@@ -254,6 +264,10 @@ export async function updateGoalProgress({
   });
 
   if (error) {
+    handleAuthError(
+      error instanceof Error ? error : new Error(String(error)),
+      'updateGoalProgress',
+    );
     throw error;
   }
 }
@@ -390,6 +404,7 @@ export async function userHasGoals({
     .limit(1);
 
   if (error) {
+    handleAuthError(error instanceof Error ? error : new Error(String(error)), 'userHasGoals');
     throw error;
   }
 

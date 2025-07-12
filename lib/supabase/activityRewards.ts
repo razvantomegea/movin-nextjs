@@ -1,5 +1,6 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { getClient } from './createClient';
+import { handleAuthError } from '@/utils/auth';
 
 export interface IActivityReward {
   id: string;
@@ -20,7 +21,9 @@ export async function getUserActivityRewards({
   client?: SupabaseClient;
 }): Promise<IActivityReward[]> {
   if (!address || address.trim() === '') {
-    throw new Error('Address is required');
+    const error = new Error('Address is required');
+    handleAuthError(error, 'getUserActivityRewards');
+    throw error;
   }
 
   if (!client) {
@@ -34,6 +37,10 @@ export async function getUserActivityRewards({
     .order('created_at', { ascending: false });
 
   if (error) {
+    handleAuthError(
+      error instanceof Error ? error : new Error(String(error)),
+      'getUserActivityRewards',
+    );
     throw error;
   }
 
@@ -51,7 +58,9 @@ export async function getActivityRewardById({
   client?: SupabaseClient;
 }): Promise<IActivityReward | null> {
   if (!id || id.trim() === '') {
-    throw new Error('ID is required');
+    const error = new Error('ID is required');
+    handleAuthError(error, 'getActivityRewardById');
+    throw error;
   }
 
   if (!client) {
@@ -61,6 +70,10 @@ export async function getActivityRewardById({
   const { data, error } = await client.from('activity_rewards').select('*').eq('id', id).single();
 
   if (error) {
+    handleAuthError(
+      error instanceof Error ? error : new Error(String(error)),
+      'getActivityRewardById',
+    );
     throw error;
   }
 
@@ -88,11 +101,17 @@ export async function insertActivityReward({
   const { data, error } = await client.from('activity_rewards').insert(dataToInsert).select();
 
   if (error) {
+    handleAuthError(
+      error instanceof Error ? error : new Error(String(error)),
+      'insertActivityReward',
+    );
     throw error;
   }
 
   if (!data || data.length === 0) {
-    throw new Error('Activity reward creation failed: No data returned');
+    const error = new Error('Activity reward creation failed: No data returned');
+    handleAuthError(error, 'insertActivityReward');
+    throw error;
   }
 
   return data[0];
@@ -113,7 +132,9 @@ export async function updateActivityReward({
   }
 
   if (!rewardData.id) {
-    throw new Error('Activity reward update failed: ID is required');
+    const error = new Error('Activity reward update failed: ID is required');
+    handleAuthError(error, 'updateActivityReward');
+    throw error;
   }
 
   const { data, error } = await client
@@ -123,11 +144,17 @@ export async function updateActivityReward({
     .select();
 
   if (error) {
+    handleAuthError(
+      error instanceof Error ? error : new Error(String(error)),
+      'updateActivityReward',
+    );
     throw error;
   }
 
   if (!data || data.length === 0) {
-    throw new Error('Activity reward update failed: No data returned');
+    const error = new Error('Activity reward update failed: No data returned');
+    handleAuthError(error, 'updateActivityReward');
+    throw error;
   }
 
   return data[0];
@@ -144,7 +171,9 @@ export async function getTotalActivityRewards({
   client?: SupabaseClient;
 }): Promise<number> {
   if (!address || address.trim() === '') {
-    throw new Error('Address is required');
+    const error = new Error('Address is required');
+    handleAuthError(error, 'getTotalActivityRewards');
+    throw error;
   }
 
   if (!client) {
@@ -157,6 +186,10 @@ export async function getTotalActivityRewards({
     .eq('address', address);
 
   if (error) {
+    handleAuthError(
+      error instanceof Error ? error : new Error(String(error)),
+      'getTotalActivityRewards',
+    );
     throw error;
   }
 

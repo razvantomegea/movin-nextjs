@@ -1,5 +1,6 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { getClient } from './createClient';
+import { handleAuthError } from '@/utils/auth';
 
 export interface IMeal {
   id: string;
@@ -36,6 +37,7 @@ export async function getRecentMeals({
 
   if (error) {
     console.error('Error fetching recent meals:', error);
+    handleAuthError(error instanceof Error ? error : new Error(String(error)), 'getRecentMeals');
     throw error;
   }
   return (data as IMeal[]) || [];
@@ -55,10 +57,14 @@ export async function insertMeal({
   }
 
   if (!address) {
-    throw new Error('Address is required to insert meal');
+    const error = new Error('Address is required to insert meal');
+    handleAuthError(error, 'insertMeal');
+    throw error;
   }
   if (!mealData.meal_name) {
-    throw new Error('Meal name is required to insert meal');
+    const error = new Error('Meal name is required to insert meal');
+    handleAuthError(error, 'insertMeal');
+    throw error;
   }
 
   // Prepare data for insertion, ensuring no client-side id/timestamps are passed
@@ -84,12 +90,15 @@ export async function insertMeal({
 
   if (error) {
     console.error('Error inserting meal:', error);
+    handleAuthError(error instanceof Error ? error : new Error(String(error)), 'insertMeal');
     throw error;
   }
 
   if (!insertedData) {
     console.error('No data returned after insert meal');
-    throw new Error('Failed to insert meal, no data returned.');
+    const error = new Error('Failed to insert meal, no data returned.');
+    handleAuthError(error, 'insertMeal');
+    throw error;
   }
 
   return insertedData as IMeal;
@@ -111,7 +120,9 @@ export async function updateMeal({
   }
 
   if (!mealId || !address) {
-    throw new Error('Meal ID and address are required to update a meal.');
+    const error = new Error('Meal ID and address are required to update a meal.');
+    handleAuthError(error, 'updateMeal');
+    throw error;
   }
 
   // Prepare data for update, ensuring address is not changed, and id/created_at are not part of payload
@@ -147,11 +158,14 @@ export async function updateMeal({
 
   if (error) {
     console.error('Error updating meal:', error);
+    handleAuthError(error instanceof Error ? error : new Error(String(error)), 'updateMeal');
     throw error;
   }
   if (!updatedData) {
     console.error('No data returned after update meal');
-    throw new Error('Failed to update meal, no data returned or meal not found.');
+    const error = new Error('Failed to update meal, no data returned or meal not found.');
+    handleAuthError(error, 'updateMeal');
+    throw error;
   }
   return updatedData as IMeal;
 }
@@ -181,6 +195,7 @@ export async function searchMealsByName({
 
   if (error) {
     console.error('Error searching meals by name:', error);
+    handleAuthError(error instanceof Error ? error : new Error(String(error)), 'searchMealsByName');
     throw error;
   }
   return (data as IMeal[]) || [];
@@ -200,7 +215,9 @@ export async function deleteMeal({
   }
 
   if (!address || !id) {
-    throw new Error('Meal ID and address are required to delete a meal.');
+    const error = new Error('Meal ID and address are required to delete a meal.');
+    handleAuthError(error, 'deleteMeal');
+    throw error;
   }
 
   const { error } = await client
@@ -211,6 +228,7 @@ export async function deleteMeal({
 
   if (error) {
     console.error('Error deleting meal:', error);
+    handleAuthError(error instanceof Error ? error : new Error(String(error)), 'deleteMeal');
     throw error;
   }
 }

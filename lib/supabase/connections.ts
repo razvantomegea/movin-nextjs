@@ -1,5 +1,6 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { getClient } from './createClient';
+import { handleAuthError } from '@/utils/auth';
 
 export type ConnectionStatus = 'pending' | 'accepted' | 'declined' | 'blocked';
 
@@ -46,7 +47,9 @@ export async function sendConnectionRequest({
   }
 
   if (requesterAddress === addresseeAddress) {
-    throw new Error('Cannot send connection request to yourself');
+    const error = new Error('Cannot send connection request to yourself');
+    handleAuthError(error, 'sendConnectionRequest');
+    throw error;
   }
 
   const { data, error } = await client
@@ -72,6 +75,10 @@ export async function sendConnectionRequest({
     .single();
 
   if (error) {
+    handleAuthError(
+      error instanceof Error ? error : new Error(String(error)),
+      'sendConnectionRequest',
+    );
     throw error;
   }
 
@@ -115,6 +122,10 @@ export async function acceptConnectionRequest({
     .single();
 
   if (error) {
+    handleAuthError(
+      error instanceof Error ? error : new Error(String(error)),
+      'acceptConnectionRequest',
+    );
     throw error;
   }
 
@@ -158,6 +169,10 @@ export async function declineConnectionRequest({
     .single();
 
   if (error) {
+    handleAuthError(
+      error instanceof Error ? error : new Error(String(error)),
+      'declineConnectionRequest',
+    );
     throw error;
   }
 
@@ -201,6 +216,7 @@ export async function blockUser({
     .single();
 
   if (error) {
+    handleAuthError(error instanceof Error ? error : new Error(String(error)), 'blockUser');
     throw error;
   }
 
@@ -230,6 +246,7 @@ export async function removeConnection({
     .or(`requester_address.eq.${userAddress},addressee_address.eq.${userAddress}`);
 
   if (error) {
+    handleAuthError(error instanceof Error ? error : new Error(String(error)), 'removeConnection');
     throw error;
   }
 }
@@ -267,6 +284,10 @@ export async function getUserConnections({
     .or(`requester_address.eq.${address},addressee_address.eq.${address}`);
 
   if (error) {
+    handleAuthError(
+      error instanceof Error ? error : new Error(String(error)),
+      'getUserConnections',
+    );
     throw error;
   }
 
@@ -324,6 +345,10 @@ export async function getPendingConnections({
     .or(`requester_address.eq.${address},addressee_address.eq.${address}`);
 
   if (error) {
+    handleAuthError(
+      error instanceof Error ? error : new Error(String(error)),
+      'getPendingConnections',
+    );
     throw error;
   }
 
@@ -358,6 +383,10 @@ export async function searchUsers({
     .or(`requester_address.eq.${currentUserAddress},addressee_address.eq.${currentUserAddress}`);
 
   if (connectionsError) {
+    handleAuthError(
+      connectionsError instanceof Error ? connectionsError : new Error(String(connectionsError)),
+      'searchUsers - connections',
+    );
     throw connectionsError;
   }
 
@@ -380,6 +409,10 @@ export async function searchUsers({
     .limit(limit);
 
   if (usersError) {
+    handleAuthError(
+      usersError instanceof Error ? usersError : new Error(String(usersError)),
+      'searchUsers - users',
+    );
     throw usersError;
   }
 
@@ -441,6 +474,10 @@ export async function getConnectionStatus({
     if (error.code === 'PGRST116') {
       return { connection: null, status: null }; // No connection found
     }
+    handleAuthError(
+      error instanceof Error ? error : new Error(String(error)),
+      'getConnectionStatus',
+    );
     throw error;
   }
 

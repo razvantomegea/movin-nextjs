@@ -1,5 +1,6 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { getClient } from './createClient';
+import { handleAuthError } from '@/utils/auth';
 
 export type BadgeRequirementValue = string | number | boolean | Date;
 
@@ -103,6 +104,7 @@ export async function getAllBadges({
     .order('requirement_value', { ascending: true });
 
   if (error) {
+    handleAuthError(error instanceof Error ? error : new Error(String(error)), 'getAllBadges');
     throw error;
   }
 
@@ -143,6 +145,10 @@ export async function getBadgesByCategory({
     .order('requirement_value', { ascending: true });
 
   if (error) {
+    handleAuthError(
+      error instanceof Error ? error : new Error(String(error)),
+      'getBadgesByCategory',
+    );
     throw error;
   }
 
@@ -175,6 +181,7 @@ export async function getUserBadges({
     .order('earned_at', { ascending: false });
 
   if (error) {
+    handleAuthError(error instanceof Error ? error : new Error(String(error)), 'getUserBadges');
     throw error;
   }
 
@@ -217,7 +224,9 @@ export async function awardBadge({
       .single();
 
     if (fetchError) {
-      throw new Error(`Failed to fetch existing badge: ${fetchError.message}`);
+      const error = new Error(`Failed to fetch existing badge: ${fetchError.message}`);
+      handleAuthError(error, 'awardBadge - fetch existing');
+      throw error;
     }
 
     return existingBadge;
@@ -257,12 +266,14 @@ export async function awardBadge({
         .single();
 
       if (raceError) {
-        throw new Error(`Badge already exists but failed to fetch: ${raceError.message}`);
+        const err = new Error(`Badge already exists but failed to fetch: ${raceError.message}`);
+        handleAuthError(err, 'awardBadge - race condition fetch');
+        throw err;
       }
 
       return raceConditionBadge;
     }
-
+    handleAuthError(error instanceof Error ? error : new Error(String(error)), 'awardBadge');
     throw error;
   }
 
@@ -294,6 +305,7 @@ export async function hasUserBadge({
 
   if (error && error.code !== 'PGRST116') {
     // PGRST116 is "not found" error, which is expected
+    handleAuthError(error instanceof Error ? error : new Error(String(error)), 'hasUserBadge');
     throw error;
   }
 
@@ -323,6 +335,7 @@ export async function getBadgeProgress({
     .in('badge_id', badgeIds);
 
   if (error) {
+    handleAuthError(error instanceof Error ? error : new Error(String(error)), 'getBadgeProgress');
     throw error;
   }
 

@@ -294,11 +294,11 @@ export function SettingsPage() {
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <Label>Version</Label>
-                <span className="text-sm">1.8.5</span>
+                <span className="text-sm">1.8.6</span>
               </div>
               <div className="flex items-center justify-between">
                 <Label>Build</Label>
-                <span className="text-sm">2025.07.10</span>
+                <span className="text-sm">2025.07.12</span>
               </div>
 
               <hr className="my-4" />

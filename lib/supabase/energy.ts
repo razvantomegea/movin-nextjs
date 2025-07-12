@@ -1,5 +1,6 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { getClient } from './createClient';
+import { handleAuthError } from '@/utils/auth';
 
 export interface IEnergy {
   id: string;
@@ -32,6 +33,7 @@ export async function getEnergyEntries({
     .order('log_date', { ascending: false });
 
   if (error) {
+    handleAuthError(error instanceof Error ? error : new Error(String(error)), 'getEnergyEntries');
     throw error;
   }
   return (data as IEnergy[]) || [];
@@ -51,7 +53,9 @@ export async function insertEnergyEntry({
   }
 
   if (!address) {
-    throw new Error('Address is required to insert energy entry');
+    const error = new Error('Address is required to insert energy entry');
+    handleAuthError(error, 'insertEnergyEntry');
+    throw error;
   }
 
   const dataToInsert = {
@@ -66,6 +70,7 @@ export async function insertEnergyEntry({
   const { error } = await client.from('energy').insert(dataToInsert);
 
   if (error) {
+    handleAuthError(error instanceof Error ? error : new Error(String(error)), 'insertEnergyEntry');
     throw error;
   }
 
@@ -93,11 +98,15 @@ export async function updateEnergyEntry({
   }
 
   if (!address) {
-    throw new Error('Address is required to update energy entry');
+    const error = new Error('Address is required to update energy entry');
+    handleAuthError(error, 'updateEnergyEntry');
+    throw error;
   }
 
   if (!energyData.id) {
-    throw new Error('Energy entry update failed: ID is required');
+    const error = new Error('Energy entry update failed: ID is required');
+    handleAuthError(error, 'updateEnergyEntry');
+    throw error;
   }
 
   const { id, ...updateFields } = energyData;
@@ -110,6 +119,7 @@ export async function updateEnergyEntry({
     .single();
 
   if (error) {
+    handleAuthError(error instanceof Error ? error : new Error(String(error)), 'updateEnergyEntry');
     throw error;
   }
 
@@ -140,6 +150,10 @@ export async function getEnergyEntriesByDateRange({
     .order('log_date', { ascending: false });
 
   if (error) {
+    handleAuthError(
+      error instanceof Error ? error : new Error(String(error)),
+      'getEnergyEntriesByDateRange',
+    );
     throw error;
   }
   return (data as IEnergy[]) || [];

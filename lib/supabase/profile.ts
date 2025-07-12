@@ -1,5 +1,6 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { getClient } from './createClient';
+import { handleAuthError } from '@/utils/auth';
 
 /**
  * Calculate level based on total MVN earned
@@ -32,7 +33,9 @@ export async function updateProfileWithEarnings({
   const existingProfile = await getProfile({ address, client });
 
   if (!existingProfile) {
-    throw new Error('Profile not found');
+    const error = new Error('Profile not found');
+    handleAuthError(error, 'updateProfileWithEarnings');
+    throw error;
   }
 
   const currentTotalEarned = existingProfile.total_earned || 0;
@@ -49,11 +52,17 @@ export async function updateProfileWithEarnings({
     .select();
 
   if (error) {
+    handleAuthError(
+      error instanceof Error ? error : new Error(String(error)),
+      'updateProfileWithEarnings',
+    );
     throw error;
   }
 
   if (!data || data.length === 0) {
-    throw new Error('Profile update failed: No data returned');
+    const error = new Error('Profile update failed: No data returned');
+    handleAuthError(error, 'updateProfileWithEarnings');
+    throw error;
   }
 
   return data[0];
@@ -81,7 +90,9 @@ export async function getLeaderboard({
 } = {}): Promise<ILeaderboardUser[]> {
   // Validate limit parameter
   if (limit <= 0 || limit > 1000) {
-    throw new Error('Limit must be between 1 and 1000');
+    const error = new Error('Limit must be between 1 and 1000');
+    handleAuthError(error, 'getLeaderboard');
+    throw error;
   }
 
   if (!client) {
@@ -97,6 +108,7 @@ export async function getLeaderboard({
     .limit(limit);
 
   if (error) {
+    handleAuthError(error instanceof Error ? error : new Error(String(error)), 'getLeaderboard');
     throw error;
   }
 
@@ -138,6 +150,7 @@ export async function getProfile({
   const { data, error } = await client.from('profiles').select('*').eq('address', address);
 
   if (error) {
+    handleAuthError(error instanceof Error ? error : new Error(String(error)), 'getProfile');
     throw error;
   }
 
@@ -167,11 +180,14 @@ export async function updateProfile({
       .select();
 
     if (error) {
+      handleAuthError(error instanceof Error ? error : new Error(String(error)), 'updateProfile');
       throw error;
     }
 
     if (!data || data.length === 0) {
-      throw new Error('Profile update failed: No data returned');
+      const error = new Error('Profile update failed: No data returned');
+      handleAuthError(error, 'updateProfile');
+      throw error;
     }
 
     return data[0];
@@ -196,11 +212,14 @@ export async function updateProfile({
   const { data, error } = await client.from('profiles').insert(dataToInsert).select();
 
   if (error) {
+    handleAuthError(error instanceof Error ? error : new Error(String(error)), 'updateProfile');
     throw error;
   }
 
   if (!data || data.length === 0) {
-    throw new Error('Profile creation failed: No data returned');
+    const error = new Error('Profile creation failed: No data returned');
+    handleAuthError(error, 'updateProfile');
+    throw error;
   }
 
   return data[0];
