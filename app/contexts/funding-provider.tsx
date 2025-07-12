@@ -70,20 +70,22 @@ export function FundingProvider({ children }: FundingProviderProps) {
         setFundingError(null);
 
         try {
-          // Get the JWT token from localStorage
-          const authTokenData = localStorage.getItem('auth_token');
-          const authToken = authTokenData ? JSON.parse(authTokenData).token : null;
-
-          if (!authToken) {
-            throw new Error('No authentication token found');
+          // Check authentication/session before funding
+          const sessionRes = await fetch('/api/auth/session', {
+            method: 'GET',
+            credentials: 'include',
+          });
+          if (!sessionRes.ok) {
+            throw new Error('Not authenticated. Please log in again.');
           }
 
+          // Call fund-wallet API (token sent via httpOnly cookie)
           const response = await fetch('/api/fund-wallet', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': `Bearer ${authToken}`,
             },
+            credentials: 'include',
           });
 
           const data = await response.json();

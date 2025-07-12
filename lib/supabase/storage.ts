@@ -1,3 +1,4 @@
+import { handleAuthError } from '@/utils/auth';
 import { createSupabaseClientBrowser } from './createClient';
 import {
   MAX_FILE_SIZE,
@@ -109,7 +110,7 @@ export async function uploadAvatar(file: File, userId: string): Promise<string> 
     return urlData.publicUrl;
   } catch (error) {
     console.error('Detailed upload error:', error);
-
+    handleAuthError(error instanceof Error ? error : new Error(String(error)), 'uploadAvatar');
     // Provide more specific error message to help debugging
     if (error instanceof Error) {
       if (error.message.includes('jwt malformed') || error.message.includes('Unauthorized')) {

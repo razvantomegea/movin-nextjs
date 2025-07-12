@@ -5,7 +5,7 @@ import { useFunding } from '@/app/contexts/funding-provider';
 import movinTokenAbi from '@/lib/abi/movin-token-abi.json';
 import { useAppDispatch } from '@/lib/redux/hooks';
 import { showErrorToast } from '@/lib/redux/slices/toastSlice';
-import { forceLogout, isWalletConnected } from '@/utils/auth';
+import { forceLogout, isWalletConnected, handleAuthError } from '@/utils/auth';
 import { formatBalanceWithSuffix } from '@/utils/crypto';
 import { mapError } from '@/utils/errors';
 
@@ -246,6 +246,7 @@ export function useMovinToken() {
             description: errorMessage,
           }),
         );
+        handleAuthError(errorMessage, 'useMovinToken - approveTokens');
         return false;
       }
     };
@@ -306,6 +307,7 @@ export function useMovinToken() {
             description: errorMessage,
           }),
         );
+        handleAuthError(errorMessage, 'useMovinToken - transferTokens');
         return false;
       }
     };

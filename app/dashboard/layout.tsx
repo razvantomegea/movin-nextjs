@@ -34,6 +34,7 @@ import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/s
 import { useMovinEarn } from '@/lib/hooks/useMovinEarn';
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
 import { fetchProfile } from '@/lib/redux/slices/profileSlice';
+import { handleAuthError } from '@/utils/auth';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -117,6 +118,39 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       setLastPath(pathname);
     }
   }, [pathname, lastPath, addressLower]);
+
+  // Global auth error handler for the dashboard
+  useEffect(() => {
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      const error = event.reason;
+      const errorMessage = typeof error === 'string' ? error : error?.message || '';
+
+      // Check if this is an auth-related error
+      if (
+        errorMessage.includes('No auth token') ||
+        errorMessage.includes('Invalid auth token') ||
+        errorMessage.includes('Auth token expired') ||
+        errorMessage.includes('not logged in') ||
+        errorMessage.includes('no account') ||
+        errorMessage.includes('no address') ||
+        errorMessage.includes('Unauthorized') ||
+        errorMessage.includes('Authentication') ||
+        errorMessage.includes('not authenticated')
+      ) {
+        console.warn('Dashboard caught auth error:', errorMessage);
+        handleAuthError(error, 'Dashboard Layout');
+        event.preventDefault();
+      }
+    };
+
+    // Add the event listener
+    window.addEventListener('unhandledrejection', handleUnhandledRejection);
+
+    // Cleanup function
+    return () => {
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+    };
+  }, []);
 
   useEffect(() => {
     if (!addressLower && !isConnecting) {

@@ -37,6 +37,7 @@ function ConnectPageContent() {
   // Get referral info to check if user already has a referrer
   const { formattedReferralInfo, isLoading: referralInfoLoading } = useReferralInfo();
   const referralInfo = useMemo(() => formattedReferralInfo(), [formattedReferralInfo]);
+  const [fundingError, setFundingError] = useState<string | null>(null);
 
   // Validate Ethereum address
   const isValidAddress = useCallback((address: string): boolean => {
@@ -152,8 +153,12 @@ function ConnectPageContent() {
             const funded = await checkAndFundWallet();
 
             if (!funded) {
-              console.error('Failed to fund wallet');
-              Sentry.captureException('Failed to fund wallet');
+              const fundingErrMsg = 'Failed to fund wallet';
+              console.error(fundingErrMsg);
+              setFundingError(fundingErrMsg);
+              Sentry.captureException(new Error(fundingErrMsg));
+            } else {
+              setFundingError(null);
             }
           } catch (profileError) {
             console.error('Profile setup error:', profileError);
@@ -191,6 +196,7 @@ function ConnectPageContent() {
     connecting,
     referralInfo,
     referralInfoLoading,
+    checkAndFundWallet,
   ]);
 
   useEffect(() => {
@@ -450,6 +456,16 @@ function ConnectPageContent() {
                 data-testid={DataTestIds.CONNECT_PAGE_ERROR_MESSAGE}
               >
                 {authError}
+              </motion.p>
+            )}
+            {fundingError && (
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-red-500 text-center text-sm"
+                data-testid="CONNECT_PAGE_FUNDING_ERROR_MESSAGE"
+              >
+                {fundingError}
               </motion.p>
             )}
           </motion.div>

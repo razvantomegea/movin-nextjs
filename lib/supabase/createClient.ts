@@ -1,4 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { handleAuthError } from '@/utils/auth';
 
 // Singleton instance for the browser client
 let browserClientInstance: SupabaseClient | null = null;
@@ -65,7 +66,9 @@ export function getClient() {
     // Reset singleton if no token
     authenticatedClientInstance = null;
     currentToken = null;
-    throw new Error('No auth token');
+    const error = new Error('No auth token');
+    handleAuthError(error, 'Supabase getClient');
+    throw error;
   }
 
   let parsedToken: { token: string; expiresAt: number } | null = null;
@@ -74,18 +77,24 @@ export function getClient() {
     parsedToken = JSON.parse(token);
   } catch (e) {
     console.error('Error parsing auth token from localStorage:', e);
-    throw new Error('Invalid auth token');
+    const error = new Error('Invalid auth token');
+    handleAuthError(error, 'Supabase getClient - token parse');
+    throw error;
   }
 
   if (!parsedToken) {
-    throw new Error('Invalid auth token');
+    const error = new Error('Invalid auth token');
+    handleAuthError(error, 'Supabase getClient - token validation');
+    throw error;
   }
 
   const { token: tokenString, expiresAt } = parsedToken;
 
   if (expiresAt < Date.now()) {
     localStorage.removeItem('auth_token');
-    throw new Error('Auth token expired');
+    const error = new Error('Auth token expired');
+    handleAuthError(error, 'Supabase getClient - token expired');
+    throw error;
   }
 
   // Check if we already have a client with this token

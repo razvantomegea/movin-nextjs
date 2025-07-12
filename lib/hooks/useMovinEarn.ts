@@ -7,7 +7,7 @@ import movinEarnAbi from '@/lib/abi/movin-earn-abi.json';
 import { useAppDispatch } from '@/lib/redux/hooks';
 import { showErrorToast, showSuccessToast } from '@/lib/redux/slices/toastSlice';
 import { captureBlockchainError } from '@/lib/sentry';
-import { forceLogout, isWalletConnected } from '@/utils/auth';
+import { forceLogout, isWalletConnected, handleAuthError } from '@/utils/auth';
 import { mapError } from '@/utils/errors';
 import { getFormattedStakes } from '@/utils/staking/getFormattedStakes';
 
@@ -326,7 +326,7 @@ export function useMovinEarn() {
             description: errorMessage,
           }),
         );
-
+        handleAuthError(errorMessage, 'useMovinEarn - registerReferral');
         if (errorMessage.includes('connected')) {
           forceLogout();
         }
@@ -442,7 +442,7 @@ export function useMovinEarn() {
             description: errorMessage,
           }),
         );
-
+        handleAuthError(errorMessage, 'useMovinEarn - recordActivity');
         if (errorMessage.includes('connected')) {
           forceLogout();
         }
@@ -534,7 +534,7 @@ export function useMovinEarn() {
             description: errorMessage,
           }),
         );
-
+        handleAuthError(errorMessage, 'useMovinEarn - claimStakingRewards');
         if (errorMessage.includes('connected')) {
           forceLogout();
         }
@@ -594,7 +594,7 @@ export function useMovinEarn() {
             description: errorMessage,
           }),
         );
-
+        handleAuthError(errorMessage, 'useMovinEarn - claimAllStakingRewards');
         if (errorMessage.includes('connected')) {
           forceLogout();
         }
@@ -660,7 +660,7 @@ export function useMovinEarn() {
             description: errorMessage,
           }),
         );
-
+        handleAuthError(errorMessage, 'useMovinEarn - stakeTokens');
         if (errorMessage.includes('connected')) {
           forceLogout();
         }
@@ -722,7 +722,7 @@ export function useMovinEarn() {
             description: errorMessage,
           }),
         );
-
+        handleAuthError(errorMessage, 'useMovinEarn - unstake');
         if (errorMessage.includes('connected')) {
           forceLogout();
         }
@@ -785,7 +785,7 @@ export function useMovinEarn() {
             description: errorMessage,
           }),
         );
-
+        handleAuthError(errorMessage, 'useMovinEarn - restake');
         if (errorMessage.includes('connected')) {
           forceLogout();
         }
@@ -901,7 +901,7 @@ export function useMovinEarn() {
             description: errorMessage,
           }),
         );
-
+        handleAuthError(errorMessage, 'useMovinEarn - setPremiumStatus');
         if (errorMessage.includes('connected')) {
           forceLogout();
         }
@@ -967,6 +967,7 @@ export function useMovinEarn() {
             description: errorMessage,
           }),
         );
+        handleAuthError(errorMessage, 'useMovinEarn - claimMealRewards');
         setIsPending(false);
         return false;
       }
@@ -1028,6 +1029,7 @@ export function useMovinEarn() {
             description: errorMessage,
           }),
         );
+        handleAuthError(errorMessage, 'useMovinEarn - fundWallet');
         setIsPending(false);
         return false;
       }

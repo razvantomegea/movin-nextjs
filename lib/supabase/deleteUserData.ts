@@ -1,5 +1,6 @@
 import * as Sentry from '@sentry/nextjs';
 import { SupabaseClient } from '@supabase/supabase-js';
+import { handleAuthError } from '@/utils/auth';
 import { getClient } from './createClient';
 
 export interface UserDataSummary {
@@ -98,7 +99,10 @@ export async function getUserDataSummary({
     // Fallback to direct queries if function doesn't exist
     console.warn('SQL function not found, using fallback queries:', error);
     Sentry.captureException(error);
-
+    handleAuthError(
+      error instanceof Error ? error : new Error(String(error)),
+      'getUserDataSummary',
+    );
     try {
       // Check if profile exists
       const { data: profile, error: profileError } = await client
@@ -293,6 +297,7 @@ export async function deleteAvatar({
   } catch (error) {
     console.error('Failed to delete avatar:', error);
     Sentry.captureException(error);
+    handleAuthError(error instanceof Error ? error : new Error(String(error)), 'deleteAvatar');
     // We don't rethrow, as we want to proceed with deleting the rest of the data
   }
 }
@@ -341,7 +346,7 @@ export async function deleteAllUserData({
   } catch (error) {
     // Fallback to direct deletion if function doesn't exist
     console.warn('SQL function not found, using fallback deletion:', error);
-
+    handleAuthError(error instanceof Error ? error : new Error(String(error)), 'deleteAllUserData');
     try {
       // First get counts before deletion
       const summary = await getUserDataSummary({ address, client });
@@ -386,6 +391,10 @@ export async function deleteAllUserData({
           'Transaction function not available, using raw SQL transaction:',
           txFunctionError,
         );
+        handleAuthError(
+          txFunctionError instanceof Error ? txFunctionError : new Error(String(txFunctionError)),
+          'deleteAllUserData - transaction',
+        );
 
         // Execute raw SQL to perform transaction
         const { error: sqlError } = await client.rpc('execute_transaction', {
@@ -413,6 +422,10 @@ export async function deleteAllUserData({
         if (sqlError) {
           // If raw SQL transaction fails too, fall back to sequential operations
           console.warn('SQL transaction failed, falling back to sequential operations:', sqlError);
+          handleAuthError(
+            sqlError instanceof Error ? sqlError : new Error(String(sqlError)),
+            'deleteAllUserData - sql transaction',
+          );
 
           // Delete data in correct order (respecting foreign keys)
           await client.from('post_likes').delete().eq('address', address);

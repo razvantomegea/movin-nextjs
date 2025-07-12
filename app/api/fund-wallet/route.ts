@@ -17,13 +17,19 @@ export async function POST(req: NextRequest) {
 
     let userAddress: string;
     try {
-      const decodedToken = jwt.decode(token) as { sub?: string };
+      // Verify JWT signature
+      const secret = process.env.NEXTAUTH_SECRET;
+      if (!secret) {
+        console.error('NEXTAUTH_SECRET environment variable is not set');
+        return NextResponse.json({ message: 'Server configuration error' }, { status: 500 });
+      }
+      const decodedToken = jwt.verify(token, secret) as { sub?: string };
       if (!decodedToken?.sub) {
         return NextResponse.json({ message: 'Invalid token' }, { status: 401 });
       }
       userAddress = decodedToken.sub;
     } catch (error) {
-      return NextResponse.json({ message: 'Invalid token format' }, { status: 401 });
+      return NextResponse.json({ message: 'Invalid token' }, { status: 401 });
     }
 
     // Get environment variables

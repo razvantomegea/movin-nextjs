@@ -1,4 +1,5 @@
 import { SupabaseClient } from '@supabase/supabase-js';
+import { handleAuthError } from '@/utils/auth';
 import { getClient } from './createClient';
 
 export interface IActivity {
@@ -36,6 +37,7 @@ export async function getActivities({
     .order('start_date', { ascending: false });
 
   if (error) {
+    handleAuthError(error instanceof Error ? error : new Error(String(error)), 'getActivities');
     throw error;
   }
   return (data as IActivity[]) || [];
@@ -57,6 +59,7 @@ export async function insertActivities({
   const { data, error } = await client.from('activities').insert(activitiesToInsert).select();
 
   if (error) {
+    handleAuthError(error instanceof Error ? error : new Error(String(error)), 'insertActivities');
     throw error;
   }
 
@@ -90,6 +93,7 @@ export async function updateActivity({
     .single();
 
   if (error) {
+    handleAuthError(error instanceof Error ? error : new Error(String(error)), 'updateActivity');
     throw error;
   }
 
