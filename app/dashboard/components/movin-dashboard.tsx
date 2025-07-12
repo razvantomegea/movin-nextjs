@@ -239,7 +239,8 @@ export function MovinDashboard() {
 
   useEffect(() => {
     const today = getTodayDate();
-    const celebrationShown = localStorage.getItem(`steps-celebration-${today}`);
+    const celebrationKey = `steps-celebration-${today}`;
+    const celebrationShown = localStorage.getItem(celebrationKey);
 
     if (
       dailyActivity &&
@@ -249,7 +250,7 @@ export function MovinDashboard() {
       addressLower
     ) {
       setShowStepsCelebration(true);
-      localStorage.setItem(`steps-celebration-${today}`, 'true');
+      localStorage.setItem(celebrationKey, 'true');
 
       // Send push notification in the background
       sendStepsGoalNotification(addressLower, dailyActivity.steps).catch((error) => {

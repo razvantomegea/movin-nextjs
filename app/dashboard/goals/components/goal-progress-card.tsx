@@ -46,7 +46,7 @@ export function GoalProgressCard({
   const isDark = resolvedTheme === 'dark';
 
   // Unique key for celebration tracking
-  const goalKey = `goal_celebrated_${title.replace(/\s+/g, '_')}_${targetValue}`;
+  const goalKey = `goal_celebrated_${userAddress}_${title}_${targetValue}`.toLowerCase();
 
   // Use enhanced progress if available, otherwise calculate basic progress
   const progressPercentage =
@@ -55,11 +55,9 @@ export function GoalProgressCard({
 
   // Check if celebration was already shown for this goal
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const alreadyCelebrated = localStorage.getItem(goalKey);
-      setHasTriggered(!!alreadyCelebrated);
-    }
-  }, [goalKey]);
+    const alreadyCelebrated = localStorage.getItem(goalKey);
+    setHasTriggered(!!alreadyCelebrated && alreadyCelebrated === currentValue.toString());
+  }, [goalKey, currentValue]);
 
   // Animate progress bar
   useEffect(() => {
@@ -75,20 +73,16 @@ export function GoalProgressCard({
       const timer = setTimeout(() => {
         setShowCelebration(true);
         setHasTriggered(true);
-        if (typeof window !== 'undefined') {
-          localStorage.setItem(goalKey, '1');
-        }
+        localStorage.setItem(goalKey, currentValue.toString());
       }, 1000);
       return () => clearTimeout(timer);
     }
-  }, [progressPercentage, autoTrigger, hasTriggered, goalKey]);
+  }, [progressPercentage, autoTrigger, hasTriggered, goalKey, currentValue]);
 
   // When user manually closes the celebration, also mark as celebrated
   const handleCloseCelebration = () => {
     setShowCelebration(false);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(goalKey, '1');
-    }
+    localStorage.setItem(goalKey, currentValue.toString());
   };
 
   const getIcon = () => {

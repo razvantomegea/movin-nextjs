@@ -24,8 +24,8 @@ import { showSuccessToast, showErrorToast } from '@/lib/redux/slices/toastSlice'
 import { IMeal } from '@/lib/supabase/meals';
 import { updateProfileWithEarnings } from '@/lib/supabase/profile';
 import { formatCountdown } from '@/utils/date/date';
+import { getTodayDate } from '@/utils/date/date';
 import { Ingredient } from '@/utils/energy/mealHelpers';
-import { getTodayDateString } from '@/utils/movin/energyMappers';
 import { useIngredientEditing } from './hooks/useIngredientEditing';
 import { useMealData } from './hooks/useMealData';
 import { usePhotoValidation } from './hooks/usePhotoValidation';
@@ -273,7 +273,7 @@ export function MealDetectionResultsModal({
       carbohydrates: Math.round(mealState.detectedMeal.carbohydrates),
       fats: Math.round(mealState.detectedMeal.fats),
       fiber: Math.round(mealState.detectedMeal.fiber),
-      log_date: getTodayDateString(),
+      log_date: getTodayDate(),
     };
 
     try {
@@ -390,7 +390,7 @@ export function MealDetectionResultsModal({
               carbohydrates: mealPayload.carbohydrates || 0,
               fats: mealPayload.fats || 0,
               fiber: mealPayload.fiber || 0,
-              log_date: mealPayload.log_date || getTodayDateString(),
+              log_date: mealPayload.log_date || getTodayDate(),
             },
             error: error instanceof Error ? error.message : 'Failed to save meal',
           }),

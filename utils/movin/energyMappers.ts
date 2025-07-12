@@ -211,8 +211,3 @@ export const mapEnergyToTodaysMeals = (
       fiber: entry.fiber || 0,
     }));
 };
-
-// Helper function to get today's date as string
-export const getTodayDateString = (): string => {
-  return new Date().toISOString().split('T')[0];
-};
