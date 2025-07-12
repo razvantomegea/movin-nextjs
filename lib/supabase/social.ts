@@ -1,5 +1,6 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { getClient } from './createClient';
+import { handleAuthError } from '@/utils/auth';
 
 export interface ISocialPost {
   id: string;
@@ -89,6 +90,10 @@ export async function getSocialFeed({
     );
 
   if (connectionsError) {
+    handleAuthError(
+      connectionsError instanceof Error ? connectionsError : new Error(String(connectionsError)),
+      'getSocialFeed - connections',
+    );
     throw connectionsError;
   }
 
@@ -125,6 +130,7 @@ export async function getSocialFeed({
     .range(offset, offset + limit - 1);
 
   if (error) {
+    handleAuthError(error instanceof Error ? error : new Error(String(error)), 'getSocialFeed');
     throw error;
   }
 
@@ -207,6 +213,7 @@ export async function getUserPosts({
     .range(offset, offset + limit - 1);
 
   if (error) {
+    handleAuthError(error instanceof Error ? error : new Error(String(error)), 'getUserPosts');
     throw error;
   }
 
@@ -248,6 +255,7 @@ export async function createSocialPost({
     .single();
 
   if (error) {
+    handleAuthError(error instanceof Error ? error : new Error(String(error)), 'createSocialPost');
     throw error;
   }
 
@@ -293,6 +301,7 @@ export async function updateSocialPost({
     .single();
 
   if (error) {
+    handleAuthError(error instanceof Error ? error : new Error(String(error)), 'updateSocialPost');
     throw error;
   }
 
@@ -322,6 +331,7 @@ export async function deleteSocialPost({
     .eq('address', address.toLowerCase()); // Ensure user can only delete their own posts
 
   if (error) {
+    handleAuthError(error instanceof Error ? error : new Error(String(error)), 'deleteSocialPost');
     throw error;
   }
 }
@@ -360,6 +370,7 @@ export async function getSocialPost({
     if (error.code === 'PGRST116') {
       return null; // Post not found
     }
+    handleAuthError(error instanceof Error ? error : new Error(String(error)), 'getSocialPost');
     throw error;
   }
 
@@ -444,6 +455,10 @@ export async function uploadPostImage({
   });
 
   if (uploadError) {
+    handleAuthError(
+      uploadError instanceof Error ? uploadError : new Error(String(uploadError)),
+      'uploadPostImage',
+    );
     throw uploadError;
   }
 
@@ -482,10 +497,12 @@ export async function deletePostImage({
 
     if (error) {
       console.warn('Failed to delete post image:', error);
+      handleAuthError(error instanceof Error ? error : new Error(String(error)), 'deletePostImage');
       // Don't throw error for file deletion failures
     }
   } catch (error) {
     console.warn('Failed to parse or delete post image:', error);
+    handleAuthError(error instanceof Error ? error : new Error(String(error)), 'deletePostImage');
     // Don't throw error for file deletion failures
   }
 }
@@ -576,7 +593,10 @@ export async function getPostLikes({
     .eq('post_id', postId)
     .order('created_at', { ascending: false });
 
-  if (error) throw error;
+  if (error) {
+    handleAuthError(error instanceof Error ? error : new Error(String(error)), 'getPostLikes');
+    throw error;
+  }
 
   const likes = (data || []).filter((like) => like.is_like);
   const dislikes = (data || []).filter((like) => !like.is_like);
@@ -611,6 +631,10 @@ export async function getUserPostReaction({
     if (error.code === 'PGRST116') {
       return null; // No reaction found
     }
+    handleAuthError(
+      error instanceof Error ? error : new Error(String(error)),
+      'getUserPostReaction',
+    );
     throw error;
   }
 
@@ -648,7 +672,10 @@ export async function getPostComments({
     .eq('post_id', postId)
     .order('created_at', { ascending: true });
 
-  if (error) throw error;
+  if (error) {
+    handleAuthError(error instanceof Error ? error : new Error(String(error)), 'getPostComments');
+    throw error;
+  }
 
   return data || [];
 }
@@ -690,7 +717,10 @@ export async function createComment({
     )
     .single();
 
-  if (error) throw error;
+  if (error) {
+    handleAuthError(error instanceof Error ? error : new Error(String(error)), 'createComment');
+    throw error;
+  }
 
   return {
     ...data,
@@ -736,7 +766,10 @@ export async function updateComment({
     )
     .single();
 
-  if (error) throw error;
+  if (error) {
+    handleAuthError(error instanceof Error ? error : new Error(String(error)), 'updateComment');
+    throw error;
+  }
 
   return data;
 }
@@ -763,7 +796,10 @@ export async function deleteComment({
     .eq('id', commentId)
     .eq('address', address.toLowerCase()); // Ensure user can only delete their own comments
 
-  if (error) throw error;
+  if (error) {
+    handleAuthError(error instanceof Error ? error : new Error(String(error)), 'deleteComment');
+    throw error;
+  }
 }
 
 /**
@@ -799,7 +835,10 @@ export async function getCommentReplies({
     .order('created_at', { ascending: true })
     .range(offset, offset + limit - 1);
 
-  if (error) throw error;
+  if (error) {
+    handleAuthError(error instanceof Error ? error : new Error(String(error)), 'getCommentReplies');
+    throw error;
+  }
 
   return (data || []).map((reply) => ({
     ...reply,

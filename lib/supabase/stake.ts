@@ -1,5 +1,6 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { getClient } from './createClient';
+import { handleAuthError } from '@/utils/auth';
 
 export interface IStake {
   id: string;
@@ -36,6 +37,7 @@ export async function getUserStakes({
     .order('created_at', { ascending: false });
 
   if (error) {
+    handleAuthError(error instanceof Error ? error : new Error(String(error)), 'getUserStakes');
     throw error;
   }
 
@@ -59,6 +61,7 @@ export async function getStakeById({
   const { data, error } = await client.from('staking').select('*').eq('id', id).single();
 
   if (error) {
+    handleAuthError(error instanceof Error ? error : new Error(String(error)), 'getStakeById');
     throw error;
   }
 
@@ -88,11 +91,14 @@ export async function insertStakes({
   const { data, error } = await client.from('staking').insert(stakesToInsert).select();
 
   if (error) {
+    handleAuthError(error instanceof Error ? error : new Error(String(error)), 'insertStakes');
     throw error;
   }
 
   if (!data || data.length === 0) {
-    throw new Error('Stake creation failed: No data returned');
+    const error = new Error('Stake creation failed: No data returned');
+    handleAuthError(error, 'insertStakes');
+    throw error;
   }
 
   return data;
@@ -119,11 +125,14 @@ export async function updateStake({
     .select();
 
   if (error) {
+    handleAuthError(error instanceof Error ? error : new Error(String(error)), 'updateStake');
     throw error;
   }
 
   if (!data || data.length === 0) {
-    throw new Error('Stake update failed: No data returned');
+    const error = new Error('Stake update failed: No data returned');
+    handleAuthError(error, 'updateStake');
+    throw error;
   }
 
   return data[0];
@@ -223,6 +232,7 @@ export async function getStakingHistory({
     .order('created_at', { ascending: false });
 
   if (error) {
+    handleAuthError(error instanceof Error ? error : new Error(String(error)), 'getStakingHistory');
     throw error;
   }
 

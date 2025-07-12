@@ -1,5 +1,6 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { getClient } from './createClient';
+import { handleAuthError } from '@/utils/auth';
 import type {
   Workout,
   WorkoutExercise,
@@ -32,6 +33,7 @@ export async function createWorkout(
     .single();
 
   if (error) {
+    handleAuthError(error instanceof Error ? error : new Error(String(error)), 'createWorkout');
     throw error;
   }
 
@@ -48,6 +50,7 @@ export async function getWorkouts(address: string): Promise<Workout[]> {
     .order('created_at', { ascending: false });
 
   if (error) {
+    handleAuthError(error instanceof Error ? error : new Error(String(error)), 'getWorkouts');
     throw error;
   }
 
@@ -60,6 +63,7 @@ export async function getWorkout(workoutId: string): Promise<Workout> {
   const { data, error } = await supabase.from('workouts').select('*').eq('id', workoutId).single();
 
   if (error) {
+    handleAuthError(error instanceof Error ? error : new Error(String(error)), 'getWorkout');
     throw error;
   }
 
@@ -84,6 +88,10 @@ export async function getWorkoutWithExercises(workoutId: string): Promise<Workou
     .single();
 
   if (error) {
+    handleAuthError(
+      error instanceof Error ? error : new Error(String(error)),
+      'getWorkoutWithExercises',
+    );
     throw error;
   }
 
@@ -120,6 +128,7 @@ export async function updateWorkout(
     .single();
 
   if (error) {
+    handleAuthError(error instanceof Error ? error : new Error(String(error)), 'updateWorkout');
     throw error;
   }
 
@@ -132,6 +141,7 @@ export async function deleteWorkout(workoutId: string): Promise<void> {
   const { error } = await supabase.from('workouts').delete().eq('id', workoutId);
 
   if (error) {
+    handleAuthError(error instanceof Error ? error : new Error(String(error)), 'deleteWorkout');
     throw error;
   }
 }
@@ -184,6 +194,10 @@ export async function createExercise(exerciseData: CreateExerciseData): Promise<
     .single();
 
   if (exerciseError) {
+    handleAuthError(
+      exerciseError instanceof Error ? exerciseError : new Error(String(exerciseError)),
+      'createExercise',
+    );
     throw exerciseError;
   }
 
@@ -198,6 +212,10 @@ export async function createExercise(exerciseData: CreateExerciseData): Promise<
     const { error: setsError } = await supabase.from('exercise_sets').insert(setsData);
 
     if (setsError) {
+      handleAuthError(
+        setsError instanceof Error ? setsError : new Error(String(setsError)),
+        'createExercise',
+      );
       throw setsError;
     }
   }
@@ -220,6 +238,7 @@ export async function getExercises(workoutId: string): Promise<WorkoutExercise[]
     .order('order_index', { ascending: true });
 
   if (error) {
+    handleAuthError(error instanceof Error ? error : new Error(String(error)), 'getExercises');
     throw error;
   }
 
@@ -249,6 +268,7 @@ export async function getExercise(exerciseId: string): Promise<WorkoutExercise> 
     .single();
 
   if (error) {
+    handleAuthError(error instanceof Error ? error : new Error(String(error)), 'getExercise');
     throw error;
   }
 
@@ -273,7 +293,13 @@ export async function updateExercise(
       .from('exercise_sets')
       .select('*')
       .eq('exercise_id', exerciseId);
-    if (fetchError) throw fetchError;
+    if (fetchError) {
+      handleAuthError(
+        fetchError instanceof Error ? fetchError : new Error(String(fetchError)),
+        'updateExercise',
+      );
+      throw fetchError;
+    }
     const existingSetsByNumber = new Map<number, ExerciseSet>();
     (existingSets || []).forEach((set: ExerciseSet) => {
       existingSetsByNumber.set(set.set_number, set);
@@ -307,7 +333,13 @@ export async function updateExercise(
           .from('exercise_sets')
           .update(updateData)
           .eq('id', existing.id);
-        if (updateError) throw updateError;
+        if (updateError) {
+          handleAuthError(
+            updateError instanceof Error ? updateError : new Error(String(updateError)),
+            'updateExercise',
+          );
+          throw updateError;
+        }
       } else {
         // Insert new set
         const insertData = {
@@ -316,7 +348,13 @@ export async function updateExercise(
           set_number,
         };
         const { error: insertError } = await supabase.from('exercise_sets').insert(insertData);
-        if (insertError) throw insertError;
+        if (insertError) {
+          handleAuthError(
+            insertError instanceof Error ? insertError : new Error(String(insertError)),
+            'updateExercise',
+          );
+          throw insertError;
+        }
       }
     }
 
@@ -327,7 +365,13 @@ export async function updateExercise(
           .from('exercise_sets')
           .delete()
           .eq('id', set.id);
-        if (deleteError) throw deleteError;
+        if (deleteError) {
+          handleAuthError(
+            deleteError instanceof Error ? deleteError : new Error(String(deleteError)),
+            'updateExercise',
+          );
+          throw deleteError;
+        }
       }
     }
 
@@ -372,6 +416,10 @@ export async function updateExercise(
       .single();
 
     if (exerciseError) {
+      handleAuthError(
+        exerciseError instanceof Error ? exerciseError : new Error(String(exerciseError)),
+        'updateExercise',
+      );
       throw exerciseError;
     }
 
@@ -391,6 +439,10 @@ export async function updateExercise(
       .single();
 
     if (exerciseError) {
+      handleAuthError(
+        exerciseError instanceof Error ? exerciseError : new Error(String(exerciseError)),
+        'updateExercise',
+      );
       throw exerciseError;
     }
 
@@ -404,6 +456,7 @@ export async function deleteExercise(exerciseId: string): Promise<void> {
   const { error } = await supabase.from('workout_exercises').delete().eq('id', exerciseId);
 
   if (error) {
+    handleAuthError(error instanceof Error ? error : new Error(String(error)), 'deleteExercise');
     throw error;
   }
 }
@@ -418,6 +471,7 @@ export async function reorderExercises(workoutId: string, exerciseIds: string[])
   });
 
   if (error) {
+    handleAuthError(error instanceof Error ? error : new Error(String(error)), 'reorderExercises');
     throw error;
   }
 }
@@ -429,6 +483,7 @@ export async function createExerciseSet(setData: CreateExerciseSetData): Promise
   const { data, error } = await supabase.from('exercise_sets').insert(setData).select().single();
 
   if (error) {
+    handleAuthError(error instanceof Error ? error : new Error(String(error)), 'createExerciseSet');
     throw error;
   }
 
@@ -448,6 +503,7 @@ export async function getExerciseSets(exerciseId: string): Promise<ExerciseSet[]
     .order('set_number', { ascending: true });
 
   if (error) {
+    handleAuthError(error instanceof Error ? error : new Error(String(error)), 'getExerciseSets');
     throw error;
   }
 
@@ -468,6 +524,7 @@ export async function updateExerciseSet(
     .single();
 
   if (error) {
+    handleAuthError(error instanceof Error ? error : new Error(String(error)), 'updateExerciseSet');
     throw error;
   }
 
@@ -488,12 +545,17 @@ export async function deleteExerciseSet(setId: string): Promise<void> {
     .single();
 
   if (fetchError) {
+    handleAuthError(
+      fetchError instanceof Error ? fetchError : new Error(String(fetchError)),
+      'deleteExerciseSet',
+    );
     throw fetchError;
   }
 
   const { error } = await supabase.from('exercise_sets').delete().eq('id', setId);
 
   if (error) {
+    handleAuthError(error instanceof Error ? error : new Error(String(error)), 'deleteExerciseSet');
     throw error;
   }
 
@@ -517,6 +579,10 @@ export async function updateSetCompletionStatus(
     .single();
 
   if (error) {
+    handleAuthError(
+      error instanceof Error ? error : new Error(String(error)),
+      'updateSetCompletionStatus',
+    );
     throw error;
   }
 
@@ -535,6 +601,10 @@ async function recalculateExerciseAggregates(
     .eq('exercise_id', exerciseId);
 
   if (setsError) {
+    handleAuthError(
+      setsError instanceof Error ? setsError : new Error(String(setsError)),
+      'recalculateExerciseAggregates',
+    );
     throw setsError;
   }
 
@@ -579,6 +649,10 @@ async function recalculateExerciseAggregates(
     .eq('id', exerciseId);
 
   if (updateError) {
+    handleAuthError(
+      updateError instanceof Error ? updateError : new Error(String(updateError)),
+      'recalculateExerciseAggregates',
+    );
     throw updateError;
   }
 }
@@ -612,6 +686,7 @@ export async function getWorkoutStats(
   const { data, error } = await query;
 
   if (error) {
+    handleAuthError(error instanceof Error ? error : new Error(String(error)), 'getWorkoutStats');
     throw error;
   }
 
@@ -671,6 +746,10 @@ export async function getExerciseProgress(
     .limit(limit);
 
   if (error) {
+    handleAuthError(
+      error instanceof Error ? error : new Error(String(error)),
+      'getExerciseProgress',
+    );
     throw error;
   }
 
@@ -758,6 +837,10 @@ export async function getUniqueExerciseNames(address: string): Promise<string[]>
     .order('exercise_name');
 
   if (error) {
+    handleAuthError(
+      error instanceof Error ? error : new Error(String(error)),
+      'getUniqueExerciseNames',
+    );
     throw error;
   }
 
