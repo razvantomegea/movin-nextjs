@@ -5,6 +5,7 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import Script from 'next/script';
 import AppkitProvider from '@/app/contexts/appkit-provider';
+import { FundingProvider } from '@/app/contexts/funding-provider';
 import { GoogleMapsProvider } from '@/app/contexts/google-maps-provider';
 import { ThemeProvider } from '@/app/contexts/theme-provider';
 import { ReduxToaster } from '@/components/ui/redux-toaster';
@@ -131,7 +132,9 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
         <ReduxProvider>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
             <GoogleMapsProvider>
-              <AppkitProvider>{children}</AppkitProvider>
+              <AppkitProvider>
+                <FundingProvider>{children}</FundingProvider>
+              </AppkitProvider>
               <ReduxToaster />
               {/* <FloatingBugReportButton /> */}
               <Analytics />

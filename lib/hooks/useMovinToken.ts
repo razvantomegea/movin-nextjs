@@ -1,6 +1,7 @@
 import { useAppKitAccount } from '@reown/appkit/react';
 import { formatUnits, parseUnits } from 'viem';
 import { useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
+import { useFunding } from '@/app/contexts/funding-provider';
 import movinTokenAbi from '@/lib/abi/movin-token-abi.json';
 import { useAppDispatch } from '@/lib/redux/hooks';
 import { showErrorToast } from '@/lib/redux/slices/toastSlice';
@@ -19,6 +20,7 @@ export function useMovinToken() {
   const dispatch = useAppDispatch();
   const { address, isConnected } = useAppKitAccount();
   const addressLower = address?.toLowerCase();
+  const { checkAndFundWallet } = useFunding();
 
   /**
    * Returns the token address
@@ -39,6 +41,20 @@ export function useMovinToken() {
       return false;
     }
     return true;
+  };
+
+  /**
+   * Checks wallet connection and funds wallet if balance is 0
+   * @returns boolean indicating if wallet is ready for transactions
+   */
+  const checkWalletAndFund = async (): Promise<boolean> => {
+    if (!checkWalletConnection()) {
+      return false;
+    }
+
+    // Check and fund wallet if needed
+    const funded = await checkAndFundWallet();
+    return funded;
   };
 
   /**
@@ -201,8 +217,9 @@ export function useMovinToken() {
      */
     const approveTokens = async (spender: string, amount: string): Promise<boolean> => {
       try {
-        // Check wallet connection before transaction
-        if (!checkWalletConnection()) {
+        // Check wallet connection and fund if needed
+        const ready = await checkWalletAndFund();
+        if (!ready) {
           return false;
         }
 
@@ -260,8 +277,9 @@ export function useMovinToken() {
      */
     const transferTokens = async (recipient: string, amount: string): Promise<boolean> => {
       try {
-        // Check wallet connection before transaction
-        if (!checkWalletConnection()) {
+        // Check wallet connection and fund if needed
+        const ready = await checkWalletAndFund();
+        if (!ready) {
           return false;
         }
 

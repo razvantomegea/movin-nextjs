@@ -8,6 +8,7 @@ import { X } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTheme } from 'next-themes';
+import { useFunding } from '@/app/contexts/funding-provider';
 import { CelebrationAnimation } from '@/components/celebration-animation';
 import InstallPWA from '@/components/install-pwa';
 import { Button } from '@/components/ui/button';
@@ -32,7 +33,7 @@ function ConnectPageContent() {
   const [showCelebration, setShowCelebration] = useState(false);
   const { useRegisterReferral, useReferralInfo } = useMovinEarn();
   const { registerReferral } = useRegisterReferral();
-
+  const { checkAndFundWallet } = useFunding();
   // Get referral info to check if user already has a referrer
   const { formattedReferralInfo, isLoading: referralInfoLoading } = useReferralInfo();
   const referralInfo = useMemo(() => formattedReferralInfo(), [formattedReferralInfo]);
@@ -146,6 +147,13 @@ function ConnectPageContent() {
               } else if (hasExistingReferrer) {
                 console.log('User already has a referrer, skipping referral registration');
               }
+            }
+
+            const funded = await checkAndFundWallet();
+
+            if (!funded) {
+              console.error('Failed to fund wallet');
+              Sentry.captureException('Failed to fund wallet');
             }
           } catch (profileError) {
             console.error('Profile setup error:', profileError);

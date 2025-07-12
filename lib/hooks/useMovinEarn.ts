@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { useAppKitAccount } from '@reown/appkit/react';
 import { formatUnits, parseUnits } from 'viem';
 import { useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
+import { useFunding } from '@/app/contexts/funding-provider';
 import movinEarnAbi from '@/lib/abi/movin-earn-abi.json';
 import { useAppDispatch } from '@/lib/redux/hooks';
-import { showErrorToast } from '@/lib/redux/slices/toastSlice';
+import { showErrorToast, showSuccessToast } from '@/lib/redux/slices/toastSlice';
 import { captureBlockchainError } from '@/lib/sentry';
 import { forceLogout, isWalletConnected } from '@/utils/auth';
 import { mapError } from '@/utils/errors';
@@ -103,6 +104,7 @@ export function useMovinEarn() {
   const dispatch = useAppDispatch();
   const { address, isConnected } = useAppKitAccount();
   const addressLower = address?.toLowerCase();
+  const { checkAndFundWallet } = useFunding();
 
   /**
    * Gets the contract address
@@ -123,6 +125,20 @@ export function useMovinEarn() {
       return false;
     }
     return true;
+  };
+
+  /**
+   * Checks wallet connection and funds wallet if balance is 0
+   * @returns boolean indicating if wallet is ready for transactions
+   */
+  const checkWalletAndFund = async (): Promise<boolean> => {
+    if (!checkWalletConnection()) {
+      return false;
+    }
+
+    // Check and fund wallet if needed
+    const funded = await checkAndFundWallet();
+    return funded;
   };
 
   /**
@@ -280,7 +296,8 @@ export function useMovinEarn() {
      * @returns A promise resolved when the transaction is initiated
      */
     const registerReferral = async (referrerAddress: string): Promise<boolean> => {
-      if (!checkWalletConnection()) {
+      const ready = await checkWalletAndFund();
+      if (!ready) {
         return false;
       }
 
@@ -393,7 +410,8 @@ export function useMovinEarn() {
      * @returns A promise resolved when the transaction is initiated
      */
     const recordActivity = async (steps: number, mets: number): Promise<boolean> => {
-      if (!checkWalletConnection()) {
+      const ready = await checkWalletAndFund();
+      if (!ready) {
         return false;
       }
 
@@ -485,7 +503,8 @@ export function useMovinEarn() {
      * @returns A promise resolved when the transaction is initiated
      */
     const claimStakingRewards = async (stakeIndex: number): Promise<boolean> => {
-      if (!checkWalletConnection()) {
+      const ready = await checkWalletAndFund();
+      if (!ready) {
         return false;
       }
 
@@ -546,7 +565,8 @@ export function useMovinEarn() {
      * @returns A promise resolved when the transaction is initiated
      */
     const claimAllStakingRewards = async (): Promise<boolean> => {
-      if (!checkWalletConnection()) {
+      const ready = await checkWalletAndFund();
+      if (!ready) {
         return false;
       }
 
@@ -607,7 +627,8 @@ export function useMovinEarn() {
      * @returns A promise resolved when the transaction is initiated
      */
     const stakeTokens = async (amount: string, lockMonths: number): Promise<boolean> => {
-      if (!checkWalletConnection()) {
+      const ready = await checkWalletAndFund();
+      if (!ready) {
         return false;
       }
 
@@ -671,7 +692,8 @@ export function useMovinEarn() {
      * @returns A promise resolved when the transaction is initiated
      */
     const unstake = async (stakeIndex: number): Promise<boolean> => {
-      if (!checkWalletConnection()) {
+      const ready = await checkWalletAndFund();
+      if (!ready) {
         return false;
       }
 
@@ -733,7 +755,8 @@ export function useMovinEarn() {
      * @returns A promise resolved when the transaction is initiated
      */
     const restake = async (stakeIndex: number, lockMonths: number): Promise<boolean> => {
-      if (!checkWalletConnection()) {
+      const ready = await checkWalletAndFund();
+      if (!ready) {
         return false;
       }
 
@@ -846,7 +869,8 @@ export function useMovinEarn() {
      * @returns A promise resolved when the transaction is initiated
      */
     const setPremiumStatus = async (status: boolean, amount: string): Promise<boolean> => {
-      if (!checkWalletConnection()) {
+      const ready = await checkWalletAndFund();
+      if (!ready) {
         return false;
       }
 
@@ -957,6 +981,67 @@ export function useMovinEarn() {
   };
 
   /**
+   * Hook to fund wallet with initial ETH for gas fees
+   * @returns Hook result with fundWallet function
+   */
+  const useFundWallet = () => {
+    const [error, setError] = useState<Error | null>(null);
+    const [isPending, setIsPending] = useState(false);
+    const [isSuccess, setIsSuccess] = useState(false);
+
+    const fundWallet = async (): Promise<boolean> => {
+      setIsPending(true);
+      setError(null);
+      setIsSuccess(false);
+
+      try {
+        const response = await fetch('/api/fund-wallet', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.message || 'API request failed');
+        }
+
+        setIsPending(false);
+        setIsSuccess(true);
+
+        // Show success toast
+        dispatch(
+          showSuccessToast({
+            title: 'Gas Fees Funded',
+            description: data.message || '0.0001 ETH received for gas fees',
+          }),
+        );
+
+        return true;
+      } catch (err) {
+        const errorMessage = mapError(err);
+
+        setError(err as Error);
+        dispatch(
+          showErrorToast({
+            title: 'Error Funding Wallet',
+            description: errorMessage,
+          }),
+        );
+        setIsPending(false);
+        return false;
+      }
+    };
+
+    return {
+      fundWallet,
+      error,
+      isPending,
+      isSuccess,
+    };
+  };
+
+  /**
    * Gets the last meal claim timestamp for the user
    * @returns Hook result with last claim timestamp
    */
@@ -1032,5 +1117,6 @@ export function useMovinEarn() {
     useRestake,
     useSetPremiumStatus,
     useClaimMealRewards,
+    useFundWallet,
   };
 }
