@@ -742,7 +742,7 @@ export async function getExerciseProgress(
     {} as ProgressAccumulator,
   );
 
-  return Object.values(progressByDate);
+  return Object.values(progressByDate).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 }
 
 // Get unique exercise names for autocomplete
