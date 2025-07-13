@@ -18,6 +18,7 @@ interface BaseModalProps {
   footerClassName?: string;
   preventBackdropClose?: boolean;
   fullMobile?: boolean;
+  'data-testid'?: string;
 }
 
 const maxWidthClasses = {
@@ -43,6 +44,7 @@ export function BaseModal({
   footerClassName,
   preventBackdropClose = false,
   fullMobile = true,
+  'data-testid': dataTestId,
 }: BaseModalProps) {
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
@@ -91,6 +93,7 @@ export function BaseModal({
             tabIndex={-1}
             role="region"
             aria-labelledby="base-modal-title"
+            data-testid={dataTestId}
           >
             {/* Header */}
             <div

@@ -17,10 +17,10 @@ export async function POST(req: NextRequest) {
 
     let userAddress: string;
     try {
-      // Verify JWT signature
-      const secret = process.env.NEXTAUTH_SECRET;
+      // Verify JWT signature using the same secret used to sign it
+      const secret = process.env.NEXT_PUBLIC_JWT_SECRET;
       if (!secret) {
-        console.error('NEXTAUTH_SECRET environment variable is not set');
+        console.error('NEXT_PUBLIC_JWT_SECRET environment variable is not set');
         return NextResponse.json({ message: 'Server configuration error' }, { status: 500 });
       }
       const decodedToken = jwt.verify(token, secret) as { sub?: string };
@@ -29,6 +29,7 @@ export async function POST(req: NextRequest) {
       }
       userAddress = decodedToken.sub;
     } catch (error) {
+      console.error('JWT verification failed:', error);
       return NextResponse.json({ message: 'Invalid token' }, { status: 401 });
     }
 
@@ -102,6 +103,12 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error('Fund wallet error:', error);
     const errorMessage = mapError(error);
-    return NextResponse.json({ message: errorMessage }, { status: 500 });
+    return NextResponse.json(
+      {
+        message: errorMessage,
+        error: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined,
+      },
+      { status: 500 },
+    );
   }
 }

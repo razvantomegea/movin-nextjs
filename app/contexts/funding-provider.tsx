@@ -70,20 +70,25 @@ export function FundingProvider({ children }: FundingProviderProps) {
         setFundingError(null);
 
         try {
-          // Check authentication/session before funding
-          const sessionRes = await fetch('/api/auth/session', {
-            method: 'GET',
-            credentials: 'include',
-          });
-          if (!sessionRes.ok) {
+          // Get JWT token from localStorage for authentication
+          const authData = localStorage.getItem('auth_token');
+          if (!authData) {
             throw new Error('Not authenticated. Please log in again.');
           }
 
-          // Call fund-wallet API (token sent via httpOnly cookie)
+          const { token, expiresAt } = JSON.parse(authData);
+
+          // Check if token is expired
+          if (Date.now() > expiresAt) {
+            throw new Error('Session expired. Please log in again.');
+          }
+
+          // Call fund-wallet API with JWT token in Authorization header
           const response = await fetch('/api/fund-wallet', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
             },
             credentials: 'include',
           });

@@ -24,6 +24,18 @@ const DataTestIds = {
   CONNECTING_SPINNER: 'connecting-spinner',
   CONNECTING_TEXT: 'connecting-text',
 
+  // Funding Modal Elements
+  FUNDING_MODAL_CONTAINER: 'funding-modal-container',
+  FUNDING_MODAL_TITLE: 'funding-modal-title',
+  FUNDING_MODAL_LOADING_ICON: 'funding-modal-loading-icon',
+  FUNDING_MODAL_ERROR_ICON: 'funding-modal-error-icon',
+  FUNDING_MODAL_SUCCESS_ICON: 'funding-modal-success-icon',
+  FUNDING_MODAL_DESCRIPTION: 'funding-modal-description',
+  FUNDING_MODAL_LOADING_DOTS: 'funding-modal-loading-dots',
+  FUNDING_MODAL_TRY_AGAIN_BUTTON: 'funding-modal-try-again-button',
+  FUNDING_MODAL_CONTINUE_BUTTON: 'funding-modal-continue-button',
+  FUNDING_MODAL_CONTINUE_ANYWAY_BUTTON: 'funding-modal-continue-anyway-button',
+
   // Future elements can be added here as you expand testing
   // Dashboard Elements
   DASHBOARD_CONTAINER: 'dashboard-container',
