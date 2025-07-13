@@ -6,6 +6,7 @@ export const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'ima
 
 // Supabase storage bucket name
 export const AVATAR_BUCKET = 'avatars';
+export const SOCIAL_POST_BUCKET = 'social';
 
 /**
  * Format file size in human-readable format

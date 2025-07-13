@@ -1,6 +1,7 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { handleAuthError } from '@/utils/auth';
 import { getClient } from './createClient';
+import { MAX_FILE_SIZE, ALLOWED_MIME_TYPES, SOCIAL_POST_BUCKET } from './storageConstants';
 
 export interface ISocialPost {
   id: string;
@@ -432,27 +433,25 @@ export async function uploadPostImage({
     client = getClient();
   }
 
-  // Validate file
-  const maxSize = 5 * 1024 * 1024; // 5MB
-  if (file.size > maxSize) {
+  if (file.size > MAX_FILE_SIZE) {
     throw new Error('File size must be less than 5MB');
   }
 
-  const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-  if (!allowedTypes.includes(file.type)) {
+  if (!ALLOWED_MIME_TYPES.includes(file.type)) {
     throw new Error('Only JPEG, PNG, WebP, and GIF images are allowed');
   }
 
   // Generate unique filename
   const fileExt = file.name.split('.').pop();
-  const fileName = `${userId}-${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-  const filePath = `social/${fileName}`;
+  const filePath = `${userId}/${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
 
   // Upload file
-  const { error: uploadError } = await client.storage.from('public').upload(filePath, file, {
-    cacheControl: '3600',
-    upsert: false,
-  });
+  const { error: uploadError } = await client.storage
+    .from(SOCIAL_POST_BUCKET)
+    .upload(filePath, file, {
+      cacheControl: '3600',
+      upsert: false,
+    });
 
   if (uploadError) {
     handleAuthError(
@@ -463,7 +462,7 @@ export async function uploadPostImage({
   }
 
   // Get public URL
-  const { data } = client.storage.from('public').getPublicUrl(filePath);
+  const { data } = client.storage.from(SOCIAL_POST_BUCKET).getPublicUrl(filePath);
 
   return data.publicUrl;
 }
