@@ -22,7 +22,7 @@ export async function POST(request: Request) {
         iat: Math.floor(Date.now() / 1000),
         exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24, // 1 day
       },
-      process.env.NEXT_PUBLIC_JWT_SECRET || '',
+      process.env.JWT_SECRET || '',
     );
 
     // Create the response with authentication data

@@ -70,25 +70,11 @@ export function FundingProvider({ children }: FundingProviderProps) {
         setFundingError(null);
 
         try {
-          // Get JWT token from localStorage for authentication
-          const authData = localStorage.getItem('auth_token');
-          if (!authData) {
-            throw new Error('Not authenticated. Please log in again.');
-          }
-
-          const { token, expiresAt } = JSON.parse(authData);
-
-          // Check if token is expired
-          if (Date.now() > expiresAt) {
-            throw new Error('Session expired. Please log in again.');
-          }
-
-          // Call fund-wallet API with JWT token in Authorization header
+          // Call fund-wallet API relying on httpOnly cookie for authentication
           const response = await fetch('/api/fund-wallet', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`,
             },
             credentials: 'include',
           });

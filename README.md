@@ -47,7 +47,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 NEXT_PUBLIC_REOWN_PROJECT_ID=your_reown_project_id
 NEXT_PUBLIC_INFURA_ID=your_infura_id
 NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your_google_maps_api_key
-NEXT_PUBLIC_JWT_SECRET=your_jwt_secret_key
+JWT_SECRET=your_jwt_secret_key
 NEXT_PUBLIC_GOOGLE_AI_API_KEY=your_google_ai_api_key
 \`\`\`
 

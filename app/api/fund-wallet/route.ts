@@ -7,20 +7,18 @@ import { mapError } from '@/utils/errors';
 
 export async function POST(req: NextRequest) {
   try {
-    // Extract JWT token from Authorization header to get user address
-    const authHeader = req.headers.get('authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
+    // Extract JWT token from httpOnly cookie to get user address
+    const token = req.cookies.get('supabase-auth-token')?.value;
+    if (!token) {
       return NextResponse.json({ message: 'Authentication required' }, { status: 401 });
     }
-
-    const token = authHeader.substring(7); // Remove 'Bearer ' prefix
 
     let userAddress: string;
     try {
       // Verify JWT signature using the same secret used to sign it
-      const secret = process.env.NEXT_PUBLIC_JWT_SECRET;
+      const secret = process.env.JWT_SECRET;
       if (!secret) {
-        console.error('NEXT_PUBLIC_JWT_SECRET environment variable is not set');
+        console.error('JWT_SECRET environment variable is not set');
         return NextResponse.json({ message: 'Server configuration error' }, { status: 500 });
       }
       const decodedToken = jwt.verify(token, secret) as { sub?: string };
