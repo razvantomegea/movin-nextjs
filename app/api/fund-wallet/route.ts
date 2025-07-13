@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
       address: senderAccount.address,
     });
 
-    const amountToSend = parseUnits('0.0001', 18); // 0.0001 ETH
+    const amountToSend = parseUnits('0.00001', 18); // 0.00001 ETH
 
     if (senderBalance < amountToSend) {
       console.error('Sender wallet does not have enough ETH');
@@ -96,7 +96,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       hash,
-      message: '0.0001 ETH received for gas fees',
+      message: '0.00001 ETH received for gas fees',
     });
   } catch (error) {
     console.error('Fund wallet error:', error);

@@ -290,7 +290,8 @@ test.describe('Movin Connect Page Tests', () => {
         referralAddress,
       });
 
-      // Verify successful connection and redirect to dashboard
+      // Wait for redirect to dashboard (up to 30s, like in loginWithMetaMask)
+      await page.waitForURL('/dashboard', { timeout: 30000 });
       await expect(page).toHaveURL('/dashboard');
     });
 

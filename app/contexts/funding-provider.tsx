@@ -91,7 +91,7 @@ export function FundingProvider({ children }: FundingProviderProps) {
           dispatch(
             showSuccessToast({
               title: 'Wallet Funded',
-              description: data.message || '0.0001 ETH received for gas fees',
+              description: data.message || '0.00001 ETH received for gas fees',
             }),
           );
 

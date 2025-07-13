@@ -109,7 +109,7 @@ export function FundingModal({ isOpen, onClose, isLoading, error, onRetry }: Fun
               className="text-gray-500 dark:text-gray-400"
               data-testid={DataTestIds.FUNDING_MODAL_DESCRIPTION}
             >
-              We&apos;re sending 0.0001 ETH to your wallet for gas fees
+              We&apos;re sending 0.00001 ETH to your wallet for gas fees
             </p>
             <div className={`p-4 rounded-lg ${isDark ? 'bg-blue-900/20' : 'bg-blue-50'} mt-4`}>
               <div className="flex items-center justify-center space-x-2 mb-3">
@@ -136,7 +136,7 @@ export function FundingModal({ isOpen, onClose, isLoading, error, onRetry }: Fun
               className="text-gray-500 dark:text-gray-400"
               data-testid={DataTestIds.FUNDING_MODAL_DESCRIPTION}
             >
-              0.0001 ETH has been added to your wallet for gas fees
+              0.00001 ETH has been added to your wallet for gas fees
             </p>
           </>
         )}
