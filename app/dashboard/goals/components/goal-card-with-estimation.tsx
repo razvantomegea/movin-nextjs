@@ -43,6 +43,7 @@ export function GoalCardWithEstimation({
       category={goal.category}
       progressEstimation={estimation}
       estimationText={estimationText}
+      goalId={goal.id}
       onShare={() =>
         handleShareGoalAchievement(
           goal.goalType,

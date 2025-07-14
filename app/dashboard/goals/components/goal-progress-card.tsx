@@ -23,6 +23,23 @@ interface GoalProgressCardProps {
   category?: 'daily' | 'weekly' | 'monthly';
   progressEstimation?: ProgressEstimation;
   estimationText?: string;
+  goalId?: string;
+}
+
+// Utility to get achievement key and last achievement data from localStorage
+function getGoalAchievementKeyAndData(userAddress: string, goalId: string) {
+  const achievementKey = `goals_achieved_${userAddress}_${goalId}`;
+  let lastAchievement = { targetValue: 0, currentValue: 0 };
+  const lastAchievementRaw = localStorage.getItem(achievementKey);
+
+  if (lastAchievementRaw) {
+    try {
+      lastAchievement = JSON.parse(lastAchievementRaw);
+    } catch (e) {
+      // Ignore JSON parse error, use default lastAchievement
+    }
+  }
+  return { achievementKey, lastAchievement };
 }
 
 export function GoalProgressCard({
@@ -38,6 +55,7 @@ export function GoalProgressCard({
   category = 'daily',
   progressEstimation,
   estimationText,
+  goalId,
 }: GoalProgressCardProps) {
   const [progress, setProgress] = useState(0);
   const [showCelebration, setShowCelebration] = useState(false);
@@ -45,19 +63,24 @@ export function GoalProgressCard({
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
 
-  // Unique key for celebration tracking
-  const goalKey = `goal_celebrated_${userAddress}_${title}_${targetValue}`.toLowerCase();
-
   // Use enhanced progress if available, otherwise calculate basic progress
   const progressPercentage =
     progressEstimation?.currentProgress ??
     Math.min(Math.round((currentValue / targetValue) * 100), 100);
 
-  // Check if celebration was already shown for this goal
+  // Check if celebration was already shown for this goal achievement
   useEffect(() => {
-    const alreadyCelebrated = localStorage.getItem(goalKey);
-    setHasTriggered(!!alreadyCelebrated && alreadyCelebrated === currentValue.toString());
-  }, [goalKey, currentValue]);
+    if (!userAddress || !goalId) return;
+
+    const { lastAchievement } = getGoalAchievementKeyAndData(userAddress, goalId);
+
+    // Check if goal is completed and values have changed since last achievement
+    const isGoalCompleted = progressPercentage >= 100;
+    const valuesHaveChanged =
+      lastAchievement.targetValue !== targetValue || lastAchievement.currentValue !== currentValue;
+
+    setHasTriggered(isGoalCompleted && !valuesHaveChanged);
+  }, [userAddress, goalId, progressPercentage, targetValue, currentValue]);
 
   // Animate progress bar
   useEffect(() => {
@@ -69,20 +92,31 @@ export function GoalProgressCard({
 
   // Auto trigger celebration if goal is reached and autoTrigger is true and not already celebrated
   useEffect(() => {
-    if (autoTrigger && progressPercentage >= 100 && !hasTriggered) {
+    if (autoTrigger && progressPercentage >= 100 && !hasTriggered && userAddress && goalId) {
       const timer = setTimeout(() => {
         setShowCelebration(true);
-        setHasTriggered(true);
-        localStorage.setItem(goalKey, currentValue.toString());
+        const { achievementKey } = getGoalAchievementKeyAndData(userAddress, goalId);
+        localStorage.setItem(achievementKey, JSON.stringify({ targetValue, currentValue }));
       }, 1000);
       return () => clearTimeout(timer);
     }
-  }, [progressPercentage, autoTrigger, hasTriggered, goalKey, currentValue]);
+  }, [
+    progressPercentage,
+    autoTrigger,
+    hasTriggered,
+    userAddress,
+    goalId,
+    targetValue,
+    currentValue,
+  ]);
 
   // When user manually closes the celebration, also mark as celebrated
   const handleCloseCelebration = () => {
     setShowCelebration(false);
-    localStorage.setItem(goalKey, currentValue.toString());
+    if (userAddress && goalId) {
+      const { achievementKey } = getGoalAchievementKeyAndData(userAddress, goalId);
+      localStorage.setItem(achievementKey, JSON.stringify({ targetValue, currentValue }));
+    }
   };
 
   const getIcon = () => {
