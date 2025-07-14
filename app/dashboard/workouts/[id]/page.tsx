@@ -19,7 +19,6 @@ import { BaseModal } from '@/components/ui/base-modal';
 import { Button } from '@/components/ui/button';
 import { buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -44,12 +43,13 @@ import type {
   WorkoutExercise,
   WorkoutWithExercises,
 } from '@/types/workouts';
-import { formatDuration, formatDate } from '@/utils';
+import { formatDate } from '@/utils';
 import {
   createAchievementData,
   generateAchievementPostContent,
   AchievementTypeEnum,
 } from '@/utils/achievements/shareAchievement';
+import { formatDuration } from '@/utils/movin/formatDuration';
 import { getMetricStats } from '@/utils/workouts/getMetricStats';
 import { ExerciseCard } from '../components/exercise-card';
 import { ExerciseModal } from '../components/exercise-modal';
