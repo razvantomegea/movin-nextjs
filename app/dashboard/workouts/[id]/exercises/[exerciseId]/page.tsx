@@ -56,12 +56,12 @@ export default function ExerciseDetailPage() {
   const workoutId = params.id as string;
   const exerciseId = params.exerciseId as string;
 
-  // Fetch workout and exercise data
+  // Re-fetch workout data when exercise ID changes to ensure we have latest data
   useEffect(() => {
-    if (workoutId) {
+    if (workoutId && exerciseId) {
       dispatch(fetchWorkoutWithExercises(workoutId));
     }
-  }, [dispatch, workoutId]);
+  }, [dispatch, workoutId, exerciseId]);
 
   // Set current exercise when workout is loaded
   useEffect(() => {
@@ -75,7 +75,7 @@ export default function ExerciseDetailPage() {
     }
   }, [currentWorkout, exerciseId, dispatch]);
 
-  // Fetch exercise progress when exercise is set
+  // Fetch exercise progress when exercise is set or updated
   useEffect(() => {
     if (currentExercise && address) {
       dispatch(
@@ -87,7 +87,7 @@ export default function ExerciseDetailPage() {
         }),
       );
     }
-  }, [currentExercise, address, workoutId, dispatch]);
+  }, [currentExercise, currentExercise?.updated_at, address, workoutId, dispatch]);
 
   // Handle errors
   useEffect(() => {
