@@ -63,7 +63,8 @@ function getWorkoutAchievementKeyAndData(addressLower: string, workout: WorkoutW
     0,
   );
 
-  const achievementKey = `workout_best_${addressLower}_${workout.id}_${totalVolume}_${totalSets}_${bestWeight}`;
+  // Use only stable identifiers for the achievement key
+  const achievementKey = `workout_best_${addressLower}_${workout.id}`;
   let lastBest = { volume: 0, reps: 0, weight: 0 };
   const lastBestRaw = localStorage.getItem(achievementKey);
 
@@ -301,11 +302,17 @@ export default function WorkoutPage() {
   // When user manually closes the celebration, keep it marked as celebrated and update bests
   const handleCloseCelebration = () => {
     if (currentWorkout && addressLower) {
-      const { achievementKey, lastBest } = getWorkoutAchievementKeyAndData(
-        addressLower,
-        currentWorkout,
+      const { achievementKey, lastBest, totalSets, totalVolume, bestWeight } =
+        getWorkoutAchievementKeyAndData(addressLower, currentWorkout);
+      // Save the current bests (max of previous and current values)
+      localStorage.setItem(
+        achievementKey,
+        JSON.stringify({
+          volume: Math.max(totalVolume, lastBest.volume),
+          reps: Math.max(totalSets, lastBest.reps),
+          weight: Math.max(bestWeight, lastBest.weight),
+        }),
       );
-      localStorage.setItem(achievementKey, JSON.stringify(lastBest));
     }
 
     setShowCelebration(false);

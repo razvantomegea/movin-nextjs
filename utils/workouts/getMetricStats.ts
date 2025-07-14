@@ -13,9 +13,10 @@ export function getMetricStats<T extends Record<string, any>>(
 ) {
   if (!data.length) return { current: 0, best: 0, improvement: 0, unit: '' };
 
-  const values = data.map((d) => d[metric]);
+  let values = data.map((d) => d[metric]);
+  values = values.filter((v) => typeof v === 'number' && !isNaN(v));
   const current = values[values.length - 1] || 0;
-  const best = Math.max(...values);
+  const best = values.length ? Math.max(...values) : 0;
   const first = values[0] || 0;
   const improvement = first > 0 ? ((current - first) / first) * 100 : 0;
 
