@@ -56,13 +56,6 @@ export default function ExerciseDetailPage() {
   const workoutId = params.id as string;
   const exerciseId = params.exerciseId as string;
 
-  // Fetch workout and exercise data
-  useEffect(() => {
-    if (workoutId) {
-      dispatch(fetchWorkoutWithExercises(workoutId));
-    }
-  }, [dispatch, workoutId]);
-
   // Re-fetch workout data when exercise ID changes to ensure we have latest data
   useEffect(() => {
     if (workoutId && exerciseId) {
