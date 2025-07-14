@@ -17,7 +17,6 @@ import { showErrorToast } from '@/lib/redux/slices/toastSlice';
 import { fetchWorkoutWithExercises } from '@/lib/redux/slices/workoutsSlice';
 import type { RootState } from '@/lib/redux/store';
 import type { ExerciseProgress, ExerciseSet, WorkoutExercise } from '@/types/workouts';
-import { formatDuration } from '@/utils';
 
 const container = {
   hidden: { opacity: 0 },
@@ -207,11 +206,7 @@ export default function ExerciseDetailPage() {
         animate="show"
       >
         <motion.div variants={item}>
-          <ExerciseDetailsCard
-            currentExercise={currentExercise}
-            weightUnit={weightUnit}
-            formatDuration={formatDuration}
-          />
+          <ExerciseDetailsCard currentExercise={currentExercise} weightUnit={weightUnit} />
         </motion.div>
         <motion.div variants={item}>
           <ExerciseProgressSummary

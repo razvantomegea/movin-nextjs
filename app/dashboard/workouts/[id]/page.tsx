@@ -15,10 +15,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { BaseModal } from '@/components/ui/base-modal';
 import { Button } from '@/components/ui/button';
 import { buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -43,12 +43,13 @@ import type {
   WorkoutExercise,
   WorkoutWithExercises,
 } from '@/types/workouts';
-import { formatDuration, formatDate } from '@/utils';
+import { formatDate } from '@/utils';
 import {
   createAchievementData,
   generateAchievementPostContent,
   AchievementTypeEnum,
 } from '@/utils/achievements/shareAchievement';
+import { formatDuration } from '@/utils/movin/formatDuration';
 import { getMetricStats } from '@/utils/workouts/getMetricStats';
 import { ExerciseCard } from '../components/exercise-card';
 import { ExerciseModal } from '../components/exercise-modal';
@@ -500,39 +501,38 @@ export default function WorkoutPage() {
         />
 
         {/* Edit Workout Modal */}
-        <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>Edit Workout</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleEditWorkout} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit-workout-name">Workout Name</Label>
-                <Input
-                  id="edit-workout-name"
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-workout-notes">Notes (Optional)</Label>
-                <Textarea
-                  id="edit-workout-notes"
-                  value={editNotes}
-                  onChange={(e) => setEditNotes(e.target.value)}
-                  rows={3}
-                />
-              </div>
-              <div className="flex justify-end space-x-2">
-                <Button type="button" variant="outline" onClick={() => setShowEditModal(false)}>
-                  Cancel
-                </Button>
-                <Button type="submit">Save Changes</Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
+        <BaseModal
+          isOpen={showEditModal}
+          onClose={() => setShowEditModal(false)}
+          title="Edit Workout"
+        >
+          <form onSubmit={handleEditWorkout} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-workout-name">Workout Name</Label>
+              <Input
+                id="edit-workout-name"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-workout-notes">Notes (Optional)</Label>
+              <Textarea
+                id="edit-workout-notes"
+                value={editNotes}
+                onChange={(e) => setEditNotes(e.target.value)}
+                rows={3}
+              />
+            </div>
+            <div className="flex justify-end space-x-2">
+              <Button type="button" variant="outline" onClick={() => setShowEditModal(false)}>
+                Cancel
+              </Button>
+              <Button type="submit">Save Changes</Button>
+            </div>
+          </form>
+        </BaseModal>
 
         {/* Delete Exercise Confirmation Dialog */}
         <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>

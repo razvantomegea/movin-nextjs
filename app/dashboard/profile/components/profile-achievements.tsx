@@ -44,17 +44,17 @@ const iconMap: Record<string, LucideIcons.LucideIcon> = {
 };
 
 interface ProfileAchievementsProps {
-  address: string;
   activities: IActivity[];
   profile: IProfile;
   hasStakes?: boolean;
+  isReadOnly?: boolean;
 }
 
 export function ProfileAchievements({
-  address,
   activities,
   profile,
   hasStakes = false,
+  isReadOnly = false,
 }: ProfileAchievementsProps) {
   const [userBadges, setUserBadges] = useState<IUserBadge[]>([]);
   const [badgeProgress, setBadgeProgress] = useState<Record<string, BadgeCheckResult>>({});
@@ -65,13 +65,13 @@ export function ProfileAchievements({
 
   useEffect(() => {
     const loadBadgeData = async () => {
-      if (!address) return;
+      if (!profile.address) return;
 
       try {
         setIsLoading(true);
 
         // Initialize badge manager with fresh data
-        const manager = await createBadgeManager(address);
+        const manager = await createBadgeManager(profile.address);
         setBadgeManager(manager);
 
         // Check and award badges
@@ -109,7 +109,7 @@ export function ProfileAchievements({
     };
 
     loadBadgeData();
-  }, [address, activities, profile, hasStakes]);
+  }, [profile.address, activities, profile, hasStakes]);
 
   const getIconComponent = (iconName: string) => {
     // Normalize icon name (lowercase, replace spaces/hyphens with underscores)
@@ -318,36 +318,47 @@ export function ProfileAchievements({
         ) : (
           <div className="text-center py-8">
             <div className="text-4xl mb-4">🏆</div>
-            <h3 className="text-lg font-medium mb-2">Start Your Journey</h3>
-            <p className="text-gray-500 dark:text-gray-400 mb-4">
-              Complete activities to earn your first badges!
-            </p>
-            {availableBadges.length > 0 && (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 mt-6">
-                {availableBadges.map((badge, i) => (
-                  <motion.div
-                    key={badge.id}
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: i * 0.02 }}
-                    className="flex flex-col items-center p-3 bg-gray-100 dark:bg-gray-800 rounded-lg text-center opacity-60"
-                  >
-                    <div
-                      className="p-3 rounded-full mb-2"
-                      style={{
-                        backgroundColor: badge.color + '20',
-                        color: badge.color,
-                      }}
-                    >
-                      {renderBadgeIcon(badge.icon)}
-                    </div>
-                    <span className="font-medium text-sm">{badge.name}</span>
-                    <Badge variant="outline" className="text-xs mt-1">
-                      {badge.rarity}
-                    </Badge>
-                  </motion.div>
-                ))}
-              </div>
+            {isReadOnly ? (
+              <>
+                <h3 className="text-lg font-medium mb-2">No Badges Earned</h3>
+                <p className="text-gray-500 dark:text-gray-400 mb-4">
+                  User has not earned any badges yet.
+                </p>
+              </>
+            ) : (
+              <>
+                <h3 className="text-lg font-medium mb-2">Start Your Journey</h3>
+                <p className="text-gray-500 dark:text-gray-400 mb-4">
+                  Complete activities to earn your first badges!
+                </p>
+                {availableBadges.length > 0 && (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 mt-6">
+                    {availableBadges.map((badge, i) => (
+                      <motion.div
+                        key={badge.id}
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: i * 0.02 }}
+                        className="flex flex-col items-center p-3 bg-gray-100 dark:bg-gray-800 rounded-lg text-center opacity-60"
+                      >
+                        <div
+                          className="p-3 rounded-full mb-2"
+                          style={{
+                            backgroundColor: badge.color + '20',
+                            color: badge.color,
+                          }}
+                        >
+                          {renderBadgeIcon(badge.icon)}
+                        </div>
+                        <span className="font-medium text-sm">{badge.name}</span>
+                        <Badge variant="outline" className="text-xs mt-1">
+                          {badge.rarity}
+                        </Badge>
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+              </>
             )}
           </div>
         )}

@@ -11,6 +11,7 @@ import {
   MoreHorizontal,
 } from 'lucide-react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { useDispatch, useSelector } from 'react-redux';
 import { useAccount } from 'wagmi';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -57,6 +58,7 @@ interface SocialFeedCardProps {
 export function SocialFeedCard({ post }: SocialFeedCardProps) {
   const dispatch = useDispatch<AppDispatch>();
   const { address } = useAccount();
+  const router = useRouter();
   const [showComments, setShowComments] = useState(false);
   const [newComment, setNewComment] = useState('');
   const [isRepostModalOpen, setIsRepostModalOpen] = useState(false);
@@ -82,6 +84,13 @@ export function SocialFeedCard({ post }: SocialFeedCardProps) {
 
   const username = post.profile?.username || 'Unknown User';
   const avatarUrl = post.profile?.avatar_url || '/placeholder.svg';
+
+  const handleAvatarClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (post.address) {
+      router.push(`/dashboard/profile?address=${post.address}`);
+    }
+  };
 
   const handleLike = () => {
     if (!address) return;
@@ -228,10 +237,19 @@ export function SocialFeedCard({ post }: SocialFeedCardProps) {
     <Card className="overflow-hidden">
       <CardHeader className="p-4 pb-0">
         <div className="flex items-center gap-3">
-          <Avatar>
-            <AvatarImage src={avatarUrl} alt={username} />
-            <AvatarFallback>{username.charAt(0).toUpperCase()}</AvatarFallback>
-          </Avatar>
+          <button
+            type="button"
+            onClick={handleAvatarClick}
+            className="focus:outline-none group"
+            aria-label={`View ${username}'s profile`}
+            tabIndex={0}
+            style={{ background: 'none', border: 'none', padding: 0, margin: 0 }}
+          >
+            <Avatar className="transition-transform group-hover:scale-105">
+              <AvatarImage src={avatarUrl} alt={username} />
+              <AvatarFallback>{username.charAt(0).toUpperCase()}</AvatarFallback>
+            </Avatar>
+          </button>
           <div className="flex-1">
             <div className="font-medium">{username}</div>
             <div className="text-xs text-muted-foreground">{formatTimeAgo(post.created_at)}</div>

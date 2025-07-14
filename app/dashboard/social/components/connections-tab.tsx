@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { UserCheck, UserMinus, MessageCircle } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -32,6 +33,7 @@ interface ConnectionsTabProps {
 export function ConnectionsTab({ connections, userAddress, isLoading }: ConnectionsTabProps) {
   const dispatch = useAppDispatch();
   const { pendingConnections } = useAppSelector((state) => state.socialFeed);
+  const router = useRouter();
 
   // State for confirmation dialog
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
@@ -151,23 +153,42 @@ export function ConnectionsTab({ connections, userAddress, isLoading }: Connecti
             <div className="space-y-3">
               {pendingConnections.received.map((connection) => {
                 const profile = connection.requester_profile;
+                const handleProfileClick = (e: React.MouseEvent) => {
+                  e.stopPropagation();
+                  if (connection.requester_address) {
+                    router.push(`/dashboard/profile?address=${connection.requester_address}`);
+                  }
+                };
                 return (
                   <Card key={connection.id}>
                     <CardContent className="p-4">
                       <div className="flex items-center gap-3">
-                        <Avatar>
-                          <AvatarImage src={profile?.avatar_url || '/placeholder.svg'} />
-                          <AvatarFallback>
-                            {profile?.username?.charAt(0).toUpperCase() || 'U'}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium truncate max-w-[160px]">
-                            {profile?.username || 'Unknown User'}
-                          </div>
-                          <div className="text-sm text-muted-foreground truncate max-w-[180px]">
-                            Wants to connect with you
-                          </div>
+                        <button
+                          type="button"
+                          onClick={handleProfileClick}
+                          className="focus:outline-none group"
+                          aria-label={`View ${profile?.username || 'user'}'s profile`}
+                          tabIndex={0}
+                          style={{ background: 'none', border: 'none', padding: 0, margin: 0 }}
+                        >
+                          <Avatar className="transition-transform group-hover:scale-105">
+                            <AvatarImage src={profile?.avatar_url || '/placeholder.svg'} />
+                            <AvatarFallback>
+                              {profile?.username?.charAt(0).toUpperCase() || 'U'}
+                            </AvatarFallback>
+                          </Avatar>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleProfileClick}
+                          className="font-medium truncate max-w-[160px] text-left bg-transparent border-none p-0 m-0 hover:underline"
+                          aria-label={`View ${profile?.username || 'user'}'s profile`}
+                          tabIndex={0}
+                        >
+                          {profile?.username || 'Unknown User'}
+                        </button>
+                        <div className="text-sm text-muted-foreground truncate max-w-[180px]">
+                          Wants to connect with you
                         </div>
                         <div className="flex gap-2">
                           <Button size="sm" onClick={() => handleAcceptConnection(connection.id)}>
@@ -205,20 +226,41 @@ export function ConnectionsTab({ connections, userAddress, isLoading }: Connecti
             </Card>
           ) : (
             <div className="space-y-3">
-              {connections.map((connection) => (
-                <Card key={connection.address}>
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-3">
-                      <Avatar>
-                        <AvatarImage src={connection.avatar_url || '/placeholder.svg'} />
-                        <AvatarFallback>
-                          {connection.username.charAt(0).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium truncate max-w-[160px]">
+              {connections.map((connection) => {
+                const handleProfileClick = (e: React.MouseEvent) => {
+                  e.stopPropagation();
+                  if (connection.address) {
+                    router.push(`/dashboard/profile?address=${connection.address}`);
+                  }
+                };
+                return (
+                  <Card key={connection.address}>
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={handleProfileClick}
+                          className="focus:outline-none group"
+                          aria-label={`View ${connection.username}'s profile`}
+                          tabIndex={0}
+                          style={{ background: 'none', border: 'none', padding: 0, margin: 0 }}
+                        >
+                          <Avatar className="transition-transform group-hover:scale-105">
+                            <AvatarImage src={connection.avatar_url || '/placeholder.svg'} />
+                            <AvatarFallback>
+                              {connection.username.charAt(0).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleProfileClick}
+                          className="font-medium truncate max-w-[160px] text-left bg-transparent border-none p-0 m-0 hover:underline"
+                          aria-label={`View ${connection.username}'s profile`}
+                          tabIndex={0}
+                        >
                           {connection.username}
-                        </div>
+                        </button>
                         {connection.address && (
                           <div className="text-sm text-muted-foreground truncate max-w-[180px]">
                             {connection.address.slice(0, 6)}...{connection.address.slice(-4)}
@@ -245,10 +287,10 @@ export function ConnectionsTab({ connections, userAddress, isLoading }: Connecti
                           Remove
                         </Button>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           )}
         </div>
