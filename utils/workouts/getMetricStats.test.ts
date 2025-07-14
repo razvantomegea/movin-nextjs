@@ -1,0 +1,38 @@
+import { getMetricStats } from './getMetricStats';
+
+describe('getMetricStats', () => {
+  const sampleData = [
+    { weight: 50, volume: 1000, reps: 10 },
+    { weight: 55, volume: 1200, reps: 12 },
+    { weight: 60, volume: 1500, reps: 15 },
+  ];
+
+  it('calculates stats for weight', () => {
+    const stats = getMetricStats(sampleData, 'weight', 'kg');
+    expect(stats.current).toBe(60);
+    expect(stats.best).toBe(60);
+    expect(Math.round(stats.improvement)).toBe(20); // (60-50)/50*100 = 20%
+    expect(stats.unit).toBe('kg');
+  });
+
+  it('calculates stats for volume', () => {
+    const stats = getMetricStats(sampleData, 'volume', 'kg');
+    expect(stats.current).toBe(1500);
+    expect(stats.best).toBe(1500);
+    expect(Math.round(stats.improvement)).toBe(50); // (1500-1000)/1000*100 = 50%
+    expect(stats.unit).toBe('kg');
+  });
+
+  it('calculates stats for reps', () => {
+    const stats = getMetricStats(sampleData, 'reps');
+    expect(stats.current).toBe(15);
+    expect(stats.best).toBe(15);
+    expect(Math.round(stats.improvement)).toBe(50); // (15-10)/10*100 = 50%
+    expect(stats.unit).toBe('reps');
+  });
+
+  it('returns zeros for empty data', () => {
+    const stats = getMetricStats([], 'weight', 'kg');
+    expect(stats).toEqual({ current: 0, best: 0, improvement: 0, unit: '' });
+  });
+});

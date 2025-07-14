@@ -20,3 +20,4 @@ export * from './pwa/pwa';
 export * from './pwa/pushNotifications';
 export * from './pwa/serviceWorker';
 export * from './pwa/subscription';
+export * from './workouts/getMetricStats';

@@ -8,6 +8,7 @@ import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid } fro
 import { Card, CardContent } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { ExerciseProgress } from '@/types/workouts';
+import { getMetricStats } from '@/utils/workouts/getMetricStats';
 
 interface ExerciseProgressChartProps {
   progressData: ExerciseProgress[];
@@ -58,25 +59,7 @@ export function ExerciseProgressChart({
 
   const hasData = chartData.length > 0;
 
-  // Calculate stats for the selected metric
-  const getMetricStats = () => {
-    if (!hasData) return { current: 0, best: 0, improvement: 0, unit: '' };
-
-    const values = chartData.map((d: ChartDataPoint) => d[selectedMetric]);
-    const current = values[values.length - 1] || 0;
-    const best = Math.max(...values);
-    const first = values[0] || 0;
-    const improvement = first > 0 ? ((current - first) / first) * 100 : 0;
-
-    let unit = '';
-    if (selectedMetric === 'weight') unit = weightUnit;
-    else if (selectedMetric === 'volume') unit = weightUnit;
-    else if (selectedMetric === 'reps') unit = 'reps';
-
-    return { current, best, improvement, unit };
-  };
-
-  const stats = getMetricStats();
+  const stats = getMetricStats(chartData, selectedMetric, weightUnit);
 
   // Get chart color based on metric
   const getChartColor = () => {
