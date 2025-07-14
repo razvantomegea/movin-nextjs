@@ -28,6 +28,7 @@ import {
   updateExerciseAction,
   deleteExerciseAction,
   clearError as clearExerciseError,
+  fetchExerciseProgress,
 } from '@/lib/redux/slices/exercisesSlice';
 import { createPost } from '@/lib/redux/slices/socialFeedSlice';
 import { showSuccessToast, showErrorToast } from '@/lib/redux/slices/toastSlice';
@@ -180,17 +181,39 @@ export default function WorkoutPage() {
     data: CreateExerciseData | { exerciseId: string; data: UpdateExerciseData },
   ) => {
     try {
+      let exerciseName: string;
+      
       if ('exerciseId' in data) {
         await dispatch(
           updateExerciseAction({ exerciseId: data.exerciseId, exerciseData: data.data }),
         ).unwrap();
         dispatch(showSuccessToast({ title: 'Exercise updated successfully!' }));
+        
+        // Get exercise name for progress refresh
+        const exercise = currentWorkout?.workout_exercises?.find((ex) => ex.id === data.exerciseId);
+        exerciseName = exercise?.exercise_name || '';
       } else {
         await dispatch(createExerciseAction(data)).unwrap();
         dispatch(showSuccessToast({ title: 'Exercise added successfully!' }));
+        
+        // Get exercise name from the create data
+        exerciseName = data.exercise_name;
       }
+      
       // Refresh the workout to get updated totals
       dispatch(fetchWorkoutWithExercises(workoutId));
+      
+      // Refresh exercise progress chart data if we have address and exercise name
+      if (address && exerciseName) {
+        dispatch(
+          fetchExerciseProgress({
+            userAddress: address,
+            workoutId: workoutId,
+            exerciseName: exerciseName,
+            limit: 30, // Last 30 sessions
+          }),
+        );
+      }
     } catch (error) {
       dispatch(showErrorToast({ title: 'Failed to save exercise' }));
     }
@@ -229,6 +252,20 @@ export default function WorkoutPage() {
           exerciseData: { address: address.toLowerCase(), completed_sets: completedSets },
         }),
       ).unwrap();
+
+      // Find the exercise to get its name for progress refresh
+      const exercise = currentWorkout?.workout_exercises?.find((ex) => ex.id === exerciseId);
+      if (exercise) {
+        // Refresh exercise progress chart data
+        dispatch(
+          fetchExerciseProgress({
+            userAddress: address,
+            workoutId: workoutId,
+            exerciseName: exercise.exercise_name,
+            limit: 30, // Last 30 sessions
+          }),
+        );
+      }
     } catch (error) {
       dispatch(showErrorToast({ title: 'Failed to update progress' }));
     }
@@ -482,6 +519,7 @@ export default function WorkoutPage() {
                   onDelete={handleDeleteExercise}
                   onUpdateProgress={handleUpdateProgress}
                   weightUnit={preferredWeightUnit}
+                  userAddress={address}
                 />
               ))}
             </div>

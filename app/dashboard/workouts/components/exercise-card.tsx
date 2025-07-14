@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { updateSetCompletionStatus } from '@/lib/supabase/workouts';
+import { useAppDispatch } from '@/lib/redux/hooks';
+import { fetchExerciseProgress } from '@/lib/redux/slices/exercisesSlice';
 import type { WorkoutExercise, ExerciseSet } from '@/types/workouts';
 
 export interface ExerciseCardProps {
@@ -15,6 +17,7 @@ export interface ExerciseCardProps {
   onDelete: (exerciseId: string) => void;
   onUpdateProgress: (exerciseId: string, completedSets: number) => void;
   weightUnit: string;
+  userAddress?: string;
 }
 
 export function ExerciseCard({
@@ -24,8 +27,10 @@ export function ExerciseCard({
   onDelete,
   onUpdateProgress,
   weightUnit,
-}: ExerciseCardProps) {
+  userAddress,
+  }: ExerciseCardProps) {
   const router = useRouter();
+  const dispatch = useAppDispatch();
   const [isExpanded, setIsExpanded] = useState(false);
   const [exerciseSets, setExerciseSets] = useState<ExerciseSet[]>([]);
 
@@ -89,6 +94,18 @@ export function ExerciseCard({
       // Update parent component with new completion count
       const newCompletedCount = newSets.filter((s) => s.completed).length;
       onUpdateProgress(exercise.id, newCompletedCount);
+
+      // Refresh exercise progress chart data if userAddress is available
+      if (userAddress) {
+        dispatch(
+          fetchExerciseProgress({
+            userAddress: userAddress,
+            workoutId: workoutId,
+            exerciseName: exercise.exercise_name,
+            limit: 30, // Last 30 sessions
+          }),
+        );
+      }
     } catch (error) {
       console.error('Error updating set completion:', error);
     }
