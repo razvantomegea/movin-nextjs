@@ -12,6 +12,7 @@ import {
   Star,
   CircleDollarSign,
   Scale,
+  Share,
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -26,13 +27,15 @@ import { ProfileUploadModal } from './profile-upload-modal';
 import { WeightCaptureModal } from './weight-capture-modal';
 
 interface ProfileHeaderProps {
-  profile: IProfile;
+  profile: Partial<IProfile>;
   balance: string;
   isUpdating: boolean;
   isEditing: boolean;
+  canEdit: boolean;
   onEdit: (editing: boolean) => void;
   isPremium: boolean;
   activitiesCount: number;
+  onShare?: () => void;
 }
 
 export function ProfileHeader({
@@ -40,9 +43,11 @@ export function ProfileHeader({
   balance,
   isUpdating,
   isEditing,
+  canEdit,
   onEdit,
   isPremium = false,
   activitiesCount = 0,
+  onShare,
 }: ProfileHeaderProps) {
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
@@ -79,12 +84,14 @@ export function ProfileHeader({
 
   return (
     <>
-      <WeightCaptureModal
-        isOpen={isWeightModalOpen}
-        onClose={handleCloseWeightModal}
-        userAddress={profile.address}
-        currentWeightUnit={profile.weight_unit}
-      />
+      {profile.address && canEdit && (
+        <WeightCaptureModal
+          isOpen={isWeightModalOpen}
+          onClose={handleCloseWeightModal}
+          userAddress={profile.address}
+          currentWeightUnit={profile.weight_unit}
+        />
+      )}
 
       <Card>
         <CardContent className="p-6">
@@ -101,20 +108,23 @@ export function ProfileHeader({
                     {formatAddress(profile.username)}
                   </AvatarFallback>
                 </Avatar>
-                <Button
-                  size="icon"
-                  variant="secondary"
-                  className="absolute bottom-0 right-0 h-8 w-8 rounded-full"
-                  onClick={handleAvatarClick}
-                  disabled={isUpdating}
-                >
-                  {isUpdating ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Camera className="h-4 w-4" />
-                  )}
-                </Button>
-                {isPremium && (
+                {canEdit && (
+                  <Button
+                    size="icon"
+                    variant="secondary"
+                    className="absolute bottom-0 right-0 h-8 w-8 rounded-full"
+                    onClick={handleAvatarClick}
+                    disabled={isUpdating}
+                  >
+                    {isUpdating ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Camera className="h-4 w-4" />
+                    )}
+                  </Button>
+                )}
+
+                {isPremium && canEdit && (
                   <div className="absolute -top-2 -right-2">
                     <Badge className="bg-gradient-to-r from-amber-400 to-yellow-500 text-black">
                       <Star className="h-3 w-3 mr-1 fill-black" />
@@ -128,8 +138,8 @@ export function ProfileHeader({
                 <p className="text-gray-500 dark:text-gray-400 text-sm truncate max-w-full">
                   {profile.email || profile.address}
                 </p>
-                <div className="flex items-center justify-center mt-3">
-                  {!isEditing && (
+                <div className="flex items-center justify-center mt-3 gap-2">
+                  {!isEditing && canEdit && (
                     <Button
                       variant="outline"
                       size="sm"
@@ -140,27 +150,39 @@ export function ProfileHeader({
                       Edit Profile
                     </Button>
                   )}
+                  {profile.privacy_setting !== 'private' && onShare && (
+                    <Button variant="outline" size="sm" onClick={onShare} disabled={isUpdating}>
+                      <Share className="h-3.5 w-3.5 mr-1" />
+                      Share
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>
 
             {/* Stats section */}
             <div className="col-span-12">
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+              <div
+                className={`grid grid-cols-2 md:grid-cols-3 gap-4 ${
+                  canEdit ? 'lg:grid-cols-5' : 'lg:grid-cols-3'
+                }`}
+              >
                 {/* Token Balance */}
-                <motion.div
-                  className={`p-4 rounded-xl flex flex-col items-center justify-center shadow-sm ${
-                    isDark ? 'bg-blue-900/20' : 'bg-blue-50'
-                  }`}
-                  whileHover={{ scale: 1.02 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <span className="text-sm text-gray-500 dark:text-gray-300 mb-1 flex items-center">
-                    <CircleDollarSign className="h-3.5 w-3.5 mr-1" />
-                    Balance
-                  </span>
-                  <span className="text-xl font-bold">{balance}</span>
-                </motion.div>
+                {canEdit && (
+                  <motion.div
+                    className={`p-4 rounded-xl flex flex-col items-center justify-center shadow-sm ${
+                      isDark ? 'bg-blue-900/20' : 'bg-blue-50'
+                    }`}
+                    whileHover={{ scale: 1.02 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <span className="text-sm text-gray-500 dark:text-gray-300 mb-1 flex items-center">
+                      <CircleDollarSign className="h-3.5 w-3.5 mr-1" />
+                      Balance
+                    </span>
+                    <span className="text-xl font-bold">{balance}</span>
+                  </motion.div>
+                )}
 
                 {/* Total Earned */}
                 <motion.div
@@ -180,46 +202,48 @@ export function ProfileHeader({
                 </motion.div>
 
                 {/* Weight */}
-                <motion.div
-                  className={`p-4 rounded-xl flex flex-col items-center justify-center shadow-sm ${
-                    isDark ? 'bg-green-900/20' : 'bg-green-50'
-                  } relative cursor-pointer`}
-                  whileHover={{ scale: 1.02 }}
-                  transition={{ duration: 0.2 }}
-                  onClick={handleOpenWeightModal}
-                >
-                  {!isUpdating ? (
-                    <>
-                      <span className="text-sm text-gray-500 dark:text-gray-300 mb-1 flex items-center">
-                        <Scale className="h-3.5 w-3.5 mr-1" />
-                        Weight
-                      </span>
-                      <span className="text-xl font-bold">
-                        {profile.weight
-                          ? `${profile.weight} ${profile.weight_unit || 'kg'}`
-                          : 'Add Weight'}
-                      </span>
-                      {profile.weight_updated_at && (
-                        <span className="text-xs text-gray-500 mt-1">
-                          {formatDate(profile.weight_updated_at)}
+                {canEdit && (
+                  <motion.div
+                    className={`p-4 rounded-xl flex flex-col items-center justify-center shadow-sm ${
+                      isDark ? 'bg-green-900/20' : 'bg-green-50'
+                    } relative ${canEdit ? 'cursor-pointer' : ''}`}
+                    whileHover={canEdit ? { scale: 1.02 } : {}}
+                    transition={{ duration: 0.2 }}
+                    onClick={canEdit ? handleOpenWeightModal : undefined}
+                  >
+                    {!isUpdating ? (
+                      <>
+                        <span className="text-sm text-gray-500 dark:text-gray-300 mb-1 flex items-center">
+                          <Scale className="h-3.5 w-3.5 mr-1" />
+                          Weight
                         </span>
-                      )}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="absolute top-1 right-1 h-6 w-6 p-0 rounded-full opacity-60 hover:opacity-100"
-                        onClick={handleOpenWeightModal}
-                      >
-                        <Edit className="h-3 w-3" />
-                      </Button>
-                    </>
-                  ) : (
-                    <>
-                      <Skeleton className="h-4 w-20 mb-2" />
-                      <Skeleton className="h-7 w-16" />
-                    </>
-                  )}
-                </motion.div>
+                        <span className="text-xl font-bold">
+                          {profile.weight
+                            ? `${profile.weight} ${profile.weight_unit || 'kg'}`
+                            : 'Add Weight'}
+                        </span>
+                        {profile.weight_updated_at && (
+                          <span className="text-xs text-gray-500 mt-1">
+                            {formatDate(profile.weight_updated_at)}
+                          </span>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="absolute top-1 right-1 h-6 w-6 p-0 rounded-full opacity-60 hover:opacity-100"
+                          onClick={handleOpenWeightModal}
+                        >
+                          <Edit className="h-3 w-3" />
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Skeleton className="h-4 w-20 mb-2" />
+                        <Skeleton className="h-7 w-16" />
+                      </>
+                    )}
+                  </motion.div>
+                )}
 
                 {/* Level */}
                 <motion.div
@@ -267,14 +291,16 @@ export function ProfileHeader({
         </CardContent>
       </Card>
 
-      <ProfileUploadModal
-        open={uploadModalOpen}
-        onClose={() => setUploadModalOpen(false)}
-        isUpdating={isUpdating}
-        storageConfig={storageConfig}
-        currentAvatarUrl={profile.avatar_url}
-        username={profile.username}
-      />
+      {profile.username && canEdit && (
+        <ProfileUploadModal
+          open={uploadModalOpen}
+          onClose={() => setUploadModalOpen(false)}
+          isUpdating={isUpdating}
+          storageConfig={storageConfig}
+          currentAvatarUrl={profile.avatar_url}
+          username={profile.username}
+        />
+      )}
     </>
   );
 }

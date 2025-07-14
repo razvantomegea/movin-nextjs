@@ -11,9 +11,10 @@ import { PersonalInfoTab } from './personal-info-tab';
 interface ProfileTabsProps {
   profile: IProfile;
   activities: IActivity[];
+  isReadOnly: boolean;
 }
 
-export function ProfileTabs({ profile, activities }: ProfileTabsProps) {
+export function ProfileTabs({ profile, activities, isReadOnly }: ProfileTabsProps) {
   const [activeTab, setActiveTab] = useState('achievements');
 
   return (
@@ -29,7 +30,7 @@ export function ProfileTabs({ profile, activities }: ProfileTabsProps) {
         </TabsTrigger>
       </TabsList>
       <TabsContent value="achievements">
-        <AchievementsTab profile={profile} activities={activities} />
+        <AchievementsTab profile={profile} activities={activities} isReadOnly={isReadOnly} />
       </TabsContent>
       <TabsContent value="personal">
         <PersonalInfoTab profile={profile} />

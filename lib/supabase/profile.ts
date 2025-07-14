@@ -1,5 +1,6 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { handleAuthError } from '@/utils/auth';
+import { getConnectionStatus } from './connections';
 import { getClient } from './createClient';
 
 /**
@@ -102,6 +103,7 @@ export async function getLeaderboard({
   const { data, error } = await client
     .from('profiles')
     .select('address, username, avatar_url, level, streak_days, total_earned, created_at')
+    .eq('privacy_setting', 'public')
     .order('level', { ascending: false })
     .order('total_earned', { ascending: false })
     .order('created_at', { ascending: false })
@@ -114,6 +116,8 @@ export async function getLeaderboard({
 
   return data || [];
 }
+
+export type ProfilePrivacySetting = 'public' | 'partially_public' | 'private';
 
 export interface IProfile {
   id: string;
@@ -132,8 +136,19 @@ export interface IProfile {
   date_of_birth?: string;
   biological_sex?: string;
   total_earned?: number;
+  privacy_setting?: ProfilePrivacySetting;
+  allow_connection_requests?: boolean;
+  profile_description?: string;
+  location?: string;
+  website?: string;
   created_at: string;
   updated_at: string;
+}
+
+export interface IPublicProfile extends IProfile {
+  // Connection status for the viewing user
+  connection_status?: 'none' | 'pending' | 'accepted' | 'declined' | 'blocked';
+  connection_id?: string;
 }
 
 export async function getProfile({
@@ -155,6 +170,83 @@ export async function getProfile({
   }
 
   return data?.[0] || null;
+}
+
+/**
+ * Get a public profile by address with privacy filtering
+ * This function respects privacy settings and connection status
+ */
+export async function getPublicProfile({
+  targetAddress,
+  viewerAddress,
+  client,
+}: {
+  targetAddress: string;
+  viewerAddress?: string;
+  client?: SupabaseClient;
+}): Promise<Partial<IPublicProfile> | null> {
+  if (!client) {
+    client = getClient();
+  }
+
+  // First, get the basic profile info (only what's allowed by RLS)
+  const profile = await getProfile({ address: targetAddress, client });
+
+  if (!profile) {
+    return null;
+  }
+
+  // If viewer is the profile owner, return full access
+  if (viewerAddress === targetAddress) {
+    return {
+      ...profile,
+      connection_status: 'none',
+    };
+  }
+
+  let connectionStatus: 'none' | 'pending' | 'accepted' | 'declined' | 'blocked' = 'none';
+  let connectionId: string | undefined;
+
+  // Check connection status if viewer is provided and not anonymous
+  if (viewerAddress) {
+    const { connection, status } = await getConnectionStatus({
+      userAddress1: viewerAddress,
+      userAddress2: targetAddress,
+      client,
+    });
+
+    if (status) {
+      connectionStatus = status;
+      connectionId = connection?.id;
+    }
+  }
+
+  // Return appropriate data based on privacy setting
+  const baseProfile: IPublicProfile = {
+    ...profile,
+    connection_status: connectionStatus,
+    connection_id: connectionId,
+  };
+
+  // Public profiles show all available info
+  if (profile.privacy_setting === 'public') {
+    return baseProfile;
+  }
+
+  // Partially public profiles show limited info to non-connections
+  if (profile.privacy_setting === 'partially_public') {
+    if (connectionStatus === 'accepted') {
+      // Connected users see full info
+      return baseProfile;
+    }
+  }
+
+  // Private profiles should not be accessible (handled by RLS, but just in case)
+  return {
+    address: targetAddress,
+    avatar_url: profile.avatar_url,
+    username: profile.username,
+  };
 }
 
 export async function updateProfile({
@@ -207,6 +299,8 @@ export async function updateProfile({
     level: profileData.level ?? calculatedLevel,
     streak_days: profileData.streak_days ?? 0,
     total_earned: totalEarned,
+    privacy_setting: profileData.privacy_setting ?? 'public',
+    allow_connection_requests: profileData.allow_connection_requests ?? true,
   };
 
   const { data, error } = await client.from('profiles').insert(dataToInsert).select();
