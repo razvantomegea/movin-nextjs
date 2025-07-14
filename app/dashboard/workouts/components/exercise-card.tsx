@@ -80,12 +80,8 @@ export function ExerciseCard({
     if (!set) return;
 
     try {
-      // If this is a real set (not placeholder), update in database
-      if (!set.id.startsWith('placeholder-')) {
-        await updateSetCompletionStatus(set.id, !set.completed);
-      }
+      await updateSetCompletionStatus(set.id, !set.completed);
 
-      // Update local state
       const newSets = [...exerciseSets];
       newSets[setIndex] = { ...set, completed: !set.completed };
       setExerciseSets(newSets);
