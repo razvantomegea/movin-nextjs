@@ -58,7 +58,8 @@ export function ProfilePage() {
   const isPremium = isPremiumActive();
   const searchParams = useSearchParams();
   const targetAddress = searchParams.get('address');
-  const isReadOnly = Boolean(targetAddress && targetAddress !== addressLower);
+  const isValidAddress = targetAddress && /^0x[a-fA-F0-9]{40}$/i.test(targetAddress);
+  const isReadOnly = Boolean(isValidAddress && targetAddress.toLowerCase() !== addressLower);
 
   // State for public profile
   const [publicProfile, setPublicProfile] = useState<Partial<IPublicProfile> | null>(null);

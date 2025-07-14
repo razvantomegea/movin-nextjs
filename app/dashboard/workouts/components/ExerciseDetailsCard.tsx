@@ -2,17 +2,16 @@ import React from 'react';
 import { Calendar } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { WorkoutExercise } from '@/types/workouts';
+import { formatDuration } from '@/utils/movin/formatDuration';
 
 interface ExerciseDetailsCardProps {
   currentExercise: WorkoutExercise;
   weightUnit: string;
-  formatDuration: (seconds: number) => string;
 }
 
 export const ExerciseDetailsCard: React.FC<ExerciseDetailsCardProps> = ({
   currentExercise,
   weightUnit,
-  formatDuration,
 }) => (
   <Card>
     <CardHeader>
