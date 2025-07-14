@@ -323,6 +323,7 @@ export async function updateExercise(
           time_under_tension: incoming.time_under_tension,
           rest_time: incoming.rest_time,
           notes: incoming.notes,
+          updated_at: new Date().toISOString(),
         };
         if (typeof incoming.completed !== 'undefined') {
           updateData.completed = incoming.completed;
@@ -410,6 +411,7 @@ export async function updateExercise(
         exercise_duration: totalDuration,
         rest_time: avgRestTime,
         completed_sets: exerciseData.completed_sets,
+        updated_at: new Date().toISOString(),
       })
       .eq('id', exerciseId)
       .select()
@@ -433,6 +435,7 @@ export async function updateExercise(
         notes: exerciseData.notes,
         order_index: exerciseData.order_index,
         completed_sets: exerciseData.completed_sets,
+        updated_at: new Date().toISOString(),
       })
       .eq('id', exerciseId)
       .select()
@@ -573,7 +576,10 @@ export async function updateSetCompletionStatus(
 
   const { data, error } = await supabase
     .from('exercise_sets')
-    .update({ completed })
+    .update({ 
+      completed, 
+      updated_at: new Date().toISOString() 
+    })
     .eq('id', setId)
     .select()
     .single();
@@ -584,6 +590,11 @@ export async function updateSetCompletionStatus(
       'updateSetCompletionStatus',
     );
     throw error;
+  }
+
+  // Recalculate exercise aggregates after updating set completion
+  if (data.exercise_id) {
+    await recalculateExerciseAggregates(supabase, data.exercise_id);
   }
 
   return data;
@@ -645,6 +656,7 @@ async function recalculateExerciseAggregates(
       exercise_duration: totalDuration,
       rest_time: avgRestTime,
       completed_sets: completedSets,
+      updated_at: new Date().toISOString(),
     })
     .eq('id', exerciseId);
 

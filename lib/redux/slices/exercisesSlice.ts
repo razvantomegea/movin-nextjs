@@ -148,6 +148,12 @@ const exercisesSlice = createSlice({
       });
       state.exercises = reorderedExercises;
     },
+    clearExerciseProgress: (state, action: PayloadAction<{ workoutId: string; exerciseName: string }>) => {
+      const { workoutId, exerciseName } = action.payload;
+      if (state.exerciseProgress[workoutId] && state.exerciseProgress[workoutId][exerciseName]) {
+        delete state.exerciseProgress[workoutId][exerciseName];
+      }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -194,6 +200,13 @@ const exercisesSlice = createSlice({
         if (state.currentExercise && state.currentExercise.id === action.payload.id) {
           state.currentExercise = action.payload;
         }
+        // Clear exercise progress to force refresh
+        const updatedExercise = action.payload;
+        Object.keys(state.exerciseProgress).forEach(workoutId => {
+          if (state.exerciseProgress[workoutId][updatedExercise.exercise_name]) {
+            delete state.exerciseProgress[workoutId][updatedExercise.exercise_name];
+          }
+        });
       })
       .addCase(updateExerciseAction.rejected, (state, action) => {
         state.loading = false;
@@ -271,6 +284,7 @@ export const {
   setCurrentExercise,
   updateExerciseInList,
   reorderExercisesLocal,
+  clearExerciseProgress,
 } = exercisesSlice.actions;
 
 export default exercisesSlice.reducer;
