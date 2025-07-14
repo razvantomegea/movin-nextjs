@@ -148,7 +148,10 @@ const exercisesSlice = createSlice({
       });
       state.exercises = reorderedExercises;
     },
-    clearExerciseProgress: (state, action: PayloadAction<{ workoutId: string; exerciseName: string }>) => {
+    clearExerciseProgress: (
+      state,
+      action: PayloadAction<{ workoutId: string; exerciseName: string }>,
+    ) => {
       const { workoutId, exerciseName } = action.payload;
       if (state.exerciseProgress[workoutId] && state.exerciseProgress[workoutId][exerciseName]) {
         delete state.exerciseProgress[workoutId][exerciseName];
@@ -202,7 +205,7 @@ const exercisesSlice = createSlice({
         }
         // Clear exercise progress to force refresh
         const updatedExercise = action.payload;
-        Object.keys(state.exerciseProgress).forEach(workoutId => {
+        Object.keys(state.exerciseProgress).forEach((workoutId) => {
           if (state.exerciseProgress[workoutId][updatedExercise.exercise_name]) {
             delete state.exerciseProgress[workoutId][updatedExercise.exercise_name];
           }

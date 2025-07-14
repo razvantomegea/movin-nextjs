@@ -576,9 +576,9 @@ export async function updateSetCompletionStatus(
 
   const { data, error } = await supabase
     .from('exercise_sets')
-    .update({ 
-      completed, 
-      updated_at: new Date().toISOString() 
+    .update({
+      completed,
+      updated_at: new Date().toISOString(),
     })
     .eq('id', setId)
     .select()
