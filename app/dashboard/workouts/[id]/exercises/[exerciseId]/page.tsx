@@ -215,6 +215,7 @@ export default function ExerciseDetailPage() {
       >
         <motion.div variants={item}>
           <ExerciseDetailsCard currentExercise={currentExercise} weightUnit={weightUnit} />
+          <ExerciseDetailsCard currentExercise={currentExercise} weightUnit={weightUnit} />
         </motion.div>
         <motion.div variants={item}>
           <ExerciseProgressSummary
