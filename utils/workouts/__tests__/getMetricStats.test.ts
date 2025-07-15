@@ -1,4 +1,4 @@
-import { getMetricStats } from './getMetricStats';
+import { getMetricStats } from '../getMetricStats';
 
 describe('getMetricStats', () => {
   const sampleData = [

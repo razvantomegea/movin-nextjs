@@ -181,7 +181,10 @@ export function ExerciseModal({
     if (exercise) {
       onSave({
         exerciseId: exercise.id,
-        data: exerciseData,
+        data: {
+          ...exerciseData,
+          address: address?.toLowerCase() as string, // Ensure address is passed for progress tracking
+        },
       });
     } else {
       onSave({
@@ -283,7 +286,7 @@ export function ExerciseModal({
       title={exercise ? 'Edit Exercise' : 'Add New Exercise'}
       subtitle="Configure your exercise details and sets"
       footer={footer}
-      contentClassName="p-6"
+      contentClassName="p-6 max-h-[80vh] overflow-y-auto"
     >
       <form id="exercise-form" onSubmit={handleSubmit} className="space-y-6">
         <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">

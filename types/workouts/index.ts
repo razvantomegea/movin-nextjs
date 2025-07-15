@@ -114,6 +114,7 @@ export type ProgressByDate = Record<
     totalVolume: number;
     totalSets: number;
     totalReps: number;
+    totalTimeUnderTension: number;
   }
 >;
 
@@ -130,6 +131,7 @@ export type ExerciseProgress = {
   totalVolume: number;
   totalSets: number;
   totalReps: number;
+  totalTimeUnderTension: number;
 };
 
 // Helper type for UI purposes - temporary set data that doesn't have database IDs yet

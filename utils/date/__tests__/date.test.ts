@@ -13,10 +13,10 @@ describe('date utils', () => {
       expect(formatDate(1718000000000)).toMatch(/Jun|Jul|Aug|Sep|Oct|Nov|Dec|Jan|Feb|Mar|Apr|May/);
     });
     it('formats a string date correctly', () => {
-      expect(formatDate('2024-06-15T12:34:00Z')).toContain('2024');
+      expect(formatDate('2024-06-15T12:34:00Z')).toBe('Jun 15, 2024, 03:34 PM');
     });
     it('formats a Date object correctly', () => {
-      expect(formatDate(new Date('2024-06-15T12:34:00Z'))).toContain('2024');
+      expect(formatDate(new Date('2024-06-15T12:34:00Z'))).toBe('Jun 15, 2024, 03:34 PM');
     });
     it('returns empty string for invalid input', () => {
       expect(formatDate(undefined as any)).toBe('');

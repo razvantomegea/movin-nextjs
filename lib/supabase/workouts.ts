@@ -1,5 +1,6 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { handleAuthError } from '@/utils/auth';
+import { calculateExerciseProgressMetrics } from '@/utils/workouts/calculateExerciseProgressMetrics';
 import { getClient } from './createClient';
 import type {
   Workout,
@@ -13,8 +14,159 @@ import type {
   UpdateExerciseSetData,
   WorkoutWithExercises,
   WorkoutStatsRow,
-  ExerciseWithWorkout,
 } from '../../types/workouts';
+
+// Exercise Progress types
+export interface ExerciseProgress {
+  id: string;
+  exercise_id: string;
+  address: string;
+  weight: number;
+  volume: number;
+  sets: number;
+  reps: number;
+  time_under_tension: number;
+  created_at: string;
+  updated_at: string;
+}
+
+// Exercise Progress functions
+export async function upsertExerciseProgress(
+  exerciseId: string,
+  address: string,
+): Promise<ExerciseProgress | null> {
+  const supabase = getClient();
+
+  try {
+    // First, get the current exercise data
+    const { data: exercise, error: exerciseError } = await supabase
+      .from('workout_exercises')
+      .select(
+        `
+        *,
+        exercise_sets (*)
+      `,
+      )
+      .eq('id', exerciseId)
+      .single();
+
+    if (exerciseError) {
+      handleAuthError(
+        exerciseError instanceof Error ? exerciseError : new Error(String(exerciseError)),
+        'upsertExerciseProgress',
+      );
+      return null;
+    }
+
+    // Calculate progress metrics
+    const { maxWeight, totalVolume, completedSets, totalReps, totalTimeUnderTension } =
+      calculateExerciseProgressMetrics(exercise);
+
+    // Only create progress entry if there are completed sets
+    if (completedSets === 0) {
+      return null;
+    }
+
+    // Use the database function to upsert progress
+    const { data, error } = await supabase.rpc('upsert_exercise_progress', {
+      p_exercise_id: exerciseId,
+      p_address: address.toLowerCase(),
+      p_weight: maxWeight,
+      p_volume: totalVolume,
+      p_sets: completedSets,
+      p_reps: totalReps,
+      p_time_under_tension: totalTimeUnderTension,
+    });
+
+    if (error) {
+      handleAuthError(
+        error instanceof Error ? error : new Error(String(error)),
+        'upsertExerciseProgress',
+      );
+      return null;
+    }
+
+    // Fetch the updated/created progress entry
+    const { data: progressData, error: fetchError } = await supabase
+      .from('exercise_progress')
+      .select('*')
+      .eq('id', data)
+      .single();
+
+    if (fetchError) {
+      handleAuthError(
+        fetchError instanceof Error ? fetchError : new Error(String(fetchError)),
+        'upsertExerciseProgress',
+      );
+      return null;
+    }
+
+    return progressData;
+  } catch (error) {
+    handleAuthError(
+      error instanceof Error ? error : new Error(String(error)),
+      'upsertExerciseProgress',
+    );
+    return null;
+  }
+}
+
+export async function getExerciseProgressHistory(
+  exerciseId: string,
+  limit = 30,
+): Promise<ExerciseProgress[]> {
+  const supabase = getClient();
+
+  const { data, error } = await supabase
+    .from('exercise_progress')
+    .select('*')
+    .eq('exercise_id', exerciseId)
+    .order('updated_at', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    handleAuthError(
+      error instanceof Error ? error : new Error(String(error)),
+      'getExerciseProgressHistory',
+    );
+    throw error;
+  }
+
+  return data || [];
+}
+
+export async function getExerciseProgressByName(
+  address: string,
+  exerciseName: string,
+  limit = 30,
+): Promise<ExerciseProgress[]> {
+  const supabase = getClient();
+
+  const { data, error } = await supabase
+    .from('exercise_progress')
+    .select(
+      `
+      *,
+      workout_exercises!inner (
+        exercise_name
+      )
+    `,
+    )
+    .eq('address', address.toLowerCase())
+    .eq('workout_exercises.exercise_name', exerciseName)
+    .order('updated_at', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    handleAuthError(
+      error instanceof Error ? error : new Error(String(error)),
+      'getExerciseProgressByName',
+    );
+    throw error;
+  }
+
+  return data || [];
+}
 
 // Workout CRUD operations
 export async function createWorkout(
@@ -425,6 +577,11 @@ export async function updateExercise(
       throw exerciseError;
     }
 
+    // Track progress if exercise has completed sets
+    if (exerciseData.address) {
+      await upsertExerciseProgress(exerciseId, exerciseData.address);
+    }
+
     return exercise;
   } else {
     // Update the exercise without touching sets
@@ -447,6 +604,11 @@ export async function updateExercise(
         'updateExercise',
       );
       throw exerciseError;
+    }
+
+    // Track progress if exercise has completed sets
+    if (exerciseData.address) {
+      await upsertExerciseProgress(exerciseId, exerciseData.address);
     }
 
     return exercise;
@@ -571,6 +733,7 @@ export async function deleteExerciseSet(setId: string): Promise<void> {
 export async function updateSetCompletionStatus(
   setId: string,
   completed: boolean,
+  address?: string,
 ): Promise<ExerciseSet> {
   const supabase = getClient();
 
@@ -595,6 +758,11 @@ export async function updateSetCompletionStatus(
   // Recalculate exercise aggregates after updating set completion
   if (data.exercise_id) {
     await recalculateExerciseAggregates(supabase, data.exercise_id);
+
+    // Track progress if address is provided
+    if (address) {
+      await upsertExerciseProgress(data.exercise_id, address);
+    }
   }
 
   return data;
@@ -723,119 +891,6 @@ export async function getWorkoutStats(
     averageWorkoutDuration,
     completedWorkouts,
   };
-}
-
-export async function getExerciseProgress(
-  address: string,
-  exerciseName: string,
-  limit = 10,
-): Promise<
-  {
-    date: string;
-    maxWeight: number;
-    totalVolume: number;
-    totalSets: number;
-    totalReps: number;
-  }[]
-> {
-  const supabase = getClient();
-
-  const { data, error } = await supabase
-    .from('workout_exercises')
-    .select(
-      `
-      *,
-      exercise_sets (*),
-      workouts!inner (
-        address,
-        created_at
-      )
-    `,
-    )
-    .eq('exercise_name', exerciseName)
-    .eq('workouts.address', address.toLowerCase())
-    .order('workouts(created_at)', { ascending: false })
-    .limit(limit);
-
-  if (error) {
-    handleAuthError(
-      error instanceof Error ? error : new Error(String(error)),
-      'getExerciseProgress',
-    );
-    throw error;
-  }
-
-  // Group by date and calculate metrics with type safety and volume checks
-  type ProgressAccumulator = Record<
-    string,
-    {
-      date: string;
-      maxWeight: number;
-      totalVolume: number;
-      totalSets: number;
-      totalReps: number;
-    }
-  >;
-
-  const progressByDate = (
-    data as unknown as (ExerciseWithWorkout & { exercise_sets?: ExerciseSet[] })[]
-  ).reduce(
-    (
-      acc: ProgressAccumulator,
-      exercise: ExerciseWithWorkout & { exercise_sets?: ExerciseSet[] },
-    ) => {
-      const date = exercise.workouts.created_at.split('T')[0];
-      const sets = typeof exercise.sets === 'number' && exercise.sets > 0 ? exercise.sets : 0;
-      const reps = typeof exercise.reps === 'number' && exercise.reps > 0 ? exercise.reps : 0;
-
-      // Calculate max weight from individual sets if available, otherwise use legacy weight field
-      let maxWeight = 0;
-      if (exercise.exercise_sets && exercise.exercise_sets.length > 0) {
-        // Find the maximum weight from all individual sets
-        maxWeight = exercise.exercise_sets.reduce((max: number, set: ExerciseSet) => {
-          return Math.max(max, set.weight || 0);
-        }, 0);
-      } else {
-        // Fall back to legacy weight field for backwards compatibility
-        maxWeight =
-          typeof exercise.weight === 'number' && exercise.weight > 0 ? exercise.weight : 0;
-      }
-
-      // Calculate volume from individual sets if available, otherwise use legacy calculation
-      let volume = 0;
-      if (exercise.exercise_sets && exercise.exercise_sets.length > 0) {
-        // Sum volume from each individual set (reps * weight per set)
-        volume = exercise.exercise_sets.reduce((sum: number, set: ExerciseSet) => {
-          return sum + set.reps * set.weight;
-        }, 0);
-      } else {
-        // Fall back to legacy calculation for backwards compatibility
-        volume = sets * reps * maxWeight;
-      }
-
-      if (!acc[date]) {
-        acc[date] = {
-          date,
-          maxWeight: maxWeight,
-          totalVolume: volume,
-          totalSets: sets,
-          totalReps: sets * reps,
-        };
-      } else {
-        acc[date].maxWeight = Math.max(acc[date].maxWeight, maxWeight);
-        acc[date].totalVolume += volume;
-        acc[date].totalSets += sets;
-        acc[date].totalReps += sets * reps;
-      }
-
-      return acc;
-    },
-    {} as ProgressAccumulator,
-  );
-
-  return Object.values(progressByDate).sort(
-    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
-  );
 }
 
 // Get unique exercise names for autocomplete

@@ -335,4 +335,118 @@ CREATE POLICY "Allow address-based delete"
 ON exercise_sets
 FOR DELETE
 TO authenticated
-USING ( (auth.jwt() ->> 'sub') = address ); 
+USING ( (auth.jwt() ->> 'sub') = address );
+
+-- Create exercise_progress table for daily tracking
+CREATE TABLE IF NOT EXISTS public.exercise_progress (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    exercise_id UUID NOT NULL REFERENCES public.workout_exercises(id) ON DELETE CASCADE,
+    address TEXT NOT NULL REFERENCES profiles(address) ON DELETE CASCADE,
+    weight DECIMAL(8,2) NOT NULL DEFAULT 0, -- max weight for the day
+    volume DECIMAL(10,2) NOT NULL DEFAULT 0, -- total volume for the day
+    sets INTEGER NOT NULL DEFAULT 0, -- total sets completed
+    reps INTEGER NOT NULL DEFAULT 0, -- total reps completed
+    time_under_tension INTEGER NOT NULL DEFAULT 0, -- total TUT for the day (seconds)
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Add CHECK constraints for exercise_progress
+ALTER TABLE public.exercise_progress
+    ADD CONSTRAINT chk_progress_weight_nonnegative CHECK (weight >= 0),
+    ADD CONSTRAINT chk_progress_volume_nonnegative CHECK (volume >= 0),
+    ADD CONSTRAINT chk_progress_sets_nonnegative CHECK (sets >= 0),
+    ADD CONSTRAINT chk_progress_reps_nonnegative CHECK (reps >= 0);
+
+-- Add UNIQUE constraint to ensure one entry per exercise per day
+ALTER TABLE public.exercise_progress
+    ADD CONSTRAINT unique_exercise_progress_daily UNIQUE (exercise_id, address, DATE(updated_at));
+
+-- Add indexes for better performance
+CREATE INDEX IF NOT EXISTS idx_exercise_progress_exercise_id ON public.exercise_progress(exercise_id);
+CREATE INDEX IF NOT EXISTS idx_exercise_progress_address ON public.exercise_progress(address);
+CREATE INDEX IF NOT EXISTS idx_exercise_progress_date ON public.exercise_progress(DATE(updated_at));
+
+-- Enable RLS for exercise_progress
+ALTER TABLE public.exercise_progress ENABLE ROW LEVEL SECURITY;
+
+-- RLS policies for exercise_progress
+CREATE POLICY "Allow address-based select"
+ON exercise_progress
+FOR SELECT
+TO authenticated
+USING ( (auth.jwt() ->> 'sub') = address );
+
+CREATE POLICY "Allow address-based insert"
+ON exercise_progress
+FOR INSERT
+TO authenticated
+WITH CHECK ( (auth.jwt() ->> 'sub') = address );
+
+CREATE POLICY "Allow update"
+ON exercise_progress
+FOR UPDATE
+TO authenticated
+USING ( true )
+WITH CHECK ( true );
+
+CREATE POLICY "Allow address-based delete"
+ON exercise_progress
+FOR DELETE
+TO authenticated
+USING ( (auth.jwt() ->> 'sub') = address );
+
+-- Function to update updated_at timestamp for exercise_progress
+DROP TRIGGER IF EXISTS trigger_exercise_progress_updated_at ON public.exercise_progress;
+CREATE TRIGGER trigger_exercise_progress_updated_at
+    BEFORE UPDATE ON public.exercise_progress
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+-- Function to upsert exercise progress (insert or update if exists for today)
+CREATE OR REPLACE FUNCTION upsert_exercise_progress(
+    p_exercise_id UUID,
+    p_address TEXT,
+    p_weight DECIMAL(8,2),
+    p_volume DECIMAL(10,2),
+    p_sets INTEGER,
+    p_reps INTEGER,
+    p_time_under_tension INTEGER
+) RETURNS UUID AS $$
+DECLARE
+    existing_id UUID;
+    result_id UUID;
+BEGIN
+    -- Check if there's already an entry for today
+    SELECT id INTO existing_id
+    FROM public.exercise_progress
+    WHERE exercise_id = p_exercise_id 
+      AND address = p_address 
+      AND DATE(updated_at) = CURRENT_DATE;
+    
+    IF existing_id IS NOT NULL THEN
+        -- Update existing entry
+        UPDATE public.exercise_progress
+        SET 
+            weight = p_weight,
+            volume = p_volume,
+            sets = p_sets,
+            reps = p_reps,
+            time_under_tension = p_time_under_tension,
+            updated_at = NOW()
+        WHERE id = existing_id;
+        
+        result_id := existing_id;
+    ELSE
+        -- Insert new entry
+        INSERT INTO public.exercise_progress (exercise_id, address, weight, volume, sets, reps, time_under_tension)
+        VALUES (p_exercise_id, p_address, p_weight, p_volume, p_sets, p_reps, p_time_under_tension)
+        RETURNING id INTO result_id;
+    END IF;
+    
+    RETURN result_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Grant execute permission to authenticated users
+GRANT EXECUTE ON FUNCTION upsert_exercise_progress(UUID, TEXT, DECIMAL, DECIMAL, INTEGER, INTEGER, INTEGER) TO authenticated; 

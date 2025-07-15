@@ -482,6 +482,7 @@ export default function WorkoutPage() {
                   onDelete={handleDeleteExercise}
                   onUpdateProgress={handleUpdateProgress}
                   weightUnit={preferredWeightUnit}
+                  userAddress={address}
                 />
               ))}
             </div>
