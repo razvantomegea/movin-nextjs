@@ -16,7 +16,7 @@ import { fetchExerciseProgress, setCurrentExercise } from '@/lib/redux/slices/ex
 import { showErrorToast } from '@/lib/redux/slices/toastSlice';
 import { fetchWorkoutWithExercises } from '@/lib/redux/slices/workoutsSlice';
 import type { RootState } from '@/lib/redux/store';
-import type { ExerciseProgress, ExerciseSet, WorkoutExercise } from '@/types/workouts';
+import type { ExerciseSet, WorkoutExercise } from '@/types/workouts';
 
 const container = {
   hidden: { opacity: 0 },
@@ -50,7 +50,9 @@ export default function ExerciseDetailPage() {
   } = useAppSelector((state: RootState) => state.exercises);
   const { profile } = useAppSelector((state: RootState) => state.profile);
 
-  const [selectedMetric, setSelectedMetric] = useState<'weight' | 'volume' | 'reps'>('weight');
+  const [selectedMetric, setSelectedMetric] = useState<
+    'weight' | 'volume' | 'reps' | 'time_under_tension'
+  >('weight');
 
   const workoutId = params.id as string;
   const exerciseId = params.exerciseId as string;
@@ -96,12 +98,18 @@ export default function ExerciseDetailPage() {
   }, [exerciseError, dispatch]);
 
   // Get progress data for charts
-  const progressData: ExerciseProgress[] = useMemo(
-    () =>
-      (exerciseProgress[workoutId]?.[currentExercise?.exercise_name || ''] as ExerciseProgress[]) ||
-      [],
-    [exerciseProgress, workoutId, currentExercise?.exercise_name],
-  );
+  const progressData = useMemo(() => {
+    const rawData = exerciseProgress[workoutId]?.[currentExercise?.exercise_name || ''] || [];
+    // Transform new ExerciseProgress format to old format for chart compatibility
+    return rawData.map((progress) => ({
+      date: progress.updated_at.split('T')[0],
+      maxWeight: progress.weight,
+      totalVolume: progress.volume,
+      totalSets: progress.sets,
+      totalReps: progress.reps,
+      totalTimeUnderTension: progress.time_under_tension,
+    }));
+  }, [exerciseProgress, workoutId, currentExercise?.exercise_name]);
 
   // Calculate exercise stats
   const exerciseStats = useMemo(() => {
@@ -242,6 +250,13 @@ export default function ExerciseDetailPage() {
               onClick={() => setSelectedMetric('reps')}
             >
               Total Reps
+            </Button>
+            <Button
+              variant={selectedMetric === 'time_under_tension' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setSelectedMetric('time_under_tension')}
+            >
+              TUT
             </Button>
           </div>
         </div>

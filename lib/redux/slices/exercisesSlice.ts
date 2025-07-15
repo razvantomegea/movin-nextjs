@@ -5,14 +5,10 @@ import {
   updateExercise,
   deleteExercise,
   reorderExercises,
-  getExerciseProgress,
+  getExerciseProgressByName,
+  type ExerciseProgress,
 } from '@/lib/supabase/workouts';
-import type {
-  WorkoutExercise,
-  CreateExerciseData,
-  UpdateExerciseData,
-  ExerciseProgress,
-} from '@/types/workouts';
+import type { WorkoutExercise, CreateExerciseData, UpdateExerciseData } from '@/types/workouts';
 
 interface ExerciseState {
   exercises: WorkoutExercise[];
@@ -21,12 +17,7 @@ interface ExerciseState {
   currentExercise: WorkoutExercise | null;
   exerciseProgress: {
     [workoutId: string]: {
-      [exerciseName: string]: {
-        date: string;
-        maxWeight: number;
-        totalVolume: number;
-        totalSets: number;
-      }[];
+      [exerciseName: string]: ExerciseProgress[];
     };
   };
 }
@@ -108,7 +99,7 @@ export const fetchExerciseProgress = createAsyncThunk<
   'exercises/fetchProgress',
   async ({ userAddress, workoutId, exerciseName, limit }, { rejectWithValue }) => {
     try {
-      const progress = await getExerciseProgress(userAddress, exerciseName, limit);
+      const progress = await getExerciseProgressByName(userAddress, exerciseName, limit);
       return { workoutId, exerciseName, progress };
     } catch (error: unknown) {
       return rejectWithValue(error instanceof Error ? error.message : 'Unknown error');

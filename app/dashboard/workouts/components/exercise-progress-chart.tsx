@@ -12,7 +12,7 @@ import { getMetricStats } from '@/utils/workouts/getMetricStats';
 
 interface ExerciseProgressChartProps {
   progressData: ExerciseProgress[];
-  selectedMetric: 'weight' | 'volume' | 'reps';
+  selectedMetric: 'weight' | 'volume' | 'reps' | 'time_under_tension';
   weightUnit: string;
   isLoading: boolean;
 }
@@ -23,6 +23,7 @@ interface ChartDataPoint {
   weight: number;
   volume: number;
   reps: number;
+  time_under_tension: number;
   displayDate: string;
 }
 
@@ -50,6 +51,7 @@ export function ExerciseProgressChart({
       weight: progress.maxWeight,
       volume: progress.totalVolume,
       reps: progress.totalReps,
+      time_under_tension: progress.totalTimeUnderTension ?? 0,
       displayDate: new Date(progress.date).toLocaleDateString('en-US', {
         month: 'short',
         day: 'numeric',
@@ -70,6 +72,8 @@ export function ExerciseProgressChart({
         return isDark ? '#3b82f6' : '#2563eb'; // Blue
       case 'reps':
         return isDark ? '#8b5cf6' : '#7c3aed'; // Purple
+      case 'time_under_tension':
+        return isDark ? '#f59e42' : '#d97706'; // Orange
       default:
         return isDark ? '#3b82f6' : '#2563eb';
     }
@@ -78,7 +82,13 @@ export function ExerciseProgressChart({
   const chartColor = getChartColor();
 
   const metricLabel =
-    selectedMetric === 'weight' ? 'Weight' : selectedMetric === 'volume' ? 'Volume' : 'Total Reps';
+    selectedMetric === 'weight'
+      ? 'Weight'
+      : selectedMetric === 'volume'
+        ? 'Volume'
+        : selectedMetric === 'reps'
+          ? 'Total Reps'
+          : 'TUT (s)';
 
   return (
     <Card className={isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}>

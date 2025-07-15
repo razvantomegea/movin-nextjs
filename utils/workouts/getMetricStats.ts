@@ -2,13 +2,13 @@
  * Calculate stats for a given metric from workout/exercise progress data.
  * @template T
  * @param {T[]} data - Array of data points (e.g., chart data or progress history)
- * @param {'weight' | 'volume' | 'reps'} metric - The metric to calculate stats for
+ * @param {'weight' | 'volume' | 'reps' | 'time_under_tension'} metric - The metric to calculate stats for
  * @param {string} [weightUnit] - The weight unit (e.g., 'kg', 'lbs')
  * @returns {{ current: number; best: number; improvement: number; unit: string }}
  */
 export function getMetricStats<T extends Record<string, any>>(
   data: T[],
-  metric: 'weight' | 'volume' | 'reps',
+  metric: 'weight' | 'volume' | 'reps' | 'time_under_tension',
   weightUnit?: string,
 ) {
   if (!data.length) return { current: 0, best: 0, improvement: 0, unit: '' };
@@ -23,6 +23,6 @@ export function getMetricStats<T extends Record<string, any>>(
   let unit = '';
   if (metric === 'weight' || metric === 'volume') unit = weightUnit || '';
   else if (metric === 'reps') unit = 'reps';
-
+  else if (metric === 'time_under_tension') unit = 'seconds';
   return { current, best, improvement, unit };
 }

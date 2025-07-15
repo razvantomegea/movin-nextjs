@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Edit, Trash2, ChevronDown, ChevronUp, BarChart3 } from 'lucide-react';
+import { Edit, Trash2, ChevronDown, ChevronUp, BarChart3, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,7 @@ export interface ExerciseCardProps {
   onDelete: (exerciseId: string) => void;
   onUpdateProgress: (exerciseId: string, completedSets: number) => void;
   weightUnit: string;
+  userAddress?: string;
 }
 
 export function ExerciseCard({
@@ -24,10 +25,12 @@ export function ExerciseCard({
   onDelete,
   onUpdateProgress,
   weightUnit,
+  userAddress,
 }: ExerciseCardProps) {
   const router = useRouter();
   const [isExpanded, setIsExpanded] = useState(false);
   const [exerciseSets, setExerciseSets] = useState<ExerciseSet[]>([]);
+  const [loadingSetId, setLoadingSetId] = useState<string | null>(null);
 
   // Initialize exercise sets from the exercise data
   useEffect(() => {
@@ -79,8 +82,9 @@ export function ExerciseCard({
     const set = exerciseSets[setIndex];
     if (!set) return;
 
+    setLoadingSetId(set.id);
     try {
-      await updateSetCompletionStatus(set.id, !set.completed);
+      await updateSetCompletionStatus(set.id, !set.completed, userAddress);
 
       const newSets = [...exerciseSets];
       newSets[setIndex] = { ...set, completed: !set.completed };
@@ -91,6 +95,8 @@ export function ExerciseCard({
       onUpdateProgress(exercise.id, newCompletedCount);
     } catch (error) {
       console.error('Error updating set completion:', error);
+    } finally {
+      setLoadingSetId(null);
     }
   };
 
@@ -176,8 +182,13 @@ export function ExerciseCard({
                           size="sm"
                           onClick={() => handleIndividualSetCompletion(index)}
                           className="w-8 h-8 p-0"
+                          disabled={loadingSetId === set.id}
                         >
-                          {index + 1}
+                          {loadingSetId === set.id ? (
+                            <Loader2 className="animate-spin h-4 w-4" />
+                          ) : (
+                            index + 1
+                          )}
                         </Button>
                         <div className="text-sm">
                           <span className="font-medium">{set.reps} reps</span>
@@ -204,8 +215,13 @@ export function ExerciseCard({
                       size="sm"
                       onClick={() => handleIndividualSetCompletion(i)}
                       className="w-10 h-10 p-0"
+                      disabled={loadingSetId === `placeholder-${i}`}
                     >
-                      {i + 1}
+                      {loadingSetId === `placeholder-${i}` ? (
+                        <Loader2 className="animate-spin h-4 w-4" />
+                      ) : (
+                        i + 1
+                      )}
                     </Button>
                   ))}
                 </div>
