@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useAppKitAccount } from '@reown/appkit/react';
 import { formatUnits, parseUnits } from 'viem';
 import { useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
+import { useRouter } from 'next/navigation';
 import { useFunding } from '@/app/contexts/funding-provider';
 import movinEarnAbi from '@/lib/abi/movin-earn-abi.json';
 import { useAppDispatch } from '@/lib/redux/hooks';
@@ -105,6 +106,7 @@ export function useMovinEarn() {
   const { address, isConnected } = useAppKitAccount();
   const addressLower = address?.toLowerCase();
   const { checkAndFundWallet } = useFunding();
+  const router = useRouter();
 
   /**
    * Gets the contract address
@@ -327,7 +329,9 @@ export function useMovinEarn() {
           }),
         );
         handleAuthError(errorMessage, 'useMovinEarn - registerReferral');
-        if (errorMessage.includes('connected')) {
+        if (errorMessage.includes('not connected')) {
+          router.push('/connect-page');
+        } else if (errorMessage.includes('connected')) {
           forceLogout();
         }
 
@@ -443,7 +447,9 @@ export function useMovinEarn() {
           }),
         );
         handleAuthError(errorMessage, 'useMovinEarn - recordActivity');
-        if (errorMessage.includes('connected')) {
+        if (errorMessage.includes('not connected')) {
+          router.push('/connect-page');
+        } else if (errorMessage.includes('connected')) {
           forceLogout();
         }
 
@@ -535,7 +541,9 @@ export function useMovinEarn() {
           }),
         );
         handleAuthError(errorMessage, 'useMovinEarn - claimStakingRewards');
-        if (errorMessage.includes('connected')) {
+        if (errorMessage.includes('not connected')) {
+          router.push('/connect-page');
+        } else if (errorMessage.includes('connected')) {
           forceLogout();
         }
 
@@ -595,7 +603,9 @@ export function useMovinEarn() {
           }),
         );
         handleAuthError(errorMessage, 'useMovinEarn - claimAllStakingRewards');
-        if (errorMessage.includes('connected')) {
+        if (errorMessage.includes('not connected')) {
+          router.push('/connect-page');
+        } else if (errorMessage.includes('connected')) {
           forceLogout();
         }
 
@@ -661,7 +671,9 @@ export function useMovinEarn() {
           }),
         );
         handleAuthError(errorMessage, 'useMovinEarn - stakeTokens');
-        if (errorMessage.includes('connected')) {
+        if (errorMessage.includes('not connected')) {
+          router.push('/connect-page');
+        } else if (errorMessage.includes('connected')) {
           forceLogout();
         }
 
@@ -723,7 +735,9 @@ export function useMovinEarn() {
           }),
         );
         handleAuthError(errorMessage, 'useMovinEarn - unstake');
-        if (errorMessage.includes('connected')) {
+        if (errorMessage.includes('not connected')) {
+          router.push('/connect-page');
+        } else if (errorMessage.includes('connected')) {
           forceLogout();
         }
 
@@ -786,7 +800,9 @@ export function useMovinEarn() {
           }),
         );
         handleAuthError(errorMessage, 'useMovinEarn - restake');
-        if (errorMessage.includes('connected')) {
+        if (errorMessage.includes('not connected')) {
+          router.push('/connect-page');
+        } else if (errorMessage.includes('connected')) {
           forceLogout();
         }
 
@@ -902,7 +918,9 @@ export function useMovinEarn() {
           }),
         );
         handleAuthError(errorMessage, 'useMovinEarn - setPremiumStatus');
-        if (errorMessage.includes('connected')) {
+        if (errorMessage.includes('not connected')) {
+          router.push('/connect-page');
+        } else if (errorMessage.includes('connected')) {
           forceLogout();
         }
 
@@ -968,6 +986,11 @@ export function useMovinEarn() {
           }),
         );
         handleAuthError(errorMessage, 'useMovinEarn - claimMealRewards');
+        if (errorMessage.includes('not connected')) {
+          router.push('/connect-page');
+        } else if (errorMessage.includes('connected')) {
+          forceLogout();
+        }
         setIsPending(false);
         return false;
       }
@@ -1030,6 +1053,11 @@ export function useMovinEarn() {
           }),
         );
         handleAuthError(errorMessage, 'useMovinEarn - fundWallet');
+        if (errorMessage.includes('not connected')) {
+          router.push('/connect-page');
+        } else if (errorMessage.includes('connected')) {
+          forceLogout();
+        }
         setIsPending(false);
         return false;
       }
