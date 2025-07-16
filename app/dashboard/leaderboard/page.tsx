@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Trophy, Medal, Award, Crown, Flame, Star } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -17,6 +18,7 @@ export default function LeaderboardPage() {
   const [leaderboard, setLeaderboard] = useState<ILeaderboardUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     const fetchLeaderboard = async () => {
@@ -163,7 +165,11 @@ export default function LeaderboardPage() {
                     </div>
 
                     {/* User Info */}
-                    <div className="flex items-center gap-3 flex-1">
+                    <div
+                      className="flex items-center gap-3 flex-1 cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors px-2 py-1"
+                      title="View profile"
+                      onClick={() => router.push(`/dashboard/profile?address=${user.address}`)}
+                    >
                       <Avatar className="h-12 w-12 border-2 border-blue-500">
                         <AvatarImage
                           src={user.avatar_url || '/placeholder.svg?height=48&width=48'}
