@@ -11,8 +11,10 @@ import { useMovinEarn } from '@/lib/hooks/useMovinEarn';
 import { useMovinToken } from '@/lib/hooks/useMovinToken';
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
 import { fetchActivities } from '@/lib/redux/slices/activityDataSlice';
+import { fetchEnergyData } from '@/lib/redux/slices/energyDataSlice';
 import { fetchProfile, updateProfile } from '@/lib/redux/slices/profileSlice';
 import { showSuccessToast, showErrorToast } from '@/lib/redux/slices/toastSlice';
+import { fetchWorkouts } from '@/lib/redux/slices/workoutsSlice';
 import { IProfile, IPublicProfile, getPublicProfile } from '@/lib/supabase/profile';
 import { copyToClipboard } from '@/utils/crypto';
 import { ProfileEditForm } from './profile-edit-form';
@@ -45,43 +47,57 @@ export function ProfilePage() {
   const { activities, isLoading: activitiesLoading } = useAppSelector(
     (state) => state.activityData,
   );
+  const { workouts, loading: workoutsLoading } = useAppSelector((state) => state.workouts);
+  const { energyEntries, isLoading: energyLoading } = useAppSelector((state) => state.energyData);
   const { useTokenBalance } = useMovinToken();
   const {
     formattedBalanceWithSuffix: balance,
     isLoading: isBalanceLoading,
     error: balanceError,
-  } = useTokenBalance();
-  const [isEditing, setIsEditing] = useState(false);
-
-  const { usePremiumStatus } = useMovinEarn();
-  const { isPremiumActive } = usePremiumStatus();
-  const isPremium = isPremiumActive();
+  } = useTokenBalance(addressLower);
   const searchParams = useSearchParams();
   const targetAddress = searchParams.get('address');
   const isValidAddress = targetAddress && /^0x[a-fA-F0-9]{40}$/i.test(targetAddress);
   const isReadOnly = Boolean(isValidAddress && targetAddress.toLowerCase() !== addressLower);
-
-  // State for public profile
-  const [publicProfile, setPublicProfile] = useState<Partial<IPublicProfile> | null>(null);
+  const { isPremium } = useMovinEarn();
+  const [isEditing, setIsEditing] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [publicProfile, setPublicProfile] = useState<IPublicProfile | null>(null);
   const [publicProfileLoading, setPublicProfileLoading] = useState(false);
   const [publicProfileError, setPublicProfileError] = useState<string | null>(null);
 
+  const [refreshing, setRefreshing] = useState(false);
+
   const handleRefresh = useCallback(async () => {
-    if (isReadOnly && targetAddress) {
-      setPublicProfileLoading(true);
-      setPublicProfileError(null);
-      try {
-        const result = await getPublicProfile({ targetAddress, viewerAddress: addressLower });
-        setPublicProfile(result);
-      } catch (err) {
-        setPublicProfileError(err instanceof Error ? err.message : 'Failed to load public profile');
-      } finally {
-        setPublicProfileLoading(false);
+    if (!addressLower && !targetAddress) return;
+    setRefreshing(true);
+    try {
+      if (isReadOnly && targetAddress) {
+        setPublicProfileLoading(true);
+        setPublicProfileError(null);
+        try {
+          const result = await getPublicProfile({ targetAddress, viewerAddress: addressLower });
+          setPublicProfile(result);
+        } catch (err) {
+          setPublicProfileError(
+            err instanceof Error ? err.message : 'Failed to load public profile',
+          );
+        } finally {
+          setPublicProfileLoading(false);
+        }
+        await dispatch(fetchActivities(targetAddress)).unwrap();
+        await dispatch(fetchWorkouts(targetAddress)).unwrap();
+        await dispatch(fetchEnergyData(targetAddress)).unwrap();
+      } else if (addressLower) {
+        await dispatch(fetchProfile(addressLower)).unwrap();
+        await dispatch(fetchActivities(addressLower)).unwrap();
+        await dispatch(fetchWorkouts(addressLower)).unwrap();
+        await dispatch(fetchEnergyData(addressLower)).unwrap();
       }
-      await dispatch(fetchActivities(targetAddress)).unwrap();
-    } else if (addressLower) {
-      await dispatch(fetchProfile(addressLower)).unwrap();
-      await dispatch(fetchActivities(addressLower)).unwrap();
+    } catch (error) {
+      console.error('Error refreshing profile data:', error);
+    } finally {
+      setRefreshing(false);
     }
   }, [isReadOnly, targetAddress, addressLower, dispatch]);
 
@@ -92,140 +108,100 @@ export function ProfilePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [handleRefresh, addressLower]);
 
-  const handleSave = async (profileData: Partial<IProfile>) => {
-    try {
-      if (!addressLower) {
-        throw new Error('Wallet address not available');
+  const handleSave = useCallback(
+    async (profileData: Partial<IProfile>) => {
+      if (!addressLower) return;
+      setIsUpdating(true);
+      try {
+        await dispatch(updateProfile({ address: addressLower, profile: profileData })).unwrap();
+        setIsEditing(false);
+        dispatch(showSuccessToast('Profile updated successfully'));
+      } catch (error) {
+        console.error('Error updating profile:', error);
+        dispatch(showErrorToast('Failed to update profile'));
+      } finally {
+        setIsUpdating(false);
       }
-      await dispatch(updateProfile({ address: addressLower, profileData })).unwrap();
-      await dispatch(fetchProfile(addressLower)).unwrap();
-      dispatch(
-        showSuccessToast({
-          title: 'Profile Updated',
-          description: 'Your profile has been successfully updated',
-        }),
-      );
-    } catch (error) {
-      dispatch(
-        showErrorToast({
-          title: 'Update Failed',
-          description: (error as string) || 'Please try again later',
-        }),
-      );
-    } finally {
-      setIsEditing(false);
-    }
-  };
+    },
+    [addressLower, dispatch],
+  );
 
   // Helper to get safe profile for components
-  const getProfileForComponent = () => {
+  const safeProfile = useMemo(() => {
     if (isReadOnly && publicProfile) {
-      // Fallbacks for required fields for IProfile
-      return {
-        id: publicProfile.id || '',
-        username: publicProfile.username || '',
-        email: publicProfile.email || '',
-        address: publicProfile.address || '',
-        avatar_url: publicProfile.avatar_url || '',
-        level: publicProfile.level || 0,
-        streak_days: publicProfile.streak_days || 0,
-        is_premium: publicProfile.is_premium || false,
-        created_at: publicProfile.created_at || '',
-        updated_at: publicProfile.updated_at || '',
-        // Optional fields
-        last_streak_update: publicProfile.last_streak_update,
-        weight: publicProfile.weight,
-        weight_unit: publicProfile.weight_unit,
-        weight_updated_at: publicProfile.weight_updated_at,
-        height: publicProfile.height,
-        date_of_birth: publicProfile.date_of_birth,
-        biological_sex: publicProfile.biological_sex,
-        total_earned: publicProfile.total_earned,
-        privacy_setting: publicProfile.privacy_setting,
-        allow_connection_requests: publicProfile.allow_connection_requests,
-        profile_description: publicProfile.profile_description,
-        location: publicProfile.location,
-        website: publicProfile.website,
-      } as IProfile;
+      return publicProfile;
     }
-
-    return profile as IProfile;
-  };
-
-  const safeProfile = getProfileForComponent();
+    return (
+      profile || {
+        username: '',
+        address: addressLower || '',
+        avatar_url: '',
+        level: 1,
+        streak_days: 0,
+        last_streak_update: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }
+    );
+  }, [profile, publicProfile, isReadOnly, addressLower]);
 
   // Share handler
   const handleShare = useCallback(() => {
-    const username = safeProfile.username || 'Profile';
-    const profileUrl =
-      typeof window !== 'undefined'
-        ? `${window.location.origin}/dashboard/profile?address=${safeProfile.address}`
-        : '';
-    const shareText = `Check out ${username}'s profile on Movin!`;
-
-    if (navigator.share) {
-      navigator
-        .share({
-          title: `Movin Profile: ${username}`,
-          text: shareText,
-          url: profileUrl,
-        })
-        .catch(() => {});
-    } else {
-      copyToClipboard(profileUrl);
-      dispatch(
-        showSuccessToast({
-          title: 'Link copied!',
-          description: 'The profile link has been copied to your clipboard.',
-        }),
-      );
-    }
-  }, [safeProfile.username, safeProfile.address, dispatch]);
+    if (!address) return;
+    const shareUrl = `${window.location.origin}/profiles/${address}`;
+    copyToClipboard(shareUrl);
+    dispatch(showSuccessToast('Profile link copied to clipboard'));
+  }, [address, dispatch]);
 
   // Loading state
-  if (
-    isConnecting ||
-    isBalanceLoading ||
-    activitiesLoading ||
-    (isReadOnly && publicProfileLoading) ||
-    (!isReadOnly && isLoading)
-  ) {
+  if (isConnecting || (!targetAddress && isLoading)) {
     return <ProfilePageSkeleton />;
   }
 
   // Error state
-  const errorMessage = (isReadOnly ? publicProfileError : error) || balanceError?.message;
-  if (errorMessage) {
-    return <ProfileLoadingError error={errorMessage} onRefresh={handleRefresh} />;
+  if (error && !targetAddress) {
+    return <ProfileLoadingError error={error} onRetry={handleRefresh} />;
   }
 
-  // Profile not found
-  const profileToUse = isReadOnly ? publicProfile : profile;
-  if (!profileToUse) {
-    return <ProfileNotFound onRefresh={handleRefresh} />;
+  if (publicProfileError && targetAddress) {
+    return (
+      <ProfileError
+        error={publicProfileError}
+        onRetry={handleRefresh}
+        isPublicProfile={true}
+        address={targetAddress}
+      />
+    );
+  }
+
+  if (isReadOnly && targetAddress && !publicProfileLoading && !publicProfile) {
+    return <ProfileNotFound address={targetAddress} />;
+  }
+
+  // If no address and not loading, show connection prompt
+  if (!address && !isConnecting && !targetAddress) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
+        <h1 className="text-2xl font-bold mb-4">Connect Your Wallet</h1>
+        <p className="text-gray-600 dark:text-gray-300 mb-8">
+          Connect your wallet to view your profile and track your fitness journey
+        </p>
+      </div>
+    );
   }
 
   return (
     <>
-      <ProfileError error={isReadOnly ? publicProfileError : error} onDismiss={handleRefresh} />
-      <motion.div className="p-4" initial="hidden" animate="show" variants={container}>
-        <motion.div className="mb-6" variants={item}>
-          <div className="flex items-center">
-            <h1 className="text-2xl font-bold mr-2">Profile</h1>
-            <RefreshButton
-              onRefresh={handleRefresh}
-              isLoading={isReadOnly ? publicProfileLoading : isLoading}
-            />
-          </div>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">
-            Manage your account and view achievements
-          </p>
-        </motion.div>
-
-        <div className="space-y-6">
+      <RefreshButton onRefresh={handleRefresh} isLoading={refreshing} />
+      <motion.div
+        className="container mx-auto px-4 py-8 max-w-4xl"
+        variants={container}
+        initial="hidden"
+        animate="show"
+      >
+        <div className="space-y-8">
           <motion.div variants={item}>
             <ProfileHeader
-              canEdit={!isReadOnly}
               profile={safeProfile}
               balance={balance}
               isUpdating={isReadOnly ? publicProfileLoading : isLoading}
@@ -233,7 +209,10 @@ export function ProfilePage() {
               onEdit={setIsEditing}
               isPremium={isPremium}
               activitiesCount={activities.length}
+              workoutsCount={workouts.length}
+              mealsCount={energyEntries.length}
               onShare={handleShare}
+              canEdit={canEdit}
             />
             {isEditing && !isReadOnly && (
               <ProfileEditForm profile={safeProfile} isUpdating={isLoading} onSave={handleSave} />
@@ -259,7 +238,13 @@ export function ProfilePage() {
           </motion.div>
 
           <motion.div variants={item}>
-            <ProfileTabs profile={safeProfile} activities={activities} isReadOnly={isReadOnly} />
+            <ProfileTabs
+              profile={safeProfile}
+              activities={activities}
+              workouts={workouts}
+              energyEntries={energyEntries}
+              isReadOnly={isReadOnly}
+            />
           </motion.div>
         </div>
       </motion.div>

@@ -13,6 +13,8 @@ import {
   CircleDollarSign,
   Scale,
   Share,
+  Dumbbell,
+  Utensils,
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -35,6 +37,8 @@ interface ProfileHeaderProps {
   onEdit: (editing: boolean) => void;
   isPremium: boolean;
   activitiesCount: number;
+  workoutsCount: number;
+  mealsCount: number;
   onShare?: () => void;
 }
 
@@ -47,6 +51,8 @@ export function ProfileHeader({
   onEdit,
   isPremium = false,
   activitiesCount = 0,
+  workoutsCount = 0,
+  mealsCount = 0,
   onShare,
 }: ProfileHeaderProps) {
   const { resolvedTheme } = useTheme();
@@ -273,6 +279,36 @@ export function ProfileHeader({
                     Activities
                   </span>
                   <span className="text-xl font-bold">{activitiesCount}</span>
+                </motion.div>
+
+                {/* Workouts Count */}
+                <motion.div
+                  className={`p-4 rounded-xl flex flex-col items-center justify-center shadow-sm ${
+                    isDark ? 'bg-blue-900/20' : 'bg-blue-50'
+                  }`}
+                  whileHover={{ scale: 1.02 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <span className="text-sm text-gray-500 dark:text-gray-300 mb-1 flex items-center">
+                    <Dumbbell className="h-3.5 w-3.5 mr-1" />
+                    Workouts
+                  </span>
+                  <span className="text-xl font-bold">{workoutsCount}</span>
+                </motion.div>
+
+                {/* Meals Count */}
+                <motion.div
+                  className={`p-4 rounded-xl flex flex-col items-center justify-center shadow-sm ${
+                    isDark ? 'bg-green-900/20' : 'bg-green-50'
+                  }`}
+                  whileHover={{ scale: 1.02 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <span className="text-sm text-gray-500 dark:text-gray-300 mb-1 flex items-center">
+                    <Utensils className="h-3.5 w-3.5 mr-1" />
+                    Meals
+                  </span>
+                  <span className="text-xl font-bold">{mealsCount}</span>
                 </motion.div>
               </div>
 
