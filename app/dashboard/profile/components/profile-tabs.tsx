@@ -33,20 +33,20 @@ export function ProfileTabs({
     <Tabs defaultValue="achievements" value={activeTab} onValueChange={setActiveTab}>
       <TabsList className="grid w-full grid-cols-4">
         <TabsTrigger value="achievements">
-          <Trophy className="h-4 w-4 mr-2" />
-          Achievements
+          <Trophy className="h-4 w-4 xs:mr-2" />
+          <span className="hidden xs:inline">Achievements</span>
         </TabsTrigger>
         <TabsTrigger value="workouts">
-          <Dumbbell className="h-4 w-4 mr-2" />
-          Workouts
+          <Dumbbell className="h-4 w-4 xs:mr-2" />
+          <span className="hidden xs:inline">Workouts</span>
         </TabsTrigger>
         <TabsTrigger value="meals">
-          <Utensils className="h-4 w-4 mr-2" />
-          Meals
+          <Utensils className="h-4 w-4 xs:mr-2" />
+          <span className="hidden xs:inline">Meals</span>
         </TabsTrigger>
         <TabsTrigger value="personal">
-          <User className="h-4 w-4 mr-2" />
-          Personal Info
+          <User className="h-4 w-4 xs:mr-2" />
+          <span className="hidden xs:inline">Personal Info</span>
         </TabsTrigger>
       </TabsList>
       <TabsContent value="achievements">

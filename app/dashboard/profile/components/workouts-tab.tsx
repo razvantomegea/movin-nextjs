@@ -21,11 +21,13 @@ export function WorkoutsTab({ profile, workouts, isReadOnly }: WorkoutsTabProps)
   const totalVolume = workouts.reduce((sum, workout) => sum + workout.total_volume, 0);
   const totalDuration = workouts.reduce((sum, workout) => sum + workout.total_duration, 0);
   const completedWorkouts = workouts.filter((workout) => workout.completed_at).length;
-  const averageDuration = workouts.length > 0 ? totalDuration / workouts.length : 0;
+  // Round average duration to the nearest minute to avoid displaying decimals
+  const averageDuration = workouts.length > 0 ? Math.round(totalDuration / workouts.length) : 0;
 
   const formatDuration = (minutes: number) => {
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
+    const rounded = Math.round(minutes);
+    const hours = Math.floor(rounded / 60);
+    const mins = rounded % 60;
     return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
   };
 
@@ -139,7 +141,7 @@ export function WorkoutsTab({ profile, workouts, isReadOnly }: WorkoutsTabProps)
                         </div>
                         <div className="flex items-center">
                           <Clock className="h-4 w-4 mr-1" />
-                          {formatDuration(workout.total_duration)}
+                          {formatDuration(Math.round(workout.total_duration))}
                         </div>
                         <div className="flex items-center">
                           <TrendingUp className="h-4 w-4 mr-1" />

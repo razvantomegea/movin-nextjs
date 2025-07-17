@@ -66,7 +66,6 @@ export function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [publicProfile, setPublicProfile] = useState<IPublicProfile | null>(null);
-  const [publicProfileLoading, setPublicProfileLoading] = useState(false);
   const [publicProfileError, setPublicProfileError] = useState<string | null>(null);
 
   const [refreshing, setRefreshing] = useState(false);
@@ -74,9 +73,9 @@ export function ProfilePage() {
   const handleRefresh = useCallback(async () => {
     if (!addressLower && !targetAddress) return;
     setRefreshing(true);
+
     try {
       if (isReadOnly && targetAddress) {
-        setPublicProfileLoading(true);
         setPublicProfileError(null);
         try {
           const result = await getPublicProfile({ targetAddress, viewerAddress: addressLower });
@@ -85,9 +84,8 @@ export function ProfilePage() {
           setPublicProfileError(
             err instanceof Error ? err.message : 'Failed to load public profile',
           );
-        } finally {
-          setPublicProfileLoading(false);
         }
+
         await dispatch(fetchActivities(targetAddress)).unwrap();
         await dispatch(fetchWorkouts(targetAddress)).unwrap();
         await dispatch(fetchEnergyData(targetAddress)).unwrap();
@@ -161,16 +159,18 @@ export function ProfilePage() {
     dispatch(showSuccessToast({ title: 'Profile link copied to clipboard' }));
   }, [address, dispatch]);
 
-  // Loading state
-  if (
+  const loading =
     isConnecting ||
     (!targetAddress && isLoading) ||
+    refreshing ||
     isBalanceLoading ||
     isUpdating ||
     activitiesLoading ||
     workoutsLoading ||
-    energyLoading
-  ) {
+    energyLoading;
+
+  // Loading state
+  if (loading) {
     return <ProfilePageSkeleton />;
   }
 
@@ -187,7 +187,7 @@ export function ProfilePage() {
     );
   }
 
-  if (isReadOnly && targetAddress && !publicProfileLoading && !publicProfile) {
+  if (isReadOnly && targetAddress && !loading && !publicProfile) {
     return <ProfileNotFound onRefresh={handleRefresh} />;
   }
 
@@ -208,19 +208,23 @@ export function ProfilePage() {
 
   return (
     <>
-      <RefreshButton onRefresh={handleRefresh} isLoading={refreshing} />
-      <motion.div
-        className="container mx-auto px-4 py-8 max-w-4xl"
-        variants={container}
-        initial="hidden"
-        animate="show"
-      >
-        <div className="space-y-8">
+      <motion.div className="p-4" initial="hidden" animate="show" variants={container}>
+        <motion.div className="mb-6" variants={item}>
+          <div className="flex items-center">
+            <h1 className="text-2xl font-bold mr-2">Profile</h1>
+            <RefreshButton onRefresh={handleRefresh} isLoading={isLoading} />
+          </div>
+          <p className="text-gray-500 dark:text-gray-400 mt-1">
+            Manage your account and view achievements
+          </p>
+        </motion.div>
+
+        <div className="space-y-6">
           <motion.div variants={item}>
             <ProfileHeader
               profile={safeProfile}
               balance={balance}
-              isUpdating={isReadOnly ? publicProfileLoading : isLoading}
+              isUpdating={isLoading}
               isEditing={isEditing}
               onEdit={setIsEditing}
               isPremium={isPremium}
