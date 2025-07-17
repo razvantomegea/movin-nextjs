@@ -54,12 +54,15 @@ export function ProfilePage() {
     formattedBalanceWithSuffix: balance,
     isLoading: isBalanceLoading,
     error: balanceError,
-  } = useTokenBalance(addressLower);
+  } = useTokenBalance(); // no argument
   const searchParams = useSearchParams();
   const targetAddress = searchParams.get('address');
   const isValidAddress = targetAddress && /^0x[a-fA-F0-9]{40}$/i.test(targetAddress);
   const isReadOnly = Boolean(isValidAddress && targetAddress.toLowerCase() !== addressLower);
-  const { isPremium } = useMovinEarn();
+  // Premium status
+  const { usePremiumStatus } = useMovinEarn();
+  const { isPremiumActive } = usePremiumStatus();
+  const isPremium = isPremiumActive();
   const [isEditing, setIsEditing] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [publicProfile, setPublicProfile] = useState<IPublicProfile | null>(null);
@@ -77,7 +80,7 @@ export function ProfilePage() {
         setPublicProfileError(null);
         try {
           const result = await getPublicProfile({ targetAddress, viewerAddress: addressLower });
-          setPublicProfile(result);
+          setPublicProfile(result as IPublicProfile);
         } catch (err) {
           setPublicProfileError(
             err instanceof Error ? err.message : 'Failed to load public profile',
@@ -112,13 +115,14 @@ export function ProfilePage() {
     async (profileData: Partial<IProfile>) => {
       if (!addressLower) return;
       setIsUpdating(true);
+
       try {
-        await dispatch(updateProfile({ address: addressLower, profile: profileData })).unwrap();
+        await dispatch(updateProfile({ address: addressLower, profileData })).unwrap();
         setIsEditing(false);
-        dispatch(showSuccessToast('Profile updated successfully'));
+        dispatch(showSuccessToast({ title: 'Profile updated successfully' }));
       } catch (error) {
         console.error('Error updating profile:', error);
-        dispatch(showErrorToast('Failed to update profile'));
+        dispatch(showErrorToast({ title: 'Failed to update profile' }));
       } finally {
         setIsUpdating(false);
       }
@@ -131,14 +135,18 @@ export function ProfilePage() {
     if (isReadOnly && publicProfile) {
       return publicProfile;
     }
+    // fallback: create a dummy IProfile (all required fields)
     return (
       profile || {
+        id: '',
         username: '',
+        email: '',
         address: addressLower || '',
         avatar_url: '',
         level: 1,
         streak_days: 0,
         last_streak_update: new Date().toISOString(),
+        is_premium: false,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       }
@@ -150,32 +158,37 @@ export function ProfilePage() {
     if (!address) return;
     const shareUrl = `${window.location.origin}/profiles/${address}`;
     copyToClipboard(shareUrl);
-    dispatch(showSuccessToast('Profile link copied to clipboard'));
+    dispatch(showSuccessToast({ title: 'Profile link copied to clipboard' }));
   }, [address, dispatch]);
 
   // Loading state
-  if (isConnecting || (!targetAddress && isLoading)) {
+  if (
+    isConnecting ||
+    (!targetAddress && isLoading) ||
+    isBalanceLoading ||
+    isUpdating ||
+    activitiesLoading ||
+    workoutsLoading ||
+    energyLoading
+  ) {
     return <ProfilePageSkeleton />;
   }
 
   // Error state
-  if (error && !targetAddress) {
-    return <ProfileLoadingError error={error} onRetry={handleRefresh} />;
+  if ((error && !targetAddress) || balanceError) {
+    const usedError = error || balanceError?.message || 'Something went wrong';
+
+    return <ProfileLoadingError error={usedError} onRefresh={handleRefresh} />;
   }
 
   if (publicProfileError && targetAddress) {
     return (
-      <ProfileError
-        error={publicProfileError}
-        onRetry={handleRefresh}
-        isPublicProfile={true}
-        address={targetAddress}
-      />
+      <ProfileError error={publicProfileError} onDismiss={() => setPublicProfileError(null)} />
     );
   }
 
   if (isReadOnly && targetAddress && !publicProfileLoading && !publicProfile) {
-    return <ProfileNotFound address={targetAddress} />;
+    return <ProfileNotFound onRefresh={handleRefresh} />;
   }
 
   // If no address and not loading, show connection prompt
@@ -189,6 +202,9 @@ export function ProfilePage() {
       </div>
     );
   }
+
+  // canEdit: only if not read-only and address is present
+  const canEdit = !isReadOnly && !!addressLower;
 
   return (
     <>
@@ -239,7 +255,7 @@ export function ProfilePage() {
 
           <motion.div variants={item}>
             <ProfileTabs
-              profile={safeProfile}
+              profile={safeProfile as IProfile}
               activities={activities}
               workouts={workouts}
               energyEntries={energyEntries}
