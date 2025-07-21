@@ -20,6 +20,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `pnpm test:e2e:headed` - Run E2E tests in headed mode
 - `pnpm test:e2e:debug` - Debug E2E tests
 
+**Testing Configuration**:
+- Jest tests target files in `**/__tests__/**/*.test.[jt]s?(x)` pattern
+- E2E tests run against `http://localhost:3000` using service worker disabled mode
+- E2E tests have 5-minute timeout and run in Chromium by default
+
 ### Service Worker Development
 - `pnpm start:no-sw` - Start without service worker (useful for debugging)
 - `pnpm build:no-sw` - Build without service worker
@@ -152,6 +157,7 @@ NEXT_PUBLIC_DISABLE_SERVICE_WORKER=true # for debugging
 - `lib/supabase/` - Database interaction patterns
 - `lib/redux/slices/` - State management schemas
 - `types/` - TypeScript definitions
+- `constants/` - Application constants including LocalStorageKeys enum
 
 ### Configuration
 - `next.config.mjs` - Next.js configuration with Sentry
@@ -184,3 +190,20 @@ NEXT_PUBLIC_DISABLE_SERVICE_WORKER=true # for debugging
 - Follow mobile-first responsive design
 - Implement proper loading and error states
 - Ensure PWA compatibility and touch interactions
+
+## Important Development Notes
+
+### Data Handling
+- Always sort time-series data chronologically before display (e.g., exercise progress charts)
+- Use proper date parsing with `new Date().getTime()` for accurate chronological sorting
+- Apply session/index numbering after sorting, not before
+
+### Component Patterns
+- Export components from `index.ts` files for clean imports
+- Use `useMemo` for expensive data transformations
+- Implement proper loading states with skeleton components
+- Handle empty states with user-friendly messaging
+
+### Constants and Enums
+- Use `LocalStorageKeys` enum from `constants/localStorage.ts` for all localStorage operations
+- Reference test IDs from `constants/dataTestIds.mjs` for E2E tests
