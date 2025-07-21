@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useAppKitAccount } from '@reown/appkit/react';
+import { useRouter } from 'next/navigation';
 import { formatUnits, parseUnits } from 'viem';
 import { useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
-import { useRouter } from 'next/navigation';
 import { useFunding } from '@/app/contexts/funding-provider';
 import movinEarnAbi from '@/lib/abi/movin-earn-abi.json';
 import { useAppDispatch } from '@/lib/redux/hooks';

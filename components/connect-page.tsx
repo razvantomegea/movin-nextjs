@@ -12,7 +12,7 @@ import { useFunding } from '@/app/contexts/funding-provider';
 import { CelebrationAnimation } from '@/components/celebration-animation';
 import InstallPWA from '@/components/install-pwa';
 import { Button } from '@/components/ui/button';
-import { DataTestIds } from '@/constants';
+import { DataTestIds, LocalStorageKeys } from '@/constants';
 import { useMovinEarn } from '@/lib/hooks/useMovinEarn';
 import { updateProfile } from '@/lib/supabase/profile';
 import { getProfile } from '@/lib/supabase/profile';
@@ -68,7 +68,7 @@ function ConnectPageContent() {
   }, []);
 
   const checkLastLogin = useCallback(async () => {
-    const lastLogin = localStorage.getItem('last_login');
+    const lastLogin = localStorage.getItem(LocalStorageKeys.LAST_LOGIN);
     const currentDayHour = getCurrentDayHour();
 
     if (lastLogin && currentDayHour !== lastLogin) {
@@ -165,12 +165,12 @@ function ConnectPageContent() {
             Sentry.captureException(profileError);
           }
 
-          localStorage.setItem('last_login', getCurrentDayHour());
+          localStorage.setItem(LocalStorageKeys.LAST_LOGIN, getCurrentDayHour());
 
           // Navigate to intended path or dashboard on successful authentication
-          const intendedPath = sessionStorage.getItem('intendedPath');
+          const intendedPath = sessionStorage.getItem(LocalStorageKeys.INTENDED_PATH);
           if (intendedPath && intendedPath !== '/') {
-            sessionStorage.removeItem('intendedPath');
+            sessionStorage.removeItem(LocalStorageKeys.INTENDED_PATH);
             router.push(intendedPath);
           } else {
             router.push('/dashboard');
@@ -183,8 +183,9 @@ function ConnectPageContent() {
       }
     };
 
-    checkLastLogin();
-    authenticateWithSupabase();
+    checkLastLogin().then(() => {
+      authenticateWithSupabase();
+    });
   }, [
     checkLastLogin,
     isConnected,
@@ -198,10 +199,6 @@ function ConnectPageContent() {
     referralInfoLoading,
     checkAndFundWallet,
   ]);
-
-  useEffect(() => {
-    checkLastLogin();
-  }, [checkLastLogin]);
 
   const handleConnectWithReferral = useCallback(() => {
     handleDismissReferral();

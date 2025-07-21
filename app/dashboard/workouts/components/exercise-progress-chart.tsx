@@ -45,7 +45,12 @@ export function ExerciseProgressChart({
 
   // Transform progress data for the chart
   const chartData: ChartDataPoint[] = useMemo(() => {
-    return progressData.map((progress, index) => ({
+    // Sort progress data chronologically by date
+    const sortedData = [...progressData].sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+    );
+
+    return sortedData.map((progress, index) => ({
       session: index + 1,
       date: new Date(progress.date).toLocaleDateString(),
       weight: progress.maxWeight,

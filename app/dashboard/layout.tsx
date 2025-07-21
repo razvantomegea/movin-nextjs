@@ -29,8 +29,8 @@ import { PremiumUpgradeModal } from '@/components/premium-upgrade-modal';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
+import { LocalStorageKeys } from '@/constants';
 import { useMovinEarn } from '@/lib/hooks/useMovinEarn';
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
 import { fetchProfile } from '@/lib/redux/slices/profileSlice';
@@ -155,7 +155,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   useEffect(() => {
     if (!addressLower && !isConnecting) {
       if (pathname && pathname !== '/') {
-        sessionStorage.setItem('intendedPath', pathname);
+        sessionStorage.setItem(LocalStorageKeys.INTENDED_PATH, pathname);
       }
       router.push('/');
 

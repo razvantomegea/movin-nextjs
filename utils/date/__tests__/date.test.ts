@@ -65,11 +65,11 @@ describe('date utils', () => {
   });
 
   describe('getCurrentDayHour', () => {
-    it('returns current day and hour in DD HH format', () => {
+    it('returns current day and hour in DD-HH format', () => {
       const now = new Date();
       const day = String(now.getDate()).padStart(2, '0');
       const hour = String(now.getHours()).padStart(2, '0');
-      expect(getCurrentDayHour()).toBe(`${day} ${hour}`);
+      expect(getCurrentDayHour()).toBe(`${day}-${hour}`);
     });
   });
 

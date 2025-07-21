@@ -76,14 +76,14 @@ export function getTodayDate(): string {
 }
 
 /**
- * Get current date and hour in YYYY-MM-DD HH:mm format
- * @returns Current date and hour as string
+ * Get current date and hour in DD-HH format
+ * @returns Current day and hour as string
  */
 export function getCurrentDayHour(): string {
   const now = new Date();
   const day = String(now.getDate()).padStart(2, '0');
   const hour = String(now.getHours()).padStart(2, '0');
-  return `${day} ${hour}`;
+  return `${day}-${hour}`;
 }
 
 /**
