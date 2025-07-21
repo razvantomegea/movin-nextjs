@@ -1,3 +1,5 @@
+'use client';
+
 import { useState } from 'react';
 import { useAppKitAccount } from '@reown/appkit/react';
 import { useRouter } from 'next/navigation';

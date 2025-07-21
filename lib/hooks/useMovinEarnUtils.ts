@@ -1,3 +1,5 @@
+'use client';
+
 import { useAppKitAccount } from '@reown/appkit/react';
 import { parseUnits } from 'viem';
 import { useAppDispatch } from '@/lib/redux/hooks';

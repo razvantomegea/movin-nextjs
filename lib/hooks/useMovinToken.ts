@@ -1,3 +1,5 @@
+'use client';
+
 import { useAppKitAccount } from '@reown/appkit/react';
 import { formatUnits, parseUnits } from 'viem';
 import { useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
