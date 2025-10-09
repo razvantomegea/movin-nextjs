@@ -3,7 +3,17 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAppKitAccount } from '@reown/appkit/react';
 import { motion } from 'framer-motion';
-import { Bolt, Flame, Clock, Plus, RefreshCw, AlertTriangle, RotateCcw, X } from 'lucide-react';
+import {
+  Bolt,
+  Flame,
+  Clock,
+  Plus,
+  RefreshCw,
+  AlertTriangle,
+  RotateCcw,
+  X,
+  Trash2,
+} from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { CameraModal } from '@/components/camera-modal';
 import { CelebrationAnimation } from '@/components/celebration-animation';
@@ -35,6 +45,7 @@ import {
   fetchEnergyData,
   resetEnergyError,
   addEnergyEntry,
+  removeEnergyEntry,
 } from '@/lib/redux/slices/energyDataSlice';
 import {
   addFailedSave,
@@ -105,6 +116,8 @@ export function EnergyPage() {
   const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
   const [isMealResultsModalOpen, setIsMealResultsModalOpen] = useState(false);
   const [showLogMealConfirm, setShowLogMealConfirm] = useState(false);
+  const [showDeleteMealConfirm, setShowDeleteMealConfirm] = useState(false);
+  const [mealToDelete, setMealToDelete] = useState<TodaysMeal | null>(null);
 
   // Meal data states
   const [capturedImageData, setCapturedImageData] = useState<string | null>(null);
@@ -644,6 +657,50 @@ export function EnergyPage() {
     setShowFailedSavesDetails(!showFailedSavesDetails);
   }, [showFailedSavesDetails]);
 
+  const handleRemoveMealClick = useCallback((meal: TodaysMeal) => {
+    setMealToDelete(meal);
+    setShowDeleteMealConfirm(true);
+  }, []);
+
+  const handleConfirmRemoveMeal = useCallback(async () => {
+    if (!mealToDelete || !addressLower) {
+      setShowDeleteMealConfirm(false);
+      setMealToDelete(null);
+      return;
+    }
+
+    try {
+      await dispatch(
+        removeEnergyEntry({ address: addressLower, energyId: mealToDelete.id }),
+      ).unwrap();
+
+      dispatch(
+        showSuccessToast({
+          title: 'Meal Removed',
+          description: `${mealToDelete.name} has been removed from your log`,
+        }),
+      );
+
+      // Update goal progress after removing meal
+      try {
+        await dispatch(updateGoalProgress({ address: addressLower, category: 'daily' })).unwrap();
+      } catch (goalError) {
+        console.error('Failed to update goal progress:', goalError);
+      }
+    } catch (error) {
+      console.error('Failed to remove meal:', error);
+      dispatch(
+        showInfoToast({
+          title: 'Remove Failed',
+          description: 'Failed to remove meal. Please try again.',
+        }),
+      );
+    } finally {
+      setShowDeleteMealConfirm(false);
+      setMealToDelete(null);
+    }
+  }, [mealToDelete, addressLower, dispatch]);
+
   // Render the energy content
   const renderEnergyContent = () => {
     // If not premium, show upgrade modal instead of content
@@ -903,16 +960,27 @@ export function EnergyPage() {
                       transition={{ delay: 0.1 * i }}
                     >
                       <div className="flex justify-between items-start mb-2">
-                        <div>
+                        <div className="flex-1">
                           <h3 className="font-medium">{meal.name}</h3>
                           <div className="flex items-center text-sm text-gray-500">
                             <Clock className="h-3 w-3 mr-1" />
                             {meal.time}
                           </div>
                         </div>
-                        <span className="font-bold text-blue-500">
-                          {Math.round(meal.calories)} kcal
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-blue-500">
+                            {Math.round(meal.calories)} kcal
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleRemoveMealClick(meal)}
+                            className="h-8 w-8 rounded-full text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                            title="Remove meal"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
                       <div className="grid grid-cols-4 gap-2 mt-3">
                         <div className="text-center p-1 bg-sky-500/10 rounded">
@@ -1132,6 +1200,32 @@ export function EnergyPage() {
             <AlertDialogFooter>
               <AlertDialogCancel onClick={resetLogMealConfirmState}>Cancel</AlertDialogCancel>
               <AlertDialogAction onClick={executeLogMeal}>Log Meal</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
+
+      {/* Confirmation Dialog for Removing Meal */}
+      {mealToDelete && (
+        <AlertDialog open={showDeleteMealConfirm} onOpenChange={setShowDeleteMealConfirm}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to remove &quot;{mealToDelete?.name}&quot; from your energy
+                log? This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel
+                onClick={() => {
+                  setShowDeleteMealConfirm(false);
+                  setMealToDelete(null);
+                }}
+              >
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction onClick={handleConfirmRemoveMeal}>Remove Meal</AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>

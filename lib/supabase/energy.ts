@@ -174,3 +174,40 @@ export async function getTodaysEnergyEntries({
     client,
   });
 }
+
+export async function deleteEnergyEntry({
+  address,
+  energyId,
+  client,
+}: {
+  address: string;
+  energyId: string;
+  client?: SupabaseClient;
+}): Promise<void> {
+  if (!client) {
+    client = getClient();
+  }
+
+  if (!address) {
+    const error = new Error('Address is required to delete energy entry');
+    handleAuthError(error, 'deleteEnergyEntry');
+    throw error;
+  }
+
+  if (!energyId) {
+    const error = new Error('Energy entry ID is required');
+    handleAuthError(error, 'deleteEnergyEntry');
+    throw error;
+  }
+
+  const { error } = await client
+    .from('energy')
+    .delete()
+    .eq('id', energyId)
+    .eq('address', address.toLowerCase()); // Ensure user can only delete their own entries
+
+  if (error) {
+    handleAuthError(error instanceof Error ? error : new Error(String(error)), 'deleteEnergyEntry');
+    throw error;
+  }
+}
