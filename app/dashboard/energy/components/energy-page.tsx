@@ -34,7 +34,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ErrorAlert } from '@/components/ui/error-alert';
 import { Progress } from '@/components/ui/progress';
@@ -1225,7 +1225,12 @@ export function EnergyPage() {
               >
                 Cancel
               </AlertDialogCancel>
-              <AlertDialogAction onClick={handleConfirmRemoveMeal}>Remove Meal</AlertDialogAction>
+              <AlertDialogAction
+                className={buttonVariants({ variant: 'destructive' })}
+                onClick={handleConfirmRemoveMeal}
+              >
+                Remove Meal
+              </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
